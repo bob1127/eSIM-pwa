@@ -1,0 +1,15 @@
+node_modules/
+.next/
+_next/
+out/
+build/
+.env*
+.DS_Store
+*.psd
+*.zip
+*.docx
+/public/素材/
+/public/參考/
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
