@@ -7,20 +7,30 @@ import RegisterForm from "../components/RegisterForm";
 import ForgotPasswordForm from "../components/ForgotPasswordForm";
 import { supabase } from "../lib/supabaseClient";
 import { useUser } from "../components/context/UserContext";
-// 🚀 關鍵引入：匯入 NextAuth 的 signIn 函數
-import { signIn } from "next-auth/react";
+
+// 🚀 1. 引入 NextAuth 引擎
+import { useSession, signIn, signOut } from "next-auth/react";
 
 const LoginRegisterPage = () => {
   const router = useRouter();
-  const { user, logout, isHydrated } = useUser();
+
+  // 🚀 2. 啟動雙引擎狀態監聽
+  const { data: session, status: navStatus } = useSession(); // NextAuth (負責 LINE)
+  const { user: supaUser, logout: supaLogout, isHydrated } = useUser(); // Supabase (負責 Email, Google, FB)
 
   const [selected, setSelected] = useState("login");
   const [form, setForm] = useState({ email: "", password: "" });
-
   const [message, setMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [showForgot, setShowForgot] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
+
+  // 🚀 3. 雙引擎合併邏輯：任一邊登入就算登入
+  const isLoggedIn =
+    navStatus === "authenticated" || (isHydrated && !!supaUser);
+  const displayName =
+    session?.user?.name || supaUser?.user_metadata?.full_name || "會員";
+  const displayEmail = session?.user?.email || supaUser?.email;
 
   useEffect(() => {
     if (successMessage) {
@@ -29,11 +39,10 @@ const LoginRegisterPage = () => {
     }
   }, [successMessage]);
 
-  // 🚀 信箱密碼登入 (維持 Supabase)
+  // 信箱密碼登入 (Supabase 引擎)
   const handleLogin = async (e) => {
     e.preventDefault();
     if (loggingIn) return;
-
     setLoggingIn(true);
     setMessage("登入中...");
 
@@ -42,9 +51,7 @@ const LoginRegisterPage = () => {
         email: form.email,
         password: form.password,
       });
-
       if (error) throw error;
-
       if (data?.user) {
         setMessage("登入成功！正在前往會員中心...");
         setTimeout(() => router.push("/account"), 500);
@@ -63,7 +70,7 @@ const LoginRegisterPage = () => {
     }
   };
 
-  // 🚀 OAuth 社群快速登入 (支援 Google, Facebook, Apple - 維持 Supabase)
+  // OAuth 快速登入 (Supabase 引擎)
   const handleOAuthLogin = async (provider) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -76,6 +83,13 @@ const LoginRegisterPage = () => {
     } catch (err) {
       alert("快速登入發生錯誤：" + err.message);
     }
+  };
+
+  // 🚀 4. 統一登出邏輯 (同時關閉兩顆引擎)
+  const handleUniversalLogout = async () => {
+    await signOut({ redirect: false }); // 關閉 NextAuth
+    if (supaLogout) await supaLogout(); // 關閉 Supabase
+    router.push("/login");
   };
 
   return (
@@ -91,7 +105,8 @@ const LoginRegisterPage = () => {
             </p>
           </div>
 
-          {!(isHydrated && !!user) ? (
+          {/* 🚀 5. 使用合併後的 isLoggedIn 來判斷顯示畫面 */}
+          {!isLoggedIn ? (
             <div>
               <div className="flex justify-around mb-6 border-b border-white/30">
                 <button
@@ -202,7 +217,7 @@ const LoginRegisterPage = () => {
                       </p>
                     )}
 
-                    {/* 🚀 OAuth 第三方登入區塊 (網格設計) */}
+                    {/* OAuth 第三方登入區塊 */}
                     <div className="mt-8">
                       <div className="relative flex items-center py-2">
                         <div className="flex-grow border-t border-white/20"></div>
@@ -212,9 +227,8 @@ const LoginRegisterPage = () => {
                         <div className="flex-grow border-t border-white/20"></div>
                       </div>
 
-                      {/* 2x2 Grid Layout */}
                       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* 🌟 修改點：將 LINE 的點擊事件替換為 NextAuth 的 signIn */}
+                        {/* 🚀 LINE 登入 (交給 NextAuth) */}
                         <button
                           type="button"
                           onClick={() =>
@@ -232,7 +246,7 @@ const LoginRegisterPage = () => {
                           LINE
                         </button>
 
-                        {/* Apple */}
+                        {/* 🍎 Apple 登入 (交給 Supabase) */}
                         <button
                           type="button"
                           onClick={() => handleOAuthLogin("apple")}
@@ -248,7 +262,7 @@ const LoginRegisterPage = () => {
                           Apple
                         </button>
 
-                        {/* Google */}
+                        {/* 🌐 Google 登入 (交給 Supabase) */}
                         <button
                           type="button"
                           onClick={() => handleOAuthLogin("google")}
@@ -275,7 +289,7 @@ const LoginRegisterPage = () => {
                           Google
                         </button>
 
-                        {/* Facebook */}
+                        {/* 📘 Facebook 登入 (交給 Supabase) */}
                         <button
                           type="button"
                           onClick={() => handleOAuthLogin("facebook")}
@@ -307,13 +321,12 @@ const LoginRegisterPage = () => {
               )}
             </div>
           ) : (
+            // 🚀 6. 已登入狀態的 UI (顯示合併後的資料)
             <div className="text-center space-y-4">
               <div>
-                <h2 className="text-xl font-semibold">
-                  已登入：{user.user_metadata?.full_name || "會員"}
-                </h2>
+                <h2 className="text-xl font-semibold">已登入：{displayName}</h2>
                 <p className="mt-1 text-xs text-white/70">
-                  您目前已透過 {user.email} 登入。
+                  您目前已透過 {displayEmail} 登入
                 </p>
               </div>
 
@@ -325,7 +338,7 @@ const LoginRegisterPage = () => {
               </button>
 
               <button
-                onClick={logout}
+                onClick={handleUniversalLogout}
                 className="w-full rounded-full border border-white/70 py-2.5 text-sm font-semibold text-white tracking-wide transition hover:bg-white/10"
               >
                 登出帳號
