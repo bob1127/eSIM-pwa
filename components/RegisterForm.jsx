@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
+// 🚀 關鍵引入：匯入 NextAuth 的 signIn 函數
+import { signIn } from "next-auth/react";
 
 const RESEND_WAIT_SECONDS = 60;
 
@@ -135,7 +137,7 @@ const RegisterForm = ({ onSuccess }) => {
     }
   };
 
-  /* ====== 🚀 4. 社群快速註冊/登入 (OAuth) ====== */
+  /* ====== 🚀 4. 社群快速註冊/登入 (Google, FB, Apple - 維持 Supabase) ====== */
   const handleOAuthLogin = async (provider) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -278,9 +280,10 @@ const RegisterForm = ({ onSuccess }) => {
 
         {/* 2x2 Grid Layout */}
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* LINE */}
+          {/* 🌟 修改點：將 LINE 的點擊事件替換為 NextAuth 的 signIn */}
           <button
-            onClick={() => handleOAuthLogin("line")}
+            type="button"
+            onClick={() => signIn("line", { callbackUrl: "/account" })}
             className="flex items-center justify-center gap-2.5 w-full rounded-full bg-[#06C755] border border-transparent py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:brightness-105 shadow-sm"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -291,6 +294,7 @@ const RegisterForm = ({ onSuccess }) => {
 
           {/* Apple */}
           <button
+            type="button"
             onClick={() => handleOAuthLogin("apple")}
             className="flex items-center justify-center gap-2.5 w-full rounded-full bg-black border border-black py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:bg-neutral-800 shadow-sm"
           >
@@ -306,6 +310,7 @@ const RegisterForm = ({ onSuccess }) => {
 
           {/* Google */}
           <button
+            type="button"
             onClick={() => handleOAuthLogin("google")}
             className="flex items-center justify-center gap-2.5 w-full rounded-full bg-white/10 border border-white/30 py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:bg-white/20"
           >
@@ -332,6 +337,7 @@ const RegisterForm = ({ onSuccess }) => {
 
           {/* Facebook */}
           <button
+            type="button"
             onClick={() => handleOAuthLogin("facebook")}
             className="flex items-center justify-center gap-2.5 w-full rounded-full bg-[#1877F2]/90 border border-transparent py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:bg-[#1877F2]"
           >

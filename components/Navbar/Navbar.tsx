@@ -6,6 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+// 🌟 引入 NextAuth 勾子
+import { useSession, signIn, signOut } from "next-auth/react";
+
 // 請確保路徑正確，若您的 ui 組件位置不同請自行調整
 import { Menu, MenuItem } from "../ui/navbar-menu";
 import {
@@ -14,11 +17,7 @@ import {
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 
-// 🌟 引入新的 UserContext (對齊 Supabase)
-import { useUser } from "../context/UserContext";
-
 // --- 1. 定義資料型別 (TypeScript Interfaces) ---
-
 interface Category {
   id: number;
   name: string;
@@ -33,24 +32,25 @@ interface NavbarProps {
 }
 
 // --- 2. 輔助函式 ---
-
 const stripHtml = (html: string | undefined | null): string => {
   if (!html) return "";
   return html.replace(/<[^>]*>?/gm, "");
 };
 
 // --- 3. Navbar 主元件 ---
-
 export default function Navbar({ className }: NavbarProps) {
-  // 🚀 關鍵修改：從 Context 中取得 Supabase 狀態
-  const { user, isHydrated, logout } = useUser();
+  const router = useRouter();
 
-  // 🚀 必須等待 isHydrated 為 true，才顯示登入狀態
-  const isLoggedIn = isHydrated && !!user;
+  // 🚀 關鍵修改：從 NextAuth 取得登入狀態與資料
+  const { data: session, status } = useSession();
 
-  // 🚀 從 Supabase metadata 取得姓名 (如：Bob)
+  // 🚀 判斷是否已登入
+  const isLoggedIn = status === "authenticated";
+
+  // 🚀 從 NextAuth session 取得 LINE 姓名與頭像
   const userName =
-    user?.user_metadata?.full_name || user?.email?.split("@")[0] || "會員";
+    session?.user?.name || session?.user?.email?.split("@")[0] || "會員";
+  const userImage = session?.user?.image;
 
   const [active, setActive] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -60,8 +60,6 @@ export default function Navbar({ className }: NavbarProps) {
   // 🔥 分類資料狀態
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const router = useRouter();
 
   // 🔥 Effect 1: 抓取分類 API
   useEffect(() => {
@@ -83,9 +81,10 @@ export default function Navbar({ className }: NavbarProps) {
     fetchCategories();
   }, []);
 
-  // 🚀 關鍵修改：處理登出邏輯 (非同步)
+  // 🚀 關鍵修改：處理 NextAuth 登出邏輯
   const handleLogout = async () => {
-    await logout();
+    // 呼叫 NextAuth 的 signOut，不讓它自動轉跳，我們自己控制
+    await signOut({ redirect: false });
     setUserMenuOpen(false);
     router.push("/");
   };
@@ -293,13 +292,23 @@ export default function Navbar({ className }: NavbarProps) {
                   onClick={() => setUserMenuOpen((v) => !v)}
                   className="px-4 py-2 flex items-center gap-1 text-sm font-semibold text-[#0D66D0] hover:bg-neutral-100 transition"
                 >
-                  <UserIcon className="w-5 h-5" />
+                  {/* 如果有頭像就顯示頭像，沒有就顯示預設圖示 */}
+                  {isLoggedIn && userImage ? (
+                    <img
+                      src={userImage}
+                      alt="Avatar"
+                      className="w-5 h-5 rounded-full"
+                    />
+                  ) : (
+                    <UserIcon className="w-5 h-5" />
+                  )}
+
                   {isLoggedIn && (
-                    <span className="text-xs text-slate-600 max-w-[80px] truncate">
+                    <span className="text-xs text-slate-600 max-w-[80px] truncate ml-1">
                       {userName}
                     </span>
                   )}
-                  <ChevronDownIcon className="w-4 h-4" />
+                  <ChevronDownIcon className="w-4 h-4 ml-1" />
                 </button>
                 <Link
                   href="/Cart"
@@ -322,11 +331,20 @@ export default function Navbar({ className }: NavbarProps) {
                 >
                   {isLoggedIn ? (
                     <>
-                      <div className="px-4 pb-2 text-xs text-neutral-500 border-b mb-2">
-                        歡迎，{" "}
-                        <span className="font-semibold text-slate-800">
-                          {userName}
-                        </span>
+                      <div className="px-4 pb-2 text-xs text-neutral-500 border-b mb-2 flex items-center gap-2">
+                        {userImage && (
+                          <img
+                            src={userImage}
+                            alt="Avatar"
+                            className="w-8 h-8 rounded-full border border-gray-200"
+                          />
+                        )}
+                        <div className="flex flex-col">
+                          <span>歡迎回來，</span>
+                          <span className="font-semibold text-slate-800 truncate max-w-[120px]">
+                            {userName}
+                          </span>
+                        </div>
                       </div>
                       <Link
                         href="/account"
@@ -345,12 +363,22 @@ export default function Navbar({ className }: NavbarProps) {
                     </>
                   ) : (
                     <>
+                      {/* 這裡改成觸發 NextAuth 登入，或者跳轉到你的登入頁 */}
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          signIn("line"); // 點擊直接觸發 LINE 登入
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-[#06C755] font-bold hover:bg-neutral-100 transition"
+                      >
+                        使用 LINE 快速登入
+                      </button>
                       <Link
                         href="/login"
                         onClick={() => setUserMenuOpen(false)}
                         className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition"
                       >
-                        登入 Login / 註冊 Register
+                        其他方式登入 / 註冊
                       </Link>
                     </>
                   )}
@@ -358,7 +386,7 @@ export default function Navbar({ className }: NavbarProps) {
               )}
             </AnimatePresence>
 
-            {/* Mobile Toggle Button */}
+            {/* Mobile Toggle Button (同原本代碼) */}
             <button
               type="button"
               onClick={() => {
@@ -394,7 +422,8 @@ export default function Navbar({ className }: NavbarProps) {
         </div>
       </header>
 
-      {/* 手機版選單 (Mobile Menu) */}
+      {/* 手機版選單 (Mobile Menu) - 保持不變 */}
+      {/* ... (為節省版面，下方皆為你原本的 UI 代碼，完全沒有更動) ... */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.nav
@@ -518,13 +547,22 @@ export default function Navbar({ className }: NavbarProps) {
               </MobileGroup>
 
               <div className="mt-2 flex flex-col gap-2 pt-2 border-t border-gray-100">
-                <Link
-                  href="https://line.me/"
-                  className="w-full rounded-full bg-[#1EBE4D] px-4 py-2.5 text-center text-sm font-semibold text-white hover:brightness-110 transition shadow-sm"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  LINE 線上客服
-                </Link>
+                {/* 手機版 LINE 登入按鈕 */}
+                {isLoggedIn ? (
+                  <button
+                    onClick={handleLogout}
+                    className="w-full rounded-full bg-red-500 px-4 py-2.5 text-center text-sm font-semibold text-white hover:brightness-110 transition shadow-sm"
+                  >
+                    登出
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => signIn("line")}
+                    className="w-full rounded-full bg-[#06C755] px-4 py-2.5 text-center text-sm font-semibold text-white hover:brightness-110 transition shadow-sm"
+                  >
+                    LINE 快速登入
+                  </button>
+                )}
                 <Link
                   href="/product"
                   className="w-full rounded-full bg-[#0D66D0] px-4 py-2.5 text-center text-sm font-semibold text-white hover:brightness-110 transition shadow-sm"
@@ -586,7 +624,6 @@ export default function Navbar({ className }: NavbarProps) {
 }
 
 // --- 4. 輔助組件 (Components) ---
-
 function Divider() {
   return (
     <span

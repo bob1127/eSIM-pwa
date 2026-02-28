@@ -7,6 +7,8 @@ import RegisterForm from "../components/RegisterForm";
 import ForgotPasswordForm from "../components/ForgotPasswordForm";
 import { supabase } from "../lib/supabaseClient";
 import { useUser } from "../components/context/UserContext";
+// 🚀 關鍵引入：匯入 NextAuth 的 signIn 函數
+import { signIn } from "next-auth/react";
 
 const LoginRegisterPage = () => {
   const router = useRouter();
@@ -27,7 +29,7 @@ const LoginRegisterPage = () => {
     }
   }, [successMessage]);
 
-  // 🚀 信箱密碼登入
+  // 🚀 信箱密碼登入 (維持 Supabase)
   const handleLogin = async (e) => {
     e.preventDefault();
     if (loggingIn) return;
@@ -61,7 +63,7 @@ const LoginRegisterPage = () => {
     }
   };
 
-  // 🚀 OAuth 社群快速登入 (支援 Google, Facebook, LINE, Apple)
+  // 🚀 OAuth 社群快速登入 (支援 Google, Facebook, Apple - 維持 Supabase)
   const handleOAuthLogin = async (provider) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -212,9 +214,12 @@ const LoginRegisterPage = () => {
 
                       {/* 2x2 Grid Layout */}
                       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* LINE */}
+                        {/* 🌟 修改點：將 LINE 的點擊事件替換為 NextAuth 的 signIn */}
                         <button
-                          onClick={() => handleOAuthLogin("line")}
+                          type="button"
+                          onClick={() =>
+                            signIn("line", { callbackUrl: "/account" })
+                          }
                           className="flex items-center justify-center gap-2.5 w-full rounded-full bg-[#06C755] border border-transparent py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:brightness-105 shadow-sm"
                         >
                           <svg
@@ -229,6 +234,7 @@ const LoginRegisterPage = () => {
 
                         {/* Apple */}
                         <button
+                          type="button"
                           onClick={() => handleOAuthLogin("apple")}
                           className="flex items-center justify-center gap-2.5 w-full rounded-full bg-black border border-black py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:bg-neutral-800 shadow-sm"
                         >
@@ -244,6 +250,7 @@ const LoginRegisterPage = () => {
 
                         {/* Google */}
                         <button
+                          type="button"
                           onClick={() => handleOAuthLogin("google")}
                           className="flex items-center justify-center gap-2.5 w-full rounded-full bg-white/10 border border-white/30 py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:bg-white/20"
                         >
@@ -270,6 +277,7 @@ const LoginRegisterPage = () => {
 
                         {/* Facebook */}
                         <button
+                          type="button"
                           onClick={() => handleOAuthLogin("facebook")}
                           className="flex items-center justify-center gap-2.5 w-full rounded-full bg-[#1877F2]/90 border border-transparent py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:bg-[#1877F2]"
                         >
