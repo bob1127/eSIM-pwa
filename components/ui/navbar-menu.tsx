@@ -74,7 +74,7 @@ export const MenuItem = ({
           initial={{ opacity: 0, scale: 0.92, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 10 }}
-          transition={transition}
+          transition={transition as any}
           className={`absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 ${offsetXClass}`}
         >
           {/* ✅ hover bridge：補上 item 與面板之間的空隙（不影響外觀） */}
@@ -82,7 +82,7 @@ export const MenuItem = ({
 
           <motion.div
             layoutId="active"
-            transition={transition}
+            transition={transition as any}
             className={[
               "rounded-2xl overflow-hidden shadow-2xl",
               "border border-black/10",
