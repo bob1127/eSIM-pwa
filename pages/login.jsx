@@ -313,7 +313,7 @@ const LoginRegisterPage = () => {
                   已登入：{user.user_metadata?.full_name || "會員"}
                 </h2>
                 <p className="mt-1 text-xs text-white/70">
-                  您目前已透過 {user.email} 登入
+                  您目前已透過 {user.email} 登入。
                 </p>
               </div>
 
