@@ -5,6 +5,10 @@ import { useRouter } from "next/router";
 import Layout from "./Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabaseClient";
+
+// 🚀 關鍵引入：匯入 NextAuth 的 hook 與方法
+import { useSession, signOut } from "next-auth/react";
+
 import {
   UserIcon,
   QrCodeIcon,
@@ -13,8 +17,8 @@ import {
   ArrowRightOnRectangleIcon,
   CheckCircleIcon,
   ClockIcon,
-  InformationCircleIcon, // 🆕 新增：用於待付款提示
-  CreditCardIcon, // 🆕 新增：用於重新付款按鈕
+  InformationCircleIcon,
+  CreditCardIcon,
 } from "@heroicons/react/24/outline";
 
 /* ========== 輔助工具 ========== */
@@ -95,6 +99,10 @@ const getEsimQRCodes = (order) => {
 /* ========== 主元件 ========== */
 export default function AccountPage() {
   const router = useRouter();
+
+  // 🚀 關鍵修改 1：使用 NextAuth 的 useSession 來取得登入狀態
+  const { data: session, status } = useSession();
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -113,24 +121,38 @@ export default function AccountPage() {
   const [savingPassword, setSavingPassword] = useState(false);
 
   /* ====== 初始化與抓取資料 ====== */
+  // 🚀 關鍵修改 2：將 Supabase 驗證改為 NextAuth 驗證
   useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
-        router.push("/login");
-        return;
-      }
+    // 1. 如果還在讀取狀態，先不動作
+    if (status === "loading") return;
+
+    // 2. 如果確定未登入，強制跳轉回登入頁
+    if (status === "unauthenticated" || !session) {
+      router.push("/login");
+      return;
+    }
+
+    // 3. 如果確定已登入，將資料寫入狀態並開始抓訂單
+    if (status === "authenticated" && session.user) {
       const currentUser = session.user;
       setUser(currentUser);
-      setEditingName(currentUser.user_metadata?.full_name || "");
-      setEditingPhone(currentUser.user_metadata?.phone || "");
 
-      loadOrders(currentUser.email);
-    };
-    checkUser();
-  }, [router]);
+      // 兼容 LINE 登入(session.user.name) 和 Supabase 登入的資料格式
+      setEditingName(
+        currentUser.name || currentUser.user_metadata?.full_name || "",
+      );
+      setEditingPhone(
+        currentUser.phone || currentUser.user_metadata?.phone || "",
+      );
+
+      // 使用 Email 去撈訂單
+      if (currentUser.email) {
+        loadOrders(currentUser.email);
+      } else {
+        setLoading(false); // 如果連 email 都沒有(極端情況)，直接取消 loading
+      }
+    }
+  }, [status, session, router]);
 
   const loadOrders = async (email) => {
     setOrdersLoading(true);
@@ -155,6 +177,8 @@ export default function AccountPage() {
   const handleProfileUpdate = async () => {
     setSavingProfile(true);
     try {
+      // 注意：這裡如果你要更新 Supabase，可能需要自己寫 API Route 處理
+      // 因為前端直接用 supabase.auth.updateUser 可能對 NextAuth 使用者無效
       const { data, error } = await supabase.auth.updateUser({
         data: { full_name: editingName, phone: editingPhone },
       });
@@ -185,12 +209,17 @@ export default function AccountPage() {
     }
   };
 
+  // 🚀 關鍵修改 3：登出時改用 NextAuth 的 signOut
   const handleLogout = async () => {
+    // redirect: false 讓我們可以自己控制登出後的跳轉
+    await signOut({ redirect: false });
+    // 如果你還是希望順便清空 Supabase 舊引擎的狀態，可以保留下面這行
     await supabase.auth.signOut();
     router.push("/login");
   };
 
-  if (loading) {
+  // 🚀 關鍵修改 4：確保 status === loading 時也顯示載入中動畫
+  if (status === "loading" || loading) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500">
@@ -213,12 +242,23 @@ export default function AccountPage() {
           <aside className="w-full lg:w-[280px] shrink-0">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden sticky top-24">
               <div className="p-6 bg-gradient-to-br from-sky-500 to-blue-600 text-white text-center">
-                <div className="w-16 h-16 mx-auto bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm mb-3 text-2xl font-bold uppercase shadow-inner">
-                  {user?.user_metadata?.full_name?.charAt(0) ||
-                    user?.email?.charAt(0)}
-                </div>
+                {/* 🚀 相容 LINE 的大頭貼顯示邏輯 */}
+                {user?.image ? (
+                  <img
+                    src={user.image}
+                    alt="Avatar"
+                    className="w-16 h-16 mx-auto rounded-full border-2 border-white/20 shadow-inner mb-3 object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 mx-auto bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm mb-3 text-2xl font-bold uppercase shadow-inner">
+                    {user?.name?.charAt(0) ||
+                      user?.user_metadata?.full_name?.charAt(0) ||
+                      user?.email?.charAt(0)}
+                  </div>
+                )}
+
                 <h2 className="text-lg font-bold truncate">
-                  {user?.user_metadata?.full_name || "會員"}
+                  {user?.name || user?.user_metadata?.full_name || "會員"}
                 </h2>
                 <p className="text-xs text-sky-100 truncate mt-1">
                   {user?.email}
