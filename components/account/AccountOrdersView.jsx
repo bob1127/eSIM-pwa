@@ -40,6 +40,23 @@ function getEsimQRCodes(order) {
     .filter((item) => item.src);
 }
 
+function getEsimIccids(order) {
+  if (!order?.qrcode_data) return [];
+  let data = order.qrcode_data;
+  if (typeof data === "string") {
+    try { data = JSON.parse(data); } catch { return []; }
+  }
+  if (data && typeof data === "object" && !Array.isArray(data)) data = [data];
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((item) => ({
+      name: item.productName || item.name || "eSIM 方案",
+      iccid: item.iccid || item.ICCID || null,
+      topupId: item.topupId || item.topup_id || null,
+    }))
+    .filter((item) => item.iccid || item.topupId);
+}
+
 function statusMeta(status) {
   const s = String(status || "").toLowerCase();
   const map = {
@@ -236,16 +253,302 @@ function QrModal({ order, onClose }) {
             qrs.map((qr) => (
               <div key={qr.src} className="text-center border border-slate-100 rounded-sm p-4">
                 <p className="text-sm font-bold text-slate-700 mb-3">{qr.name}</p>
-                <img src={qr.src} alt="QR" className="w-40 h-40 mx-auto object-contain border" />
+                <img
+                  src={qr.src}
+                  alt="eSIM QR Code"
+                  className="w-52 h-52 mx-auto object-contain border border-slate-200 rounded select-none"
+                  draggable={false}
+                />
                 <p className="text-[10px] text-slate-400 mt-2 font-mono">{qr.topupId}</p>
               </div>
             ))
           ) : (
-            <p className="text-sm text-slate-500 text-center py-6">QR Code 處理中</p>
+            <p className="text-sm text-slate-500 text-center py-6">QR Code 處理中，稍後請重新整理</p>
           )}
+          <div className="bg-blue-50 border border-blue-100 rounded-sm p-3 text-xs text-slate-600 leading-relaxed space-y-1.5">
+            <p className="font-bold text-[#2563eb]">安裝方式</p>
+            <p>iPhone / iPad：長按上方 QR Code 圖片 → 選擇「加入 eSIM」或「加入行動方案」即可安裝。</p>
+            <p>或使用相機 App 對準此 QR Code 掃描。</p>
+            <p>Android：截圖後至「設定 → SIM 卡 → 下載 SIM 卡」掃描截圖中的 QR Code。</p>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+/** 單筆訂單明細頁 */
+function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange }) {
+  const meta = statusMeta(order.status);
+  const qrs = getEsimQRCodes(order);
+  const eligibility = getRefundEligibility(order);
+  const refundUi = getRefundUiState(order);
+  const payInfo = parsePaymentInfo(order);
+  const isPending = String(order.status).toLowerCase() === "pending";
+
+  const [refundOrder, setRefundOrder] = useState(null);
+  const [refundDetailOrder, setRefundDetailOrder] = useState(null);
+
+  let items = order?.item_details;
+  if (typeof items === "string") {
+    try { items = JSON.parse(items); } catch { items = []; }
+  }
+  if (!Array.isArray(items)) items = [];
+
+  const iccidList = getEsimIccids(order);
+
+  return (
+    <AccountPageWrap>
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex items-center gap-1 text-sm font-bold text-[#2563eb] mb-4 hover:underline"
+      >
+        <MaterialIcon name="arrow_back" size={18} />
+        返回訂單列表
+      </button>
+
+      <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
+        {/* 標題列 */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+          <div className="flex items-center gap-3">
+            <MaterialIcon name={meta.icon} size={24} className={meta.iconColor} />
+            <div>
+              <h2 className="text-lg font-black text-[#1e3a5f]">訂單 #{order.id}</h2>
+              <p className="text-xs text-slate-500 mt-0.5">{formatDateFull(order.created_at)}</p>
+            </div>
+          </div>
+          <span className={`text-xs font-bold px-3 py-1 rounded-full border ${meta.pill}`}>
+            {meta.label}
+          </span>
+        </div>
+
+        {/* 訂單方案 */}
+        <div className="px-5 py-5 border-b border-slate-100">
+          <h3 className="text-xs font-bold text-slate-500 uppercase mb-3">方案內容</h3>
+          {items.length > 0 ? (
+            <div className="space-y-3">
+              {items.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-4 p-3 bg-slate-50 rounded-sm border border-slate-100">
+                  <div className="w-10 h-10 rounded-sm bg-[#2b579a]/10 flex items-center justify-center shrink-0">
+                    <MaterialIcon name="sim_card" size={22} className="text-[#2b579a]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-[#1e3a5f]">{item.name || item.productName || "eSIM 方案"}</p>
+                    {item.quantity && item.quantity > 1 && (
+                      <p className="text-xs text-slate-500">x{item.quantity}</p>
+                    )}
+                  </div>
+                  <p className="font-black text-sm text-[#1e3a5f]">
+                    NT$ {formatNTD(item.unit_price || item.price || order.total_amount)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-sm border border-slate-100">
+              <MaterialIcon name="sim_card" size={22} className="text-[#2b579a]" />
+              <p className="font-bold text-sm text-[#1e3a5f]">{orderItemSummary(order)}</p>
+            </div>
+          )}
+        </div>
+
+        {/* 金額與付款 */}
+        <div className="px-5 py-4 border-b border-slate-100">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-600">訂單總額</span>
+            <span className="text-lg font-black text-[#1e3a5f]">NT$ {formatNTD(order.total_amount)}</span>
+          </div>
+          {payInfo && (
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-sm text-slate-600">付款方式</span>
+              <span className="text-sm font-bold text-slate-700">{paymentLabel(payInfo)}</span>
+            </div>
+          )}
+          {order.customer_email && (
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-sm text-slate-600">Email</span>
+              <span className="text-sm text-slate-700">{order.customer_email}</span>
+            </div>
+          )}
+        </div>
+
+        {/* 待付款資訊 */}
+        {isPending && payInfo && (
+          <div className="px-5 py-4 border-b border-slate-100 bg-amber-50/50">
+            <h3 className="text-xs font-bold text-amber-700 uppercase mb-2">繳費資訊</h3>
+            {(payInfo.code_no || payInfo.payment_no) && (
+              <div className="flex items-center gap-3">
+                <code className="flex-1 text-base font-black tracking-wider bg-white border border-amber-200 rounded-sm px-3 py-2 text-[#1e3a5f]">
+                  {payInfo.code_no || payInfo.payment_no}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard?.writeText(payInfo.code_no || payInfo.payment_no)}
+                  className="px-3 py-2 text-xs font-bold border border-[#2563eb] text-[#2563eb] rounded-sm hover:bg-blue-50"
+                >
+                  複製
+                </button>
+              </div>
+            )}
+            {payInfo.expire_date && (
+              <p className="text-sm text-red-600 font-medium mt-2">繳費期限：{payInfo.expire_date}</p>
+            )}
+          </div>
+        )}
+
+        {/* QR Code 區塊 */}
+        {qrs.length > 0 && (
+          <div className="px-5 py-5 border-b border-slate-100">
+            <h3 className="text-xs font-bold text-slate-500 uppercase mb-3">eSIM QR Code</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {qrs.map((qr) => (
+                <div key={qr.src} className="text-center border border-slate-100 rounded-sm p-4 bg-slate-50/50">
+                  <p className="text-sm font-bold text-slate-700 mb-3">{qr.name}</p>
+                  <img
+                    src={qr.src}
+                    alt="eSIM QR Code"
+                    className="w-52 h-52 mx-auto object-contain border border-slate-200 rounded select-none"
+                    draggable={false}
+                  />
+                  <p className="text-[10px] text-slate-400 mt-2 font-mono">{qr.topupId}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 bg-blue-50 border border-blue-100 rounded-sm p-3 text-xs text-slate-600 leading-relaxed space-y-1.5">
+              <p className="font-bold text-[#2563eb]">安裝方式</p>
+              <p>iPhone / iPad：長按上方 QR Code 圖片 → 選擇「加入 eSIM」或「加入行動方案」即可安裝。</p>
+              <p>或使用相機 App 對準此 QR Code 掃描。</p>
+              <p>Android：截圖後至「設定 → SIM 卡 → 下載 SIM 卡」掃描截圖中的 QR Code。</p>
+            </div>
+          </div>
+        )}
+
+        {/* ICCID 與流量通知 */}
+        {(iccidList.length > 0 || qrs.length > 0) && (
+          <div className="px-5 py-5 border-b border-slate-100">
+            <h3 className="text-xs font-bold text-slate-500 uppercase mb-4">eSIM 識別碼 & 流量通知</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* ICCID 卡片 */}
+              <div className="flex flex-col items-center text-center p-4 bg-slate-50 border border-slate-100 rounded-sm">
+                <div className="w-12 h-12 rounded-full bg-[#2563eb]/10 flex items-center justify-center mb-3">
+                  <MaterialIcon name="sim_card" size={24} className="text-[#2563eb]" />
+                </div>
+                <p className="text-sm font-bold text-[#1e3a5f] mb-1">ICCID</p>
+                <p className="text-xs text-slate-500 mb-3">eSIM 唯一識別碼，用於綁定流量監控</p>
+                {iccidList.length > 0 ? (
+                  <div className="w-full space-y-1.5">
+                    {iccidList.map((item, idx) => (
+                      <div key={idx} className="bg-white border border-slate-200 rounded px-2.5 py-1.5">
+                        <p className="text-[10px] text-slate-400 truncate">{item.name}</p>
+                        <p className="text-xs font-mono font-bold text-[#1e3a5f] break-all">
+                          {item.iccid || `Topup: ${item.topupId}`}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic">系統將在綁定後顯示</p>
+                )}
+              </div>
+
+              {/* 綁定流量通知 */}
+              <div className="flex flex-col items-center text-center p-4 bg-slate-50 border border-slate-100 rounded-sm">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
+                  <MaterialIcon name="notifications_active" size={24} className="text-emerald-700" />
+                </div>
+                <p className="text-sm font-bold text-[#1e3a5f] mb-1">流量提醒</p>
+                <p className="text-xs text-slate-500 mb-3">綁定 ICCID 後，流量偏低時自動推播通知您</p>
+                <button
+                  type="button"
+                  onClick={() => onTabChange?.("traffic")}
+                  className="mt-auto inline-flex items-center gap-1.5 px-4 py-2 bg-[#2563eb] text-white text-xs font-bold rounded-sm hover:bg-[#1d4ed8] transition"
+                >
+                  開啟流量通知
+                  <MaterialIcon name="arrow_forward" size={14} />
+                </button>
+              </div>
+
+              {/* 查詢流量 */}
+              <div className="flex flex-col items-center text-center p-4 bg-slate-50 border border-slate-100 rounded-sm">
+                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-3">
+                  <MaterialIcon name="speed" size={24} className="text-amber-700" />
+                </div>
+                <p className="text-sm font-bold text-[#1e3a5f] mb-1">查詢流量</p>
+                <p className="text-xs text-slate-500 mb-3">隨時查看剩餘流量及使用狀態</p>
+                <button
+                  type="button"
+                  onClick={() => onTabChange?.("traffic")}
+                  className="mt-auto inline-flex items-center gap-1.5 px-4 py-2 border border-[#2563eb] text-[#2563eb] text-xs font-bold rounded-sm hover:bg-blue-50 transition"
+                >
+                  前往查詢
+                  <MaterialIcon name="arrow_forward" size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 退款狀態 */}
+        {refundUi.badge && (
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">退款狀態</h3>
+            <div className="flex items-center gap-3">
+              <span className={`text-xs font-bold px-3 py-1 rounded-full border ${refundUi.badge.color}`}>
+                {refundUi.badge.label}
+              </span>
+              <button
+                type="button"
+                onClick={() => setRefundDetailOrder(order)}
+                className="text-xs font-bold text-[#2563eb] hover:underline"
+              >
+                查看退款詳情
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 操作列 */}
+        <div className="px-5 py-4 flex flex-wrap gap-2">
+          {eligibility.canApply && (
+            <button
+              type="button"
+              onClick={() => setRefundOrder(order)}
+              className="flex items-center gap-1 px-4 py-2.5 border border-red-200 text-red-700 text-sm font-bold rounded-sm hover:bg-red-50"
+            >
+              <MaterialIcon name="undo" size={16} />
+              申請退款
+            </button>
+          )}
+          <Link
+            href="/"
+            className="flex items-center gap-1 px-4 py-2.5 bg-[#2563eb] text-white text-sm font-bold rounded-sm hover:bg-[#1d4ed8]"
+          >
+            <MaterialIcon name="add" size={16} />
+            再次購買
+          </Link>
+        </div>
+      </div>
+
+      {refundDetailOrder && (
+        <OrderRefundDetailModal
+          order={refundDetailOrder}
+          onClose={() => setRefundDetailOrder(null)}
+          onReapply={(o) => setRefundOrder(o)}
+        />
+      )}
+      {refundOrder && (
+        <RefundRequestModal
+          order={refundOrder}
+          onClose={() => setRefundOrder(null)}
+          onSuccess={() => {
+            setRefundOrder(null);
+            onRefresh?.();
+          }}
+          getAuthHeaders={getAuthHeaders}
+        />
+      )}
+    </AccountPageWrap>
   );
 }
 
@@ -256,6 +559,7 @@ export default function AccountOrdersView({
   onRefresh,
   getAuthHeaders,
   onTabChange,
+  initialDetailOrder,
 }) {
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
@@ -269,6 +573,7 @@ export default function AccountOrdersView({
   const [refundOrder, setRefundOrder] = useState(null);
   const [refundDetailOrder, setRefundDetailOrder] = useState(null);
   const [pendingOrder, setPendingOrder] = useState(null);
+  const [detailOrder, setDetailOrder] = useState(initialDetailOrder || null);
 
   const now = new Date();
   const thisMonth = monthKey(now);
@@ -357,6 +662,18 @@ export default function AccountOrdersView({
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (detailOrder) {
+    return (
+      <OrderDetailView
+        order={detailOrder}
+        onBack={() => setDetailOrder(null)}
+        onRefresh={onRefresh}
+        getAuthHeaders={getAuthHeaders}
+        onTabChange={onTabChange}
+      />
+    );
+  }
 
   return (
     <AccountPageWrap>
@@ -605,23 +922,6 @@ export default function AccountOrdersView({
                 const payInfo = parsePaymentInfo(order);
                 const isPending = String(order.status).toLowerCase() === "pending";
 
-                const openOrderDetail = () => {
-                  if (isPending) setPendingOrder(order);
-                  else if (refundUi.showRefundDetail) setRefundDetailOrder(order);
-                  else if (eligibility.canApply) setRefundOrder(order);
-                  else if (hasQr) setQrOrder(order);
-                  else if (refundUi.latest) setRefundDetailOrder(order);
-                  else setQrOrder(order);
-                };
-
-                const detailLabel = isPending
-                  ? "繳費"
-                  : refundUi.showRefundDetail
-                    ? "退款"
-                    : eligibility.canApply
-                      ? "申請"
-                      : "詳情";
-
                 return (
                   <tr key={order.id} className="border-b border-slate-100 hover:bg-slate-50/60 align-top">
                     <td className="px-3 py-4">
@@ -639,7 +939,7 @@ export default function AccountOrdersView({
                       <p className="font-mono text-xs text-slate-400">#{order.id}</p>
                       <button
                         type="button"
-                        onClick={() => hasQr && setQrOrder(order)}
+                        onClick={() => setDetailOrder(order)}
                         className="font-bold text-[#2563eb] hover:underline text-left mt-0.5"
                       >
                         {orderItemSummary(order)}
@@ -664,15 +964,28 @@ export default function AccountOrdersView({
                       <div className="flex gap-1">
                         {[
                           { label: "金額", val: `NT$${formatNTD(order.total_amount)}` },
-                          { label: "QR", val: hasQr ? "有" : "—" },
+                          {
+                            label: "QR",
+                            val: hasQr ? "有" : "—",
+                            isQr: true,
+                            clickable: hasQr,
+                          },
                           { label: "退款", val: refundColumnLabel(order) },
                         ].map((box) => (
                           <div
                             key={box.label}
-                            className="w-16 text-center border border-slate-200 rounded py-1.5 bg-slate-50/50"
+                            className={`w-16 text-center border border-slate-200 rounded py-1.5 bg-slate-50/50 ${box.clickable ? "cursor-pointer hover:border-[#2563eb] hover:bg-blue-50/50 transition-colors" : ""}`}
+                            onClick={box.clickable ? () => setQrOrder(order) : undefined}
+                            role={box.clickable ? "button" : undefined}
+                            tabIndex={box.clickable ? 0 : undefined}
+                            aria-label={box.clickable ? "檢視 QR Code" : undefined}
                           >
                             <p className="text-[9px] text-slate-400">{box.label}</p>
-                            <p className="text-xs font-black text-[#1e3a5f] mt-0.5">{box.val}</p>
+                            {box.isQr && hasQr ? (
+                              <MaterialIcon name="qr_code_2" size={18} className="text-[#2563eb] mx-auto mt-0.5" />
+                            ) : (
+                              <p className="text-xs font-black text-[#1e3a5f] mt-0.5">{box.val}</p>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -725,20 +1038,11 @@ export default function AccountOrdersView({
                         </button>
                         <button
                           type="button"
-                          onClick={openOrderDetail}
+                          onClick={() => setDetailOrder(order)}
                           className="flex items-center gap-1 px-2.5 py-1.5 bg-[#2b579a] text-white text-[11px] font-bold rounded hover:bg-[#234a82]"
                         >
-                          <MaterialIcon
-                            name={
-                              isPending
-                                ? "payments"
-                                : refundUi.showRefundDetail
-                                  ? "receipt_long"
-                                  : "edit"
-                            }
-                            size={14}
-                          />
-                          {detailLabel}
+                          <MaterialIcon name="visibility" size={14} />
+                          明細
                         </button>
                       </div>
                     </td>

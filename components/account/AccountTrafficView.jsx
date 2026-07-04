@@ -68,6 +68,15 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
     if (esims.length && !selectedId) setSelectedId(esims[0].topupId);
   }, [esims, selectedId]);
 
+  // Auto-query the first eSIM when member loads the page
+  const autoQueried = useRef(false);
+  useEffect(() => {
+    if (esims.length > 0 && !autoQueried.current && !results[esims[0].topupId]) {
+      autoQueried.current = true;
+      handleOneClick(esims[0]);
+    }
+  }, [esims]);
+
   const queryUsage = useCallback(async ({ topupId, iccid, key }) => {
     setError("");
     setLoadingId(key);
@@ -208,7 +217,10 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                 return (
                   <div
                     key={esim.topupId}
-                    className={`px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-4 transition ${
+                    onClick={() => handleOneClick(esim)}
+                    role="button"
+                    tabIndex={0}
+                    className={`px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-4 transition cursor-pointer ${
                       isSelected ? "bg-blue-50/40 border-l-4 border-l-[#2563eb]" : "hover:bg-slate-50/60"
                     }`}
                   >

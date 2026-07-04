@@ -164,6 +164,16 @@ module.exports = {
         none: 'none',
       },
       fontFamily: {
+        sans: [
+          'Roboto',
+          '"Noto Sans TC"',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          '"Helvetica Neue"',
+          'Arial',
+          'sans-serif',
+        ],
         custom: ['DF-01', 'sans-serif'],
       },
       zIndex: {

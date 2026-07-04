@@ -1196,7 +1196,7 @@ export default function Home() {
                   </div>
                   <div className="border-t lg:border-t-0 lg:border-l-1 w-full lg:w-[55%] flex justify-start lg:justify-end !group-hover:w-full lg:!group-hover:w-[55%] duration-300 border-gray-50/30 lg:border-gray-50 pt-4 lg:pt-0 pl-0 lg:pl-5 group-hover:border-[#0069CA]">
                     <span className="text-white group-hover:mr-0 lg:group-hover:mr-10 duration-500 w-full lg:w-[300px] group-hover:text-[#0069CA] text-sm lg:text-[14px] leading-relaxed">
-                      填寫表單，我們會盡快回覆您
+                      合作 / 分潤合作 / 其他詢問
                     </span>
                   </div>
                 </div>

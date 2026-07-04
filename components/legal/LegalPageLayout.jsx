@@ -18,7 +18,7 @@ export default function LegalPageLayout({
   return (
     <Layout seo={seo}>
       <div className="min-h-screen bg-white font-sans pt-28 md:pt-32 pb-16">
-        <div className="max-w-2xl mx-auto px-6">
+        <div className="max-w-2xl mx-auto pt-20 px-6">
           {/* 品牌標頭 */}
           <div className="text-center mb-10">
             <Link
@@ -37,9 +37,7 @@ export default function LegalPageLayout({
                 <span className="text-[#24A148]">.eSIM</span>
               </span>
             </Link>
-            <p className="text-[11px] font-bold text-[#1a56db] uppercase tracking-widest mt-4 mb-1">
-              Legal
-            </p>
+
             <h1 className="text-2xl font-black text-slate-900 mb-2">{title}</h1>
             {subtitle && (
               <p className="text-sm text-slate-500 leading-relaxed max-w-md mx-auto">

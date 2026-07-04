@@ -281,7 +281,7 @@ export default function AccountDashboardView({
                     <li key={o.id}>
                       <button
                         type="button"
-                        onClick={() => onTabChange("orders")}
+                        onClick={() => onTabChange("orders", o)}
                         className="w-full flex items-center gap-3 py-2.5 hover:bg-slate-50 px-1 rounded-sm transition text-left group"
                       >
                         <div className="w-8 h-8 rounded-sm bg-[#2b579a]/10 flex items-center justify-center shrink-0">

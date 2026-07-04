@@ -82,7 +82,31 @@ export default function AccountPage() {
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTabRaw] = useState("dashboard");
+  const [initialDetailOrder, setInitialDetailOrder] = useState(null);
+
+  const setActiveTab = (tab, orderToOpen) => {
+    setActiveTabRaw(tab);
+    setInitialDetailOrder(orderToOpen || null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.hash = tab;
+      window.history.pushState({ tab }, "", url.toString());
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash.replace("#", "");
+    if (hash) setActiveTabRaw(hash);
+
+    const onPopState = (e) => {
+      const tab = e.state?.tab || window.location.hash.replace("#", "") || "dashboard";
+      setActiveTabRaw(tab);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const [userRole, setUserRole] = useState("customer");
   const [partnerData, setPartnerData] = useState(null);
@@ -820,6 +844,7 @@ export default function AccountPage() {
               onRefresh={() => user?.email && loadOrders(user.email)}
               getAuthHeaders={getAuthHeaders}
               onTabChange={setActiveTab}
+              initialDetailOrder={initialDetailOrder}
             />
           </motion.div>
         )}
