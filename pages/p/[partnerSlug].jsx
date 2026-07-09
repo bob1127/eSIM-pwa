@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseAdminServer } from "@/lib/supabaseAdminServer";
 import React from "react";
 import Link from "next/link";
 import PartnerLayout from "@/components/PartnerLayout";
@@ -718,8 +719,9 @@ export async function getServerSideProps(context) {
   const { partnerSlug } = context.params;
 
   try {
+    const db = getSupabaseAdminServer();
     // 取得商店資訊
-    const { data: store, error: storeError } = await supabase
+    const { data: store, error: storeError } = await db
       .from("stores")
       .select("*")
       .eq("domain", partnerSlug)
@@ -732,7 +734,7 @@ export async function getServerSideProps(context) {
     }
 
     // 取得該店產品
-    const { data: storeProducts, error: spError } = await supabase
+    const { data: storeProducts, error: spError } = await db
       .from("store_products")
       .select(
         `

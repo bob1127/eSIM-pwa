@@ -1,19 +1,26 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
+import { useRouter } from "next/router";
 import BossAdminLayout from "@/components/admin/BossAdminLayout";
 import { StatusBanner } from "@/components/partner/PartnerAdminLayout";
 import {
   bossFetch,
   clearBossSession,
   getBossToken,
+  setBossSession,
 } from "@/lib/bossAdminClient";
 import AdminRefundsPanel from "@/components/admin/AdminRefundsPanel";
 import AccountBossPartnersPanel from "@/components/account/AccountBossPartnersPanel";
+import BossSalesAnalyticsPanel from "@/components/admin/BossSalesAnalyticsPanel";
 import BossInlineLogin from "@/components/account/BossInlineLogin";
 
-function BossLoginPage({ onLoginSuccess }) {
+function BossLoginPage({ onLoginSuccess, embed }) {
   return (
-    <div className="min-h-screen flex font-sans bg-[#eef1f6] items-center justify-center p-6">
+    <div
+      className={`min-h-screen flex font-sans items-center justify-center p-6 ${
+        embed ? "bg-white" : "bg-[#eef1f6]"
+      }`}
+    >
       <Head>
         <title>總部管理登入 | JEKO eSIM</title>
       </Head>
@@ -25,11 +32,51 @@ function BossLoginPage({ onLoginSuccess }) {
 }
 
 export default function AdminBossDashboard() {
+  const router = useRouter();
+  const embed = router.query.embed === "1";
   const [authChecking, setAuthChecking] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminUser, setAdminUser] = useState(null);
-  const [bossTab, setBossTab] = useState("partners");
+  const [bossTab, setBossTab] = useState("sales");
   const [partnerStats, setPartnerStats] = useState({ total: 0, pending: 0, active: 0 });
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const tab = router.query.tab;
+    if (tab === "partners" || tab === "refunds" || tab === "sales") {
+      setBossTab(tab);
+    }
+  }, [router.isReady, router.query.tab]);
+
+  useEffect(() => {
+    if (!embed) return;
+
+    function onMessage(event) {
+      const data = event?.data;
+      if (!data || data.type !== "jeko_boss_token") return;
+      if (data.token) {
+        setBossSession(data.token, data.email || "");
+        fetch("/api/admin/session", {
+          headers: { Authorization: `Bearer ${data.token}` },
+        })
+          .then((r) => r.json())
+          .then((res) => {
+            if (res.authenticated) {
+              setAdminUser(res.user);
+              setIsAuthenticated(true);
+              setAuthChecking(false);
+            }
+          })
+          .catch(() => {});
+      }
+    }
+
+    window.addEventListener("message", onMessage);
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: "jeko_boss_ready" }, "*");
+    }
+    return () => window.removeEventListener("message", onMessage);
+  }, [embed]);
 
   useEffect(() => {
     const token = getBossToken();
@@ -68,8 +115,18 @@ export default function AdminBossDashboard() {
 
   if (authChecking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a56db]">
-        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" />
+      <div
+        className={`min-h-screen flex items-center justify-center ${
+          embed ? "bg-white" : "bg-[#1a56db]"
+        }`}
+      >
+        <div
+          className={`w-8 h-8 border-4 rounded-full animate-spin ${
+            embed
+              ? "border-[#1a56db] border-t-transparent"
+              : "border-white border-t-transparent"
+          }`}
+        />
       </div>
     );
   }
@@ -77,6 +134,7 @@ export default function AdminBossDashboard() {
   if (!isAuthenticated) {
     return (
       <BossLoginPage
+        embed={embed}
         onLoginSuccess={(user) => {
           setAdminUser(user);
           setIsAuthenticated(true);
@@ -87,46 +145,69 @@ export default function AdminBossDashboard() {
 
   const { pending, active } = partnerStats;
 
-  return (
-    <BossAdminLayout title={bossTab === "partners" ? "夥伴審核" : "退款審核"}>
+  const tabs = [
+    { id: "sales", label: "銷售分析" },
+    { id: "partners", label: "夥伴審核" },
+    { id: "refunds", label: "退款審核" },
+  ];
+
+  const title =
+    bossTab === "sales"
+      ? "銷售分析"
+      : bossTab === "refunds"
+        ? "退款審核"
+        : "夥伴審核";
+
+  const content = (
+    <>
       <div className="flex flex-wrap gap-2 mb-6">
-        <button
-          type="button"
-          onClick={() => setBossTab("partners")}
-          className={`px-4 py-2 rounded-sm text-sm font-bold transition ${
-            bossTab === "partners"
-              ? "bg-[#1a56db] text-white"
-              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          夥伴審核
-        </button>
-        <button
-          type="button"
-          onClick={() => setBossTab("refunds")}
-          className={`px-4 py-2 rounded-sm text-sm font-bold transition ${
-            bossTab === "refunds"
-              ? "bg-[#1a56db] text-white"
-              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          退款審核
-        </button>
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setBossTab(t.id)}
+            className={`px-4 py-2 rounded-sm text-sm font-bold transition ${
+              bossTab === t.id
+                ? "bg-[#1a56db] text-white"
+                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {bossTab === "refunds" ? (
-        <AdminRefundsPanel />
-      ) : (
+      {bossTab === "sales" && <BossSalesAnalyticsPanel />}
+
+      {bossTab === "refunds" && <AdminRefundsPanel />}
+
+      {bossTab === "partners" && (
         <>
           <StatusBanner
             title={`您好，${adminUser?.first_name || adminUser?.email?.split("@")[0] || "管理員"}`}
             message={`目前 ${pending} 筆待審核、${active} 家已開通夥伴`}
             status={pending > 0 ? "warn" : "good"}
           />
-
           <AccountBossPartnersPanel />
         </>
       )}
+    </>
+  );
+
+  if (embed) {
+    return (
+      <div className="min-h-screen bg-[#eef2f7] font-sans">
+        <Head>
+          <title>{title} | JEKO 夥伴管理</title>
+        </Head>
+        <div className="p-4 md:p-6">{content}</div>
+      </div>
+    );
+  }
+
+  return (
+    <BossAdminLayout title={title} activeTab={bossTab}>
+      {content}
     </BossAdminLayout>
   );
 }

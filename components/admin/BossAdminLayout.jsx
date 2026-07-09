@@ -3,16 +3,22 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import {
   UserGroupIcon,
+  ChartBarIcon,
   ArrowTopRightOnSquareIcon,
   ArrowRightOnRectangleIcon,
   HomeIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import { clearBossSession, getBossEmail } from "@/lib/bossAdminClient";
 import { StatCard } from "@/components/partner/PartnerAdminLayout";
 
-const NAV_ITEMS = [{ href: "/admin-boss", label: "夥伴審核", icon: UserGroupIcon }];
+const NAV_ITEMS = [
+  { id: "sales", href: "/admin-boss", label: "銷售分析", icon: ChartBarIcon },
+  { id: "partners", href: "/admin-boss?tab=partners", label: "夥伴審核", icon: UserGroupIcon },
+  { id: "refunds", href: "/admin-boss?tab=refunds", label: "退款審核", icon: BanknotesIcon },
+];
 
-export default function BossAdminLayout({ title, children }) {
+export default function BossAdminLayout({ title, children, activeTab = "sales" }) {
   const router = useRouter();
   const email = getBossEmail();
 
@@ -66,11 +72,11 @@ export default function BossAdminLayout({ title, children }) {
           </div>
 
           <nav className="flex-1 py-3 flex flex-col gap-0.5 px-2">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-              const active = router.pathname === href;
+            {NAV_ITEMS.map(({ id, href, label, icon: Icon }) => {
+              const active = activeTab === id;
               return (
                 <Link
-                  key={href}
+                  key={id}
                   href={href}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     active
@@ -103,11 +109,11 @@ export default function BossAdminLayout({ title, children }) {
 
         <main className="flex-1 overflow-y-auto">
           <div className="md:hidden flex overflow-x-auto bg-[#234876] px-2 py-1 gap-1 shrink-0">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-              const active = router.pathname === href;
+            {NAV_ITEMS.map(({ id, href, label, icon: Icon }) => {
+              const active = activeTab === id;
               return (
                 <Link
-                  key={href}
+                  key={id}
                   href={href}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition ${
                     active ? "bg-[#1a3a6b] text-white" : "text-blue-200"

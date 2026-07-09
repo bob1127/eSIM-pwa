@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseAdminServer } from "@/lib/supabaseAdminServer";
 import { useCart } from "@/components/context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
 import Stepper from "@mui/material/Stepper";
@@ -478,14 +479,15 @@ export default function PartnerCart({ store }) {
 
 export async function getServerSideProps(context) {
   const { partnerSlug } = context.params;
-  const { data: store, error: storeError } = await supabase
+  const db = getSupabaseAdminServer();
+  const { data: store, error: storeError } = await db
     .from("stores")
     .select("*")
     .eq("domain", partnerSlug)
     .eq("status", "active")
     .single();
   if (storeError || !store) return { notFound: true };
-  const { data: storeProducts, error: spError } = await supabase
+  const { data: storeProducts, error: spError } = await db
     .from("store_products")
     .select(
       `product_id, custom_prices, products ( id, name, description, image_url, product_variations ( id, b2b_price ) )`,

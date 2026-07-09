@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseAdminServer } from "@/lib/supabaseAdminServer";
 import {
   CheckCircleIcon,
   ShieldCheckIcon,
@@ -433,7 +434,8 @@ export default function PartnerProductDetail({
 
 export async function getServerSideProps(context) {
   const { partnerSlug, productId } = context.params;
-  const { data: store } = await supabase
+  const db = getSupabaseAdminServer();
+  const { data: store } = await db
     .from("stores")
     .select("*")
     .eq("domain", partnerSlug)
@@ -442,7 +444,7 @@ export async function getServerSideProps(context) {
 
   if (!store) return { notFound: true };
 
-  const { data: storeProduct } = await supabase
+  const { data: storeProduct } = await db
     .from("store_products")
     .select(
       `

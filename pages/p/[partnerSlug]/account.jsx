@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseAdminServer } from "@/lib/supabaseAdminServer";
 import { useSession, signOut } from "next-auth/react";
 import PartnerLayout from "@/components/PartnerLayout"; // 🌟 引入統一版型
 import {
@@ -202,7 +203,8 @@ export default function PartnerCustomerAccount({ store }) {
 
 export async function getServerSideProps(context) {
   const { partnerSlug } = context.params;
-  const { data: store, error } = await supabase
+  const db = getSupabaseAdminServer();
+  const { data: store, error } = await db
     .from("stores")
     .select("*")
     .eq("domain", partnerSlug)

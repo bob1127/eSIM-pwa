@@ -5,6 +5,7 @@ import Layout from "@/components/PartnerLayout";
 import Image from "next/image";
 // 🌟 確保引入 supabase
 import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseAdminServer } from "@/lib/supabaseAdminServer";
 
 // 🌟 1. 接收從 getServerSideProps 傳來的 store
 export default function Home({ store }) {
@@ -727,7 +728,8 @@ export async function getServerSideProps(context) {
   const { partnerSlug } = context.params;
 
   // 使用 Supabase 根據網址上的 partnerSlug 尋找對應的店鋪資料
-  const { data: store, error } = await supabase
+  const db = getSupabaseAdminServer();
+  const { data: store, error } = await db
     .from("stores")
     .select("*")
     .eq("domain", partnerSlug)

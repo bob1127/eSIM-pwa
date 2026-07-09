@@ -21,6 +21,8 @@ import InfiniteCarousel from "@/components/InfiniteCarousel"; // 🌟 引入剛�
 import CarRentalCharterSection from "../components/CarRentalCharterSection.jsx";
 import JekoRecommendSection from "../components/JekoRecommendSection.jsx";
 import AccommodationRecommendSection from "../components/AccommodationRecommendSection.jsx";
+import KKdayTicketSection from "../components/KKdayTicketSection.jsx";
+import KlookTicketSection from "../components/KlookTicketSection.jsx";
 const VuckoScroll = dynamic(() => import("@/components/CodegridScroll"), {
   ssr: false,
 });
@@ -659,6 +661,8 @@ export default function Home() {
         <JekoRecommendSection />
         <CarRentalCharterSection />
         <AccommodationRecommendSection />
+        <KKdayTicketSection />
+        <KlookTicketSection />
         {/*       
         <section className="relative w-full     overflow-hidden ">
           <div className="z-[9999] relative ">

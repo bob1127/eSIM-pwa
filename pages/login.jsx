@@ -149,6 +149,11 @@ const LoginRegisterPage = () => {
 
       authLog("signInWithOAuth 回傳", { provider, url: data?.url, error: error?.message });
       if (error) throw error;
+      if (data?.url) {
+        window.location.assign(data.url);
+      } else {
+        throw new Error("未取得 Google 授權網址，請確認 Supabase anon key 是否正確");
+      }
     } catch (err) {
       addLog(`❌ 跳轉前發生錯誤: ${err.message}`);
       setMessage(`Google 登入失敗: ${err.message}`);

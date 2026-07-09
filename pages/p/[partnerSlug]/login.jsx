@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseAdminServer } from "@/lib/supabaseAdminServer";
 import { useSession, signIn, signOut } from "next-auth/react";
 import PartnerLayout from "@/components/PartnerLayout";
 
@@ -632,7 +633,8 @@ export default function PartnerLoginRegisterPage({ store }) {
 // 伺服器端資料抓取
 export async function getServerSideProps(context) {
   const { partnerSlug } = context.params;
-  const { data: store, error } = await supabase
+  const db = getSupabaseAdminServer();
+  const { data: store, error } = await db
     .from("stores")
     .select("*")
     .eq("domain", partnerSlug)

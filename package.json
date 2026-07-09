@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "sync:medusa-products": "node scripts/sync-medusa-products.mjs --backend https://esim-backend-eight.vercel.app",
     "export": "next build && next export && next-image-export-optimizer"
   },
   "dependencies": {
@@ -151,6 +152,7 @@
     "autoprefixer": "^10.4.21",
     "json-loader": "^0.5.7",
     "postcss": "^8.5.4",
+    "puppeteer": "^24.43.1",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.3"
   }

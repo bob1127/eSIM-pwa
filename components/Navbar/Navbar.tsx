@@ -10,6 +10,7 @@ import { buildLoginUrl } from "@/lib/authRedirect";
 
 // 🌟 引入 NextAuth 勾子
 import { useSession, signOut } from "next-auth/react";
+import { useUser } from "@/components/context/UserContext";
 // 🚀 導入你的 supabase 客戶端
 import { supabase } from "@/lib/supabaseClient";
 
@@ -158,8 +159,7 @@ export default function Navbar({ className }: NavbarProps) {
 
   // --- 登入狀態管理 (Dual-Engine) ---
   const { data: session, status: nextAuthStatus } = useSession();
-  const [supabaseUser, setSupabaseUser] = useState<any>(null);
-  const [isSupabaseChecked, setIsSupabaseChecked] = useState(false);
+  const { user: supabaseUser, isHydrated: isSupabaseChecked } = useUser();
 
   // --- 分類資料狀態 ---
   const [featuredCountries, setFeaturedCountries] = useState<FeaturedCountry[]>(
@@ -212,26 +212,6 @@ export default function Navbar({ className }: NavbarProps) {
       window.removeEventListener("scroll", handleScroll);
     };
   }, [isHomePage]);
-
-  // 抓取 Supabase 會員
-  useEffect(() => {
-    const fetchSupabaseUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setSupabaseUser(user);
-      setIsSupabaseChecked(true);
-    };
-    fetchSupabaseUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSupabaseUser(session?.user || null);
-    });
-
-    return () => subscription?.unsubscribe();
-  }, []);
 
   const isLoggedIn = nextAuthStatus === "authenticated" || !!supabaseUser;
   const userName =

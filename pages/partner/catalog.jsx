@@ -18,11 +18,6 @@ const SORT_OPTS = [
   { value: "price_desc", label: "底價（高→低）" },
 ];
 
-function getMinB2B(variations = []) {
-  if (!variations.length) return 0;
-  return Math.min(...variations.map((v) => Number(v.b2b_price) || 0));
-}
-
 function getCategory(name = "") {
   const m = name.match(/^(JP|KR|US|CN|TH|SG|HK|TW|EU|AU)/i);
   if (m) return m[1].toUpperCase();
@@ -54,6 +49,8 @@ export default function PartnerCatalogPage() {
   const [openMenu, setOpenMenu] = useState(null);
   const [confirmRemove, setConfirmRemove] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState("");
+  const [pricingHint, setPricingHint] = useState("");
 
   const markup = store?.markup_rate ?? 20;
 
@@ -61,44 +58,68 @@ export default function PartnerCatalogPage() {
     if (!store) return;
     async function load() {
       setLoading(true);
-      const [{ data: allProducts }, { data: added }] = await Promise.all([
-        supabase
-          .from("products")
-          .select("id, name, description, created_at, product_variations ( id, b2b_price )")
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("store_products")
-          .select("product_id, custom_prices, created_at")
-          .eq("store_id", store.id),
-      ]);
+      setError("");
+      try {
+        const [poolRes, listRes] = await Promise.all([
+          fetch("/api/partner/product-pool"),
+          fetch("/api/partner/store-listings", {
+            headers: {
+              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ""}`,
+            },
+          }),
+        ]);
 
-      const map = {};
-      for (const row of added || []) {
-        map[row.product_id] = row;
+        const poolData = await poolRes.json();
+        if (!poolRes.ok) throw new Error(poolData.error || "無法載入商品池");
+
+        let listings = [];
+        if (listRes.ok) {
+          const listData = await listRes.json();
+          listings = listData.listings || [];
+        }
+
+        const map = {};
+        const listedMedusaIds = new Set();
+        for (const row of listings) {
+          if (row.medusa_product_id) {
+            listedMedusaIds.add(row.medusa_product_id);
+            map[row.medusa_product_id] = row;
+          } else if (row.product_id) {
+            map[`legacy_${row.product_id}`] = row;
+          }
+        }
+
+        const enriched = (poolData.products || []).map((p) => {
+          const minB2B = p.minB2B || 0;
+          const sellPrice = Math.round(minB2B * (1 + markup / 100));
+          const isListed = listedMedusaIds.has(p.medusa_product_id);
+          return {
+            id: p.medusa_product_id,
+            medusaProductId: p.medusa_product_id,
+            handle: p.handle,
+            name: p.name,
+            description: p.description,
+            category: getCategory(p.name),
+            planCount: p.planCount,
+            minB2B,
+            sellPrice,
+            profit: sellPrice - minB2B,
+            createdAt: p.created_at || "",
+            listedAt: map[p.medusa_product_id]?.created_at || null,
+            isListed,
+            supabaseProductId: map[p.medusa_product_id]?.product_id || null,
+          };
+        });
+
+        setProducts(enriched);
+        setListedMap(map);
+        setPricingHint(poolData.pricing?.hint || "");
+      } catch (err) {
+        setError(err.message || "載入失敗");
+        setProducts([]);
+      } finally {
+        setLoading(false);
       }
-
-      const enriched = (allProducts || []).map((p) => {
-        const vars = p.product_variations || [];
-        const minB2B = getMinB2B(vars);
-        const sellPrice = Math.round(minB2B * (1 + markup / 100));
-        return {
-          id: p.id,
-          name: p.name,
-          description: p.description,
-          category: getCategory(p.name),
-          planCount: vars.length,
-          minB2B,
-          sellPrice,
-          profit: sellPrice - minB2B,
-          createdAt: p.created_at,
-          listedAt: map[p.id]?.created_at || null,
-          isListed: !!map[p.id],
-        };
-      });
-
-      setProducts(enriched);
-      setListedMap(map);
-      setLoading(false);
     }
     load();
   }, [store, markup]);
@@ -138,45 +159,70 @@ export default function PartnerCatalogPage() {
     [products],
   );
 
-  const handleAdd = async (productId) => {
+  const handleAdd = async (medusaProductId) => {
     if (!store || busyId) return;
-    setBusyId(productId);
-    const { error } = await supabase
-      .from("store_products")
-      .insert([{ store_id: store.id, product_id: productId }]);
-    setBusyId(null);
-    if (error) return alert("加入失敗：" + error.message);
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === productId
-          ? { ...p, isListed: true, listedAt: new Date().toISOString() }
-          : p,
-      ),
-    );
-    setListedMap((prev) => ({ ...prev, [productId]: { product_id: productId } }));
+    setBusyId(medusaProductId);
+    try {
+      const session = await supabase.auth.getSession();
+      const res = await fetch("/api/partner/store-listings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token || ""}`,
+        },
+        body: JSON.stringify({ medusa_product_id: medusaProductId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "加入失敗");
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === medusaProductId
+            ? { ...p, isListed: true, listedAt: data.listedAt || new Date().toISOString() }
+            : p,
+        ),
+      );
+      setListedMap((prev) => ({
+        ...prev,
+        [medusaProductId]: { medusa_product_id: medusaProductId, product_id: data.productId },
+      }));
+    } catch (err) {
+      alert(err.message || "加入失敗");
+    } finally {
+      setBusyId(null);
+    }
   };
 
-  const handleRemove = async (productId) => {
+  const handleRemove = async (medusaProductId) => {
     if (!store || busyId) return;
-    setBusyId(productId);
-    const { error } = await supabase
-      .from("store_products")
-      .delete()
-      .eq("store_id", store.id)
-      .eq("product_id", productId);
-    setBusyId(null);
-    setConfirmRemove(null);
-    if (error) return alert("移除失敗：" + error.message);
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === productId ? { ...p, isListed: false, listedAt: null } : p,
-      ),
-    );
-    setListedMap((prev) => {
-      const next = { ...prev };
-      delete next[productId];
-      return next;
-    });
+    setBusyId(medusaProductId);
+    try {
+      const session = await supabase.auth.getSession();
+      const res = await fetch("/api/partner/store-listings", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token || ""}`,
+        },
+        body: JSON.stringify({ medusa_product_id: medusaProductId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "移除失敗");
+      setConfirmRemove(null);
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === medusaProductId ? { ...p, isListed: false, listedAt: null } : p,
+        ),
+      );
+      setListedMap((prev) => {
+        const next = { ...prev };
+        delete next[medusaProductId];
+        return next;
+      });
+    } catch (err) {
+      alert(err.message || "移除失敗");
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const fmtDate = (d) =>
@@ -236,6 +282,11 @@ export default function PartnerCatalogPage() {
       </div>
 
       <div className="p-5 space-y-4">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-sm">
+            {error}
+          </div>
+        )}
         {/* ── Tab 1：商品池（生徒一覧風格） ── */}
         {activeTab === "pool" && (
           <>
@@ -480,11 +531,15 @@ export default function PartnerCatalogPage() {
             </div>
 
             <p className="text-xs text-slate-400 px-1">
+              商品池即時同步 Medusa 主站商品。底價依 Medusa metadata{" "}
+              <code className="text-[10px] bg-slate-100 px-1">b2b_cost_rate</code> 或變體{" "}
+              <code className="text-[10px] bg-slate-100 px-1">b2b_price</code> 計算。
               預估售價依您目前加價率 {markup}% 計算，可至
               <Link href="/partner/settings" className="text-[#1a56db] font-bold mx-1 hover:underline">
                 商店設定
               </Link>
               調整，或至商品管理個別修改。
+              {pricingHint && <span className="block mt-1 text-slate-400">{pricingHint}</span>}
             </p>
           </>
         )}

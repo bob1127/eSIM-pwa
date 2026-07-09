@@ -1,7 +1,9 @@
 // 檔案位置: pages/api/orders/user-orders.js
 import { createClient } from "@supabase/supabase-js";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]"; // ⚠️ 這裡請換成你專案中 NextAuth 設定檔的實際路徑
+import { authOptions } from "../auth/[...nextauth]";
+import { lineUserIdToEmail } from "@/lib/lineAuth";
+import { collectOrderLookupEmails } from "@/lib/memberIdentity";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -15,6 +17,7 @@ export default async function handler(req, res) {
 
   let isAuthenticated = false;
   let userEmail = null;
+  let userMetadata = {};
 
   try {
     // 🛡️ 1. 檢查 Supabase Token (Google / Email 登入)
@@ -30,6 +33,7 @@ export default async function handler(req, res) {
       if (user) {
         isAuthenticated = true;
         userEmail = user.email;
+        userMetadata = user.user_metadata || {};
       }
     }
 
@@ -38,13 +42,17 @@ export default async function handler(req, res) {
       const session = await getServerSession(req, res, authOptions);
       if (session && session.user) {
         isAuthenticated = true;
-        // 如果 LINE 沒給 Email，使用我們前端配發的虛擬 Email
-        userEmail = session.user.email || `${session.user.id}@line.jekoesim.com`;
+        userEmail =
+          session.user.email ||
+          (session.user.id ? lineUserIdToEmail(session.user.id) : null);
       }
     }
 
-    // 🛡️ 3. 資安防護：確保請求查詢的 Email，真的是登入者本人的 Email
-    if (!isAuthenticated || userEmail !== targetEmail) {
+    const lookupEmails = collectOrderLookupEmails(userEmail, userMetadata);
+    const normalizedTarget = String(targetEmail).toLowerCase();
+
+    // 🛡️ 3. 資安防護：只能查詢本人（或已關聯）的 Email
+    if (!isAuthenticated || !lookupEmails.includes(normalizedTarget)) {
       return res.status(401).json({ message: "未授權的存取，無法查詢他人訂單" });
     }
 
@@ -58,7 +66,7 @@ export default async function handler(req, res) {
     const { data: orders, error } = await supabaseAdmin
       .from("orders")
       .select("*")
-      .eq("customer_email", targetEmail)
+      .in("customer_email", lookupEmails)
       .order("created_at", { ascending: false });
 
     if (error) throw error;

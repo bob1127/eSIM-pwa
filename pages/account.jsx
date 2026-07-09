@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabaseClient";
 import { useSession, signOut } from "next-auth/react";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
+import { resolveMemberEmail } from "@/lib/memberIdentity";
 import AccountShell, { NavyPanel, MetricTile } from "@/components/account/AccountShell";
 import AccountDashboardView from "@/components/account/AccountDashboardView";
 import AccountOrdersView from "@/components/account/AccountOrdersView";
@@ -225,10 +226,7 @@ export default function AccountPage() {
         // 判斷 B: NextAuth 登入 (LINE)
         else if (session?.user) {
           syncPayload = {
-            // 如果 LINE 沒給 Email，就用 ID 生成虛擬 Email 確保 Medusa 能收
-            email:
-              session.user.email ||
-              `${session.user.id || "line"}@line.jekoesim.com`,
+            email: resolveMemberEmail({ sessionUser: session.user }),
             id: session.user.id || "line_user",
             provider: "line",
           };
@@ -260,10 +258,14 @@ export default function AccountPage() {
     syncWithMedusa();
 
     // 整合 currentUser 狀態 (支援雙邊)
+    const memberEmail = resolveMemberEmail({
+      supabaseUser,
+      sessionUser: session?.user,
+    });
     const currentUser = {
       id: supabaseUser?.id || session?.user?.id || "line_user",
       name: supabaseUser?.user_metadata?.full_name || session?.user?.name,
-      email: supabaseUser?.email || session?.user?.email,
+      email: memberEmail,
       image: supabaseUser?.user_metadata?.avatar_url || session?.user?.image,
       phone: supabaseUser?.user_metadata?.phone || session?.user?.phone || "",
     };
@@ -519,13 +521,27 @@ export default function AccountPage() {
     router.push("/login");
   };
 
-  if (navStatus === "loading" || !isSupabaseChecked || !user) {
+  if (navStatus === "loading" || !isSupabaseChecked) {
     return (
       <Layout hideNavbar>
         <div className="min-h-screen flex items-center justify-center bg-[#e8ecf1] text-slate-500">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-4 border-[#2b579a] border-t-transparent rounded-full animate-spin" />
             <p className="text-sm font-medium">驗證身分中…</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const isLoggedIn = navStatus === "authenticated" || !!supabaseUser;
+  if (!isLoggedIn || !user) {
+    return (
+      <Layout hideNavbar>
+        <div className="min-h-screen flex items-center justify-center bg-[#e8ecf1] text-slate-500">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-[#2b579a] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-medium">導向登入頁…</p>
           </div>
         </div>
       </Layout>

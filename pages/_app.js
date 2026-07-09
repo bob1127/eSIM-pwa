@@ -9,6 +9,7 @@ import { CartProvider } from "../components/context/CartContext";
 import { UserProvider } from "../components/context/UserContext"; 
 import { PWA_LOGO, PWA_APP_NAME, SITE_FAVICON } from "../lib/pwaConfig";
 import PartnerRecoveryRedirect from "../components/PartnerRecoveryRedirect";
+import SupabaseOAuthRedirect from "../components/SupabaseOAuthRedirect";
 import PWARegister from "../components/PWARegister";
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
@@ -33,6 +34,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
               <CartProvider>
                 <PWARegister />
                 <PartnerRecoveryRedirect />
+                <SupabaseOAuthRedirect />
                 <Component {...pageProps} />
               </CartProvider>
             </NextUIProvider>

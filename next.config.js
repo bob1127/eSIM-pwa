@@ -101,6 +101,27 @@ const nextConfig = {
     ];
   },
 
+  async headers() {
+    const storefront =
+      process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const medusaAdmin =
+      process.env.MEDUSA_ADMIN_ORIGIN ||
+      process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+      "http://localhost:9000";
+
+    return [
+      {
+        source: "/admin-boss",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: `frame-ancestors 'self' ${medusaAdmin} ${storefront};`,
+          },
+        ],
+      },
+    ];
+  },
+
   webpack(config) {
     config.module.rules.push({
       test: /\.(glsl|vs|fs|vert|frag)$/,
