@@ -33,7 +33,11 @@ function getHotelImages(item) {
   return [HOTEL_PLACEHOLDER_IMAGES[idx], HOTEL_PLACEHOLDER_IMAGES[next]];
 }
 
-function HotelImageCarousel({ item, aspectClass = "aspect-[4/3]", showArrows = false }) {
+function HotelImageCarousel({
+  item,
+  aspectClass = "aspect-[4/3]",
+  showArrows = false,
+}) {
   const slides = useMemo(() => getHotelImages(item), [item]);
   const [idx, setIdx] = useState(0);
   const timerRef = useRef(null);
@@ -165,7 +169,9 @@ function HotelModal({ item, onClose }) {
               <span className="text-[11px] font-bold text-[#00B259] bg-green-50 px-2 py-0.5 rounded-full">
                 {item.subtitle}
               </span>
-              <span className="text-[11px] text-gray-400">{item.regionLabel}</span>
+              <span className="text-[11px] text-gray-400">
+                {item.regionLabel}
+              </span>
               {item.badge && (
                 <span className="text-[11px] font-bold text-[#00B259] bg-green-100 px-2 py-0.5 rounded-full">
                   {item.badge}
@@ -191,7 +197,10 @@ function HotelModal({ item, onClose }) {
                 </p>
                 <ul className="space-y-1.5">
                   {item.features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                    <li
+                      key={i}
+                      className="flex items-start gap-2 text-sm text-gray-700"
+                    >
                       <span className="shrink-0 text-[#00B259] mt-1">·</span>
                       <span>{f}</span>
                     </li>
@@ -209,7 +218,9 @@ function HotelModal({ item, onClose }) {
             <div className="flex items-center justify-between gap-4 mb-3">
               <div>
                 <p className="text-[11px] text-gray-400">優惠價格</p>
-                <p className="text-xl font-black text-gray-900">{item.priceLabel}</p>
+                <p className="text-xl font-black text-gray-900">
+                  {item.priceLabel}
+                </p>
               </div>
               <p className="text-[11px] font-bold text-[#00B259] text-right">
                 {item.discountLabel}
@@ -264,7 +275,9 @@ function HotelCard({ item, onClick }) {
       </div>
 
       <div className="flex flex-1 flex-col px-4 pt-3.5 pb-4">
-        <p className="text-[11px] text-gray-400 line-clamp-1">{item.subtitle}</p>
+        <p className="text-[11px] text-gray-400 line-clamp-1">
+          {item.subtitle}
+        </p>
         <h3 className="mt-1 text-[15px] font-black text-gray-900 leading-snug line-clamp-2 min-h-[2.5rem]">
           {item.title}
         </h3>
@@ -274,13 +287,19 @@ function HotelCard({ item, onClick }) {
             KL
           </span>
           <div className="min-w-0">
-            <span className="text-base font-black text-gray-900">{item.priceLabel}</span>
-            <p className="text-[10px] text-gray-400 line-through">{item.sellPriceLabel}</p>
+            <span className="text-base font-black text-gray-900">
+              {item.priceLabel}
+            </span>
+            <p className="text-[10px] text-gray-400 line-through">
+              {item.sellPriceLabel}
+            </p>
           </div>
         </div>
 
         <div className="mt-3 border-t border-gray-100 pt-2.5 flex items-center justify-between gap-2">
-          <p className="text-[10px] text-[#00B259] font-bold">{item.discountLabel}</p>
+          <p className="text-[10px] text-[#00B259] font-bold">
+            {item.discountLabel}
+          </p>
           <span className="shrink-0 text-[10px] font-bold text-[#00B259] group-hover:underline">
             查看詳情
           </span>
@@ -313,7 +332,9 @@ export default function AccommodationRecommendSection() {
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
               Jeko <span className="text-[#00B259]">×</span> Klook
             </h2>
-            <span className="text-base font-semibold text-gray-500">住宿推薦</span>
+            <span className="text-base font-semibold text-gray-500">
+              住宿推薦
+            </span>
           </div>
         </div>
 
@@ -358,7 +379,9 @@ export default function AccommodationRecommendSection() {
                 ))}
               </MobileCardCarousel>
             ) : (
-              <p className="text-center text-gray-500 py-12 text-sm">暫無推薦住宿</p>
+              <p className="text-center text-gray-500 py-12 text-sm">
+                暫無推薦住宿
+              </p>
             )}
           </motion.div>
         </AnimatePresence>
@@ -399,10 +422,6 @@ export default function AccommodationRecommendSection() {
             </button>
           )}
         </div>
-
-        <p className="mt-5 text-center text-[11px] text-gray-400 max-w-lg mx-auto leading-relaxed">
-          本區為 Jeko eSIM 與 Klook 聯盟行銷合作連結，點擊預訂後 Jeko 可能獲得推薦佣金。價格以 Klook 官網即時顯示為準。
-        </p>
       </div>
 
       {selectedItem && (
