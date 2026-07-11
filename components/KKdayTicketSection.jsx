@@ -43,11 +43,11 @@ const TICKETS = [
     description:
       "日本環球影城（USJ）是大阪最受歡迎的主題樂園，以好萊塢電影為題材，打造超級任天堂世界™、哈利波特魔法世界™、小小兵樂園、侏羅紀公園等多個超人氣園區。透過 KKday 購買官方授權電子票，訂購後立即取得 QR Code，現場直接掃碼入園，省去排隊購票的麻煩！",
     features: [
-      "🎢 超級任天堂世界™、哈利波特魔法世界™",
-      "📱 QR Code 電子票，免排隊直接入園",
-      "📅 可在效期內彈性選擇入園日期",
-      "⚡ 可加購快速通關 Express Pass",
-      "✅ 官方授權，KKday 獨家優惠",
+      "超級任天堂世界™、哈利波特魔法世界™",
+      "QR Code 電子票，免排隊直接入園",
+      "可在效期內彈性選擇入園日期",
+      "可加購快速通關 Express Pass",
+      "官方授權，KKday 獨家優惠",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/2247-universal-studios-japan-ticket-osaka",
@@ -70,11 +70,11 @@ const TICKETS = [
     description:
       "位於澀谷 Scramble Square 46 樓的 SHIBUYA SKY，是東京最熱門的露天展望台。360° 無遮擋全景視野，白天可飽覽富士山與東京鐵塔，夜晚則是澀谷五叉路口的璀璨燈海。是 IG 打卡的終極聖地！",
     features: [
-      "🌆 46F 露天頂樓・360° 全景無死角",
-      "🗼 可同時看見富士山、東京鐵塔、晴空塔",
-      "🌃 白天夜晚景觀各有千秋",
-      "📸 網美熱門打卡地點",
-      "📱 電子票券直接入場",
+      "46F 露天頂樓・360° 全景無死角",
+      "可同時看見富士山、東京鐵塔、晴空塔",
+      "白天夜晚景觀各有千秋",
+      "網美熱門打卡地點",
+      "電子票券直接入場",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/133300-shibuya-sky-observatory-e-ticket-tokyo",
@@ -97,11 +97,11 @@ const TICKETS = [
     description:
       "THE TOKYO PASS 涵蓋 50+ 東京必訪文化景點，包括東京鐵塔、東京國立博物館、新宿御苑、上野動物園、銀座藝術水族館、SMALL WORLDS、森美術館等。一票暢遊，180 天內有效，讓你輕鬆安排東京多日行程。",
     features: [
-      "🏙️ 涵蓋 50+ 東京熱門景點",
-      "🗼 含東京鐵塔 Main Deck 150m 展望台",
-      "🐟 含銀座藝術水族館 ART AQUARIUM",
-      "🌳 新宿御苑・上野動物園・森美術館",
-      "📅 180 天內有效，彈性安排行程",
+      "涵蓋 50+ 東京熱門景點",
+      "含東京鐵塔 Main Deck 150m 展望台",
+      "含銀座藝術水族館 ART AQUARIUM",
+      "新宿御苑・上野動物園・森美術館",
+      "180 天內有效，彈性安排行程",
     ],
     url: aff("https://www.kkday.com/zh-tw/product/269798"),
   },
@@ -122,11 +122,11 @@ const TICKETS = [
     description:
       "東京迪士尼樂園與東京迪士尼海洋，是東亞最受歡迎的主題樂園，每年吸引超過 3,000 萬遊客。選擇 1-Day Passport 或跨兩園的 Park Hopper Passport，透過 KKday 購票享電子 QR Code，直接掃碼入場，免現場排隊購票。",
     features: [
-      "🏰 夢幻城堡・灰姑娘城堡地標",
-      "🌊 東京迪士尼海洋獨特海洋風情",
-      "🎭 星際旅行、幽靈公館、小熊維尼等設施",
-      "🍭 豐富的迪士尼主題美食與商品",
-      "📱 電子票券，選定日期直接入場",
+      "夢幻城堡・灰姑娘城堡地標",
+      "東京迪士尼海洋獨特海洋風情",
+      "星際旅行、幽靈公館、小熊維尼等設施",
+      "豐富的迪士尼主題美食與商品",
+      "電子票券，選定日期直接入場",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/19252-tokyo-disney-resort-disneyland-disneysea",
@@ -148,11 +148,11 @@ const TICKETS = [
     description:
       "TOKYO CITY PASS 整合東京地鐵無限搭（24/48/72 小時）與多項 S 級人氣景點，一張通票搞定交通與門票。可選 teamLab Planets、東京鐵塔、六本木之丘、陽光水族館或哈利波特製片廠之旅。",
     features: [
-      "🚇 東京地鐵全線無限次搭乘",
-      "🎨 可選 teamLab Planets 數位藝術展",
-      "🗼 可選東京鐵塔 Main Deck 展望台",
-      "🎬 可選哈利波特製片廠之旅",
-      "💰 享 60~80% 優惠，超高 CP 值",
+      "東京地鐵全線無限次搭乘",
+      "可選 teamLab Planets 數位藝術展",
+      "可選東京鐵塔 Main Deck 展望台",
+      "可選哈利波特製片廠之旅",
+      "享 60~80% 優惠，超高 CP 值",
     ],
     url: aff("https://www.kkday.com/zh-tw/product/279586"),
   },
@@ -173,11 +173,11 @@ const TICKETS = [
     description:
       "JR PASS 全國版讓你在效期內無限次搭乘幾乎所有 JR 路線，包括東海道、山陽新幹線等高速列車。從東京到京都、大阪、廣島、博多，暢遊日本各城市，是跨城市長途旅遊的最佳選擇。",
     features: [
-      "🚄 新幹線（部分除外）無限搭乘",
-      "🗾 涵蓋東京至九州全線 JR 路線",
-      "📅 7 日 / 14 日 / 21 日多種效期",
-      "🚌 含部分 JR 巴士路線",
-      "💼 適合多城市跨地區旅遊",
+      "新幹線（部分除外）無限搭乘",
+      "涵蓋東京至九州全線 JR 路線",
+      "7 日 / 14 日 / 21 日多種效期",
+      "含部分 JR 巴士路線",
+      "適合多城市跨地區旅遊",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/20291-all-japan-rail-pass-with-delivery-to-taiwan-hong-kong-south-korea-singapore",
@@ -199,11 +199,11 @@ const TICKETS = [
     description:
       "HARUKA 特急列車是往返關西國際機場最便捷的交通工具，直達大阪梅田（難波）、京都、神戶等市中心。外國旅客可享專屬折扣票，相較現場購票更優惠，訂購後直接憑 QR Code 上車。",
     features: [
-      "✈️ 關西機場直達大阪・京都・神戶",
-      "⏱️ 京都最短約 75 分鐘直達",
-      "💺 指定席・對號入座",
-      "🎫 外國旅客專屬折扣票",
-      "📱 電子憑證・免換票直接上車",
+      "關西機場直達大阪・京都・神戶",
+      "京都最短約 75 分鐘直達",
+      "指定席・對號入座",
+      "外國旅客專屬折扣票",
+      "電子憑證・免換票直接上車",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/18940-kansai-airport-haruka-ticket-japan",
@@ -225,11 +225,11 @@ const TICKETS = [
     description:
       "大阪周遊卡（OSAKA AMAZING PASS）是暢遊大阪最超值的選擇，涵蓋 40+ 景點免費入場，包含大阪城、海遊館水族館、通天閣等。並附大阪地鐵及巴士無限搭乘，一日玩透大阪。",
     features: [
-      "🏯 大阪城天守閣免費入場",
-      "🐬 海遊館水族館（世界頂級水族館之一）",
-      "🗼 通天閣展望台・夕陽之塔",
-      "🚇 大阪市地鐵巴士無限搭乘",
-      "💯 40+ 設施・1 日 / 2 日券",
+      "大阪城天守閣免費入場",
+      "海遊館水族館（世界頂級水族館之一）",
+      "通天閣展望台・夕陽之塔",
+      "大阪市地鐵巴士無限搭乘",
+      "40+ 設施・1 日 / 2 日券",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/12156-osaka-amazing-pass-e-ticket-japan",
@@ -252,11 +252,11 @@ const TICKETS = [
     description:
       "Skyliner 是成田機場到東京市區最快的交通工具，最短 36 分鐘直達上野，全程對號座、行李可帶上車，讓你抵達日本第一步就舒適便捷。搭配地鐵券套票更省錢。",
     features: [
-      "🛫 成田機場直達東京上野、淺草",
-      "⚡ 最短 36 分鐘，全日本最快機場列車",
-      "💺 指定對號座，行李帶上車",
-      "🎫 可搭配東京地鐵券套票",
-      "📱 電子憑證，免排隊購票",
+      "成田機場直達東京上野、淺草",
+      "最短 36 分鐘，全日本最快機場列車",
+      "指定對號座，行李帶上車",
+      "可搭配東京地鐵券套票",
+      "電子憑證，免排隊購票",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/7913-keisei-skyliner-narita-airport-express-ticket",
@@ -278,11 +278,11 @@ const TICKETS = [
     description:
       "台場週遊券讓你以超值票價暢遊台場多個熱門景點，包括東京歡樂城、SMALL WORLDS 縮小版世界、章魚燒博物館、電信中心展望台、東京杜莎夫人蠟像館等，最高享 55% 折扣。",
     features: [
-      "🎢 東京歡樂城・沉浸式雲霄飛車體驗",
-      "🌍 SMALL WORLDS 全球縮小世界",
-      "🐙 台場章魚燒博物館道地美食",
-      "🏙️ 電信中心展望台・城市全景",
-      "💫 最高享 55% OFF 超值折扣",
+      "東京歡樂城・沉浸式雲霄飛車體驗",
+      "SMALL WORLDS 全球縮小世界",
+      "台場章魚燒博物館道地美食",
+      "電信中心展望台・城市全景",
+      "最高享 55% OFF 超值折扣",
     ],
     url: aff("https://www.kkday.com/zh-tw/product/164762"),
   },
@@ -305,11 +305,11 @@ const TICKETS = [
     description:
       "T-money 卡是韓國最通用的交通卡，適用於首爾・釜山等全韓國地鐵、市區公車、計程車，甚至 GS25、CU、7-Eleven 便利商店消費也能使用。相較現金購票享轉乘優惠，是自由行必備神器。",
     features: [
-      "🚇 全韓國地鐵・公車・計程車通用",
-      "🏪 GS25、CU 便利商店消費可用",
-      "💰 搭乘大眾運輸享轉乘折扣優惠",
-      "🔋 可多次加值，無使用期限",
-      "✈️ 台灣取件，落地即用不排隊",
+      "全韓國地鐵・公車・計程車通用",
+      "GS25、CU 便利商店消費可用",
+      "搭乘大眾運輸享轉乘折扣優惠",
+      "可多次加值，無使用期限",
+      "台灣取件，落地即用不排隊",
     ],
     url: aff("https://www.kkday.com/zh-tw/product/149765"),
   },
@@ -329,11 +329,11 @@ const TICKETS = [
     description:
       "KTX 韓國高速鐵路連接首爾與釜山，最快約 2 小時 30 分鐘。舒適的座椅與寬敞車廂，是往返兩大城市的首選。透過 KKday 線上預訂，無需到現場排隊，電子票券直接上車。",
     features: [
-      "🚄 首爾至釜山最快 2.5 小時",
-      "💺 指定對號座，寬敞舒適車廂",
-      "📱 電子票券，免排隊直接上車",
-      "📅 可提前預訂，確保黃金班次",
-      "🎒 可選組合套票含釜山景點門票",
+      "首爾至釜山最快 2.5 小時",
+      "指定對號座，寬敞舒適車廂",
+      "電子票券，免排隊直接上車",
+      "可提前預訂，確保黃金班次",
+      "可選組合套票含釜山景點門票",
     ],
     url: aff("https://www.kkday.com/zh-tw/product/536336"),
   },
@@ -354,11 +354,11 @@ const TICKETS = [
     description:
       "KR PASS（KORAIL PASS）讓你在效期內無限次搭乘韓國鐵路，包含 KTX 高速列車、ITX 快速列車及各普通列車。計畫多城市旅遊——首爾、釜山、慶州、全州、江陵——一張通票輕鬆搞定。",
     features: [
-      "🚄 KTX / ITX / 一般列車無限搭乘",
-      "🗺️ 全韓國鐵路通用",
-      "📅 2/3/4/5 日效期彈性選擇",
-      "🧳 多城市旅行最省錢",
-      "🎟️ 電子憑證，免換票直接使用",
+      "KTX / ITX / 一般列車無限搭乘",
+      "全韓國鐵路通用",
+      "2/3/4/5 日效期彈性選擇",
+      "多城市旅行最省錢",
+      "電子憑證，免換票直接使用",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/2930-korea-ktx-train-discounted-korail-day-pass",
@@ -381,11 +381,11 @@ const TICKETS = [
     description:
       "愛寶樂園（Everland）是韓國最大的主題樂園，擁有刺激的 T EXPRESS 木製雲霄飛車、動物王國 Safari World、室外花卉庭園與季節性活動（春賞鬱金香、夏水上樂園、秋楓葉、冬雪景）。",
     features: [
-      "🎢 T EXPRESS 全球最陡木製雲霄飛車",
-      "🦁 Safari World 野生動物園",
-      "🌸 春夏秋冬四季不同限定活動",
-      "🦊 韓國最大主題樂園",
-      "📱 QR Code 電子票券，免排隊",
+      "T EXPRESS 全球最陡木製雲霄飛車",
+      "Safari World 野生動物園",
+      "春夏秋冬四季不同限定活動",
+      "韓國最大主題樂園",
+      "QR Code 電子票券，免排隊",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/2914-everland-theme-park-admission-ticket-korea",
@@ -408,11 +408,11 @@ const TICKETS = [
     description:
       "VISIT BUSAN PASS 涵蓋釜山 30+ 必玩景點，包含 X the Sky（最高展望台）、釜山海岸列車（Blueline Park）、松島海上纜車、遊艇體驗等。實體卡附 LOCA 交通卡功能，可搭乘釜山地鐵。",
     features: [
-      "🏙️ X the Sky 釜山最高點 360° 展望",
-      "🚂 海岸列車 Blueline Park 絕景路線",
-      "🚠 松島海上纜車・俯瞰大海",
-      "🚢 遊艇體驗・釜山港灣風光",
-      "🚇 含 LOCA 交通卡功能搭地鐵",
+      "X the Sky 釜山最高點 360° 展望",
+      "海岸列車 Blueline Park 絕景路線",
+      "松島海上纜車・俯瞰大海",
+      "遊艇體驗・釜山港灣風光",
+      "含 LOCA 交通卡功能搭地鐵",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/138477-visit-busan-pass-discount-free-attractions",
@@ -434,11 +434,11 @@ const TICKETS = [
     description:
       "首爾中區通票涵蓋多個中區核心景點，包括搭乘南山纜車俯瞰首爾市景、參觀紙博物館與 Ground Seesaw Myeongdong 當代展覽、在太極堂等百年老店品嚐傳統點心，完整體驗首爾歷史文化魅力。",
     features: [
-      "🚡 南山纜車・俯瞰首爾夜景",
-      "🏯 德壽宮・朝鮮王朝歷史古蹟",
-      "🛍️ 明洞購物街美食・街頭小吃",
-      "🎨 Ground Seesaw Myeongdong 當代藝術展",
-      "📱 KakaoTalk QR Code 直接入場",
+      "南山纜車・俯瞰首爾夜景",
+      "德壽宮・朝鮮王朝歷史古蹟",
+      "明洞購物街美食・街頭小吃",
+      "Ground Seesaw Myeongdong 當代藝術展",
+      "KakaoTalk QR Code 直接入場",
     ],
     url: aff("https://www.kkday.com/zh-tw/product/285983"),
   },
@@ -459,11 +459,11 @@ const TICKETS = [
     description:
       "樂天世界（Lotte World）是全球規模最大的室內主題樂園，無論晴雨都能遊玩。園內設有刺激的雲霄飛車與旋轉木馬，還有可供溜冰的冰場，以及展示韓國傳統文化的民俗博物館，適合全年齡同樂。",
     features: [
-      "🎢 全球最大室內主題樂園・全天候",
-      "⛸️ 室內溜冰場・獨特冰上體驗",
-      "🏛️ 韓國民俗博物館・傳統文化展示",
-      "🌙 室外魔法島嶼・夜間燈光秀",
-      "📍 蠶室站直達，交通超方便",
+      "全球最大室內主題樂園・全天候",
+      "室內溜冰場・獨特冰上體驗",
+      "韓國民俗博物館・傳統文化展示",
+      "室外魔法島嶼・夜間燈光秀",
+      "蠶室站直達，交通超方便",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/2948-lotte-world-ticket-seoul-korea",
@@ -485,11 +485,11 @@ const TICKETS = [
     description:
       "景福宮是朝鮮王朝規模最宏大的宮殿，北嶽山為背景，氣勢磅礴。穿著韓服可免費入場，在傳統宮殿建築前拍照留念，是首爾最具代表性的文化體驗。附近還有仁王市場與北村韓屋村可一起探索。",
     features: [
-      "🏯 朝鮮王朝最大宮殿・歷史震撼",
-      "👘 穿韓服可免費入場景福宮",
-      "📸 宮殿前・北嶽山背景絕美拍照",
-      "🏘️ 鄰近北村韓屋村、仁王市場",
-      "🎭 定時有守門將交接式表演",
+      "朝鮮王朝最大宮殿・歷史震撼",
+      "穿韓服可免費入場景福宮",
+      "宮殿前・北嶽山背景絕美拍照",
+      "鄰近北村韓屋村、仁王市場",
+      "定時有守門將交接式表演",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/11731-gyeongbokgung-palace-seohwa-hanbok-rental-seoul-south-korea",
@@ -512,11 +512,11 @@ const TICKETS = [
     description:
       "南怡島是韓劇《冬季戀歌》拍攝地，以筆直的白楊木大道聞名全球。春賞粉嫩油菜花、夏覽翠綠林蔭、秋看楓葉金黃、冬賞白雪皚皚，四季各有絕色。小法國村則以法式彩色建築為特色，童話感十足。",
     features: [
-      "🌲 冬季戀歌拍攝地・浪漫白楊大道",
-      "🚢 含南怡島來回渡輪船票",
-      "🇫🇷 小法國村・夢幻法式童話建築",
-      "🍂 四季限定景色・春花夏綠秋楓冬雪",
-      "🗣️ 中文導遊・台灣出發集合",
+      "冬季戀歌拍攝地・浪漫白楊大道",
+      "含南怡島來回渡輪船票",
+      "小法國村・夢幻法式童話建築",
+      "四季限定景色・春花夏綠秋楓冬雪",
+      "中文導遊・台灣出發集合",
     ],
     url: aff(
       "https://www.kkday.com/zh-tw/product/133956-nami-island-petite-france-village-korea",
@@ -538,11 +538,11 @@ const TICKETS = [
     description:
       "濟州島 Fun Pass 是暢遊濟州最省錢的方式，涵蓋城山日出峰（世界遺產）、濟州海女博物館、偶來市場、濟州民俗村等多個熱門景點，24/48/72 小時彈性效期，一人旅行也超划算。",
     features: [
-      "🌋 城山日出峰 UNESCO 世界遺產",
-      "🌊 濟州海女體驗・傳統文化",
-      "🏘️ 濟州民俗村・傳統石頭屋",
-      "⏱️ 24/48/72 小時彈性效期",
-      "💰 比單買各景點票券省 30-40%",
+      "城山日出峰 UNESCO 世界遺產",
+      "濟州海女體驗・傳統文化",
+      "濟州民俗村・傳統石頭屋",
+      "24/48/72 小時彈性效期",
+      "比單買各景點票券省 30-40%",
     ],
     url: aff("https://www.kkday.com/zh-tw/product/573131"),
   },
@@ -618,7 +618,10 @@ function DualImageCarousel({
         <>
           <button
             type="button"
-            onClick={() => go(-1)}
+            onClick={(e) => {
+              e.stopPropagation();
+              go(-1);
+            }}
             className="absolute left-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
             aria-label="上一張"
           >
@@ -626,7 +629,10 @@ function DualImageCarousel({
           </button>
           <button
             type="button"
-            onClick={() => go(1)}
+            onClick={(e) => {
+              e.stopPropagation();
+              go(1);
+            }}
             className="absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
             aria-label="下一張"
           >
@@ -641,7 +647,8 @@ function DualImageCarousel({
             <button
               key={i}
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setIdx(i);
                 startTimer();
               }}
@@ -748,8 +755,9 @@ function TicketModal({ item, onClose }) {
               </p>
               <ul className="space-y-1.5">
                 {item.features.map((f, i) => (
-                  <li key={i} className="text-sm text-gray-700">
-                    {f}
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                    <span className="shrink-0 text-[#0A6CD0] mt-0.5">·</span>
+                    <span>{f}</span>
                   </li>
                 ))}
               </ul>
@@ -789,9 +797,16 @@ function TicketModal({ item, onClose }) {
 /* ─────────────────────────────────────────────── */
 function KKdayCard({ item, onClick }) {
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className="group flex flex-col bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-[#0A6CD0]/25 transition-all duration-200 overflow-hidden h-full text-left w-full cursor-pointer"
     >
       <div className="relative overflow-hidden">
@@ -839,7 +854,7 @@ function KKdayCard({ item, onClick }) {
           </span>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 

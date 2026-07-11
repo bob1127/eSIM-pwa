@@ -1,0 +1,996 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
+import { useUser } from "@/components/context/UserContext";
+import { useAuth } from "@/hooks/useAuth";
+import { buildLoginUrl } from "@/lib/authRedirect";
+import { buildInstallHintText, isChromiumBrowser } from "@/lib/deviceDetect";
+import { resolveMemberEmail } from "@/lib/memberIdentity";
+import { parseQrcodeData } from "@/lib/esimOrderExtract";
+import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
+import { normalizeIccid } from "@/lib/pushBind";
+import { usePWAInstall } from "./usePWAInstall";
+
+const COLLAPSED_H = 118;
+const EXPANDED_VH = 78;
+
+/* ─── 扁平 SVG icons（無陰影）─── */
+const IconUsage = ({ className = "" }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M4 20V10" />
+    <path d="M10 20V4" />
+    <path d="M16 20v-8" />
+    <path d="M22 20V7" />
+  </svg>
+);
+
+const IconMember = ({ className = "" }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const IconQr = ({ white = false }) => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={white ? "#fff" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+    <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+    <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+    <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+    <rect x="7" y="7" width="3.2" height="3.2" fill={white ? "#fff" : "currentColor"} stroke="none" />
+    <rect x="13.8" y="7" width="3.2" height="3.2" fill={white ? "#fff" : "currentColor"} stroke="none" />
+    <rect x="7" y="13.8" width="3.2" height="3.2" fill={white ? "#fff" : "currentColor"} stroke="none" />
+    <path d="M14 14h1.5v1.5H14zm3 0h1.5v3H14.5v-1.5H16V14zm-3 3.5H15.5V19H14z" fill={white ? "#fff" : "currentColor"} stroke="none" />
+  </svg>
+);
+
+const IconInstall = ({ className = "" }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 3v12" />
+    <path d="m8 11 4 4 4-4" />
+    <path d="M5 19h14" />
+  </svg>
+);
+
+const IconHelper = ({ className = "" }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 8V4H8" />
+    <rect width="16" height="12" x="4" y="8" rx="2" />
+    <path d="M2 14h2" />
+    <path d="M20 14h2" />
+    <path d="M15 13v2" />
+    <path d="M9 13v2" />
+  </svg>
+);
+
+function parseItemDetails(order) {
+  let items = order?.item_details;
+  if (typeof items === "string") {
+    try {
+      items = JSON.parse(items);
+    } catch {
+      items = [];
+    }
+  }
+  return Array.isArray(items) ? items : [];
+}
+
+/** 從會員訂單抽出可顯示的 QR 方案（與 AccountOrdersView 同源） */
+export function extractQrPlansFromOrders(orders = []) {
+  const plans = [];
+  for (const order of orders) {
+    const items = parseItemDetails(order);
+    const qrItems = parseQrcodeData(order.qrcode_data);
+    qrItems.forEach((item, idx) => {
+      const src = String(item.qrcodeUrl || item.src || "")
+        .split(",")[0]
+        .trim();
+      if (!src) return;
+      const name = item.productName || item.name || "eSIM 方案";
+      const match =
+        items.find((i) => i.name === name || i.productName === name) ||
+        items[idx] ||
+        items[0];
+      const price =
+        match?.unit_price ??
+        match?.price ??
+        match?.total ??
+        order.total_amount ??
+        null;
+      plans.push({
+        id: `${order.id}-${item.topupId || item.topup_id || idx}`,
+        name,
+        src,
+        topupId: item.topupId || item.topup_id || null,
+        iccid: item.iccid || item.ICCID || null,
+        price: price != null ? Number(price) : null,
+        orderId: order.id,
+        orderDate: order.created_at,
+        status: order.status,
+      });
+    });
+  }
+  return plans;
+}
+
+function formatPrice(n) {
+  if (n == null || Number.isNaN(Number(n))) return "—";
+  return `NT$ ${Number(n).toLocaleString("zh-TW")}`;
+}
+
+function LoginGate({ onLogin }) {
+  return (
+    <div className="flex flex-col items-center text-center px-4 py-8">
+      <div className="w-14 h-14 rounded-2xl bg-sky-50 flex items-center justify-center text-[#0A6CD0] mb-3">
+        <IconMember />
+      </div>
+      <p className="text-[15px] font-bold text-gray-900">請先登入會員</p>
+      <p className="text-[12px] text-gray-500 mt-1.5 leading-relaxed">
+        登入後即可在此查看 QR Code、剩餘用量與方案資訊
+      </p>
+      <Link
+        href={buildLoginUrl("/account")}
+        className="mt-5 w-full max-w-xs bg-[#0A6CD0] text-white text-[14px] font-bold py-3 rounded-2xl text-center active:opacity-90"
+      >
+        登入／加入會員
+      </Link>
+    </div>
+  );
+}
+
+function QrPanel({ plans, activeIdx, setActiveIdx, usageMap, usageLoading }) {
+  const scrollerRef = useRef(null);
+  const plan = plans[activeIdx];
+
+  const onScroll = () => {
+    const el = scrollerRef.current;
+    if (!el || !plans.length) return;
+    const w = el.clientWidth;
+    const idx = Math.round(el.scrollLeft / w);
+    if (idx !== activeIdx && idx >= 0 && idx < plans.length) {
+      setActiveIdx(idx);
+    }
+  };
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const w = el.clientWidth;
+    el.scrollTo({ left: activeIdx * w, behavior: "smooth" });
+  }, [activeIdx]);
+
+  if (!plans.length) {
+    return (
+      <div className="px-4 py-8 text-center">
+        <p className="text-[14px] font-bold text-gray-800">尚無 eSIM QR Code</p>
+        <p className="text-[12px] text-gray-500 mt-1.5">
+          完成購買後，安裝碼會顯示在這裡
+        </p>
+        <Link
+          href="/product"
+          className="inline-block mt-4 text-[13px] font-bold text-[#0284c7]"
+        >
+          去選購方案 →
+        </Link>
+      </div>
+    );
+  }
+
+  const usage = plan?.topupId ? usageMap[plan.topupId] : null;
+  const pct = usage
+    ? usagePercent(usage.remainingMb, usage.totalMb)
+    : null;
+
+  return (
+    <div className="pb-2">
+      {/* 橫向滑動 QR */}
+      <div
+        ref={scrollerRef}
+        onScroll={onScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {plans.map((p) => (
+          <div
+            key={p.id}
+            className="snap-center shrink-0 w-full flex flex-col items-center px-6"
+          >
+            <div className="bg-white border border-gray-100 rounded-2xl p-3 w-[200px] h-[200px] flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={p.src}
+                alt={p.name}
+                className="w-full h-full object-contain"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {plans.length > 1 && (
+        <div className="flex justify-center gap-1.5 mt-3">
+          {plans.map((p, i) => (
+            <button
+              key={p.id}
+              type="button"
+              aria-label={`方案 ${i + 1}`}
+              onClick={() => setActiveIdx(i)}
+              className={`rounded-full transition-all ${
+                i === activeIdx ? "w-4 h-1.5 bg-[#0A6CD0]" : "w-1.5 h-1.5 bg-gray-300"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* 方案資訊 */}
+      {plan && (
+        <div className="mx-4 mt-4 bg-[#f7f8fa] rounded-2xl p-4">
+          <p className="text-[15px] font-bold text-gray-900 leading-snug">
+            {plan.name}
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] text-gray-400 font-semibold tracking-wide">
+                價格
+              </p>
+              <p className="text-[15px] font-black text-gray-900 mt-0.5">
+                {formatPrice(plan.price)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400 font-semibold tracking-wide">
+                剩餘用量
+              </p>
+              {usageLoading && plan.topupId ? (
+                <p className="text-[13px] text-gray-400 mt-0.5">查詢中…</p>
+              ) : usage ? (
+                <p className="text-[15px] font-black text-gray-900 mt-0.5">
+                  {formatMb(usage.remainingMb) || "—"}
+                  {usage.totalMb != null && (
+                    <span className="text-[11px] font-medium text-gray-400">
+                      {" "}
+                      / {formatMb(usage.totalMb)}
+                    </span>
+                  )}
+                </p>
+              ) : (
+                <p className="text-[13px] text-gray-400 mt-0.5">尚無資料</p>
+              )}
+            </div>
+          </div>
+          {pct != null && (
+            <div className="mt-3">
+              <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#0A6CD0] transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">剩餘 {Math.round(pct)}%</p>
+            </div>
+          )}
+          {plans.length > 1 && (
+            <p className="text-[11px] text-gray-400 mt-3 text-center">
+              ← 左右滑動切換方案（{activeIdx + 1}/{plans.length}）
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UsagePanel({
+  isGuest,
+  plans,
+  activeIdx,
+  setActiveIdx,
+  usageMap,
+  usageLoading,
+  onRefresh,
+  guestUsage,
+  guestLoading,
+  onGuestQuery,
+}) {
+  const [iccid, setIccid] = useState("");
+  const [guestError, setGuestError] = useState("");
+
+  // ── 訪客：警示 + ICCID 輸入 ──
+  if (isGuest) {
+    const pct = guestUsage
+      ? usagePercent(guestUsage.remainingMb, guestUsage.totalMb)
+      : null;
+
+    const submitIccid = async () => {
+      const value = normalizeIccid(iccid);
+      if (!value || value.length < 18) {
+        setGuestError("請輸入有效的 ICCID（約 19～20 碼）");
+        return;
+      }
+      setGuestError("");
+      await onGuestQuery(value);
+    };
+
+    return (
+      <div className="px-4 pb-2">
+        <div className="rounded-2xl bg-amber-50 border border-amber-200 px-3.5 py-3 mb-3">
+          <p className="text-[13px] font-bold text-amber-800">尚未登入會員</p>
+          <p className="text-[11px] text-amber-700/90 mt-1 leading-relaxed">
+            未登入無法讀取訂單內的 eSIM。請輸入 ICCID 查詢剩餘流量，或登入會員一鍵查詢。
+          </p>
+        </div>
+
+        <div className="bg-[#f7f8fa] rounded-2xl p-4">
+          <label className="block text-[11px] font-bold text-gray-500 tracking-wide mb-1.5">
+            ICCID
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={iccid}
+              onChange={(e) => setIccid(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitIccid();
+              }}
+              placeholder="輸入 ICCID（19～20 碼）"
+              className="flex-1 min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-[14px] text-gray-900 outline-none focus:border-[#0A6CD0]"
+            />
+            <button
+              type="button"
+              onClick={submitIccid}
+              disabled={guestLoading}
+              className="shrink-0 rounded-xl bg-[#0A6CD0] px-4 text-[13px] font-bold text-white disabled:opacity-60 active:opacity-90"
+            >
+              {guestLoading ? "查詢中" : "查流量"}
+            </button>
+          </div>
+          {guestError && (
+            <p className="mt-2 text-[12px] text-red-500 font-medium">{guestError}</p>
+          )}
+
+          {guestUsage && (
+            <div className="mt-4 text-center border-t border-gray-200 pt-4">
+              <p className="text-[11px] text-gray-400 font-semibold tracking-wide">
+                剩餘流量
+              </p>
+              <p className="text-[32px] font-black text-gray-900 leading-none mt-1">
+                {formatMb(guestUsage.remainingMb) || "—"}
+              </p>
+              {guestUsage.totalMb != null && (
+                <p className="text-[12px] text-gray-500 mt-2">
+                  總量 {formatMb(guestUsage.totalMb)}
+                  {pct != null && ` · 剩餘 ${Math.round(pct)}%`}
+                </p>
+              )}
+              {pct != null && (
+                <div className="mt-3 h-2 rounded-full bg-gray-200 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-[#0A6CD0]"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              )}
+              {guestUsage.productName && (
+                <p className="text-[12px] text-gray-600 mt-3 font-medium">
+                  {guestUsage.productName}
+                </p>
+              )}
+              {guestUsage.note && (
+                <p className="text-[10px] text-gray-400 mt-2">{guestUsage.note}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <Link
+          href={buildLoginUrl("/account")}
+          className="mt-3 block w-full text-center text-[13px] font-bold py-3 rounded-2xl bg-[#0A6CD0] text-white active:opacity-90"
+        >
+          登入／註冊會員
+        </Link>
+      </div>
+    );
+  }
+
+  // ── 會員：方案列表 + 一鍵查剩餘流量 ──
+  const plan = plans[activeIdx];
+  const usage = plan?.topupId ? usageMap[plan.topupId] : null;
+  const pct = usage ? usagePercent(usage.remainingMb, usage.totalMb) : null;
+
+  if (!plans.length) {
+    return (
+      <div className="px-4 py-8 text-center">
+        <p className="text-[14px] font-bold text-gray-800">尚無可查詢的 eSIM</p>
+        <p className="text-[12px] text-gray-500 mt-1.5">
+          購買並啟用後即可一鍵查詢剩餘流量
+        </p>
+        <Link
+          href="/product"
+          className="inline-block mt-4 text-[13px] font-bold text-[#0284c7]"
+        >
+          去選購方案 →
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 pb-2">
+      {plans.length > 1 && (
+        <div
+          className="flex gap-2 overflow-x-auto pb-3"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {plans.map((p, i) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setActiveIdx(i)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold border transition-colors ${
+                i === activeIdx
+                  ? "bg-[#0A6CD0] text-white border-[#0A6CD0]"
+                  : "bg-white text-gray-600 border-gray-200"
+              }`}
+            >
+              {p.name.length > 14 ? `${p.name.slice(0, 14)}…` : p.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="bg-[#f7f8fa] rounded-2xl p-4">
+        <p className="text-[15px] font-bold text-gray-900 leading-snug">
+          {plan.name}
+        </p>
+        <p className="text-[12px] text-gray-500 mt-1">{formatPrice(plan.price)}</p>
+
+        <button
+          type="button"
+          onClick={() => onRefresh(plan)}
+          disabled={usageLoading}
+          className="mt-4 w-full rounded-2xl bg-[#0A6CD0] py-3.5 text-[14px] font-bold text-white disabled:opacity-60 active:opacity-90"
+        >
+          {usageLoading ? "查詢中…" : "查詢剩餘流量"}
+        </button>
+
+        <div className="mt-4 text-center">
+          {usageLoading && !usage ? (
+            <p className="text-[28px] font-black text-gray-300">…</p>
+          ) : usage ? (
+            <>
+              <p className="text-[11px] text-gray-400 font-semibold tracking-wide">
+                剩餘流量
+              </p>
+              <p className="text-[36px] font-black text-gray-900 leading-none mt-1">
+                {formatMb(usage.remainingMb) || "—"}
+              </p>
+              {usage.totalMb != null && (
+                <p className="text-[12px] text-gray-500 mt-2">
+                  總量 {formatMb(usage.totalMb)}
+                  {pct != null && ` · 剩餘 ${Math.round(pct)}%`}
+                </p>
+              )}
+              {pct != null && (
+                <div className="mt-4 h-2 rounded-full bg-gray-200 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      pct <= 15
+                        ? "bg-red-500"
+                        : pct <= 40
+                          ? "bg-amber-400"
+                          : "bg-[#0A6CD0]"
+                    }`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              )}
+              {usage.expiresAt && (
+                <p className="text-[11px] text-gray-400 mt-3">
+                  到期：
+                  {new Date(usage.expiresAt).toLocaleString("zh-TW", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              )}
+              {usage.note && (
+                <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">
+                  {usage.note}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-[12px] text-gray-400 py-2">
+              點上方按鈕即可查詢此方案剩餘流量
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MemberPanel({ userName, email, onAccount }) {
+  return (
+    <div className="px-4 pb-2">
+      <div className="bg-[#f7f8fa] rounded-2xl p-4 flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+          <IconMember />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-bold text-gray-900 truncate">
+            {userName || "Jeko 會員"}
+          </p>
+          <p className="text-[12px] text-gray-500 truncate mt-0.5">
+            {email || "已登入"}
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onAccount}
+        className="mt-3 w-full text-[14px] font-bold py-3 rounded-2xl bg-[#0A6CD0] text-white active:opacity-90"
+      >
+        開啟會員中心
+      </button>
+    </div>
+  );
+}
+
+function InstallPanel({ onInstall, isStandalone }) {
+  return (
+    <div className="px-4 pb-2">
+      <div className="bg-[#f7f8fa] rounded-2xl p-4 text-center">
+        <div className="w-12 h-12 mx-auto rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-600 mb-3">
+          <IconInstall />
+        </div>
+        <p className="text-[15px] font-bold text-gray-900">
+          {isStandalone ? "已安裝 Jeko APP" : "下載 Jeko APP"}
+        </p>
+        <p className="text-[12px] text-gray-500 mt-1.5 leading-relaxed">
+          {isStandalone
+            ? "可開啟推播通知與 eSIM 低流量警示"
+            : "加入主畫面，隨時查用量、收推播提醒"}
+        </p>
+        {!isStandalone && (
+          <button
+            type="button"
+            onClick={onInstall}
+            className="mt-4 w-full bg-[#0A6CD0] text-white text-[14px] font-bold py-3 rounded-2xl active:opacity-90"
+          >
+            安裝到主畫面
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function EsimBottomSheet() {
+  const router = useRouter();
+  const { user: supabaseUser, token } = useUser();
+  const { data: session } = useSession();
+  const { isLoggedIn, authReady, isGuest } = useAuth();
+  const { isInstallable, deviceType, isStandalone } = usePWAInstall();
+
+  const [expanded, setExpanded] = useState(false);
+  const [panel, setPanel] = useState("qr"); // qr | usage | member | install | all
+  const [dragY, setDragY] = useState(0);
+  const startY = useRef(0);
+  const dragging = useRef(false);
+
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [usageMap, setUsageMap] = useState({});
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [guestUsage, setGuestUsage] = useState(null);
+  const [guestLoading, setGuestLoading] = useState(false);
+
+  const memberEmail = useMemo(
+    () =>
+      resolveMemberEmail({
+        supabaseUser,
+        sessionUser: session?.user,
+      }),
+    [supabaseUser, session],
+  );
+
+  const plans = useMemo(() => extractQrPlansFromOrders(orders), [orders]);
+
+  const needsAppleInstall =
+    !isStandalone && (deviceType === "ios" || deviceType === "mac");
+
+  const loadOrders = useCallback(async () => {
+    if (!memberEmail) return;
+    setOrdersLoading(true);
+    try {
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(
+        `/api/orders/user-orders?email=${encodeURIComponent(memberEmail)}`,
+        { method: "GET", headers, credentials: "include" },
+      );
+      const result = await res.json();
+      if (result.success) setOrders(result.data || []);
+      else setOrders([]);
+    } catch {
+      setOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, [memberEmail, token]);
+
+  const queryUsage = useCallback(async (plan) => {
+    if (!plan?.topupId && !plan?.iccid) return;
+    setUsageLoading(true);
+    try {
+      const res = await fetch("/api/esim/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...(plan.topupId ? { topupId: plan.topupId } : {}),
+          ...(plan.iccid ? { iccid: plan.iccid } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && plan.topupId) {
+        setUsageMap((prev) => ({ ...prev, [plan.topupId]: data }));
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setUsageLoading(false);
+    }
+  }, []);
+
+  const queryGuestUsage = useCallback(async (iccid) => {
+    setGuestLoading(true);
+    setGuestUsage(null);
+    try {
+      const res = await fetch("/api/esim/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ iccid }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "查詢失敗");
+      setGuestUsage(data);
+    } catch (e) {
+      setGuestUsage({
+        remainingMb: null,
+        totalMb: null,
+        note: e.message || "查詢失敗，請確認 ICCID 是否正確",
+      });
+    } finally {
+      setGuestLoading(false);
+    }
+  }, []);
+
+  // 展開且已登入時載入訂單
+  useEffect(() => {
+    if (expanded && isLoggedIn && memberEmail) {
+      loadOrders();
+    }
+  }, [expanded, isLoggedIn, memberEmail, loadOrders]);
+
+  // 會員進入用量頁：不自動查，等按按鈕（依需求）
+  // QR 切換時可預載用量（可選，保留輕量）
+  useEffect(() => {
+    if (!expanded || !isLoggedIn) return;
+    if (panel !== "qr") return;
+    const plan = plans[activeIdx];
+    if (plan?.topupId && !usageMap[plan.topupId]) {
+      queryUsage(plan);
+    }
+  }, [expanded, panel, activeIdx, plans, isLoggedIn, usageMap, queryUsage]);
+
+  // plans 變動時重置 index
+  useEffect(() => {
+    if (activeIdx >= plans.length) setActiveIdx(0);
+  }, [plans.length, activeIdx]);
+
+  const handleInstall = useCallback(() => {
+    if (isStandalone) {
+      alert("您已安裝 Jeko APP。");
+      return;
+    }
+    if (isInstallable) {
+      alert(
+        "Chrome 網址列右側應已出現「安裝」圖示，請點它安裝。\n\n若沒看到，請點右上角 ⋮ →「安裝 Jeko eSIM…」",
+      );
+      return;
+    }
+    if (needsAppleInstall) {
+      alert(
+        "iPhone / iPad 安裝方式：\n\n1. 點擊底部「分享」按鈕\n2. 選擇「加入主畫面」\n3. 確認加入即可",
+      );
+      return;
+    }
+    if (isChromiumBrowser()) {
+      alert(
+        "請試試：回到首頁停留後，點右上角 ⋮ 選單找「安裝 Jeko eSIM…」\n\n※ 不要用無痕視窗",
+      );
+      return;
+    }
+    alert(buildInstallHintText({ isStandalone }) || "請將本站加入主畫面以安裝 APP。");
+  }, [isInstallable, isStandalone, needsAppleInstall]);
+
+  const goLogin = () => {
+    router.push(buildLoginUrl("/account"));
+  };
+
+  const openPanel = (id) => {
+    if (id === "helper") {
+      setExpanded(false);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("jeko:open-ai-chat"));
+      }
+      return;
+    }
+    setPanel(id);
+    setExpanded(true);
+  };
+
+  const onPointerDown = (e) => {
+    dragging.current = true;
+    startY.current = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+    setDragY(0);
+  };
+
+  const onPointerMove = (e) => {
+    if (!dragging.current) return;
+    const y = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+    const delta = y - startY.current;
+    if (expanded) setDragY(Math.max(0, delta));
+    else setDragY(Math.min(0, delta));
+  };
+
+  const onPointerUp = () => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    if (expanded && dragY > 60) setExpanded(false);
+    else if (!expanded && dragY < -40) {
+      setExpanded(true);
+      if (!panel) setPanel("qr");
+    }
+    setDragY(0);
+  };
+
+  useEffect(() => {
+    if (!expanded) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [expanded]);
+
+  const expandedPx =
+    typeof window !== "undefined"
+      ? (window.innerHeight * EXPANDED_VH) / 100
+      : 560;
+  const baseH = expanded ? expandedPx : COLLAPSED_H;
+  const height = Math.max(COLLAPSED_H, baseH - dragY);
+
+  const navItems = [
+    { id: "usage", label: "剩餘用量", icon: <IconUsage /> },
+    { id: "member", label: "會員", icon: <IconMember /> },
+    { id: "qr", label: "QR Code", center: true, icon: <IconQr white /> },
+    { id: "install", label: "下載 APP", icon: <IconInstall /> },
+    { id: "helper", label: "J寶", icon: <IconHelper /> },
+  ];
+
+  const displayName =
+    supabaseUser?.user_metadata?.full_name ||
+    session?.user?.name ||
+    null;
+
+  return (
+    <>
+      {/* 佔位：避免頁面內容被固定底欄遮住 */}
+      <div className="h-[118px] md:hidden" aria-hidden />
+
+      {expanded && (
+        <button
+          type="button"
+          aria-label="關閉面板"
+          className="fixed inset-0 z-[90] bg-black/35 md:hidden"
+          onClick={() => setExpanded(false)}
+        />
+      )}
+
+      <div
+        className="fixed bottom-0 left-0 right-0 z-[95] md:hidden"
+        style={{
+          height,
+          transition: dragging.current
+            ? "none"
+            : "height 0.32s cubic-bezier(0.32, 0.72, 0, 1)",
+        }}
+      >
+        <div className="h-full bg-white rounded-t-[22px] border-t border-gray-100 flex flex-col overflow-hidden">
+          {/* 拉把 */}
+          <div
+            className="shrink-0 pt-2.5 pb-1 px-4 touch-none select-none"
+            onMouseDown={onPointerDown}
+            onMouseMove={onPointerMove}
+            onMouseUp={onPointerUp}
+            onMouseLeave={onPointerUp}
+            onTouchStart={onPointerDown}
+            onTouchMove={onPointerMove}
+            onTouchEnd={onPointerUp}
+            onClick={() => {
+              if (!expanded) {
+                setPanel((p) => p || "qr");
+                setExpanded(true);
+              } else {
+                setExpanded(false);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-expanded={expanded}
+            aria-label={expanded ? "收合我的 eSIM" : "展開我的 eSIM"}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setExpanded((v) => !v);
+              }
+            }}
+          >
+            <div className="flex flex-col items-center">
+              <div className="w-9 h-1 rounded-full bg-gray-300 mb-1.5" />
+              <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-800">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <rect x="3" y="4" width="2.2" height="16" rx="0.5" />
+                  <rect x="7" y="4" width="1.4" height="16" rx="0.5" />
+                  <rect x="10" y="4" width="2.8" height="16" rx="0.5" />
+                  <rect x="14.5" y="4" width="1.2" height="16" rx="0.5" />
+                  <rect x="17.5" y="4" width="3.5" height="16" rx="0.5" />
+                </svg>
+                我的 eSIM
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#9ca3af"
+                  strokeWidth="2.5"
+                  className={`transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
+                >
+                  <path d="M18 15l-6-6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* 五格導覽 — 無陰影扁平 */}
+          <div className="shrink-0 px-3 pt-1 pb-2">
+            <div className="grid grid-cols-5 items-end gap-1">
+              {navItems.map((item) =>
+                item.center ? (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openPanel("qr");
+                    }}
+                    className="flex flex-col items-center gap-1 -mt-1"
+                  >
+                    <span
+                      className={`w-[52px] h-[52px] rounded-[14px] flex items-center justify-center transition-colors ${
+                        expanded && panel === "qr"
+                          ? "bg-[#095bb8]"
+                          : "bg-[#0A6CD0]"
+                      }`}
+                    >
+                      {item.icon}
+                    </span>
+                    <span className="text-[10px] font-semibold text-gray-700">
+                      {item.label}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openPanel(item.id);
+                    }}
+                    className={`flex flex-col items-center gap-1.5 py-1 transition-colors ${
+                      expanded && panel === item.id
+                        ? "text-[#0A6CD0]"
+                        : "text-gray-600"
+                    }`}
+                  >
+                    <span className="w-8 h-8 flex items-center justify-center">
+                      {item.icon}
+                    </span>
+                    <span className="text-[10px] font-semibold leading-tight">
+                      {item.label}
+                    </span>
+                  </button>
+                ),
+              )}
+            </div>
+          </div>
+
+          {/* 展開內容 */}
+          {expanded && (
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              {!authReady || (isLoggedIn && ordersLoading && panel !== "usage" && panel !== "install") ? (
+                <div className="py-10 text-center text-[13px] text-gray-400">
+                  載入中…
+                </div>
+              ) : panel === "usage" ? (
+                <UsagePanel
+                  isGuest={isGuest}
+                  plans={plans}
+                  activeIdx={activeIdx}
+                  setActiveIdx={setActiveIdx}
+                  usageMap={usageMap}
+                  usageLoading={usageLoading}
+                  onRefresh={queryUsage}
+                  guestUsage={guestUsage}
+                  guestLoading={guestLoading}
+                  onGuestQuery={queryGuestUsage}
+                />
+              ) : isGuest ? (
+                <LoginGate onLogin={goLogin} />
+              ) : panel === "qr" ? (
+                <QrPanel
+                  plans={plans}
+                  activeIdx={activeIdx}
+                  setActiveIdx={setActiveIdx}
+                  usageMap={usageMap}
+                  usageLoading={usageLoading}
+                />
+              ) : panel === "member" ? (
+                <MemberPanel
+                  userName={displayName}
+                  email={memberEmail}
+                  onAccount={() => router.push("/account")}
+                />
+              ) : panel === "install" ? (
+                <InstallPanel
+                  onInstall={handleInstall}
+                  isStandalone={isStandalone}
+                />
+              ) : null}
+
+              {(panel === "qr" || panel === "usage") && isLoggedIn && (
+                <div className="px-4 pb-8 pt-2 flex gap-2">
+                  <Link
+                    href="/product"
+                    className="flex-1 text-center text-[13px] font-bold py-3 rounded-2xl bg-[#0A6CD0] text-white active:opacity-90"
+                    onClick={() => setExpanded(false)}
+                  >
+                    購買 eSIM
+                  </Link>
+                  <Link
+                    href="/account"
+                    className="flex-1 text-center text-[13px] font-bold py-3 rounded-2xl bg-[#e8f2fc] text-[#0A6CD0] active:opacity-90"
+                    onClick={() => setExpanded(false)}
+                  >
+                    會員中心
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}

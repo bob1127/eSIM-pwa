@@ -23,6 +23,7 @@ import JekoRecommendSection from "../components/JekoRecommendSection.jsx";
 import AccommodationRecommendSection from "../components/AccommodationRecommendSection.jsx";
 import KKdayTicketSection from "../components/KKdayTicketSection.jsx";
 import KlookTicketSection from "../components/KlookTicketSection.jsx";
+import MobileHomePage from "../components/MobileHomePage.jsx";
 const VuckoScroll = dynamic(() => import("@/components/CodegridScroll"), {
   ssr: false,
 });
@@ -371,7 +372,13 @@ export default function Home() {
 
   return (
     <Layout>
-      <div ref={containerRef} className="bg-[#f6f6f6] pb-20">
+      {/* ══ 手機版：LINE Pay 風格首頁（< md）══ */}
+      <div className="block md:hidden">
+        <MobileHomePage />
+      </div>
+
+      {/* ══ 桌機版：原有完整首頁（>= md）══ */}
+      <div ref={containerRef} className="hidden md:block bg-[#f6f6f6] pb-20">
         <style jsx global>{`
           @import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
 
@@ -753,12 +760,11 @@ export default function Home() {
                 <div className="w-full lg:w-1/2 lg:pr-10">
                   <Image
                     src="/images/操作簡單立即使用_jeko-esim_日本韓國_多國eSIM方案.png"
-                    place
-                    empty
+                    alt="操作簡單立即使用 Jeko eSIM"
                     className=""
                     width={800}
                     height={1000}
-                  ></Image>
+                  />
                 </div>
               </div>
             </div>

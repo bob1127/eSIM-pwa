@@ -8,7 +8,7 @@ const SmartWizardFloat = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div className="fixed right-6 bottom-32 z-[999999999] flex flex-col items-end gap-2 pointer-events-none">
+    <div className="fixed right-6 bottom-32 z-[999999999] hidden md:flex flex-col items-end gap-2 pointer-events-none">
       {/* 提示氣泡 (Tooltip) */}
       <AnimatePresence>
         {isHovered && (

@@ -88,7 +88,10 @@ function HotelImageCarousel({
         <>
           <button
             type="button"
-            onClick={() => go(-1)}
+            onClick={(e) => {
+              e.stopPropagation();
+              go(-1);
+            }}
             className="absolute left-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white"
             aria-label="上一張"
           >
@@ -96,7 +99,10 @@ function HotelImageCarousel({
           </button>
           <button
             type="button"
-            onClick={() => go(1)}
+            onClick={(e) => {
+              e.stopPropagation();
+              go(1);
+            }}
             className="absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white"
             aria-label="下一張"
           >
@@ -111,7 +117,8 @@ function HotelImageCarousel({
             <button
               key={i}
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setIdx(i);
                 startTimer();
               }}
@@ -257,9 +264,16 @@ function HotelModal({ item, onClose }) {
 
 function HotelCard({ item, onClick }) {
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className="group flex flex-col bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-[#00B259]/25 transition-all duration-200 overflow-hidden h-full text-left w-full cursor-pointer"
     >
       <div className="relative overflow-hidden">
@@ -305,7 +319,7 @@ function HotelCard({ item, onClick }) {
           </span>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 

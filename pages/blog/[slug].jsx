@@ -8,9 +8,13 @@ import { ReactLenis } from "@studio-freight/react-lenis";
 import { useRef, useState } from "react";
 import {
   fetchRelatedWpPosts,
+  fetchRelatedWpPostsForArticle,
   fetchWpPostBySlug,
   fetchWpPosts,
+  fetchWpCategories,
   normalizeWpAssetUrl,
+  buildBlogCategoryMaps,
+  classifyBlogPost,
 } from "../../lib/wordpress";
 import { useUser } from "../../components/context/UserContext";
 import {
@@ -24,6 +28,7 @@ import {
 import MediaGalleryLightbox, {
   toGalleryMediaItems,
 } from "../../components/MediaGalleryLightbox";
+import ArticleBlogPostLayout from "../../components/Blog/ArticleBlogPostLayout";
 
 /** WordPress 表格：補 class、避免 inline 隱藏 */
 function prepareWpContentHtml(html) {
@@ -169,7 +174,14 @@ function ReviewMediaThumbnails({
   );
 }
 
-export default function PostPage({ post, relatedPosts = [] }) {
+export default function PostPage({
+  post,
+  relatedPosts = [],
+  isArticle = false,
+  articleCountry = null,
+  articleSubCats = [],
+  popularTags = [],
+}) {
   const router = useRouter();
   const { user, session } = useUser();
 
@@ -339,6 +351,50 @@ export default function PostPage({ post, relatedPosts = [] }) {
   const formattedDate = `${postDate.getFullYear()}年${String(postDate.getMonth() + 1)}月${String(postDate.getDate())}日 ${String(postDate.getHours()).padStart(2, "0")}時${String(postDate.getMinutes()).padStart(2, "0")}分`;
 
   const pageSeo = buildBlogPostSeo(post, bannerImage, yoast);
+
+  // 父分類為「文章」→ TABIPPO 風格版型
+  if (isArticle) {
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || "https://www.jeko-esim.com.tw";
+
+    return (
+      <ReactLenis
+        root
+        options={{ lerp: 0.1, duration: 1.2, smoothTouch: false }}
+      >
+        <Layout
+          seo={{
+            ...pageSeo,
+            articlePublishedTime: post.date,
+            articleModifiedTime: post.modified || post.date,
+          }}
+        >
+          <ArticleBlogPostLayout
+            post={post}
+            relatedPosts={relatedPosts}
+            popularTags={popularTags}
+            articleCountry={articleCountry}
+            articleSubCats={articleSubCats}
+            bannerImage={bannerImage}
+            shareUrl={`${siteUrl}/blog/${post.slug}`}
+          />
+          <MediaGalleryLightbox
+            isOpen={reviewMediaGallery.isOpen}
+            onClose={() =>
+              setReviewMediaGallery((gallery) => ({
+                ...gallery,
+                isOpen: false,
+              }))
+            }
+            images={reviewMediaGallery.items}
+            title={reviewMediaGallery.title}
+            initialIndex={reviewMediaGallery.initialIndex}
+            ariaLabel="評論媒體檢視"
+          />
+        </Layout>
+      </ReactLenis>
+    );
+  }
 
   return (
     <ReactLenis root options={{ lerp: 0.1, duration: 1.2, smoothTouch: false }}>
@@ -1123,12 +1179,30 @@ export async function getStaticProps({ params }) {
       return { notFound: true };
     }
 
-    const relatedPosts = await fetchRelatedWpPosts(post, 4);
+    const categories = await fetchWpCategories();
+    const maps = buildBlogCategoryMaps(categories);
+    const classified = classifyBlogPost(post, maps);
+
+    const relatedPosts = classified.isArticle
+      ? await fetchRelatedWpPostsForArticle(post, maps, 24)
+      : await fetchRelatedWpPosts(post, 4);
+
+    const popularTags = [
+      ...(maps.articleTabs || []),
+      ...Object.values(maps.articleSubTabsByParent || {}).flat(),
+    ]
+      .filter(Boolean)
+      .slice(0, 12)
+      .map((name) => `#${name}`);
 
     return {
       props: {
         post,
         relatedPosts,
+        isArticle: !!classified.isArticle,
+        articleCountry: classified.articleCountry || null,
+        articleSubCats: classified.articleSubCats || [],
+        popularTags,
       },
       revalidate: 60,
     };

@@ -5,15 +5,17 @@ import { ReactLenis } from "lenis/react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import SVGIMAGE from "../components/SVGImage";
+import SVGIMAGE from "./SVGImage";
 // 註冊 GSAP Plugin
 gsap.registerPlugin(ScrollTrigger);
 
 export default function ScrollHero() {
   const containerRef = useRef(null);
+  const skyRef = useRef(null);
   const heroImgRef = useRef(null);
   const heroImgElementRef = useRef(null);
   const heroMaskRef = useRef(null);
+  const windowRef = useRef(null);
   const heroGridOverlayRef = useRef(null);
   const marker1Ref = useRef(null);
   const marker2Ref = useRef(null);
@@ -22,11 +24,12 @@ export default function ScrollHero() {
 
   useGSAP(
     () => {
-      // ... (GSAP 邏輯部分完全不變，省略以節省空間) ...
+      const sky = skyRef.current;
       const heroContent = heroContentRef.current;
       const heroImg = heroImgRef.current;
       const heroImgElement = heroImgElementRef.current;
       const heroMask = heroMaskRef.current;
+      const windowContainer = windowRef.current;
       const heroGridOverlay = heroGridOverlayRef.current;
       const marker1 = marker1Ref.current;
       const marker2 = marker2Ref.current;
@@ -41,6 +44,10 @@ export default function ScrollHero() {
       const heroImgHeight = heroImg.offsetHeight;
       const heroImgMovedistance = heroImgHeight - viewportHeight;
 
+      const skyMoveDistance = sky
+        ? sky.offsetHeight - viewportHeight
+        : 0;
+
       const ease = (x) => x * x * (3 - 2 * x);
 
       ScrollTrigger.create({
@@ -51,21 +58,39 @@ export default function ScrollHero() {
         pinSpacing: true,
         scrub: 1,
         onUpdate: (self) => {
+          const progress = self.progress;
+
+          // JeskoJets: window 1× → 4× (first 50% scroll)
+          let windowScale;
+          if (progress <= 0.5) {
+            windowScale = 1 + (progress / 0.5) * 3;
+          } else {
+            windowScale = 4;
+          }
+          if (windowContainer) {
+            gsap.set(windowContainer, { scale: windowScale });
+          }
+
+          // JeskoJets: sky parallax
+          if (sky) {
+            gsap.set(sky, { y: -progress * skyMoveDistance });
+          }
+
           gsap.set(progressBar, {
-            "--progress": self.progress,
+            "--progress": progress,
           });
 
           gsap.set(heroContent, {
-            y: -self.progress * heroContentMovedistance,
+            y: -progress * heroContentMovedistance,
           });
 
           let heroImgProgress;
-          if (self.progress <= 0.45) {
-            heroImgProgress = ease(self.progress / 0.45) * 0.65;
-          } else if (self.progress <= 0.75) {
+          if (progress <= 0.45) {
+            heroImgProgress = ease(progress / 0.45) * 0.65;
+          } else if (progress <= 0.75) {
             heroImgProgress = 0.65;
           } else {
-            heroImgProgress = 0.65 + ease((self.progress - 0.75) / 0.25) * 0.35;
+            heroImgProgress = 0.65 + ease((progress - 0.75) / 0.25) * 0.35;
           }
 
           gsap.set(heroImg, {
@@ -76,21 +101,21 @@ export default function ScrollHero() {
           let heroImgSaturation;
           let heroImgOverlayOpacity;
 
-          if (self.progress <= 0.4) {
+          if (progress <= 0.4) {
             heroMaskScale = 2.5;
             heroImgSaturation = 1;
             heroImgOverlayOpacity = 0.35;
-          } else if (self.progress <= 0.5) {
-            const phaseProgress = ease((self.progress - 0.4) / 0.1);
+          } else if (progress <= 0.5) {
+            const phaseProgress = ease((progress - 0.4) / 0.1);
             heroMaskScale = 2.5 - phaseProgress * 1.5;
             heroImgSaturation = 1 - phaseProgress;
             heroImgOverlayOpacity = 0.35 + phaseProgress * 0.35;
-          } else if (self.progress <= 0.75) {
+          } else if (progress <= 0.75) {
             heroMaskScale = 1;
             heroImgSaturation = 0;
             heroImgOverlayOpacity = 0.7;
-          } else if (self.progress <= 0.85) {
-            const phaseProgress = ease((self.progress - 0.75) / 0.1);
+          } else if (progress <= 0.85) {
+            const phaseProgress = ease((progress - 0.75) / 0.1);
             heroMaskScale = 1 + phaseProgress * 1.5;
             heroImgSaturation = phaseProgress;
             heroImgOverlayOpacity = 0.7 - phaseProgress * 0.35;
@@ -102,6 +127,7 @@ export default function ScrollHero() {
 
           gsap.set(heroMask, {
             scale: heroMaskScale,
+            opacity: 0,
           });
 
           gsap.set(heroImgElement, {
@@ -113,14 +139,14 @@ export default function ScrollHero() {
           });
 
           let heroGridOpacity;
-          if (self.progress <= 0.475) {
+          if (progress <= 0.475) {
             heroGridOpacity = 0;
-          } else if (self.progress <= 0.5) {
-            heroGridOpacity = ease((self.progress - 0.475) / 0.025);
-          } else if (self.progress <= 0.75) {
+          } else if (progress <= 0.5) {
+            heroGridOpacity = ease((progress - 0.475) / 0.025);
+          } else if (progress <= 0.75) {
             heroGridOpacity = 1;
-          } else if (self.progress <= 0.775) {
-            heroGridOpacity = 1 - ease((self.progress - 0.75) / 0.025);
+          } else if (progress <= 0.775) {
+            heroGridOpacity = 1 - ease((progress - 0.75) / 0.025);
           } else {
             heroGridOpacity = 0;
           }
@@ -130,14 +156,14 @@ export default function ScrollHero() {
           });
 
           let marker1Opacity;
-          if (self.progress <= 0.5) {
+          if (progress <= 0.5) {
             marker1Opacity = 0;
-          } else if (self.progress <= 0.525) {
-            marker1Opacity = ease((self.progress - 0.5) / 0.025);
-          } else if (self.progress <= 0.7) {
+          } else if (progress <= 0.525) {
+            marker1Opacity = ease((progress - 0.5) / 0.025);
+          } else if (progress <= 0.7) {
             marker1Opacity = 1;
-          } else if (self.progress <= 0.75) {
-            marker1Opacity = 1 - ease((self.progress - 0.7) / 0.05);
+          } else if (progress <= 0.75) {
+            marker1Opacity = 1 - ease((progress - 0.7) / 0.05);
           } else {
             marker1Opacity = 0;
           }
@@ -147,14 +173,14 @@ export default function ScrollHero() {
           });
 
           let marker2Opacity;
-          if (self.progress <= 0.55) {
+          if (progress <= 0.55) {
             marker2Opacity = 0;
-          } else if (self.progress <= 0.575) {
-            marker2Opacity = ease((self.progress - 0.55) / 0.025);
-          } else if (self.progress <= 0.7) {
+          } else if (progress <= 0.575) {
+            marker2Opacity = ease((progress - 0.55) / 0.025);
+          } else if (progress <= 0.7) {
             marker2Opacity = 1;
-          } else if (self.progress <= 0.75) {
-            marker2Opacity = 1 - ease((self.progress - 0.7) / 0.05);
+          } else if (progress <= 0.75) {
+            marker2Opacity = 1 - ease((progress - 0.7) / 0.05);
           } else {
             marker2Opacity = 0;
           }
@@ -173,11 +199,15 @@ export default function ScrollHero() {
       <ReactLenis root />
       <div ref={containerRef} className="scroll-hero-wrapper">
         <section className="hero">
+          <div className="sky-container" ref={skyRef}>
+            <img src="/sky.jpg" alt="" />
+          </div>
+
           <div className="hero-img" ref={heroImgRef}>
             <img ref={heroImgElementRef} src="/hero-img.jpg" alt="Hero" />
           </div>
 
-          <div className="hero-mask" ref={heroMaskRef}></div>
+          <div className="hero-mask" ref={heroMaskRef} aria-hidden />
 
           <div className="hero-grid-overlay" ref={heroGridOverlayRef}>
             <img src="/grid-overlay.svg" alt="Grid Overlay" />
@@ -199,7 +229,6 @@ export default function ScrollHero() {
           >
             {" "}
             <SVGIMAGE />
-            {/* ... (內容省略) ... */}
             <div className="hero-content-block ">
               <br></br>
               <div className="hero-content-copy">
@@ -236,10 +265,13 @@ export default function ScrollHero() {
 
           {/* === 修改部分：飛機 Icon 容器 === */}
           <div className="hero-scroll-progress-bar" ref={progressBarRef}>
-            {/* 這裡改用一個 div 來做 mask，不再直接放 svg */}
             <div className="plane-icon">
               <div className="plane-mask" />
             </div>
+          </div>
+
+          <div className="window-container" ref={windowRef}>
+            <img src="/window.png" alt="" />
           </div>
         </section>
 
@@ -304,6 +336,32 @@ export default function ScrollHero() {
             overflow: hidden;
           }
 
+          .hero {
+            perspective: 1000px;
+          }
+
+          .sky-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 350svh;
+            will-change: transform;
+            z-index: 0;
+          }
+
+          .window-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100svh;
+            z-index: 11;
+            pointer-events: none;
+            transform-origin: center center;
+            will-change: transform;
+          }
+
           .outro {
             display: flex;
             justify-content: center;
@@ -317,6 +375,7 @@ export default function ScrollHero() {
             height: 200svh;
             --overlay-opacity: 0.35;
             will-change: transform;
+            z-index: 1;
           }
 
           .hero-img::after {
@@ -348,9 +407,10 @@ export default function ScrollHero() {
               url("/mask.svg") center/50% no-repeat;
             mask-composite: subtract;
             -webkit-mask-composite: subtract;
-            will-change: transform;
+            will-change: transform, opacity;
             pointer-events: none;
             z-index: 10;
+            opacity: 0;
           }
 
           .hero-grid-overlay {

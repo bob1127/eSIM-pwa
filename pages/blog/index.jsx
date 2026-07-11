@@ -229,11 +229,6 @@ export default function InfoPage() {
         {/* ========================================== */}
         <section className="flex relative  flex-col z-50 justify-end w-full pb-20 bg-white/70 backdrop-blur-2xl backdrop-saturate-150 ">
           <div className="banner relative z-[99]   ">
-            <img
-              src="/images/eac1444f-59c2-46b3-96b9-f675b0223a62.png"
-              className="w-full"
-              alt=""
-            />
             <InfiniteCarousel />
           </div>
           <div className="w-full px-4 mx-auto max-w-[1500px] sm:w-[80%]">

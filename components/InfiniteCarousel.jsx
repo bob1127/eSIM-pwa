@@ -16,8 +16,7 @@ export default function SilkyCarousel({
   images = DEFAULT_CAROUSEL_IMAGES,
   autoplayInterval = 5000,
 }) {
-  const carouselImages =
-    images.length > 0 ? images : DEFAULT_CAROUSEL_IMAGES;
+  const carouselImages = images.length > 0 ? images : DEFAULT_CAROUSEL_IMAGES;
   const baseLength = carouselImages.length;
   // 複製 3 份陣列以達成無縫循環
   const extendedImages = [

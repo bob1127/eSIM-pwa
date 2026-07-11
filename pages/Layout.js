@@ -12,7 +12,9 @@ import { resolvePageSeo } from "@/lib/seo.config";
 import SmartWizardFloat from "@/components/SmartWizardFloat"; // 引入新元件 ✅
 import Sidebar from "@/components/Sidebar.js"; // 引入側邊欄組件
 import { UserProvider } from "../components/context/UserContext";
-import AiChatWidget from "../components/AiChatWidget"; // 🌟 引入剛剛做的元件
+import AiChatWidget from "../components/AiChatWidget";
+import EsimBottomSheet from "../components/EsimBottomSheet";
+
 export default function RootLayout({ children, seo: seoOverride = {}, hideNavbar = false }) {
   const router = useRouter();
   const seo = useMemo(
@@ -64,9 +66,10 @@ export default function RootLayout({ children, seo: seoOverride = {}, hideNavbar
               {children}
               
               <SmartWizardFloat />
-              
- <AiChatWidget /> 
-              <Footer/>
+              <AiChatWidget />
+              {/* 手機版全域上拉選單：我的 eSIM */}
+              <EsimBottomSheet />
+              <Footer />
             </UserProvider>
           </NextThemesProvider>
         </NextUIProvider>
