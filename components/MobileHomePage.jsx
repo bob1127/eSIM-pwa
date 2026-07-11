@@ -27,9 +27,14 @@ const HERO_SLIDES = [
 /* 使用 public/images/mobile-icon/ 八張圖 */
 const QUICK_ICONS = [
   {
-    label: "精選國家",
+    label: "精選eSIM",
     href: "/product",
     src: "/images/mobile-icon/精選國家.png",
+  },
+  {
+    label: "好物商城",
+    href: "/shop",
+    src: "/images/出國必備.png",
   },
   {
     label: "我的訂單",

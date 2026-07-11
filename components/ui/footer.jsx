@@ -76,6 +76,14 @@ export default function Footer() {
               </li>
               <li>
                 <Link
+                  href="/shop"
+                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  好物商城
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/esim/japan"
                   className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                 >

@@ -1,0 +1,780 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import Head from "next/head";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Star,
+  Lock,
+  Play,
+  FileText,
+  Check,
+  Minus,
+  Plus,
+  Info,
+} from "lucide-react";
+import ShopNavbar from "../../../components/Shop/ShopNavbar";
+import Footer from "../../../components/ui/footer.jsx";
+import MediaGalleryLightbox from "../../../components/MediaGalleryLightbox";
+import MaterialIcon from "../../../components/MaterialIcon";
+
+const CONTAINER = "max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-10";
+
+/** Anker A88E2 商品圖（暫用官方 CDN） */
+const GALLERY = [
+  {
+    type: "image",
+    src: "https://cdn.shopify.com/s/files/1/0493/9834/9974/files/A88E2011_Richimage_nocopy_2000x2000px_29105b88-b02b-4db3-8bc7-a1922c1dc75f.png?v=1768183217",
+    alt: "USB-C 編織充電線主圖",
+  },
+  {
+    type: "image",
+    src: "https://cdn.shopify.com/s/files/1/0493/9834/9974/files/3ft-02_979db4a3-15c0-445d-b860-62f43ecff243.jpg?v=1776673562",
+    alt: "240W 超高速充電",
+  },
+  {
+    type: "image",
+    src: "https://cdn.shopify.com/s/files/1/0493/9834/9974/files/3ft-03_7700aa4d-1f9b-4f5c-a622-f0fcc4191ac0.jpg?v=1776673562",
+    alt: "30 萬次彎折耐久",
+  },
+  {
+    type: "image",
+    src: "https://cdn.shopify.com/s/files/1/0493/9834/9974/files/3ft-04_7e93ba83-b3db-41c5-9533-b00f02f7e383.jpg?v=1776673562",
+    alt: "極端溫差耐候",
+  },
+  {
+    type: "image",
+    src: "https://cdn.shopify.com/s/files/1/0493/9834/9974/files/3ft-05_d8d18d5d-6afa-4431-bb61-17418bda82ce.jpg?v=1776673562",
+    alt: "永續再生材料",
+  },
+  {
+    type: "image",
+    src: "https://cdn.shopify.com/s/files/1/0493/9834/9974/files/3ft-06_c21cd3d8-4741-405e-9c06-ed72adae6c5c.jpg?v=1776673562",
+    alt: "USB-IF 認證安全快充",
+  },
+];
+
+const PRODUCT = {
+  slug: "usb-c-cable-240w",
+  badge: "Hot",
+  title: "Jeko Prime USB-C to USB-C Cable (240W, Upcycled-Braided)",
+  rating: 4.9,
+  reviewCount: 197,
+  price: 980,
+  originalPrice: 1230,
+  saveAmount: 250,
+  discountLabel: "NT$250 OFF",
+  promoCode: "JEKO250",
+  features: [
+    "Ultra-Powerful 240W Charging",
+    "100-Year Bend Durability",
+    "Extreme Temperature Resilience",
+    "Sustainably Made Cable",
+  ],
+  styles: [
+    { id: "3ft", label: "3 ft / 0.9m" },
+    { id: "6ft", label: "6 ft / 1.8m" },
+  ],
+  stockText: "有現貨 — 預計 3～7 個工作天送達",
+  bulkNote: "大量優惠：10 件以上每件 NT$620，結帳自動套用",
+};
+
+const SECTIONS = [
+  { id: "purchase", label: "Purchase" },
+  { id: "overview", label: "Overview" },
+  { id: "reviews", label: "Reviews" },
+];
+
+function Gallery({ images, badge, productName }) {
+  const [idx, setIdx] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const len = images.length;
+
+  const go = (n) => setIdx((p) => (p + n + len) % len);
+
+  const openLightbox = (i) => {
+    setLightboxIndex(i ?? idx);
+    setLightboxOpen(true);
+  };
+
+  return (
+    <div className="w-full">
+      <div className="group relative bg-[#f5f5f5] aspect-square w-full overflow-hidden">
+        {/* 折扣旗標 */}
+        <div className="absolute top-0 left-0 z-20 pointer-events-none">
+          <div className="bg-[#3B9EFF] text-white text-[11px] font-bold px-3 py-1.5 relative">
+            {badge}
+            <span className="absolute -right-2 top-0 w-0 h-0 border-t-[12px] border-t-[#3B9EFF] border-r-[8px] border-r-transparent border-b-[12px] border-b-[#3B9EFF]" />
+          </div>
+        </div>
+
+        {/* 主圖：點擊開啟幻燈片 */}
+        <button
+          type="button"
+          onClick={() => openLightbox(idx)}
+          className="absolute inset-0 z-10 cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00befa] focus-visible:ring-offset-2"
+          aria-label={`放大檢視第 ${idx + 1} 張圖片`}
+        >
+          <Image
+            src={images[idx].src}
+            alt={images[idx].alt}
+            fill
+            priority
+            className="object-contain p-6 pointer-events-none"
+            sizes="(max-width: 1024px) 100vw, 60vw"
+          />
+        </button>
+
+        {/* 全螢幕按鈕 */}
+        <button
+          type="button"
+          onClick={() => openLightbox(idx)}
+          className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-white/90 border border-gray-100 shadow-sm flex items-center justify-center text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100"
+          aria-label="放大檢視"
+        >
+          <MaterialIcon name="fullscreen" size={16} />
+        </button>
+
+        {/* 計數 */}
+        <span className="absolute bottom-3 right-4 z-20 text-[12px] text-slate-500 bg-white/80 px-2 py-0.5 rounded pointer-events-none">
+          {idx + 1}/{len}
+        </span>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            go(-1);
+          }}
+          aria-label="上一張"
+          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 bg-white/90 border border-slate-200 flex items-center justify-center hover:bg-white transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 text-slate-700" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            go(1);
+          }}
+          aria-label="下一張"
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 bg-white/90 border border-slate-200 flex items-center justify-center hover:bg-white transition-colors"
+        >
+          <ChevronRight className="w-5 h-5 text-slate-700" />
+        </button>
+      </div>
+
+      {/* 縮圖列 */}
+      <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+        {images.map((img, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => setIdx(i)}
+            onDoubleClick={() => openLightbox(i)}
+            className={`relative shrink-0 w-14 h-14 bg-[#f5f5f5] overflow-hidden border-2 transition-colors ${
+              i === idx
+                ? "border-slate-800"
+                : "border-transparent hover:border-slate-300"
+            }`}
+          >
+            <Image
+              src={img.src}
+              alt={img.alt}
+              fill
+              className="object-contain p-1"
+              sizes="56px"
+            />
+          </button>
+        ))}
+      </div>
+
+      {/* Overview / Video */}
+      <div className="flex items-center gap-2 mt-3">
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold bg-slate-800 text-white"
+        >
+          <FileText className="w-3.5 h-3.5" />
+          Overview
+        </button>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:text-slate-900"
+        >
+          <Play className="w-3.5 h-3.5" />
+          Video
+        </button>
+      </div>
+
+      {/* eSIM 同款幻燈片 popup */}
+      <MediaGalleryLightbox
+        isOpen={lightboxOpen}
+        onClose={(closedIdx) => {
+          setLightboxOpen(false);
+          if (typeof closedIdx === "number") setIdx(closedIdx);
+        }}
+        images={images}
+        productName={productName}
+        initialIndex={lightboxIndex}
+        ariaLabel="商品圖片檢視"
+      />
+    </div>
+  );
+}
+
+export default function ShopProductPage() {
+  const [activeTab, setActiveTab] = useState("purchase");
+  const [styleId, setStyleId] = useState("6ft");
+  const [qty, setQty] = useState(1);
+  const [featuresOpen, setFeaturesOpen] = useState(true);
+  const [memberOpt, setMemberOpt] = useState("none");
+  const [copied, setCopied] = useState(false);
+  const stickyRef = useRef(null);
+  const [showSticky, setShowSticky] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowSticky(window.scrollY > 480);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(PRODUCT.promoCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  const styleLabel = PRODUCT.styles.find((s) => s.id === styleId)?.label || "";
+
+  return (
+    <>
+      <Head>
+        <title>{PRODUCT.title} | Jeko 好物商城</title>
+        <meta name="description" content={PRODUCT.title} />
+      </Head>
+
+      <ShopNavbar />
+
+      {/* ── 商品次導覽列 ── */}
+      <div className="sticky top-[116px] lg:top-[156px] z-[7000] bg-white border-b border-slate-200">
+        <div
+          className={`${CONTAINER} h-11 flex items-center justify-between gap-4`}
+        >
+          <p className="text-[13px] text-slate-700 font-medium truncate flex-1 min-w-0">
+            {PRODUCT.title}
+          </p>
+          <nav className="hidden sm:flex items-center gap-6 shrink-0 h-full">
+            {SECTIONS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  setActiveTab(s.id);
+                  document
+                    .getElementById(s.id)
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className={`relative h-full text-[13px] font-medium transition-colors ${
+                  activeTab === s.id
+                    ? "text-slate-900"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {s.label}
+                {activeTab === s.id && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#3B9EFF]" />
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      <main className="bg-white pb-28">
+        {/* ── Purchase 主區塊 ── */}
+        <section id="purchase" className={`${CONTAINER} pt-6 lg:pt-8`}>
+          <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12">
+            {/* 左：圖庫 */}
+            <Gallery
+              images={GALLERY}
+              badge={PRODUCT.discountLabel}
+              productName={PRODUCT.title}
+            />
+
+            {/* 右：購買資訊 */}
+            <div className="flex flex-col gap-4">
+              <span className="text-[12px] font-bold text-orange-500">
+                {PRODUCT.badge}
+              </span>
+
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug -mt-2">
+                {PRODUCT.title}
+              </h1>
+
+              {/* 評分 */}
+              <div className="flex items-center gap-1.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`w-3.5 h-3.5 ${
+                      i < Math.floor(PRODUCT.rating)
+                        ? "fill-orange-400 text-orange-400"
+                        : "text-slate-300"
+                    }`}
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    document
+                      .getElementById("reviews")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                  className="text-[13px] text-[#0A6CD0] hover:underline ml-1"
+                >
+                  {PRODUCT.rating}（{PRODUCT.reviewCount} 則評價）
+                </button>
+              </div>
+
+              {/* 價格 */}
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl font-bold text-slate-900">
+                  NT${PRODUCT.price.toLocaleString()}
+                </span>
+                <span className="text-[11px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded">
+                  省 NT${PRODUCT.saveAmount}
+                </span>
+                <del className="text-[13px] text-slate-400">
+                  NT${PRODUCT.originalPrice.toLocaleString()}
+                </del>
+              </div>
+
+              {/* 優惠碼框 */}
+              <div className="flex items-stretch border border-[#B8D9FF] bg-[#E8F3FF] overflow-hidden">
+                <div className="flex items-center justify-center px-4 bg-[#3B9EFF] text-white text-lg font-black shrink-0 border-r border-dashed border-white/50">
+                  ${Math.round(PRODUCT.saveAmount / 30)}
+                </div>
+                <div className="flex-1 px-3 py-2.5 flex items-center justify-between gap-2">
+                  <p className="text-[12px] text-slate-700">
+                    使用優惠碼再折 NT${PRODUCT.saveAmount}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={copyCode}
+                    className="text-[12px] font-bold text-[#0A6CD0] hover:underline whitespace-nowrap"
+                  >
+                    {copied ? "已複製" : "Copy Code"}
+                  </button>
+                </div>
+              </div>
+
+              {/* 登入提示 */}
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-[#f5f5f5] text-[12px] text-slate-600">
+                <Lock className="w-3.5 h-3.5 shrink-0" />
+                <span className="flex-1">登入享安心購保障與會員積分回饋</span>
+                <Link
+                  href="/login"
+                  className="text-[#0A6CD0] font-semibold hover:underline shrink-0"
+                >
+                  Sign In &gt;
+                </Link>
+              </div>
+
+              {/* Key Features */}
+              <div className="border-t border-slate-100 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setFeaturesOpen((v) => !v)}
+                  className="w-full flex items-center justify-between text-[14px] font-bold text-slate-900"
+                >
+                  Key Features
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-400 transition-transform ${featuresOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {featuresOpen && (
+                  <ul className="mt-2 space-y-1.5">
+                    {PRODUCT.features.map((f) => (
+                      <li
+                        key={f}
+                        className="flex items-start gap-2 text-[13px] text-slate-700"
+                      >
+                        <span className="mt-1.5 w-1 h-1 rounded-full bg-slate-500 shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Style */}
+              <div>
+                <p className="text-[13px] text-slate-700 mb-2">
+                  Style: <span className="font-semibold">{styleLabel}</span>
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {PRODUCT.styles.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setStyleId(s.id)}
+                      className={`py-3 px-3 text-[13px] font-medium border-2 transition-colors ${
+                        styleId === s.id
+                          ? "border-[#3B9EFF] bg-white text-slate-900"
+                          : "border-slate-200 text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quantity */}
+              <div>
+                <p className="text-[13px] text-slate-700 mb-2">Quantity</p>
+                <div className="inline-flex items-center border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-50"
+                    aria-label="減少"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="w-12 text-center text-[14px] font-semibold">
+                    {qty}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQty((q) => Math.min(99, q + 1))}
+                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-50"
+                    aria-label="增加"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Bulk Discount */}
+              <div className="bg-[#E8F3FF] px-4 py-3 text-[12px] text-slate-700 flex flex-wrap items-center justify-between gap-2">
+                <span>{PRODUCT.bulkNote}</span>
+                <Link
+                  href="/shop/support"
+                  className="text-[#0A6CD0] font-semibold hover:underline"
+                >
+                  Need help? Contact us &gt;
+                </Link>
+              </div>
+
+              {/* Membership */}
+              <div className="border border-slate-200 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[14px] font-bold text-slate-900 flex items-center gap-1.5">
+                    <span className="text-amber-500">⚡</span>
+                    Jeko Plus Membership
+                  </p>
+                  <Link
+                    href="/shop/member"
+                    className="text-[12px] text-[#0A6CD0] hover:underline"
+                  >
+                    Learn More
+                  </Link>
+                </div>
+                <ul className="text-[12px] text-slate-600 space-y-1 mb-3">
+                  <li className="flex gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    免運與安心購保障
+                  </li>
+                  <li className="flex gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    額外 5% 折扣
+                  </li>
+                  <li className="flex gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    年度會員禮
+                  </li>
+                </ul>
+                {[
+                  {
+                    id: "none",
+                    title: "Not a Plus Member",
+                    sub: "錯過超過 NT$15,000 省錢機會",
+                    price: null,
+                  },
+                  {
+                    id: "month",
+                    title: "Monthly Plus",
+                    sub: "1 個月方案 · 不自動續訂",
+                    price: "NT$299/月",
+                    strike: "NT$399",
+                  },
+                  {
+                    id: "year",
+                    title: "Annual Plus",
+                    sub: "自動續訂 · 隨時可取消",
+                    price: "NT$2,490/年",
+                    strike: "NT$3,490",
+                  },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setMemberOpt(opt.id)}
+                    className={`w-full text-left px-3 py-2.5 mb-2 last:mb-0 border-2 transition-colors ${
+                      memberOpt === opt.id
+                        ? "border-[#3B9EFF] bg-[#F0F7FF]"
+                        : "border-slate-150 border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[13px] font-semibold text-slate-800 flex items-center gap-1.5">
+                          {memberOpt === opt.id && (
+                            <span className="w-4 h-4 rounded-full bg-[#3B9EFF] text-white flex items-center justify-center">
+                              <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                            </span>
+                          )}
+                          {opt.title}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5 ml-5">
+                          {opt.sub}
+                        </p>
+                      </div>
+                      {opt.price && (
+                        <div className="text-right shrink-0">
+                          <p className="text-[13px] font-bold text-slate-800">
+                            {opt.price}
+                          </p>
+                          {opt.strike && (
+                            <del className="text-[11px] text-slate-400">
+                              {opt.strike}
+                            </del>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Review Selections */}
+              <div className="bg-[#f7f7f7] p-4">
+                <p className="text-[14px] font-bold text-slate-900 mb-3">
+                  Review Your Selections
+                </p>
+                <div className="flex gap-3">
+                  <div className="relative w-16 h-16 bg-white shrink-0 overflow-hidden">
+                    <Image
+                      src={GALLERY[0].src}
+                      alt=""
+                      fill
+                      className="object-contain p-1"
+                      sizes="64px"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] text-slate-800 font-medium line-clamp-2">
+                      {PRODUCT.title}
+                    </p>
+                    <p className="text-[12px] text-slate-500 mt-1">
+                      {styleLabel} · ×{qty}
+                    </p>
+                    <p className="text-[12px] text-[#0A8F6E] mt-1">
+                      {PRODUCT.stockText}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="text-xl font-bold">
+                    NT${PRODUCT.price.toLocaleString()}
+                  </span>
+                  <span className="text-[11px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5">
+                    省 NT${PRODUCT.saveAmount}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  <button
+                    type="button"
+                    className="py-3 text-[13px] font-bold border-2 border-[#3B9EFF] text-[#0A6CD0] hover:bg-[#F0F7FF] transition-colors"
+                  >
+                    Add to Cart
+                  </button>
+                  <button
+                    type="button"
+                    className="py-3 text-[13px] font-bold bg-[#3B9EFF] text-white hover:bg-[#2B8EEF] transition-colors"
+                  >
+                    Buy Now
+                  </button>
+                </div>
+              </div>
+
+              {/* Services */}
+              <div>
+                <p className="text-[14px] font-bold text-slate-900 mb-2">
+                  Services and Benefits
+                </p>
+                <ul className="space-y-2">
+                  {[
+                    "快速免運配送",
+                    "30 天鑑賞期退貨",
+                    "安心保固服務",
+                    "終身客服支援",
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-center gap-2 text-[13px] text-slate-700"
+                    >
+                      <Check className="w-4 h-4 text-slate-500" />
+                      {item}
+                      <Info className="w-3.5 h-3.5 text-slate-300 ml-auto" />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Overview ── */}
+        <section id="overview" className={`${CONTAINER} pt-16 pb-8`}>
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">
+            Unleash Mighty 240W Charging
+          </h2>
+          <p className="text-[14px] text-slate-600 max-w-3xl leading-relaxed">
+            體驗 240W
+            超高速充電，採用消費後再生尼龍編織，兼具快速傳輸與極端溫度耐候（-40°C～80°C），
+            通過 USB-IF 認證，保護裝置安全。彎折耐久超過 30
+            萬次，為旅行與日常打造可靠充電體驗。
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+            {GALLERY.slice(1).map((img) => (
+              <div
+                key={img.src}
+                className="relative aspect-[16/10] bg-[#f5f5f5] overflow-hidden"
+              >
+                <Image
+                  src={img.src}
+                  alt={img.alt}
+                  fill
+                  className="object-cover"
+                  sizes="50vw"
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Reviews ── */}
+        <section
+          id="reviews"
+          className={`${CONTAINER} py-12 border-t border-slate-100`}
+        >
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Reviews</h2>
+          <div className="flex items-center gap-2 mb-6">
+            <span className="text-3xl font-bold">{PRODUCT.rating}</span>
+            <div>
+              <div className="flex gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className="w-4 h-4 fill-orange-400 text-orange-400"
+                  />
+                ))}
+              </div>
+              <p className="text-[12px] text-slate-500">
+                {PRODUCT.reviewCount} 則評價
+              </p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {[
+              {
+                name: "旅行達人小王",
+                text: "出國帶這條線超穩，筆電手機都能充，編織線很耐用。",
+                stars: 5,
+              },
+              {
+                name: "商務出差",
+                text: "240W 充電速度快，長度剛好，不會凌亂。",
+                stars: 5,
+              },
+              {
+                name: "日常使用",
+                text: "質感不錯，比一般線材硬挺很多，值得入手。",
+                stars: 4,
+              },
+            ].map((r) => (
+              <div key={r.name} className="border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[13px] font-semibold text-slate-800">
+                    {r.name}
+                  </span>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-3 h-3 ${i < r.stars ? "fill-orange-400 text-orange-400" : "text-slate-200"}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[13px] text-slate-600">{r.text}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      {/* ── Sticky 底部購買列 ── */}
+      <div
+        ref={stickyRef}
+        className={`fixed bottom-0 left-0 right-0 z-[7500] bg-white border-t border-slate-200 transition-transform duration-300 ${
+          showSticky ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div
+          className={`${CONTAINER} py-3 flex flex-wrap items-center justify-between gap-3`}
+        >
+          <p className="text-[12px] text-slate-500 hidden sm:block">
+            {PRODUCT.stockText}
+          </p>
+          <div className="flex items-center gap-3 ml-auto">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold">
+                NT${PRODUCT.price.toLocaleString()}
+              </span>
+              <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5">
+                省 NT${PRODUCT.saveAmount}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="px-5 py-2.5 text-[13px] font-bold border-2 border-[#3B9EFF] text-[#0A6CD0] hover:bg-[#F0F7FF]"
+            >
+              Add to Cart
+            </button>
+            <button
+              type="button"
+              className="px-5 py-2.5 text-[13px] font-bold bg-[#3B9EFF] text-white hover:bg-[#2B8EEF]"
+            >
+              Buy Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <Footer />
+    </>
+  );
+}

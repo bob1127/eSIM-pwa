@@ -22,6 +22,7 @@ import SocialIconLinks, { SocialIconLinksMobile } from "./SocialIconLinks";
 import {
   UserIcon,
   ShoppingCartIcon,
+  ShoppingBagIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   GlobeAsiaAustraliaIcon,
@@ -121,7 +122,8 @@ function isHomePath(path: string | null | undefined) {
 // --- 2. 導覽列資料 (桌面版) ---
 const navLinks = [
   { key: "home", label: "首頁", href: "/", hasMega: true },
-  { key: "categories", label: "精選國家", href: "/product", hasMega: true },
+  { key: "categories", label: "精選eSIM", href: "/product", hasMega: true },
+  { key: "shop", label: "好物商城", href: "/shop" },
   { key: "blog", label: "旅遊須知", href: "/blog" },
   { key: "tutorial", label: "啟用教學", href: "/operation-shopee" },
   { key: "tutorial", label: "關於Jeko", href: "/about" },
@@ -171,6 +173,12 @@ export default function Navbar({ className }: NavbarProps) {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 進入分類／換頁時關閉 mega menu，避免上方選單殘留
+  useEffect(() => {
+    setOpenMega("none");
+    setMobileOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const desktopMq = window.matchMedia(DESKTOP_NAV_MQ);
@@ -319,7 +327,7 @@ export default function Navbar({ className }: NavbarProps) {
         )}
       >
         <div
-          className="mx-auto max-w-[1400px] pointer-events-auto rounded-2xl shadow-xl flex flex-col relative"
+          className="mx-auto  max-w-[1450px] 2xl:max-w-[1600px] pointer-events-auto rounded-2xl  border-1 border-gray-200 flex flex-col relative"
           onMouseLeave={() => setOpenMega("none")}
         >
           {/* 上半部：白色區塊 (Logo & 工具列) */}
@@ -496,7 +504,7 @@ export default function Navbar({ className }: NavbarProps) {
                       <div className="flex items-end justify-between gap-4 mb-5 border-b border-gray-100 pb-3">
                         <div>
                           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                            精選國家
+                            精選eSIM
                           </p>
                           <p className="mt-1 text-sm text-gray-500">
                             熱門旅遊目的地 eSIM 方案
@@ -522,6 +530,7 @@ export default function Navbar({ className }: NavbarProps) {
                             <FeaturedCountryCard
                               key={country.id}
                               country={country}
+                              onNavigate={() => setOpenMega("none")}
                             />
                           ))}
                         </div>
@@ -587,7 +596,7 @@ export default function Navbar({ className }: NavbarProps) {
               {/* 🌟 購物與方案區 */}
               <div className="grid grid-cols-1 gap-2.5">
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-2 mb-1">
-                  精選國家
+                  精選eSIM
                 </p>
                 {!loadingCats && featuredCountries.length > 0 && (
                   <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 mb-2">
@@ -605,6 +614,12 @@ export default function Navbar({ className }: NavbarProps) {
                   icon={<GlobeAsiaAustraliaIcon className="w-5 h-5" />}
                   label="瀏覽全部國家方案"
                   href="/product"
+                  onClick={() => setMobileOpen(false)}
+                />
+                <MobileSimpleNavItem
+                  icon={<ShoppingBagIcon className="w-5 h-5" />}
+                  label="好物商城"
+                  href="/shop"
                   onClick={() => setMobileOpen(false)}
                 />
                 <MobileSimpleNavItem

@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -14,13 +20,80 @@ import {
   ShoppingCart,
   ChevronLeft,
   ChevronRight,
+  Tag,
+  Percent,
 } from "lucide-react";
 
 import { getPublicSiteUrl } from "../lib/siteUrl";
 import { useAuth } from "../hooks/useAuth";
 
-const LINE_OA_URL =
-  process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn";
+/** LINE OA Basic ID（含 @），用於 oaMessage 預填文字 */
+const LINE_OA_ID = process.env.NEXT_PUBLIC_LINE_OA_ID || "@593gvyzn";
+
+const WELCOME_TEXT =
+  "🌼 嗨！我是 J寶，Jeko 的旅行小幫手～\n" +
+  "不論 eSIM 上網、住宿、包車，還是景點行程推薦，都可以問我；" +
+  "店裡也有 3C 與旅行用品可以一起搭配。需要什麼直接跟我說～";
+
+/** 歡迎詞下方的優惠／活動輪播（圖卡，可之後改成 API） */
+const WELCOME_PROMO_CARDS = [
+  {
+    id: "new-member",
+    badge: "新朋友",
+    title: "新朋友會員優惠",
+    subtitle: "註冊會員立刻領迎新折扣",
+    cta: "立即加入",
+    href: "/login",
+    image: "/images/優惠折扣.png",
+  },
+  {
+    id: "referral",
+    badge: "好康道相報",
+    title: "邀請碼分享賺折扣",
+    subtitle: "邀請好友加入會員，雙方都有優惠",
+    cta: "去邀請",
+    href: "/account",
+    image: "/images/865dc2a1-b546-47fe-823f-37bf4f201d43.png",
+  },
+  {
+    id: "japan-80",
+    badge: "日本限定",
+    title: "日本吃到飽目前 8 折！",
+    subtitle: "暢遊日本不降速，限時優惠價",
+    cta: "看方案",
+    href: "/product/japan",
+    image: "/images/eac1444f-59c2-46b3-96b9-f675b0223a62.png",
+  },
+  {
+    id: "sitewide-75",
+    badge: "限時",
+    title: "全站一律 7.5 折！！",
+    subtitle: "限時優惠，eSIM／行程／用品都適用",
+    cta: "馬上逛",
+    href: "/product",
+    image: "/images/Hero-banner-01.png",
+  },
+  {
+    id: "car-rental",
+    badge: "包車／租車",
+    title: "立即租車出發",
+    subtitle: "機場接送、包車旅遊一站搞定",
+    cta: "去看看",
+    href: "/#car-rental-charter",
+    image: "/images/立即租車.png",
+  },
+];
+
+/**
+ * 開 LINE 官方帳號聊天，並把文字預填進輸入框（使用者只需按送出）。
+ * 官方文件：https://developers.line.biz/en/docs/messaging-api/using-line-url-scheme/
+ */
+function buildLineOaMessageUrl(text) {
+  // Android Intent / URL 長度有限，摘要壓在約 900 字內
+  const body = String(text || "").slice(0, 900);
+  const id = encodeURIComponent(LINE_OA_ID);
+  return `https://line.me/R/oaMessage/${id}/?${encodeURIComponent(body)}`;
+}
 
 /** 取得或建立本次瀏覽器 guest fingerprint（localStorage） */
 function getOrCreateGuestId() {
@@ -67,8 +140,8 @@ function ProductCard({ card }) {
     card.minPrice && card.maxPrice && card.minPrice !== card.maxPrice
       ? `NT$${card.minPrice} 起`
       : card.minPrice
-      ? `NT$${card.minPrice}`
-      : null;
+        ? `NT$${card.minPrice}`
+        : null;
 
   return (
     <a
@@ -97,7 +170,9 @@ function ProductCard({ card }) {
           <p className="text-[11px] font-bold text-blue-600">{priceLabel}</p>
         )}
         {card.variantCount > 0 && (
-          <p className="text-[10px] text-slate-400 mt-0.5">{card.variantCount} 種方案</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">
+            {card.variantCount} 種方案
+          </p>
         )}
         <div className="mt-2 w-full text-center text-[10px] bg-blue-600 text-white rounded-full py-1 font-bold group-hover:bg-blue-700 transition-colors">
           立即購買
@@ -156,6 +231,127 @@ function ProductCardCarousel({ cards }) {
           ))}
         </div>
       </div>
+    </motion.div>
+  );
+}
+
+/** 歡迎詞下方：優惠／活動 card 輪播 */
+function PromoCardCarousel({ cards }) {
+  const trackRef = useRef(null);
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    if (!cards?.length || cards.length < 2) return undefined;
+    const timer = setInterval(() => {
+      setActive((i) => {
+        const next = (i + 1) % cards.length;
+        if (trackRef.current) {
+          const child = trackRef.current.children[next];
+          child?.scrollIntoView({
+            behavior: "smooth",
+            inline: "start",
+            block: "nearest",
+          });
+        }
+        return next;
+      });
+    }, 4200);
+    return () => clearInterval(timer);
+  }, [cards]);
+
+  if (!cards?.length) return null;
+
+  const scroll = (dir) => {
+    if (!trackRef.current) return;
+    trackRef.current.scrollBy({ left: dir * 200, behavior: "smooth" });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, delay: 0.08 }}
+      className="mt-2 -mx-0.5"
+    >
+      <p className="text-[10px] text-slate-400 mb-1.5 flex items-center gap-1">
+        <Percent className="w-3 h-3" /> 優惠／活動
+      </p>
+      <div className="relative">
+        {cards.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => scroll(-1)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/95 border border-slate-200 rounded-full p-0.5 shadow-sm"
+              aria-label="上一張"
+            >
+              <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scroll(1)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/95 border border-slate-200 rounded-full p-0.5 shadow-sm"
+              aria-label="下一張"
+            >
+              <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+            </button>
+          </>
+        )}
+        <div
+          ref={trackRef}
+          className="flex gap-2 overflow-x-auto scroll-smooth pb-1 px-0.5 snap-x snap-mandatory"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {cards.map((card) => (
+            <a
+              key={card.id}
+              href={card.href}
+              target={card.href.startsWith("http") ? "_blank" : undefined}
+              rel={
+                card.href.startsWith("http") ? "noopener noreferrer" : undefined
+              }
+              className="snap-start flex-shrink-0 w-[210px] rounded-xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-shadow group bg-white"
+            >
+              <div className="relative h-[100px] bg-slate-100 overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={card.image}
+                  alt={card.title}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                <span className="absolute top-2 left-2 inline-flex items-center gap-0.5 text-[9px] font-bold text-white bg-black/45 backdrop-blur-[2px] rounded-full px-1.5 py-0.5">
+                  <Tag className="w-2.5 h-2.5" />
+                  {card.badge}
+                </span>
+                <p className="absolute bottom-2 left-2 right-2 text-[12px] font-bold text-white leading-snug line-clamp-2 drop-shadow">
+                  {card.title}
+                </p>
+              </div>
+              <div className="px-2.5 py-2 flex items-center justify-between gap-2">
+                <p className="text-[10px] text-slate-500 leading-snug line-clamp-2">
+                  {card.subtitle}
+                </p>
+                <span className="shrink-0 text-[10px] font-bold text-blue-600 group-hover:text-blue-700">
+                  {card.cta} →
+                </span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+      {cards.length > 1 && (
+        <div className="flex justify-center gap-1 mt-1.5">
+          {cards.map((c, i) => (
+            <span
+              key={c.id}
+              className={`h-1 rounded-full transition-all ${
+                i === active ? "w-3 bg-blue-500" : "w-1 bg-slate-200"
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -227,8 +423,8 @@ export default function AiChatWidget() {
     {
       id: 1,
       role: "ai",
-      content:
-        "🌼 您好！我是 J寶。\n想了解旅行技巧或 eSIM 安裝嗎？可點下方按鈕、直接輸入，或上傳設定截圖／短影片讓我幫你看。",
+      content: WELCOME_TEXT,
+      promoCards: WELCOME_PROMO_CARDS,
     },
   ]);
 
@@ -249,44 +445,43 @@ export default function AiChatWidget() {
   const [handoffToast, setHandoffToast] = useState(null); // { hasMedia: bool }
 
   /**
-   * 點「聯繫真人客服」時：
-   * 1. 把近期對話文字格式化並複製到剪貼簿
-   * 2. 開啟 LINE OA
-   * 3. 顯示 toast 提示「貼上即可」
+   * 點「聯繫真人客服」：用 LINE oaMessage 直接開對話並預填摘要。
+   * 不做剪貼簿／系統分享（Android 會多出「完成 → 選對象」兩步）。
    */
   const handleContactAgent = useCallback(
     (e) => {
       e.preventDefault();
 
-      // 取最近 8 則（跳過系統 preset 歡迎語）
       const recent = messages.slice(-8);
-      const hasMedia = recent.some((m) => m.mediaPreview || m.mediaKind === "video");
+      const hasMedia = recent.some(
+        (m) => m.mediaPreview || m.mediaKind === "video",
+      );
 
+      // 優先放使用者問題；AI 回覆縮短，避免 URL 過長
       const lines = recent
         .filter((m) => m.role === "user" || m.role === "ai")
         .map((m) => {
           const label = m.role === "user" ? "【我】" : "【J寶】";
+          const max = m.role === "user" ? 200 : 120;
           const text =
-            m.content.length > 300 ? m.content.slice(0, 300) + "…" : m.content;
+            m.content.length > max ? m.content.slice(0, max) + "…" : m.content;
           return `${label} ${text}`;
         });
 
       const summary =
-        `--- J寶 AI 對話摘要 ---\n` +
-        lines.join("\n\n") +
-        (hasMedia ? "\n\n（對話中含截圖，請在 LINE 中另行上傳）" : "");
+        `【J寶轉真人客服】\n` +
+        lines.join("\n") +
+        (hasMedia ? "\n（有截圖，請再上傳）" : "");
 
-      // 複製到剪貼簿
-      navigator.clipboard?.writeText(summary).catch(() => {});
+      const url = buildLineOaMessageUrl(summary);
 
-      // 開啟 LINE
-      window.open(LINE_OA_URL, "_blank", "noopener");
+      // 同頁導向最穩（避免 window.open 被擋或落到 Chrome 分享中間頁）
+      window.location.href = url;
 
-      // 顯示提示 toast 3 秒
       setHandoffToast({ hasMedia });
-      setTimeout(() => setHandoffToast(null), 4000);
+      setTimeout(() => setHandoffToast(null), 3500);
     },
-    [messages]
+    [messages],
   );
   const fileInputRef = useRef(null);
 
@@ -411,7 +606,11 @@ export default function AiChatWidget() {
     } catch {
       setMessages((prev) => [
         ...prev,
-        { id: Date.now(), role: "ai", content: "無法讀取此檔案，請換一張再試。" },
+        {
+          id: Date.now(),
+          role: "ai",
+          content: "無法讀取此檔案，請換一張再試。",
+        },
       ]);
     }
   };
@@ -426,7 +625,9 @@ export default function AiChatWidget() {
       {
         id: Date.now(),
         role: "user",
-        content: trimmed || (media?.kind === "video" ? "（已上傳影片）" : "（已上傳截圖）"),
+        content:
+          trimmed ||
+          (media?.kind === "video" ? "（已上傳影片）" : "（已上傳截圖）"),
         mediaPreview: media?.kind === "image" ? media.dataUrl : null,
         mediaKind: media?.kind || null,
       },
@@ -502,7 +703,8 @@ export default function AiChatWidget() {
           {
             role: "user",
             content:
-              trimmed || (media?.kind === "video" ? "（已上傳影片）" : "（已上傳截圖）"),
+              trimmed ||
+              (media?.kind === "video" ? "（已上傳影片）" : "（已上傳截圖）"),
           },
           { role: "ai", content: aiReply, provider: data.provider || null },
         ],
@@ -531,19 +733,19 @@ export default function AiChatWidget() {
 
   return (
     <div
-      className={`fixed z-[999999] flex flex-col items-end font-sans ${
+      className={`fixed font-sans ${
         isOpen
-          ? "inset-x-3 bottom-[130px] md:inset-auto md:bottom-6 md:right-6"
-          : "bottom-6 right-6"
+          ? "inset-0 z-[9999999999999] flex flex-col md:inset-auto md:bottom-6 md:right-6 md:z-[999999] md:items-end"
+          : "bottom-6 right-6 z-[999999] flex flex-col items-end"
       }`}
     >
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="bg-white w-full md:w-[400px] h-[min(600px,70vh)] max-h-[80vh] rounded-2xl shadow-2xl border border-gray-100 flex flex-col mb-0 md:mb-4 overflow-hidden origin-bottom-right"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="bg-white w-full h-[100dvh] max-h-[100dvh] rounded-none shadow-2xl border-0 md:border md:border-gray-100 flex flex-col overflow-hidden md:w-[400px] md:h-[min(600px,70vh)] md:max-h-[80vh] md:rounded-2xl md:mb-4 origin-bottom-right"
           >
             <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-4 flex justify-between items-center text-white">
               <div className="flex items-center gap-3">
@@ -576,15 +778,21 @@ export default function AiChatWidget() {
             {/* 交接 LINE 客服 Toast */}
             {handoffToast && (
               <div className="mx-3 mt-2 flex items-start gap-2 rounded-xl bg-green-50 border border-green-200 px-3 py-2.5 text-[12px] text-green-800 shadow-sm">
-                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-green-600 shrink-0 mt-0.5" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-4 h-4 fill-green-600 shrink-0 mt-0.5"
+                  aria-hidden="true"
+                >
                   <path d="M12 2C6.477 2 2 6.062 2 11.063c0 2.742 1.313 5.194 3.381 6.853-.148.548-.96 3.302-.99 3.538-.038.283.103.56.372.68.083.037.172.056.26.056.195 0 .378-.078.51-.217.175-.183 3.028-2.018 3.685-2.456.566.08 1.141.12 1.72.12 5.523 0 10-4.06 10-9.063S17.523 2 12 2z" />
                 </svg>
                 <div>
-                  <p className="font-bold">對話摘要已複製！</p>
+                  <p className="font-bold">已開啟 LINE 客服</p>
                   <p className="mt-0.5 leading-snug">
-                    LINE 開啟後，在輸入框長按貼上（Ctrl+V）即可傳送給客服。
+                    對話摘要已預填在輸入框，直接按送出即可。
                     {handoffToast.hasMedia && (
-                      <span className="block mt-0.5 text-green-700">截圖請在 LINE 中另行上傳。</span>
+                      <span className="block mt-0.5 text-green-700">
+                        截圖請在 LINE 中另行上傳。
+                      </span>
                     )}
                   </p>
                 </div>
@@ -609,7 +817,11 @@ export default function AiChatWidget() {
                         fallback={<Bot className="w-4 h-4 text-[#0A6CD0]" />}
                       />
                     )}
-                    <div className={`max-w-[80%] flex flex-col gap-0`}>
+                    <div
+                      className={`flex flex-col gap-0 ${
+                        msg.promoCards ? "max-w-[92%]" : "max-w-[80%]"
+                      }`}
+                    >
                       <div
                         className={`p-3.5 rounded-2xl text-[14px] leading-relaxed shadow-sm text-left ${
                           isUser
@@ -640,6 +852,10 @@ export default function AiChatWidget() {
                       {/* 商品推薦卡 */}
                       {!isUser && msg.productCards && (
                         <ProductCardCarousel cards={msg.productCards} />
+                      )}
+                      {/* 歡迎詞優惠／活動輪播 */}
+                      {!isUser && msg.promoCards && (
+                        <PromoCardCarousel cards={msg.promoCards} />
                       )}
                       {/* 聯繫客服按鈕 — 每則 AI 訊息底部 */}
                       {!isUser && (
@@ -764,7 +980,7 @@ export default function AiChatWidget() {
 
               <form
                 onSubmit={handleSend}
-                className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 p-1.5 rounded-full"
+                className="flex items-center mb-5 gap-1.5 bg-gray-50 border border-gray-200 p-1.5 rounded-full"
               >
                 <input
                   ref={fileInputRef}
@@ -788,7 +1004,9 @@ export default function AiChatWidget() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={
-                    pendingMedia ? "補充說明（可選）..." : "輸入問題或上傳截圖..."
+                    pendingMedia
+                      ? "補充說明（可選）..."
+                      : "輸入問題或上傳截圖..."
                   }
                   className="flex-1 bg-transparent px-2 border-none outline-none focus:ring-0 text-sm text-slate-700"
                   disabled={isLoading}
@@ -805,10 +1023,6 @@ export default function AiChatWidget() {
                   )}
                 </button>
               </form>
-              <div className="text-center mt-2 text-[9px] text-gray-400">
-                <Sparkles className="w-3 h-3 inline mr-1" /> J寶 ·
-                簡單問題免費文字模型 · 截圖視覺判讀
-              </div>
             </div>
           </motion.div>
         )}
@@ -818,7 +1032,9 @@ export default function AiChatWidget() {
         initial="rest"
         whileHover="hover"
         animate="rest"
-        className="hidden md:flex items-center gap-3 cursor-pointer group"
+        className={`${
+          isOpen ? "hidden md:flex" : "flex"
+        } items-center gap-3 cursor-pointer group`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <AnimatePresence>

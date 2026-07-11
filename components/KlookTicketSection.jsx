@@ -45,10 +45,7 @@ const TICKETS = [
     subtitle: "官方授權 · 免排隊掃碼入園",
     priceLabel: "TWD 1,826 起",
     footer: "立即確認 · 電子票券 · 300K+ 已訂購",
-    images: [
-      "/images/klook/kl-jp-usj-1.jpg",
-      "/images/klook/kl-jp-usj-2.jpg",
-    ],
+    images: ["/images/klook/kl-jp-usj-1.jpg", "/images/klook/kl-jp-usj-2.jpg"],
     description:
       "日本環球影城（USJ）是大阪最受歡迎的主題樂園，設有超級任天堂世界™、哈利波特魔法世界™、小小兵樂園等超人氣區域。透過 Klook 購票，即時取得 QR Code，現場直接掃碼入園！",
     features: [
@@ -58,7 +55,9 @@ const TICKETS = [
       "可加購 Express Pass 快速通關",
       "Klook 官方授權，中文客服支援",
     ],
-    url: aff("https://affiliate.klook.com/redirect?aid=125977&aff_adid=1333304&k_site=https%3A%2F%2Fwww.klook.com%2Fzh-TW%2Factivity%2F46604-universal-studios-japan-e-ticket-osaka-qr-code-direct-entry"),
+    url: aff(
+      "https://affiliate.klook.com/redirect?aid=125977&aff_adid=1333304&k_site=https%3A%2F%2Fwww.klook.com%2Fzh-TW%2Factivity%2F46604-universal-studios-japan-e-ticket-osaka-qr-code-direct-entry",
+    ),
   },
   {
     id: "kl-jp-disney",
@@ -194,10 +193,7 @@ const TICKETS = [
     subtitle: "成田機場直達新宿・池袋・橫濱",
     priceLabel: "TWD 960 起",
     footer: "來回券 · 14 天有效 · 電子票",
-    images: [
-      "/images/klook/kl-jp-nex-1.jpg",
-      "/images/klook/kl-jp-nex-2.jpg",
-    ],
+    images: ["/images/klook/kl-jp-nex-1.jpg", "/images/klook/kl-jp-nex-2.jpg"],
     description:
       "成田特快 N'EX 是往返成田機場與東京市區最舒適的選擇，可直達新宿、池袋、澀谷、橫濱。來回套票限外國旅客購買，14 天內有效，是長程旅遊者最划算的機場交通。",
     features: [
@@ -467,10 +463,7 @@ const TICKETS = [
     subtitle: "最快 2.5 小時直達 · 舒適指定座",
     priceLabel: "TWD 650 起",
     footer: "電子票券 · 指定座位",
-    images: [
-      "/images/klook/kl-kr-ktx-1.jpg",
-      "/images/klook/kl-kr-ktx-2.jpg",
-    ],
+    images: ["/images/klook/kl-kr-ktx-1.jpg", "/images/klook/kl-kr-ktx-2.jpg"],
     description:
       "KTX 韓國高速鐵路連接首爾與釜山，最快僅需 2 小時 30 分鐘。寬敞舒適車廂配合指定對號座，是往返兩大城市的首選。透過 Klook 預訂，電子票券直接上車，免現場排隊。",
     features: [
@@ -697,7 +690,9 @@ function TicketModal({ item, onClose }) {
               <span className="text-[11px] font-bold text-[#00B259] bg-green-50 px-2 py-0.5 rounded-full">
                 {item.category}
               </span>
-              <span className="text-[11px] text-gray-400">{item.regionLabel}</span>
+              <span className="text-[11px] text-gray-400">
+                {item.regionLabel}
+              </span>
               {item.badge && (
                 <span className="text-[11px] font-bold text-[#00B259] bg-green-100 px-2 py-0.5 rounded-full">
                   {item.badge}
@@ -721,7 +716,10 @@ function TicketModal({ item, onClose }) {
                 </p>
                 <ul className="space-y-1.5">
                   {item.features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                    <li
+                      key={i}
+                      className="flex items-start gap-2 text-sm text-gray-700"
+                    >
                       <span className="shrink-0 text-[#00B259] mt-1">·</span>
                       <span>{f}</span>
                     </li>
@@ -739,7 +737,9 @@ function TicketModal({ item, onClose }) {
             <div className="flex items-center justify-between gap-4 mb-3">
               <div>
                 <p className="text-[11px] text-gray-400">最低價格</p>
-                <p className="text-xl font-black text-gray-900">{item.priceLabel}</p>
+                <p className="text-xl font-black text-gray-900">
+                  {item.priceLabel}
+                </p>
               </div>
               <p className="text-[11px] text-gray-500 text-right leading-snug max-w-[45%]">
                 {item.footer}
@@ -811,7 +811,9 @@ function KlookCard({ item, onClick }) {
       </div>
 
       <div className="flex flex-1 flex-col px-4 pt-3.5 pb-4">
-        <p className="text-[11px] text-gray-400 line-clamp-1">{item.subtitle}</p>
+        <p className="text-[11px] text-gray-400 line-clamp-1">
+          {item.subtitle}
+        </p>
         <h3 className="mt-1 text-[15px] font-black text-gray-900 leading-snug line-clamp-2 min-h-[2.5rem]">
           {item.title}
         </h3>
@@ -820,11 +822,15 @@ function KlookCard({ item, onClick }) {
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#00B259] text-[9px] font-black text-white">
             KL
           </span>
-          <span className="text-base font-black text-gray-900">{item.priceLabel}</span>
+          <span className="text-base font-black text-gray-900">
+            {item.priceLabel}
+          </span>
         </div>
 
         <div className="mt-3 border-t border-gray-100 pt-2.5 flex items-center justify-between gap-2">
-          <p className="text-[10px] text-gray-400 line-clamp-1 flex-1">{item.footer}</p>
+          <p className="text-[10px] text-gray-400 line-clamp-1 flex-1">
+            {item.footer}
+          </p>
           <span className="shrink-0 text-[10px] font-bold text-[#00B259] group-hover:underline">
             查看詳情 →
           </span>
@@ -966,14 +972,13 @@ export default function KlookTicketSection() {
             Klook 查看更多體驗
           </a>
         </div>
-
-        <p className="mt-5 text-center text-[11px] text-gray-400 max-w-lg mx-auto leading-relaxed">
-          本區為 Jeko eSIM 與 Klook 聯盟行銷合作連結，點擊購買後 Jeko 可能獲得推薦佣金。票價以 Klook 官網即時顯示為準。
-        </p>
       </div>
 
       {selectedItem && (
-        <TicketModal item={selectedItem} onClose={() => setSelectedItem(null)} />
+        <TicketModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+        />
       )}
     </section>
   );

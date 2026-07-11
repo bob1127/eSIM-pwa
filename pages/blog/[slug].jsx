@@ -46,7 +46,7 @@ function prepareWpContentHtml(html) {
     })
     .replace(
       /<figure([^>]*class="[^"]*wp-block-table[^"]*")/gi,
-      '<figure$1 wp-table-figure',
+      "<figure$1 wp-table-figure",
     );
 }
 
@@ -322,10 +322,7 @@ export default function PostPage({
 
         if (node.name === "table") {
           const tableProps = attributesToProps(node.attribs || {});
-          const mergedClass = [
-            "wp-blog-table",
-            tableProps.className,
-          ]
+          const mergedClass = ["wp-blog-table", tableProps.className]
             .filter(Boolean)
             .join(" ");
           return (
@@ -340,7 +337,6 @@ export default function PostPage({
             </div>
           );
         }
-
       },
     };
     return parse(prepared, parseOptions);
