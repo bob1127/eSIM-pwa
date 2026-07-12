@@ -2,9 +2,17 @@ import Link from "next/link";
 import Image from "next/image";
 import { BrandSocialIconLinks } from "@/components/social/SocialBrandIcons";
 
-export default function Footer() {
+/**
+ * @param {{ forceShow?: boolean }} [props]
+ * forceShow: shop 等頁面在手機也顯示完整 footer（不隱藏）
+ */
+export default function Footer({ forceShow = false } = {}) {
   return (
-    <footer className="hidden md:block bg-white text-gray-800 border-t relative z-[99] border-gray-200">
+    <footer
+      className={`${
+        forceShow ? "block" : "hidden md:block"
+      } bg-white text-gray-800 border-t relative z-[99] border-gray-200`}
+    >
       <div className=" lg:max-w-[1300px] w-full md:w-[90%] 2xl:max-w-[1500px] mx-auto px-6 py-12">
         {/* ================= 上半部：Logo、橫向選單、社群圖示 ================= */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 pb-10 border-b border-gray-200">

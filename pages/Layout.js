@@ -67,9 +67,14 @@ export default function RootLayout({ children, seo: seoOverride = {}, hideNavbar
               
               <SmartWizardFloat />
               <AiChatWidget />
-              {/* 手機版全域上拉選單：我的 eSIM */}
+              {/* 手機版全域上拉選單：我的 eSIM（/shop 路徑內不顯示） */}
               <EsimBottomSheet />
-              <Footer />
+              <Footer
+                forceShow={
+                  router.pathname === "/shop" ||
+                  router.pathname?.startsWith("/shop/")
+                }
+              />
             </UserProvider>
           </NextThemesProvider>
         </NextUIProvider>

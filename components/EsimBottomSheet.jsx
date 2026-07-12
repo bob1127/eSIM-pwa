@@ -581,6 +581,11 @@ export default function EsimBottomSheet() {
   const { isLoggedIn, authReady, isGuest } = useAuth();
   const { isInstallable, deviceType, isStandalone } = usePWAInstall();
 
+  // shop 相關頁面：不顯示手機上拉選單，改用完整 Footer
+  const isShopRoute =
+    typeof router.pathname === "string" &&
+    (router.pathname === "/shop" || router.pathname.startsWith("/shop/"));
+
   const [expanded, setExpanded] = useState(false);
   const [panel, setPanel] = useState("qr"); // qr | usage | member | install | all
   const [dragY, setDragY] = useState(0);
@@ -793,6 +798,8 @@ export default function EsimBottomSheet() {
     supabaseUser?.user_metadata?.full_name ||
     session?.user?.name ||
     null;
+
+  if (isShopRoute) return null;
 
   return (
     <>

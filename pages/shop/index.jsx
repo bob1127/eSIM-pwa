@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import ShopNavbar from "../../components/Shop/ShopNavbar";
 import Footer from "../../components/ui/footer.jsx";
 
-const CONTAINER = "max-w-[1280px] mx-auto px-6 lg:px-10";
+const CONTAINER = "max-w-[1680px] mx-auto px-6 lg:px-10";
 
 // ── Section 1：雙欄促銷卡 ─────────────────────────────────────────
 const PROMO_CARDS = [
@@ -21,7 +21,7 @@ const PROMO_CARDS = [
   {
     title: "旅行收納一次搞定",
     sub: "輕量、防水、好收納",
-    img: "/images/shop/shop-promo-02.png",
+    img: "https://www.bitplayinc.com/cdn/shop/files/Slider_s4_2000x.jpg?v=1740538574",
     href: "/shop/product/usb-c-cable-240w",
   },
 ];
@@ -348,7 +348,7 @@ export default function ShopPage() {
 
       <ShopNavbar />
 
-      <main className="bg-[#f8f8f8]">
+      <main className="bg-[#DFE0E5]">
         {/* ── Hero：單圖滿屏，點擊進入商品內頁 ── */}
         <section className="relative w-full h-[100vh] overflow-hidden bg-slate-100">
           <Link href={PRODUCT_PDP} className="absolute inset-0 block">
@@ -438,7 +438,7 @@ export default function ShopPage() {
         </section>
       </main>
 
-      <Footer />
+      <Footer forceShow />
     </>
   );
 }

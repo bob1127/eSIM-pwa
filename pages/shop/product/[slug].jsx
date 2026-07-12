@@ -83,6 +83,31 @@ const PRODUCT = {
   bulkNote: "大量優惠：10 件以上每件 NT$620，結帳自動套用",
 };
 
+const RECOMMENDED = [
+  {
+    id: "none",
+    title: "暫不加購",
+    sub: "先購買本商品即可",
+    price: null,
+  },
+  {
+    id: "gan-65w",
+    title: "65W 氮化鎵旅行充電器",
+    sub: "與本線材絕配 · 筆電手機同充",
+    price: "NT$680",
+    strike: "NT$890",
+    href: "/shop/product/gan-65w-charger",
+  },
+  {
+    id: "powerbank",
+    title: "10000mAh USB-C 行動電源",
+    sub: "出國補電必備 · 輕巧好攜帶",
+    price: "NT$790",
+    strike: "NT$990",
+    href: "/shop/product/powerbank-10000",
+  },
+];
+
 const SECTIONS = [
   { id: "purchase", label: "Purchase" },
   { id: "overview", label: "Overview" },
@@ -93,80 +118,191 @@ function Gallery({ images, badge, productName }) {
   const [idx, setIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [vw, setVw] = useState(0);
+  const [tx, setTx] = useState(0);
+  const [animate, setAnimate] = useState(false);
+  const viewportRef = useRef(null);
+  const lockedRef = useRef(false);
+  const pendingDirRef = useRef(0);
   const len = images.length;
 
-  const go = (n) => setIdx((p) => (p + n + len) % len);
+  const PEEK_RATIO = 0.11;
+  const MAIN_RATIO = 0.78;
+  const peek = vw * PEEK_RATIO;
+  const main = vw * MAIN_RATIO;
+  // 靜止時：三張各為 main 寬，translate 讓中間張對齊中間框
+  const restTx = peek - main;
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const update = () => setVw(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // 寬度就緒後對齊靜止位置
+  useEffect(() => {
+    if (vw > 0 && !lockedRef.current) setTx(restTx);
+  }, [vw, restTx]);
 
   const openLightbox = (i) => {
     setLightboxIndex(i ?? idx);
     setLightboxOpen(true);
   };
 
+  const finishSlide = () => {
+    const dir = pendingDirRef.current;
+    if (!dir) return;
+    pendingDirRef.current = 0;
+    setAnimate(false);
+    setIdx((p) => (p + dir + len) % len);
+    setTx(restTx);
+    lockedRef.current = false;
+  };
+
+  const go = (dir) => {
+    if (lockedRef.current || len <= 1 || vw <= 0) return;
+    lockedRef.current = true;
+    pendingDirRef.current = dir;
+    setAnimate(true);
+    // ease-in：由慢到快；位移一個主圖寬度
+    setTx(restTx - dir * main);
+  };
+
+  const goTo = (target) => {
+    if (target === idx || lockedRef.current) return;
+    const forward = (target - idx + len) % len;
+    const backward = (idx - target + len) % len;
+    if (forward === 1) go(1);
+    else if (backward === 1) go(-1);
+    else setIdx(target);
+  };
+
+  // 軌道上三張：上一張 / 目前 / 下一張
+  const slideIndexes = [
+    (idx - 1 + len) % len,
+    idx,
+    (idx + 1) % len,
+  ];
+
   return (
-    <div className="w-full">
-      <div className="group relative bg-[#f5f5f5] aspect-square w-full overflow-hidden">
+    <div className="w-full lg:sticky lg:top-[11rem] self-start">
+      <div
+        ref={viewportRef}
+        className="group relative w-full overflow-hidden h-[70vh] lg:h-[calc(100dvh-10.5rem)] lg:min-h-[520px] lg:max-h-[920px] bg-[#111]"
+      >
         {/* 折扣旗標 */}
-        <div className="absolute top-0 left-0 z-20 pointer-events-none">
+        <div
+          className="absolute top-0 z-30 pointer-events-none"
+          style={{ left: `${PEEK_RATIO * 100}%` }}
+        >
           <div className="bg-[#3B9EFF] text-white text-[11px] font-bold px-3 py-1.5 relative">
             {badge}
             <span className="absolute -right-2 top-0 w-0 h-0 border-t-[12px] border-t-[#3B9EFF] border-r-[8px] border-r-transparent border-b-[12px] border-b-[#3B9EFF]" />
           </div>
         </div>
 
-        {/* 主圖：點擊開啟幻燈片 */}
-        <button
-          type="button"
-          onClick={() => openLightbox(idx)}
-          className="absolute inset-0 z-10 cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00befa] focus-visible:ring-offset-2"
-          aria-label={`放大檢視第 ${idx + 1} 張圖片`}
+        {/* 滑動軌道：左右 peek + 中央滿版 */}
+        <div
+          className="absolute inset-y-0 left-0 flex h-full will-change-transform"
+          style={{
+            transform: `translate3d(${tx}px, 0, 0)`,
+            transition: animate
+              ? "transform 600ms cubic-bezier(0.55, 0, 0.15, 1)"
+              : "none",
+          }}
+          onTransitionEnd={(e) => {
+            if (e.propertyName !== "transform") return;
+            finishSlide();
+          }}
         >
-          <Image
-            src={images[idx].src}
-            alt={images[idx].alt}
-            fill
-            priority
-            className="object-contain p-6 pointer-events-none"
-            sizes="(max-width: 1024px) 100vw, 60vw"
-          />
-        </button>
+          {slideIndexes.map((imageIndex, i) => {
+            const isCenter = i === 1;
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  if (isCenter) openLightbox(imageIndex);
+                  else go(i === 0 ? -1 : 1);
+                }}
+                className={`relative h-full shrink-0 overflow-hidden focus:outline-none ${
+                  isCenter ? "cursor-zoom-in" : "cursor-pointer"
+                }`}
+                style={{ width: main || "78%" }}
+                aria-label={
+                  isCenter
+                    ? `放大檢視第 ${imageIndex + 1} 張圖片`
+                    : i === 0
+                      ? "上一張"
+                      : "下一張"
+                }
+              >
+                <Image
+                  src={images[imageIndex].src}
+                  alt={isCenter ? images[imageIndex].alt : ""}
+                  fill
+                  priority={isCenter}
+                  className="object-cover pointer-events-none"
+                  sizes="(max-width: 1024px) 80vw, 50vw"
+                />
+                {!isCenter && (
+                  <span className="absolute inset-0 bg-black/45 pointer-events-none" />
+                )}
+              </button>
+            );
+          })}
+        </div>
 
-        {/* 全螢幕按鈕 */}
+        {/* 左右箭頭（固定在 peek 區） */}
+        {len > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              aria-label="上一張"
+              className="absolute left-0 top-0 bottom-0 z-20 flex items-center justify-center"
+              style={{ width: `${PEEK_RATIO * 100}%` }}
+            >
+              <span className="w-9 h-9 bg-white/95 border border-slate-200 flex items-center justify-center shadow-sm pointer-events-none">
+                <ChevronLeft className="w-5 h-5 text-slate-900" />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => go(1)}
+              aria-label="下一張"
+              className="absolute right-0 top-0 bottom-0 z-20 flex items-center justify-center"
+              style={{ width: `${PEEK_RATIO * 100}%` }}
+            >
+              <span className="w-9 h-9 bg-white/95 border border-slate-200 flex items-center justify-center shadow-sm pointer-events-none">
+                <ChevronRight className="w-5 h-5 text-slate-900" />
+              </span>
+            </button>
+          </>
+        )}
+
+        {/* 全螢幕 */}
         <button
           type="button"
           onClick={() => openLightbox(idx)}
-          className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-white/90 border border-gray-100 shadow-sm flex items-center justify-center text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100"
+          className="absolute top-3 z-30 w-9 h-9 rounded-full bg-white/90 border border-gray-100 shadow-sm flex items-center justify-center text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100"
+          style={{ right: `calc(${PEEK_RATIO * 100}% + 0.75rem)` }}
           aria-label="放大檢視"
         >
           <MaterialIcon name="fullscreen" size={16} />
         </button>
 
         {/* 計數 */}
-        <span className="absolute bottom-3 right-4 z-20 text-[12px] text-slate-500 bg-white/80 px-2 py-0.5 rounded pointer-events-none">
+        <span
+          className="absolute bottom-3 z-30 text-[12px] text-white bg-black/45 px-2 py-0.5 rounded pointer-events-none"
+          style={{ right: `calc(${PEEK_RATIO * 100}% + 1rem)` }}
+        >
           {idx + 1}/{len}
         </span>
-
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            go(-1);
-          }}
-          aria-label="上一張"
-          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 bg-white/90 border border-slate-200 flex items-center justify-center hover:bg-white transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 text-slate-700" />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            go(1);
-          }}
-          aria-label="下一張"
-          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 bg-white/90 border border-slate-200 flex items-center justify-center hover:bg-white transition-colors"
-        >
-          <ChevronRight className="w-5 h-5 text-slate-700" />
-        </button>
       </div>
 
       {/* 縮圖列 */}
@@ -175,7 +311,7 @@ function Gallery({ images, badge, productName }) {
           <button
             key={i}
             type="button"
-            onClick={() => setIdx(i)}
+            onClick={() => goTo(i)}
             onDoubleClick={() => openLightbox(i)}
             className={`relative shrink-0 w-14 h-14 bg-[#f5f5f5] overflow-hidden border-2 transition-colors ${
               i === idx
@@ -187,7 +323,7 @@ function Gallery({ images, badge, productName }) {
               src={img.src}
               alt={img.alt}
               fill
-              className="object-contain p-1"
+              className="object-cover"
               sizes="56px"
             />
           </button>
@@ -205,14 +341,13 @@ function Gallery({ images, badge, productName }) {
         </button>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:text-slate-900"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-slate-800 hover:text-slate-900"
         >
           <Play className="w-3.5 h-3.5" />
           Video
         </button>
       </div>
 
-      {/* eSIM 同款幻燈片 popup */}
       <MediaGalleryLightbox
         isOpen={lightboxOpen}
         onClose={(closedIdx) => {
@@ -233,7 +368,7 @@ export default function ShopProductPage() {
   const [styleId, setStyleId] = useState("6ft");
   const [qty, setQty] = useState(1);
   const [featuresOpen, setFeaturesOpen] = useState(true);
-  const [memberOpt, setMemberOpt] = useState("none");
+  const [recommendOpt, setRecommendOpt] = useState("none");
   const [copied, setCopied] = useState(false);
   const stickyRef = useRef(null);
   const [showSticky, setShowSticky] = useState(false);
@@ -263,14 +398,14 @@ export default function ShopProductPage() {
         <meta name="description" content={PRODUCT.title} />
       </Head>
 
-      <ShopNavbar />
+      <ShopNavbar compact />
 
-      {/* ── 商品次導覽列 ── */}
-      <div className="sticky top-[116px] lg:top-[156px] z-[7000] bg-white border-b border-slate-200">
+      {/* ── 商品次導覽列（單列 navbar 後高度約：黑32+藍36+白56 ≈ 124） ── */}
+      <div className="sticky top-[124px] z-[7000] bg-white border-b border-slate-200">
         <div
           className={`${CONTAINER} h-11 flex items-center justify-between gap-4`}
         >
-          <p className="text-[13px] text-slate-700 font-medium truncate flex-1 min-w-0">
+          <p className="text-[13px] text-slate-900 font-medium truncate flex-1 min-w-0">
             {PRODUCT.title}
           </p>
           <nav className="hidden sm:flex items-center gap-6 shrink-0 h-full">
@@ -287,7 +422,7 @@ export default function ShopProductPage() {
                 className={`relative h-full text-[13px] font-medium transition-colors ${
                   activeTab === s.id
                     ? "text-slate-900"
-                    : "text-slate-500 hover:text-slate-800"
+                    : "text-slate-700 hover:text-slate-950"
                 }`}
               >
                 {s.label}
@@ -300,7 +435,7 @@ export default function ShopProductPage() {
         </div>
       </div>
 
-      <main className="bg-white pb-28">
+      <main className="bg-[#DFE0E5] ">
         {/* ── Purchase 主區塊 ── */}
         <section id="purchase" className={`${CONTAINER} pt-6 lg:pt-8`}>
           <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12">
@@ -312,7 +447,7 @@ export default function ShopProductPage() {
             />
 
             {/* 右：購買資訊 */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 lg:pt-1">
               <span className="text-[12px] font-bold text-orange-500">
                 {PRODUCT.badge}
               </span>
@@ -329,7 +464,7 @@ export default function ShopProductPage() {
                     className={`w-3.5 h-3.5 ${
                       i < Math.floor(PRODUCT.rating)
                         ? "fill-orange-400 text-orange-400"
-                        : "text-slate-300"
+                        : "text-slate-500"
                     }`}
                   />
                 ))}
@@ -354,7 +489,7 @@ export default function ShopProductPage() {
                 <span className="text-[11px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded">
                   省 NT${PRODUCT.saveAmount}
                 </span>
-                <del className="text-[13px] text-slate-400">
+                <del className="text-[13px] text-slate-600">
                   NT${PRODUCT.originalPrice.toLocaleString()}
                 </del>
               </div>
@@ -365,7 +500,7 @@ export default function ShopProductPage() {
                   ${Math.round(PRODUCT.saveAmount / 30)}
                 </div>
                 <div className="flex-1 px-3 py-2.5 flex items-center justify-between gap-2">
-                  <p className="text-[12px] text-slate-700">
+                  <p className="text-[12px] text-slate-900">
                     使用優惠碼再折 NT${PRODUCT.saveAmount}
                   </p>
                   <button
@@ -379,7 +514,7 @@ export default function ShopProductPage() {
               </div>
 
               {/* 登入提示 */}
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-[#f5f5f5] text-[12px] text-slate-600">
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-[#f5f5f5] text-[12px] text-slate-800">
                 <Lock className="w-3.5 h-3.5 shrink-0" />
                 <span className="flex-1">登入享安心購保障與會員積分回饋</span>
                 <Link
@@ -399,7 +534,7 @@ export default function ShopProductPage() {
                 >
                   Key Features
                   <ChevronDown
-                    className={`w-4 h-4 text-slate-400 transition-transform ${featuresOpen ? "rotate-180" : ""}`}
+                    className={`w-4 h-4 text-slate-600 transition-transform ${featuresOpen ? "rotate-180" : ""}`}
                   />
                 </button>
                 {featuresOpen && (
@@ -407,7 +542,7 @@ export default function ShopProductPage() {
                     {PRODUCT.features.map((f) => (
                       <li
                         key={f}
-                        className="flex items-start gap-2 text-[13px] text-slate-700"
+                        className="flex items-start gap-2 text-[13px] text-slate-900"
                       >
                         <span className="mt-1.5 w-1 h-1 rounded-full bg-slate-500 shrink-0" />
                         {f}
@@ -419,7 +554,7 @@ export default function ShopProductPage() {
 
               {/* Style */}
               <div>
-                <p className="text-[13px] text-slate-700 mb-2">
+                <p className="text-[13px] text-slate-900 mb-2">
                   Style: <span className="font-semibold">{styleLabel}</span>
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -431,7 +566,7 @@ export default function ShopProductPage() {
                       className={`py-3 px-3 text-[13px] font-medium border-2 transition-colors ${
                         styleId === s.id
                           ? "border-[#3B9EFF] bg-white text-slate-900"
-                          : "border-slate-200 text-slate-600 hover:border-slate-300"
+                          : "border-slate-200 text-slate-800 hover:border-slate-300"
                       }`}
                     >
                       {s.label}
@@ -442,7 +577,7 @@ export default function ShopProductPage() {
 
               {/* Quantity */}
               <div>
-                <p className="text-[13px] text-slate-700 mb-2">Quantity</p>
+                <p className="text-[13px] text-slate-900 mb-2">Quantity</p>
                 <div className="inline-flex items-center border border-slate-200">
                   <button
                     type="button"
@@ -467,7 +602,7 @@ export default function ShopProductPage() {
               </div>
 
               {/* Bulk Discount */}
-              <div className="bg-[#E8F3FF] px-4 py-3 text-[12px] text-slate-700 flex flex-wrap items-center justify-between gap-2">
+              <div className="bg-[#E8F3FF] px-4 py-3 text-[12px] text-slate-900 flex flex-wrap items-center justify-between gap-2">
                 <span>{PRODUCT.bulkNote}</span>
                 <Link
                   href="/shop/support"
@@ -477,87 +612,70 @@ export default function ShopProductPage() {
                 </Link>
               </div>
 
-              {/* Membership */}
+              {/* 其他推薦商品 */}
               <div className="border border-slate-200 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[14px] font-bold text-slate-900 flex items-center gap-1.5">
                     <span className="text-amber-500">⚡</span>
-                    Jeko Plus Membership
+                    其他推薦商品
                   </p>
                   <Link
-                    href="/shop/member"
+                    href="/shop"
                     className="text-[12px] text-[#0A6CD0] hover:underline"
                   >
-                    Learn More
+                    查看更多
                   </Link>
                 </div>
-                <ul className="text-[12px] text-slate-600 space-y-1 mb-3">
+                <ul className="text-[12px] text-slate-800 space-y-1 mb-3">
                   <li className="flex gap-1.5">
                     <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                    免運與安心購保障
+                    與本商品高度搭配
                   </li>
                   <li className="flex gap-1.5">
                     <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                    額外 5% 折扣
+                    旅行充電熱銷組合
                   </li>
                   <li className="flex gap-1.5">
                     <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                    年度會員禮
+                    加購再享組合優惠
                   </li>
                 </ul>
-                {[
-                  {
-                    id: "none",
-                    title: "Not a Plus Member",
-                    sub: "錯過超過 NT$15,000 省錢機會",
-                    price: null,
-                  },
-                  {
-                    id: "month",
-                    title: "Monthly Plus",
-                    sub: "1 個月方案 · 不自動續訂",
-                    price: "NT$299/月",
-                    strike: "NT$399",
-                  },
-                  {
-                    id: "year",
-                    title: "Annual Plus",
-                    sub: "自動續訂 · 隨時可取消",
-                    price: "NT$2,490/年",
-                    strike: "NT$3,490",
-                  },
-                ].map((opt) => (
+                {RECOMMENDED.map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
-                    onClick={() => setMemberOpt(opt.id)}
+                    onClick={() => setRecommendOpt(opt.id)}
                     className={`w-full text-left px-3 py-2.5 mb-2 last:mb-0 border-2 transition-colors ${
-                      memberOpt === opt.id
+                      recommendOpt === opt.id
                         ? "border-[#3B9EFF] bg-[#F0F7FF]"
-                        : "border-slate-150 border-slate-200 hover:border-slate-300"
+                        : "border-slate-200 hover:border-slate-300"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-[13px] font-semibold text-slate-800 flex items-center gap-1.5">
-                          {memberOpt === opt.id && (
+                        <p className="text-[13px] font-semibold text-slate-950 flex items-center gap-1.5">
+                          {recommendOpt === opt.id && (
                             <span className="w-4 h-4 rounded-full bg-[#3B9EFF] text-white flex items-center justify-center">
                               <Check className="w-2.5 h-2.5" strokeWidth={3} />
                             </span>
                           )}
                           {opt.title}
                         </p>
-                        <p className="text-[11px] text-slate-500 mt-0.5 ml-5">
+                        <p
+                          className={`text-[11px] text-slate-700 mt-0.5 ${
+                            recommendOpt === opt.id ? "ml-5" : "ml-0"
+                          }`}
+                        >
                           {opt.sub}
                         </p>
                       </div>
                       {opt.price && (
                         <div className="text-right shrink-0">
-                          <p className="text-[13px] font-bold text-slate-800">
+                          <p className="text-[13px] font-bold text-slate-950">
                             {opt.price}
                           </p>
                           {opt.strike && (
-                            <del className="text-[11px] text-slate-400">
+                            <del className="text-[11px] text-slate-600">
                               {opt.strike}
                             </del>
                           )}
@@ -584,10 +702,10 @@ export default function ShopProductPage() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] text-slate-800 font-medium line-clamp-2">
+                    <p className="text-[13px] text-slate-950 font-medium line-clamp-2">
                       {PRODUCT.title}
                     </p>
-                    <p className="text-[12px] text-slate-500 mt-1">
+                    <p className="text-[12px] text-slate-700 mt-1">
                       {styleLabel} · ×{qty}
                     </p>
                     <p className="text-[12px] text-[#0A8F6E] mt-1">
@@ -633,11 +751,11 @@ export default function ShopProductPage() {
                   ].map((item) => (
                     <li
                       key={item}
-                      className="flex items-center gap-2 text-[13px] text-slate-700"
+                      className="flex items-center gap-2 text-[13px] text-slate-900"
                     >
-                      <Check className="w-4 h-4 text-slate-500" />
+                      <Check className="w-4 h-4 text-slate-700" />
                       {item}
-                      <Info className="w-3.5 h-3.5 text-slate-300 ml-auto" />
+                      <Info className="w-3.5 h-3.5 text-slate-500 ml-auto" />
                     </li>
                   ))}
                 </ul>
@@ -651,7 +769,7 @@ export default function ShopProductPage() {
           <h2 className="text-2xl font-bold text-slate-900 mb-4">
             Unleash Mighty 240W Charging
           </h2>
-          <p className="text-[14px] text-slate-600 max-w-3xl leading-relaxed">
+          <p className="text-[14px] text-slate-800 max-w-3xl leading-relaxed">
             體驗 240W
             超高速充電，採用消費後再生尼龍編織，兼具快速傳輸與極端溫度耐候（-40°C～80°C），
             通過 USB-IF 認證，保護裝置安全。彎折耐久超過 30
@@ -676,62 +794,65 @@ export default function ShopProductPage() {
         </section>
 
         {/* ── Reviews ── */}
-        <section
-          id="reviews"
-          className={`${CONTAINER} py-12 border-t border-slate-100`}
-        >
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Reviews</h2>
-          <div className="flex items-center gap-2 mb-6">
-            <span className="text-3xl font-bold">{PRODUCT.rating}</span>
-            <div>
-              <div className="flex gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-4 h-4 fill-orange-400 text-orange-400"
-                  />
-                ))}
-              </div>
-              <p className="text-[12px] text-slate-500">
-                {PRODUCT.reviewCount} 則評價
-              </p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            {[
-              {
-                name: "旅行達人小王",
-                text: "出國帶這條線超穩，筆電手機都能充，編織線很耐用。",
-                stars: 5,
-              },
-              {
-                name: "商務出差",
-                text: "240W 充電速度快，長度剛好，不會凌亂。",
-                stars: 5,
-              },
-              {
-                name: "日常使用",
-                text: "質感不錯，比一般線材硬挺很多，值得入手。",
-                stars: 4,
-              },
-            ].map((r) => (
-              <div key={r.name} className="border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[13px] font-semibold text-slate-800">
-                    {r.name}
-                  </span>
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-3 h-3 ${i < r.stars ? "fill-orange-400 text-orange-400" : "text-slate-200"}`}
-                      />
-                    ))}
-                  </div>
+        <section id="reviews" className="bg-white border-t border-slate-200/80">
+          <div className={`${CONTAINER} py-14`}>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Reviews</h2>
+            <div className="flex items-center gap-2 mb-8">
+              <span className="text-3xl font-bold text-slate-900">
+                {PRODUCT.rating}
+              </span>
+              <div>
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className="w-4 h-4 fill-orange-400 text-orange-400"
+                    />
+                  ))}
                 </div>
-                <p className="text-[13px] text-slate-600">{r.text}</p>
+                <p className="text-[12px] text-slate-600">
+                  {PRODUCT.reviewCount} 則評價
+                </p>
               </div>
-            ))}
+            </div>
+            <div className="space-y-0 divide-y divide-slate-100">
+              {[
+                {
+                  name: "旅行達人小王",
+                  text: "出國帶這條線超穩，筆電手機都能充，編織線很耐用。",
+                  stars: 5,
+                },
+                {
+                  name: "商務出差",
+                  text: "240W 充電速度快，長度剛好，不會凌亂。",
+                  stars: 5,
+                },
+                {
+                  name: "日常使用",
+                  text: "質感不錯，比一般線材硬挺很多，值得入手。",
+                  stars: 4,
+                },
+              ].map((r) => (
+                <div key={r.name} className="py-5 first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[13px] font-semibold text-slate-900">
+                      {r.name}
+                    </span>
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3 h-3 ${i < r.stars ? "fill-orange-400 text-orange-400" : "text-slate-300"}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-[13px] text-slate-700 leading-relaxed">
+                    {r.text}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       </main>
@@ -746,7 +867,7 @@ export default function ShopProductPage() {
         <div
           className={`${CONTAINER} py-3 flex flex-wrap items-center justify-between gap-3`}
         >
-          <p className="text-[12px] text-slate-500 hidden sm:block">
+          <p className="text-[12px] text-slate-700 hidden sm:block">
             {PRODUCT.stockText}
           </p>
           <div className="flex items-center gap-3 ml-auto">
@@ -774,7 +895,7 @@ export default function ShopProductPage() {
         </div>
       </div>
 
-      <Footer />
+      <Footer forceShow />
     </>
   );
 }
