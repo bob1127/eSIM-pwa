@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Minus,
+  Plus,
+} from "lucide-react";
 import ShopNavbar from "../../components/Shop/ShopNavbar";
 import Footer from "../../components/ui/footer.jsx";
 
@@ -140,6 +146,58 @@ const PRODUCT_TABS = {
   ],
 };
 
+// ── Section 2b：Travel Gear 輪播（包袋／攝影配件） ───────────────
+const TRAVEL_GEAR = [
+  {
+    title: "Lime Green Everyday Backpack",
+    desc: "輕量防水 · 日常與戶外皆宜",
+    price: 1680,
+    original: 2180,
+    img: "https://png.pngtree.com/png-vector/20251101/ourlarge/pngtree-stylish-lime-green-backpack-for-everyday-carry-and-outdoor-adventures-featuring-png-image_17882412.webp",
+    href: PRODUCT_PDP,
+  },
+  {
+    title: "Slim Laptop Briefcase",
+    desc: "極簡輪廓 · 商務出差首選",
+    price: 2480,
+    original: 2980,
+    img: "https://png.pngtree.com/png-vector/20230831/ourmid/pngtree-3d-render-laptop-bag-perspective-view-png-image_9192010.png",
+    href: PRODUCT_PDP,
+  },
+  {
+    title: "tomtoc Laptop Sleeve",
+    desc: "防震內襯 · 筆電配件好收納",
+    price: 990,
+    original: 1290,
+    img: "https://shoplineimg.com/55c37526e37ec6fc5d000002/64a64a983c7aa7001de01a5f/900x.png",
+    href: PRODUCT_PDP,
+  },
+  {
+    title: "Insta360 × PGYTECH Mini Tripod",
+    desc: "手持／腳架兩用 · 運動相機必備",
+    price: 890,
+    original: 1090,
+    img: "https://res.insta360.com/static/854ed74b1296e5db844f4accf2779a95/Main.png",
+    href: PRODUCT_PDP,
+  },
+  {
+    title: "Insta360 Remote Grip",
+    desc: "遙控握把 · 自拍延長更穩",
+    price: 1190,
+    original: 1490,
+    img: "https://www.esentra.com.tw/wp-content/uploads/2025/06/e1e07f3dcc4a6886188a8f58f862ac6a.jpg",
+    href: PRODUCT_PDP,
+  },
+  {
+    title: "Pela Eco Phone Case",
+    desc: "永續材質 · 輕薄防摔保護",
+    price: 690,
+    original: 890,
+    img: "https://shoplineimg.com/5fe41f7ec43d7f0018039a42/68c3e88af795900012f01d60/800x.png",
+    href: PRODUCT_PDP,
+  },
+];
+
 // ── Section 3：品牌探索 Banner ────────────────────────────────────
 const DISCOVER_BANNER = {
   title: "探索更多旅行好物",
@@ -176,13 +234,13 @@ function PromoCard({ card }) {
   );
 }
 
-function ProductCard({ product }) {
+function ProductCard({ product, onDetail }) {
   return (
-    <div className="bg-[#ffffff] flex flex-col h-full">
-      {/* 去背商品圖：淺灰底 + object-contain */}
-      <Link
-        href={product.href}
-        className="relative aspect-square bg-[#ffffff] overflow-hidden block"
+    <div className="bg-white flex flex-col h-full">
+      <button
+        type="button"
+        onClick={() => onDetail?.(product)}
+        className="relative aspect-square bg-white overflow-hidden block w-full text-left"
       >
         <Image
           src={product.img}
@@ -191,13 +249,17 @@ function ProductCard({ product }) {
           className="object-contain p-8 hover:scale-105 transition-transform duration-300"
           sizes="(max-width: 768px) 50vw, 25vw"
         />
-      </Link>
+      </button>
       <div className="px-4 pb-4 flex flex-col flex-1">
-        <Link href={product.href}>
+        <button
+          type="button"
+          onClick={() => onDetail?.(product)}
+          className="text-left"
+        >
           <h3 className="text-[14px] font-bold text-slate-900 leading-snug line-clamp-2 min-h-[40px]">
             {product.title}
           </h3>
-        </Link>
+        </button>
         <p className="text-[12px] text-slate-500 mt-1 line-clamp-1">
           {product.desc}
         </p>
@@ -214,79 +276,279 @@ function ProductCard({ product }) {
         <div className="mt-auto grid grid-cols-2 gap-2">
           <Link
             href={product.href}
-            className="text-center text-[12px] font-semibold border border-black text-black py-2.5 hover:bg-slate-100 transition-colors"
+            className="text-center text-[12px] font-semibold bg-[#3B9EFF] text-white py-2.5 hover:bg-[#2B8EEF] transition-colors"
           >
-            Shop Now
+            立即購買
           </Link>
-          <Link
-            href={product.href}
-            className="text-center text-[12px] font-semibold bg-black text-white py-2.5 hover:bg-slate-800 transition-colors"
+          <button
+            type="button"
+            onClick={() => onDetail?.(product)}
+            className="text-center text-[12px] font-semibold bg-[#E5E7EB] text-slate-800 py-2.5 hover:bg-[#D1D5DB] transition-colors"
           >
-            Learn More
-          </Link>
+            商品詳情
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-function ProductCarousel({ products }) {
-  const trackRef = useRef(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(true);
-  const [paused, setPaused] = useState(false);
-  const timerRef = useRef(null);
+/** 單純商品詳情 Popup + 商品圖輪播（無第二張則重複同一張） */
+function ProductQuickView({ product, onClose }) {
+  const [qty, setQty] = useState(1);
+  const [imgIdx, setImgIdx] = useState(0);
 
-  const updateArrows = useCallback(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    setCanPrev(el.scrollLeft > 8);
-    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
-  }, []);
-
-  const scrollBy = useCallback((dir) => {
-    const el = trackRef.current;
-    if (!el) return;
-    const card = el.querySelector("[data-card]");
-    const step = card ? card.offsetWidth + 16 : el.clientWidth * 0.75;
-    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 8;
-
-    if (dir > 0 && atEnd) {
-      el.scrollTo({ left: 0, behavior: "smooth" });
-    } else if (dir < 0 && el.scrollLeft <= 8) {
-      el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
-    } else {
-      el.scrollBy({ left: dir * step, behavior: "smooth" });
-    }
-  }, []);
+  const gallery = useMemo(() => {
+    const raw =
+      product.images?.length > 0
+        ? product.images
+        : [product.img, product.img].filter(Boolean);
+    // 至少兩張以便輪播；只有一張就複製同一張
+    if (raw.length === 1) return [raw[0], raw[0]];
+    return raw;
+  }, [product]);
 
   useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    updateArrows();
-    el.addEventListener("scroll", updateArrows, { passive: true });
-    window.addEventListener("resize", updateArrows);
-    return () => {
-      el.removeEventListener("scroll", updateArrows);
-      window.removeEventListener("resize", updateArrows);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
     };
-  }, [products, updateArrows]);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
 
   useEffect(() => {
-    trackRef.current?.scrollTo({ left: 0 });
-    updateArrows();
-  }, [products, updateArrows]);
+    const t = setInterval(() => {
+      setImgIdx((i) => (i + 1) % gallery.length);
+    }, 2800);
+    return () => clearInterval(t);
+  }, [gallery.length]);
 
-  // 自動輪播
+  if (!product) return null;
+
+  const save = product.original ? product.original - product.price : 0;
+
+  return (
+    <div
+      className="fixed inset-0 z-[9000] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={product.title}
+    >
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/45"
+        aria-label="關閉"
+        onClick={onClose}
+      />
+
+      <div className="relative w-full max-w-[520px] max-h-[90vh] overflow-y-auto bg-white shadow-xl">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-3 right-3 z-20 w-9 h-9 flex items-center justify-center bg-white/90 border border-slate-200 text-slate-700 hover:bg-slate-100"
+          aria-label="關閉"
+        >
+          <X className="w-4 h-4" strokeWidth={2} />
+        </button>
+
+        {/* 商品圖輪播 */}
+        <div className="relative aspect-square bg-[#F5F5F5]">
+          {gallery.map((src, i) => (
+            <div
+              key={`${src}-${i}`}
+              className={`absolute inset-0 transition-opacity duration-500 ${
+                i === imgIdx ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              <Image
+                src={src}
+                alt={`${product.title} ${i + 1}`}
+                fill
+                className="object-contain p-10"
+                sizes="520px"
+                priority={i === 0}
+              />
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              setImgIdx((i) => (i - 1 + gallery.length) % gallery.length)
+            }
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 border border-slate-200 flex items-center justify-center hover:bg-white"
+            aria-label="上一張"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setImgIdx((i) => (i + 1) % gallery.length)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 border border-slate-200 flex items-center justify-center hover:bg-white"
+            aria-label="下一張"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+            {gallery.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setImgIdx(i)}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                  i === imgIdx ? "bg-[#3B9EFF]" : "bg-slate-300"
+                }`}
+                aria-label={`第 ${i + 1} 張`}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="p-5 sm:p-6 flex flex-col gap-3">
+          <h2 className="text-lg font-bold text-slate-900 leading-snug pr-8">
+            {product.title}
+          </h2>
+          <p className="text-[13px] text-slate-600">{product.desc}</p>
+
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900">
+              NT${product.price.toLocaleString()}
+            </span>
+            {product.original && (
+              <del className="text-[13px] text-slate-400">
+                NT${product.original.toLocaleString()}
+              </del>
+            )}
+            {save > 0 && (
+              <span className="text-[11px] font-bold text-orange-600">
+                省 NT${save.toLocaleString()}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 pt-1">
+            <span className="text-[13px] text-slate-700">數量</span>
+            <div className="inline-flex items-center border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
+                className="w-9 h-9 flex items-center justify-center hover:bg-slate-50"
+                aria-label="減少"
+              >
+                <Minus className="w-3.5 h-3.5" />
+              </button>
+              <span className="w-10 text-center text-[14px] font-semibold">
+                {qty}
+              </span>
+              <button
+                type="button"
+                onClick={() => setQty((q) => Math.min(99, q + 1))}
+                className="w-9 h-9 flex items-center justify-center hover:bg-slate-50"
+                aria-label="增加"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-2">
+            <Link
+              href={product.href}
+              className="py-3 text-center text-[13px] font-bold bg-[#E5E7EB] text-slate-800 hover:bg-[#D1D5DB] transition-colors"
+            >
+              加入購物車
+            </Link>
+            <Link
+              href={product.href}
+              className="py-3 text-center text-[13px] font-bold bg-[#3B9EFF] text-white hover:bg-[#2B8EEF] transition-colors"
+            >
+              立即購買
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** 往左自動無限輪播（transform 無縫，不會倒轉） */
+function ProductCarousel({ products, onDetail }) {
+  const viewportRef = useRef(null);
+  const [index, setIndex] = useState(0);
+  const [animating, setAnimating] = useState(true);
+  const [paused, setPaused] = useState(false);
+  const [cardW, setCardW] = useState(0);
+  const gap = 16;
+  const n = products.length;
+
+  const slides = useMemo(() => {
+    if (!n) return [];
+    // 兩份：滑到第二份起點時瞬間重置，視覺無縫
+    return [...products, ...products].map((p, i) => ({
+      ...p,
+      _key: `${p.title}-${i}`,
+    }));
+  }, [products, n]);
+
+  const measure = useCallback(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const w = vp.clientWidth;
+    // 對齊原本響應式：2 / 3 / 4 欄
+    let cols = 2;
+    if (w >= 1024) cols = 4;
+    else if (w >= 640) cols = 3;
+    setCardW((w - gap * (cols - 1)) / cols);
+  }, []);
+
   useEffect(() => {
-    clearInterval(timerRef.current);
-    if (paused || products.length <= 1) return;
-    timerRef.current = setInterval(() => scrollBy(1), 3500);
-    return () => clearInterval(timerRef.current);
-  }, [paused, products, scrollBy]);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [measure]);
 
+  useEffect(() => {
+    setIndex(0);
+    setAnimating(false);
+    requestAnimationFrame(() => setAnimating(true));
+  }, [products]);
+
+  const go = useCallback(
+    (dir) => {
+      if (!n) return;
+      setAnimating(true);
+      setIndex((i) => i + dir);
+    },
+    [n],
+  );
+
+  // 滑完一輪後無動畫重置
+  useEffect(() => {
+    if (index < n) return;
+    const t = window.setTimeout(() => {
+      setAnimating(false);
+      setIndex(0);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setAnimating(true));
+      });
+    }, 480);
+    return () => clearTimeout(t);
+  }, [index, n]);
+
+  // 往左自動
+  useEffect(() => {
+    if (paused || n <= 1 || !cardW) return;
+    const t = setInterval(() => go(1), 3200);
+    return () => clearInterval(t);
+  }, [paused, n, cardW, go]);
+
+  const step = cardW + gap;
   const btnClass =
-    "absolute top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none";
+    "absolute top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-slate-300 text-slate-800 flex items-center justify-center hover:bg-[#3B9EFF] hover:text-white hover:border-[#3B9EFF] transition-colors shadow-sm";
 
   return (
     <div
@@ -296,9 +558,21 @@ function ProductCarousel({ products }) {
     >
       <button
         type="button"
-        onClick={() => scrollBy(-1)}
+        onClick={() => {
+          if (index === 0) {
+            setAnimating(false);
+            setIndex(n);
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                setAnimating(true);
+                setIndex(n - 1);
+              });
+            });
+          } else {
+            go(-1);
+          }
+        }}
         aria-label="上一頁"
-        disabled={!canPrev && !canNext}
         className={`${btnClass} left-0 -translate-x-3`}
       >
         <ChevronLeft className="w-5 h-5" strokeWidth={2} />
@@ -306,27 +580,34 @@ function ProductCarousel({ products }) {
 
       <button
         type="button"
-        onClick={() => scrollBy(1)}
+        onClick={() => go(1)}
         aria-label="下一頁"
-        disabled={!canPrev && !canNext}
         className={`${btnClass} right-0 translate-x-3`}
       >
         <ChevronRight className="w-5 h-5" strokeWidth={2} />
       </button>
 
-      <div
-        ref={trackRef}
-        className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {products.map((p) => (
-          <div
-            key={p.title}
-            data-card
-            className="snap-start shrink-0 w-[calc(50%-8px)] sm:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)]"
-          >
-            <ProductCard product={p} />
-          </div>
-        ))}
+      <div ref={viewportRef} className="overflow-hidden">
+        <div
+          className="flex"
+          style={{
+            gap,
+            transform: cardW ? `translateX(-${index * step}px)` : undefined,
+            transition: animating
+              ? "transform 0.45s cubic-bezier(0.25, 0.1, 0.25, 1)"
+              : "none",
+          }}
+        >
+          {slides.map((p) => (
+            <div
+              key={p._key}
+              className="shrink-0"
+              style={{ width: cardW || "calc(50% - 8px)" }}
+            >
+              <ProductCard product={p} onDetail={onDetail} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -334,6 +615,7 @@ function ProductCarousel({ products }) {
 
 export default function ShopPage() {
   const [tab, setTab] = useState("new");
+  const [quickView, setQuickView] = useState(null);
   const products = PRODUCT_TABS[tab];
 
   return (
@@ -403,7 +685,15 @@ export default function ShopPage() {
             </button>
           </div>
 
-          <ProductCarousel products={products} />
+          <ProductCarousel products={products} onDetail={setQuickView} />
+        </section>
+
+        {/* ── Section 2b：Travel Gear 精選輪播 ── */}
+        <section className={`${CONTAINER} pb-10 sm:pb-14`}>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-5">
+            Travel Gear Essentials
+          </h2>
+          <ProductCarousel products={TRAVEL_GEAR} onDetail={setQuickView} />
         </section>
 
         {/* ── Section 3：Discover More Banner ── */}
@@ -439,6 +729,13 @@ export default function ShopPage() {
       </main>
 
       <Footer forceShow />
+
+      {quickView && (
+        <ProductQuickView
+          product={quickView}
+          onClose={() => setQuickView(null)}
+        />
+      )}
     </>
   );
 }

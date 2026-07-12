@@ -174,14 +174,6 @@ export default function Footer({ forceShow = false } = {}) {
                   聯絡我們
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/company"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  關於極客
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -317,6 +309,14 @@ export default function Footer({ forceShow = false } = {}) {
                 ></path>
               </svg>
             </button>
+            <a
+              href="https://www.jeek-webdesign.com.tw"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px]  mb-0 text-gray-400 hover:text-stone-800 duration-300"
+            >
+              Design by 極客網頁設計
+            </a>
             <p className="text-[11px] text-gray-400">
               © 2025 Jeko Inc. All Rights Reserved.
             </p>

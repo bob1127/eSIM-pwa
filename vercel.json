@@ -5,6 +5,19 @@
       "schedule": "0 0 * * *"
     }
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "e-sim-pwa-3k6n.vercel.app"
+        }
+      ],
+      "destination": "https://www.jeko-esim.com.tw/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/manifest.json",
