@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,6 +19,8 @@ import {
   Info,
 } from "lucide-react";
 import ShopNavbar from "../../../components/Shop/ShopNavbar";
+import ShopCartSidebar from "../../../components/Shop/ShopCartSidebar";
+import { useCart } from "../../../components/context/CartContext";
 import Footer from "../../../components/ui/footer.jsx";
 import MediaGalleryLightbox from "../../../components/MediaGalleryLightbox";
 import MaterialIcon from "../../../components/MaterialIcon";
@@ -182,11 +185,7 @@ function Gallery({ images, badge, productName }) {
   };
 
   // 軌道上三張：上一張 / 目前 / 下一張
-  const slideIndexes = [
-    (idx - 1 + len) % len,
-    idx,
-    (idx + 1) % len,
-  ];
+  const slideIndexes = [(idx - 1 + len) % len, idx, (idx + 1) % len];
 
   return (
     <div className="w-full lg:sticky lg:top-[11rem] self-start">
@@ -364,6 +363,8 @@ function Gallery({ images, badge, productName }) {
 }
 
 export default function ShopProductPage() {
+  const router = useRouter();
+  const { addToCart } = useCart();
   const [activeTab, setActiveTab] = useState("purchase");
   const [styleId, setStyleId] = useState("6ft");
   const [qty, setQty] = useState(1);
@@ -372,6 +373,31 @@ export default function ShopProductPage() {
   const [copied, setCopied] = useState(false);
   const stickyRef = useRef(null);
   const [showSticky, setShowSticky] = useState(false);
+
+  const styleLabel =
+    PRODUCT.styles.find((s) => s.id === styleId)?.label || styleId;
+
+  const buildCartProduct = () => ({
+    id: `${PRODUCT.slug}-${styleId}`,
+    variant_id: `${PRODUCT.slug}-${styleId}`,
+    title: PRODUCT.title,
+    name: PRODUCT.title,
+    price: PRODUCT.price,
+    quantity: qty,
+    image: GALLERY[0] || "/images/shop/shop-promo-01.png",
+    specLabel: styleLabel,
+    options: styleLabel,
+    type: "physical",
+  });
+
+  const handleAddToCart = () => {
+    addToCart(buildCartProduct());
+  };
+
+  const handleBuyNow = () => {
+    addToCart(buildCartProduct(), { open: false });
+    router.push("/checkout/shop");
+  };
 
   useEffect(() => {
     const onScroll = () => setShowSticky(window.scrollY > 480);
@@ -389,12 +415,10 @@ export default function ShopProductPage() {
     }
   };
 
-  const styleLabel = PRODUCT.styles.find((s) => s.id === styleId)?.label || "";
-
   return (
     <>
       <Head>
-        <title>{PRODUCT.title} | Jeko 好物商城</title>
+        <title>{PRODUCT.title} | Jeko Jeko 商城</title>
         <meta name="description" content={PRODUCT.title} />
       </Head>
 
@@ -724,15 +748,17 @@ export default function ShopProductPage() {
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   <button
                     type="button"
+                    onClick={handleAddToCart}
                     className="py-3 text-[13px] font-bold border-2 border-[#3B9EFF] text-[#0A6CD0] hover:bg-[#F0F7FF] transition-colors"
                   >
-                    Add to Cart
+                    加入購物車
                   </button>
                   <button
                     type="button"
+                    onClick={handleBuyNow}
                     className="py-3 text-[13px] font-bold bg-[#3B9EFF] text-white hover:bg-[#2B8EEF] transition-colors"
                   >
-                    Buy Now
+                    立即購買
                   </button>
                 </div>
               </div>
@@ -881,21 +907,24 @@ export default function ShopProductPage() {
             </div>
             <button
               type="button"
+              onClick={handleAddToCart}
               className="px-5 py-2.5 text-[13px] font-bold border-2 border-[#3B9EFF] text-[#0A6CD0] hover:bg-[#F0F7FF]"
             >
-              Add to Cart
+              加入購物車
             </button>
             <button
               type="button"
+              onClick={handleBuyNow}
               className="px-5 py-2.5 text-[13px] font-bold bg-[#3B9EFF] text-white hover:bg-[#2B8EEF]"
             >
-              Buy Now
+              立即購買
             </button>
           </div>
         </div>
       </div>
 
       <Footer forceShow />
+      <ShopCartSidebar />
     </>
   );
 }

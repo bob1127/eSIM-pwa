@@ -14,6 +14,7 @@ import {
   ChevronRight,
   ChevronUp,
 } from "lucide-react";
+import { useCart } from "@/components/context/CartContext";
 
 const CONTAINER = "max-w-[1280px] mx-auto px-6 lg:px-10";
 
@@ -611,7 +612,13 @@ function MegaMenu({ mega, visible }) {
 }
 
 // ── 主元件 ─────────────────────────────────────────────────────────
-export default function ShopNavbar({ cartCount = 0, compact = false }) {
+export default function ShopNavbar({
+  cartCount: cartCountProp = 0,
+  compact = false,
+}) {
+  const { cartItems, setIsCartOpen } = useCart();
+  const cartCount =
+    cartItems?.reduce((s, i) => s + i.quantity, 0) || cartCountProp;
   const [activeKey, setActiveKey] = useState(null);
   const [headerBottom, setHeaderBottom] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -734,7 +741,7 @@ export default function ShopNavbar({ cartCount = 0, compact = false }) {
                   className="h-7 w-auto object-contain"
                 />
                 <span className="hidden xl:block text-[11px] text-slate-400 border-l border-slate-200 pl-2.5 leading-tight">
-                  好物商城
+                  Jeko 商城
                 </span>
               </Link>
 
@@ -787,8 +794,9 @@ export default function ShopNavbar({ cartCount = 0, compact = false }) {
                     strokeWidth={1.75}
                   />
                 </button>
-                <Link
-                  href="/cart"
+                <button
+                  type="button"
+                  onClick={() => setIsCartOpen(true)}
                   className="relative p-2 hover:bg-slate-50 rounded transition-colors"
                   aria-label="購物車"
                 >
@@ -797,11 +805,11 @@ export default function ShopNavbar({ cartCount = 0, compact = false }) {
                     strokeWidth={1.75}
                   />
                   {cartCount > 0 && (
-                    <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-black text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                    <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-[#3B9EFF] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                       {cartCount}
                     </span>
                   )}
-                </Link>
+                </button>
                 <Link
                   href="/login"
                   className="p-2 hover:bg-slate-50 rounded transition-colors"
@@ -837,7 +845,7 @@ export default function ShopNavbar({ cartCount = 0, compact = false }) {
                     className="h-7 w-auto object-contain"
                   />
                   <span className="hidden sm:block text-[11px] text-slate-400 border-l border-slate-200 pl-3 leading-tight">
-                    好物商城
+                    Jeko 商城
                   </span>
                 </Link>
 
@@ -853,8 +861,9 @@ export default function ShopNavbar({ cartCount = 0, compact = false }) {
                       strokeWidth={1.75}
                     />
                   </button>
-                  <Link
-                    href="/cart"
+                  <button
+                    type="button"
+                    onClick={() => setIsCartOpen(true)}
                     className="relative p-2 hover:bg-slate-50 rounded transition-colors"
                     aria-label="購物車"
                   >
@@ -863,11 +872,11 @@ export default function ShopNavbar({ cartCount = 0, compact = false }) {
                       strokeWidth={1.75}
                     />
                     {cartCount > 0 && (
-                      <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-black text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                      <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-[#3B9EFF] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                         {cartCount}
                       </span>
                     )}
-                  </Link>
+                  </button>
                   <Link
                     href="/login"
                     className="p-2 hover:bg-slate-50 rounded transition-colors"

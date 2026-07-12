@@ -4,15 +4,12 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Minus,
-  Plus,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Minus, Plus } from "lucide-react";
 import ShopNavbar from "../../components/Shop/ShopNavbar";
+import ShopCartSidebar from "../../components/Shop/ShopCartSidebar";
 import Footer from "../../components/ui/footer.jsx";
+import { useCart } from "../../components/context/CartContext";
+import { useRouter } from "next/router";
 
 const CONTAINER = "max-w-[1680px] mx-auto px-6 lg:px-10";
 
@@ -235,6 +232,26 @@ function PromoCard({ card }) {
 }
 
 function ProductCard({ product, onDetail }) {
+  const router = useRouter();
+  const { addToCart } = useCart();
+
+  const handleBuyNow = () => {
+    addToCart(
+      {
+        id: product.href || product.title,
+        variant_id: product.href || product.title,
+        name: product.title,
+        title: product.title,
+        price: product.price,
+        quantity: 1,
+        image: product.img,
+        type: "physical",
+      },
+      { open: false },
+    );
+    router.push("/checkout/shop");
+  };
+
   return (
     <div className="bg-white flex flex-col h-full">
       <button
@@ -274,12 +291,13 @@ function ProductCard({ product, onDetail }) {
           )}
         </div>
         <div className="mt-auto grid grid-cols-2 gap-2">
-          <Link
-            href={product.href}
+          <button
+            type="button"
+            onClick={handleBuyNow}
             className="text-center text-[12px] font-semibold bg-[#3B9EFF] text-white py-2.5 hover:bg-[#2B8EEF] transition-colors"
           >
             立即購買
-          </Link>
+          </button>
           <button
             type="button"
             onClick={() => onDetail?.(product)}
@@ -295,6 +313,8 @@ function ProductCard({ product, onDetail }) {
 
 /** 單純商品詳情 Popup + 商品圖輪播（無第二張則重複同一張） */
 function ProductQuickView({ product, onClose }) {
+  const router = useRouter();
+  const { addToCart } = useCart();
   const [qty, setQty] = useState(1);
   const [imgIdx, setImgIdx] = useState(0);
 
@@ -456,18 +476,48 @@ function ProductQuickView({ product, onClose }) {
           </div>
 
           <div className="grid grid-cols-2 gap-2 pt-2">
-            <Link
-              href={product.href}
+            <button
+              type="button"
+              onClick={() => {
+                addToCart({
+                  id: product.href || product.title,
+                  variant_id: product.href || product.title,
+                  name: product.title,
+                  title: product.title,
+                  price: product.price,
+                  quantity: qty,
+                  image: product.img,
+                  type: "physical",
+                });
+                onClose?.();
+              }}
               className="py-3 text-center text-[13px] font-bold bg-[#E5E7EB] text-slate-800 hover:bg-[#D1D5DB] transition-colors"
             >
               加入購物車
-            </Link>
-            <Link
-              href={product.href}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                addToCart(
+                  {
+                    id: product.href || product.title,
+                    variant_id: product.href || product.title,
+                    name: product.title,
+                    title: product.title,
+                    price: product.price,
+                    quantity: qty,
+                    image: product.img,
+                    type: "physical",
+                  },
+                  { open: false },
+                );
+                onClose?.();
+                router.push("/checkout/shop");
+              }}
               className="py-3 text-center text-[13px] font-bold bg-[#3B9EFF] text-white hover:bg-[#2B8EEF] transition-colors"
             >
               立即購買
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -621,10 +671,10 @@ export default function ShopPage() {
   return (
     <>
       <Head>
-        <title>好物商城 | Jeko eSIM</title>
+        <title>Jeko 商城 | Jeko eSIM</title>
         <meta
           name="description"
-          content="Jeko 好物商城 — eSIM、充電配件、旅行配件、3C周邊，出國必備一站購齊。"
+          content="Jeko Jeko 商城 — eSIM、充電配件、旅行配件、3C周邊，出國必備一站購齊。"
         />
       </Head>
 
@@ -636,7 +686,7 @@ export default function ShopPage() {
           <Link href={PRODUCT_PDP} className="absolute inset-0 block">
             <Image
               src="/images/shop/shop-hero-banner.png"
-              alt="Jeko 好物商城"
+              alt="Jeko Jeko 商城"
               fill
               priority
               className="object-cover"
@@ -736,6 +786,8 @@ export default function ShopPage() {
           onClose={() => setQuickView(null)}
         />
       )}
+
+      <ShopCartSidebar />
     </>
   );
 }

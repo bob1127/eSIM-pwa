@@ -24,7 +24,7 @@ const HERO_SLIDES = [
   { image: "/images/location/thailand-01.png" },
 ];
 
-/* 使用 public/images/mobile-icon/ 八張圖 */
+/* 使用 public/images/mobile-icon/ */
 const QUICK_ICONS = [
   {
     label: "精選eSIM",
@@ -32,9 +32,9 @@ const QUICK_ICONS = [
     src: "/images/mobile-icon/精選國家.png",
   },
   {
-    label: "好物商城",
+    label: "Jeko 商城",
     href: "/shop",
-    src: "/images/出國必備.png",
+    src: "/images/mobile-icon/Jeko商城.png",
   },
   {
     label: "我的訂單",
@@ -420,12 +420,29 @@ export default function MobileHomePage() {
         <KlookTicketSection />
       </div>
 
-      {/* ═══ 10. 快速導覽 ═══ */}
-      <div className="mt-4 mx-4 bg-white rounded-2xl shadow-sm px-5 py-4">
-        <p className="text-xs text-gray-400 font-semibold mb-3 tracking-wider">
-          快速導覽
-        </p>
-        <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+      {/* ═══ 10. 快速導覽 — 藍底資訊卡風格 ═══ */}
+      <div className="mt-4 mx-4 mb-2 rounded-[20px] bg-[#2F5CFF] px-5 pt-5 pb-4 text-white shadow-[0_10px_28px_rgba(47,92,255,0.28)]">
+        <div className="flex items-center gap-2 mb-4">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v4l2.5 2.5" />
+          </svg>
+          <p className="text-[13px] font-semibold tracking-wide">快速導覽</p>
+        </div>
+
+        <div className="h-px bg-white/30 mb-1" />
+
+        <ul className="divide-y divide-white/20">
           {[
             { label: "如何使用 eSIM？", href: "#how-to-install" },
             { label: "查看支援裝置", href: "/" },
@@ -433,17 +450,25 @@ export default function MobileHomePage() {
             { label: "合作夥伴", href: "/partner/catalog" },
             { label: "蝦皮快速兌換", href: "/shopee-qrcode" },
             { label: "查找用量", href: "/data-query" },
-          ].map((l) => (
-            <Link
-              key={l.label}
-              href={l.href}
-              className="flex items-center gap-1.5 text-[12px] text-gray-500 py-1 active:text-[#0284c7]"
-            >
-              <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
-              {l.label}
-            </Link>
+          ].map((l, i) => (
+            <li key={l.label}>
+              <Link
+                href={l.href}
+                className="flex items-center justify-between gap-3 py-3 text-[13px] font-medium active:opacity-70"
+              >
+                <span className="flex items-baseline gap-3 min-w-0">
+                  <span className="tabular-nums text-white/55 text-[12px] w-3 shrink-0">
+                    {i + 1}
+                  </span>
+                  <span className="truncate">{l.label}</span>
+                </span>
+                <span className="text-white/45 text-[15px] shrink-0" aria-hidden>
+                  ›
+                </span>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </div>
   );

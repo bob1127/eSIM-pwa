@@ -1394,9 +1394,11 @@ export async function getStaticProps({ params }) {
     }
 
     // Medusa Store API 預設不回傳 metadata，必須 fields=+metadata
+    // 變體選項需帶 option.title，前台才能正確分出電信商 / 天數 / 數據量
     const query = new URLSearchParams({
       handle: slug,
-      fields: "+metadata",
+      fields:
+        "+metadata,*variants,*variants.prices,*variants.calculated_price,*variants.options,*variants.options.option",
     });
     if (regionId) query.set("region_id", regionId);
 
@@ -1499,21 +1501,29 @@ export async function getStaticProps({ params }) {
         }
         attrs = { ...v.metadata, ...attrs };
 
-        // 智慧解析選項組合
+        // 依選項標題解析（對齊無限方案：使用天數 / 電信商 / 數據量）
         v.options?.forEach((opt) => {
           const val = String(opt.value || "").trim();
           if (!val) return;
+          const title = String(opt.option?.title || opt.title || "").trim();
 
-          if (val.includes("天") || val.includes("Days")) {
-            attrs.days = parseInt(val);
+          if (title === "使用天數" || val.includes("天") || val.includes("Days")) {
+            attrs.days = parseInt(val, 10);
           } else if (
+            title === "數據量" ||
             val.includes("流量") ||
             val.includes("GB") ||
             val.includes("MB") ||
-            val.includes("吃到飽")
+            val.includes("吃到飽") ||
+            val.includes("每日")
           ) {
             attrs.data_amount = val;
-          } else {
+          } else if (title === "電信商") {
+            attrs.telecom = val;
+          } else if (title === "線路" || title === "方案") {
+            // 舊資料相容：不當成電信商
+            attrs.line = val;
+          } else if (!attrs.telecom) {
             attrs.telecom = val;
           }
         });

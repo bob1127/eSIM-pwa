@@ -6,6 +6,11 @@ import MobileCardCarousel from "./MobileCardCarousel";
 import KlookLocationMap from "./KlookLocationMap";
 import { KLOOK_HOTELS } from "../data/klook/hotels";
 
+const PARTNER_TABS = [
+  { id: "klook", label: "Jeko × Klook" },
+  { id: "partner", label: "Jeko 合作" },
+];
+
 const REGION_TABS = [
   { id: "all", label: "全部" },
   { id: "osaka", label: "大阪" },
@@ -17,6 +22,37 @@ const PREVIEW_COUNT = 4;
 const CAROUSEL_INTERVAL_MS = 4000;
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=960&q=80";
+
+/** Google 風格：文字 + 底線 */
+function UnderlineTabs({ tabs, activeId, onChange, accent = "#1a73e8" }) {
+  return (
+    <div className="flex gap-6 sm:gap-8 overflow-x-auto scrollbar-none">
+      {tabs.map((tab) => {
+        const active = activeId === tab.id;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onChange(tab.id)}
+            className={[
+              "relative shrink-0 pb-3 text-[15px] sm:text-base font-medium tracking-tight transition-colors",
+              active ? "text-gray-900" : "text-gray-500 hover:text-gray-800",
+            ].join(" ")}
+            style={active ? { color: accent } : undefined}
+          >
+            {tab.label}
+            {active && (
+              <span
+                className="absolute left-0 right-0 bottom-0 h-[3px] rounded-full"
+                style={{ backgroundColor: accent }}
+              />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 const HOTEL_PLACEHOLDER_IMAGES = [
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=960&q=80",
@@ -159,7 +195,7 @@ function HotelModal({ item, onClose }) {
           onClick={onClose}
         />
         <motion.div
-          className="relative w-full sm:max-w-xl max-h-[92vh] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          className="relative w-full sm:max-w-xl h-[90dvh] max-h-[90dvh] sm:h-auto sm:max-h-[85vh] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col"
           initial={{ y: 60, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 60, opacity: 0 }}
@@ -167,11 +203,11 @@ function HotelModal({ item, onClose }) {
         >
           <HotelImageCarousel
             item={item}
-            aspectClass="aspect-[16/9] bg-slate-900"
+            aspectClass="aspect-[16/9] bg-slate-900 shrink-0"
             showArrows
           />
 
-          <div className="overflow-y-auto flex-1 px-5 pt-4 pb-4">
+          <div className="overflow-y-auto flex-1 min-h-0 px-5 pt-4 pb-4">
             <div className="flex items-center gap-2 flex-wrap mb-2">
               <span className="text-[11px] font-bold text-[#00B259] bg-green-50 px-2 py-0.5 rounded-full">
                 {item.subtitle}
@@ -240,7 +276,7 @@ function HotelModal({ item, onClose }) {
               rel="noopener noreferrer sponsored"
               className="block w-full text-center py-4 rounded-xl bg-[#00B259] hover:bg-[#009f4f] text-white text-base font-black shadow-lg transition-colors"
             >
-              前往 Klook 立即預訂
+              立即預訂
             </a>
 
             <p className="mt-2 text-center text-[10px] text-gray-400">
@@ -324,14 +360,16 @@ function HotelCard({ item, onClick }) {
 }
 
 export default function AccommodationRecommendSection() {
+  const [partnerTab, setPartnerTab] = useState("klook");
   const [activeTab, setActiveTab] = useState("all");
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAll, setShowAll] = useState(false);
 
   const filtered = useMemo(() => {
+    if (partnerTab !== "klook") return [];
     if (activeTab === "all") return KLOOK_HOTELS;
     return KLOOK_HOTELS.filter((h) => h.tabId === activeTab);
-  }, [activeTab]);
+  }, [partnerTab, activeTab]);
 
   const displayItems = showAll ? filtered : filtered.slice(0, PREVIEW_COUNT);
 
@@ -341,101 +379,124 @@ export default function AccommodationRecommendSection() {
       className="w-full bg-[#f0f1f3] pb-12 lg:pb-16 pt-4 scroll-mt-28"
     >
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-          <div className="flex flex-wrap items-baseline gap-3">
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
-              Jeko <span className="text-[#00B259]">×</span> Klook
-            </h2>
-            <span className="text-base font-semibold text-gray-500">
-              住宿推薦
-            </span>
+        {/* 第一層：Jeko × Klook / Jeko 合作 */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-1 border-b border-gray-200/80">
+          <UnderlineTabs
+            tabs={PARTNER_TABS}
+            activeId={partnerTab}
+            onChange={(id) => {
+              setPartnerTab(id);
+              setActiveTab("all");
+              setShowAll(false);
+              setSelectedItem(null);
+            }}
+            accent="#00B259"
+          />
+          <p className="text-sm font-bold text-[#202020] shrink-0 pb-3 sm:pb-3">
+            住宿推薦
+          </p>
+        </div>
+
+        {/* 第二層：地區 pill（僅 Klook） */}
+        {partnerTab === "klook" && (
+          <div className="flex flex-wrap gap-2 mt-5 mb-8">
+            {REGION_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setShowAll(false);
+                }}
+                className={[
+                  "rounded-full px-4 py-2 text-sm font-bold transition-all duration-200",
+                  activeTab === tab.id
+                    ? "bg-gray-900 text-white shadow-sm"
+                    : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300 hover:text-gray-900",
+                ].join(" ")}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-        </div>
+        )}
 
-        <div className="flex flex-wrap gap-2 mb-8">
-          {REGION_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => {
-                setActiveTab(tab.id);
-                setShowAll(false);
-              }}
-              className={[
-                "rounded-full px-4 py-2 text-sm font-bold transition-all duration-200",
-                activeTab === tab.id
-                  ? "bg-gray-900 text-white shadow-sm"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300 hover:text-gray-900",
-              ].join(" ")}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {partnerTab === "partner" ? (
+          <div className="mt-8 rounded-2xl border border-dashed border-gray-300 bg-white/70 px-6 py-16 text-center">
+            <p className="text-base font-bold text-gray-800 mb-2">
+              Jeko 合作住宿
+            </p>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">
+              即將上架精選合作旅宿，敬請期待。
+            </p>
+          </div>
+        ) : (
+          <>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`mobile-${activeTab}`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
+                className="md:hidden"
+              >
+                {filtered.length > 0 ? (
+                  <MobileCardCarousel slideClassName="min-w-0 flex-[0_0_82%]">
+                    {filtered.map((item) => (
+                      <HotelCard
+                        key={item.id}
+                        item={item}
+                        onClick={() => setSelectedItem(item)}
+                      />
+                    ))}
+                  </MobileCardCarousel>
+                ) : (
+                  <p className="text-center text-gray-500 py-12 text-sm">
+                    暫無推薦住宿
+                  </p>
+                )}
+              </motion.div>
+            </AnimatePresence>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`mobile-${activeTab}`}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-            className="md:hidden"
-          >
-            {filtered.length > 0 ? (
-              <MobileCardCarousel slideClassName="min-w-0 flex-[0_0_82%]">
-                {filtered.map((item) => (
-                  <HotelCard
-                    key={item.id}
-                    item={item}
-                    onClick={() => setSelectedItem(item)}
-                  />
-                ))}
-              </MobileCardCarousel>
-            ) : (
-              <p className="text-center text-gray-500 py-12 text-sm">
-                暫無推薦住宿
-              </p>
-            )}
-          </motion.div>
-        </AnimatePresence>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`desktop-${activeTab}-${showAll}`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
+                className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5"
+              >
+                {displayItems.length > 0 ? (
+                  displayItems.map((item) => (
+                    <HotelCard
+                      key={item.id}
+                      item={item}
+                      onClick={() => setSelectedItem(item)}
+                    />
+                  ))
+                ) : (
+                  <p className="col-span-full text-center text-gray-500 py-12 text-sm">
+                    暫無推薦住宿
+                  </p>
+                )}
+              </motion.div>
+            </AnimatePresence>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`desktop-${activeTab}-${showAll}`}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-            className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5"
-          >
-            {displayItems.length > 0 ? (
-              displayItems.map((item) => (
-                <HotelCard
-                  key={item.id}
-                  item={item}
-                  onClick={() => setSelectedItem(item)}
-                />
-              ))
-            ) : (
-              <p className="col-span-full text-center text-gray-500 py-12 text-sm">
-                暫無推薦住宿
-              </p>
-            )}
-          </motion.div>
-        </AnimatePresence>
-
-        <div className="mt-8 hidden md:flex items-center justify-center gap-4">
-          {!showAll && filtered.length > PREVIEW_COUNT && (
-            <button
-              type="button"
-              onClick={() => setShowAll(true)}
-              className="inline-flex items-center justify-center min-w-[180px] px-8 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-bold hover:border-gray-300 transition-colors"
-            >
-              顯示全部 {filtered.length} 筆
-            </button>
-          )}
-        </div>
+            <div className="mt-8 hidden md:flex items-center justify-center gap-4">
+              {!showAll && filtered.length > PREVIEW_COUNT && (
+                <button
+                  type="button"
+                  onClick={() => setShowAll(true)}
+                  className="inline-flex items-center justify-center min-w-[180px] px-8 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-bold hover:border-gray-300 transition-colors"
+                >
+                  顯示全部 {filtered.length} 筆
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {selectedItem && (

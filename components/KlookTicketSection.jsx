@@ -671,7 +671,7 @@ function TicketModal({ item, onClose }) {
           onClick={onClose}
         />
         <motion.div
-          className="relative w-full sm:max-w-xl max-h-[92vh] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          className="relative w-full sm:max-w-xl h-[90dvh] max-h-[90dvh] sm:h-auto sm:max-h-[85vh] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col"
           initial={{ y: 60, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 60, opacity: 0 }}
@@ -752,7 +752,7 @@ function TicketModal({ item, onClose }) {
               rel="noopener noreferrer sponsored"
               className="block w-full text-center py-4 rounded-xl bg-[#00B259] hover:bg-[#009f4f] text-white text-base font-black shadow-lg transition-colors"
             >
-              前往 Klook 立即購票
+              立即購票
             </a>
 
             <p className="mt-2 text-center text-[10px] text-gray-400">
@@ -874,40 +874,35 @@ export default function KlookTicketSection() {
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
               Jeko <span className="text-[#00B259]">×</span> Klook
             </h2>
-            <span className="text-base font-semibold text-gray-500">
-              熱門體驗 / 一日遊推薦
-            </span>
           </div>
-          <a
-            href={listingUrl}
-            target="_blank"
-            rel="noopener noreferrer sponsored"
-            className="text-sm font-bold text-[#00B259] hover:underline shrink-0"
-          >
-            查看 Klook 更多體驗 →
-          </a>
         </div>
 
-        {/* 國家 Tab */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {COUNTRY_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => {
-                setActiveTab(tab.id);
-                setShowAll(false);
-              }}
-              className={[
-                "rounded-full px-4 py-2 text-sm font-bold transition-all duration-200",
-                activeTab === tab.id
-                  ? "bg-gray-900 text-white shadow-sm"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300 hover:text-gray-900",
-              ].join(" ")}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* 國家 Tab — Google 底線風格 */}
+        <div className="flex gap-6 sm:gap-8 mb-8 border-b border-gray-200/80 overflow-x-auto scrollbar-none">
+          {COUNTRY_TABS.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setShowAll(false);
+                }}
+                className={[
+                  "relative shrink-0 pb-3 text-[15px] sm:text-base font-medium tracking-tight transition-colors",
+                  active
+                    ? "text-[#1a73e8]"
+                    : "text-gray-500 hover:text-gray-800",
+                ].join(" ")}
+              >
+                {tab.label}
+                {active && (
+                  <span className="absolute left-0 right-0 bottom-0 h-[3px] rounded-full bg-[#1a73e8]" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* 手機版輪播 */}

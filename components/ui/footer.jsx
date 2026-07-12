@@ -87,7 +87,7 @@ export default function Footer({ forceShow = false } = {}) {
                   href="/shop"
                   className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                 >
-                  好物商城
+                  Jeko 商城
                 </Link>
               </li>
               <li>

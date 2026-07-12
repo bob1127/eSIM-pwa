@@ -123,7 +123,7 @@ function isHomePath(path: string | null | undefined) {
 const navLinks = [
   { key: "home", label: "首頁", href: "/", hasMega: true },
   { key: "categories", label: "精選eSIM", href: "/product", hasMega: true },
-  { key: "shop", label: "好物商城", href: "/shop" },
+  { key: "shop", label: "Jeko 商城", href: "/shop" },
   { key: "blog", label: "旅遊須知", href: "/blog" },
   { key: "tutorial", label: "啟用教學", href: "/operation-shopee" },
   { key: "tutorial", label: "關於Jeko", href: "/about" },
@@ -327,7 +327,7 @@ export default function Navbar({ className }: NavbarProps) {
         )}
       >
         <div
-          className="mx-auto  max-w-[1450px] 2xl:max-w-[1600px] pointer-events-auto rounded-2xl  border-1 border-gray-200 flex flex-col relative"
+          className="mx-auto  max-w-[1450px] 2xl:max-w-[1600px] pointer-events-auto rounded-2xl  border-1 border-gray-300 flex flex-col relative"
           onMouseLeave={() => setOpenMega("none")}
         >
           {/* 上半部：白色區塊 (Logo & 工具列) */}
@@ -618,7 +618,7 @@ export default function Navbar({ className }: NavbarProps) {
                 />
                 <MobileSimpleNavItem
                   icon={<ShoppingBagIcon className="w-5 h-5" />}
-                  label="好物商城"
+                  label="Jeko 商城"
                   href="/shop"
                   onClick={() => setMobileOpen(false)}
                 />

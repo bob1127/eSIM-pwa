@@ -36,10 +36,7 @@ const TICKETS = [
     subtitle: "官方授權・QR Code 即掃即入",
     priceLabel: "TWD 1,826 起",
     footer: "立即確認 · 電子票券 · 300K+ 已訂購",
-    images: [
-      "/images/kkday/jp-usj-1.jpg",
-      "/images/kkday/jp-usj-2.jpg",
-    ],
+    images: ["/images/kkday/jp-usj-1.jpg", "/images/kkday/jp-usj-2.jpg"],
     description:
       "日本環球影城（USJ）是大阪最受歡迎的主題樂園，以好萊塢電影為題材，打造超級任天堂世界™、哈利波特魔法世界™、小小兵樂園、侏羅紀公園等多個超人氣園區。透過 KKday 購買官方授權電子票，訂購後立即取得 QR Code，現場直接掃碼入園，省去排隊購票的麻煩！",
     features: [
@@ -115,10 +112,7 @@ const TICKETS = [
     subtitle: "夢幻城堡・海洋奇觀・魔法全日體驗",
     priceLabel: "TWD 1,800 起",
     footer: "電子票券 · 可選日期",
-    images: [
-      "/images/kkday/jp-disney-1.jpg",
-      "/images/kkday/jp-disney-2.jpg",
-    ],
+    images: ["/images/kkday/jp-disney-1.jpg", "/images/kkday/jp-disney-2.jpg"],
     description:
       "東京迪士尼樂園與東京迪士尼海洋，是東亞最受歡迎的主題樂園，每年吸引超過 3,000 萬遊客。選擇 1-Day Passport 或跨兩園的 Park Hopper Passport，透過 KKday 購票享電子 QR Code，直接掃碼入場，免現場排隊購票。",
     features: [
@@ -192,10 +186,7 @@ const TICKETS = [
     subtitle: "關西機場直達大阪・京都・神戶",
     priceLabel: "TWD 480 起",
     footer: "電子憑證 · 外國旅客限定折扣",
-    images: [
-      "/images/kkday/jp-haruka-1.jpg",
-      "/images/kkday/jp-haruka-2.jpg",
-    ],
+    images: ["/images/kkday/jp-haruka-1.jpg", "/images/kkday/jp-haruka-2.jpg"],
     description:
       "HARUKA 特急列車是往返關西國際機場最便捷的交通工具，直達大阪梅田（難波）、京都、神戶等市中心。外國旅客可享專屬折扣票，相較現場購票更優惠，訂購後直接憑 QR Code 上車。",
     features: [
@@ -271,10 +262,7 @@ const TICKETS = [
     subtitle: "東京歡樂城・小小世界・杜莎蠟像館",
     priceLabel: "TWD 380 起",
     footer: "1日/2日 · 最高 55% OFF",
-    images: [
-      "/images/kkday/jp-odaiba-1.jpg",
-      "/images/kkday/jp-odaiba-2.jpg",
-    ],
+    images: ["/images/kkday/jp-odaiba-1.jpg", "/images/kkday/jp-odaiba-2.jpg"],
     description:
       "台場週遊券讓你以超值票價暢遊台場多個熱門景點，包括東京歡樂城、SMALL WORLDS 縮小版世界、章魚燒博物館、電信中心展望台、東京杜莎夫人蠟像館等，最高享 55% 折扣。",
     features: [
@@ -298,10 +286,7 @@ const TICKETS = [
     subtitle: "地鐵・公車・計程車・便利商店全通用",
     priceLabel: "TWD 190 起",
     footer: "台灣取件 · 無使用期限",
-    images: [
-      "/images/kkday/kr-tmoney-1.jpg",
-      "/images/kkday/kr-tmoney-2.jpg",
-    ],
+    images: ["/images/kkday/kr-tmoney-1.jpg", "/images/kkday/kr-tmoney-2.jpg"],
     description:
       "T-money 卡是韓國最通用的交通卡，適用於首爾・釜山等全韓國地鐵、市區公車、計程車，甚至 GS25、CU、7-Eleven 便利商店消費也能使用。相較現金購票享轉乘優惠，是自由行必備神器。",
     features: [
@@ -427,10 +412,7 @@ const TICKETS = [
     subtitle: "南山纜車・德壽宮・明洞街頭體驗",
     priceLabel: "TWD 380 起",
     footer: "QR Code 直接入場 · 電子票券",
-    images: [
-      "/images/kkday/kr-namsan-1.jpg",
-      "/images/kkday/kr-namsan-2.jpg",
-    ],
+    images: ["/images/kkday/kr-namsan-1.jpg", "/images/kkday/kr-namsan-2.jpg"],
     description:
       "首爾中區通票涵蓋多個中區核心景點，包括搭乘南山纜車俯瞰首爾市景、參觀紙博物館與 Ground Seesaw Myeongdong 當代展覽、在太極堂等百年老店品嚐傳統點心，完整體驗首爾歷史文化魅力。",
     features: [
@@ -695,7 +677,7 @@ function TicketModal({ item, onClose }) {
 
         {/* 視窗 */}
         <motion.div
-          className="relative w-full sm:max-w-lg max-h-[92vh] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          className="relative w-full sm:max-w-lg h-[90dvh] max-h-[90dvh] sm:h-auto sm:max-h-[85vh] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col"
           initial={{ y: 60, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 60, opacity: 0 }}
@@ -755,7 +737,10 @@ function TicketModal({ item, onClose }) {
               </p>
               <ul className="space-y-1.5">
                 {item.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-sm text-gray-700"
+                  >
                     <span className="shrink-0 text-[#0A6CD0] mt-0.5">·</span>
                     <span>{f}</span>
                   </li>
@@ -770,7 +755,7 @@ function TicketModal({ item, onClose }) {
               rel="noopener noreferrer sponsored"
               className="block w-full text-center py-4 rounded-xl bg-[#0A6CD0] hover:bg-[#095bb8] text-white text-base font-black shadow-lg transition-colors"
             >
-              前往 KKday 立即購票 →
+              立即購票
             </a>
 
             <p className="mt-3 text-center text-[10px] text-gray-400">
@@ -890,40 +875,42 @@ export default function KKdayTicketSection() {
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
               Jeko <span className="text-[#0A6CD0]">×</span> KKday
             </h2>
-            <span className="text-base font-semibold text-gray-500">
-              門票 / 交通票券推薦
-            </span>
+            <span className="text-base font-semibold text-gray-500"></span>
           </div>
-          <a
-            href={listingUrl}
-            target="_blank"
+          <p
             rel="noopener noreferrer sponsored"
-            className="text-sm font-bold text-[#0A6CD0] hover:underline shrink-0"
+            className="text-sm font-bold text-[#202020] hover:underline shrink-0"
           >
-            查看 KKday 更多票券 →
-          </a>
+            門票 / 交通票券推薦
+          </p>
         </div>
 
-        {/* 國家 Tab */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {COUNTRY_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => {
-                setActiveTab(tab.id);
-                setShowAll(false);
-              }}
-              className={[
-                "rounded-full px-4 py-2 text-sm font-bold transition-all duration-200",
-                activeTab === tab.id
-                  ? "bg-gray-900 text-white shadow-sm"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300 hover:text-gray-900",
-              ].join(" ")}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* 國家 Tab — Google 底線風格 */}
+        <div className="flex gap-6 sm:gap-8 mb-8 border-b border-gray-200/80 overflow-x-auto scrollbar-none">
+          {COUNTRY_TABS.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setShowAll(false);
+                }}
+                className={[
+                  "relative shrink-0 pb-3 text-[15px] sm:text-base font-medium tracking-tight transition-colors",
+                  active
+                    ? "text-[#1a73e8]"
+                    : "text-gray-500 hover:text-gray-800",
+                ].join(" ")}
+              >
+                {tab.label}
+                {active && (
+                  <span className="absolute left-0 right-0 bottom-0 h-[3px] rounded-full bg-[#1a73e8]" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* 手機版輪播 */}
