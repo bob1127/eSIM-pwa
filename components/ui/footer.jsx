@@ -230,6 +230,7 @@ export default function Footer({ forceShow = false } = {}) {
               <p>(僅提供收取信件及包裹服務)</p>
               <b>60982396</b>
               <p>客服信箱：info@bluelink.com.tw</p>
+              <p>客服電話：0939-767-977</p>
             </div>
           </div>
 

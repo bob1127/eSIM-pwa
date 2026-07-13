@@ -75,8 +75,8 @@ export async function getStaticProps({ params }) {
       `✅ 成功找到分類 ID: ${currentCategory.id} (名稱: ${currentCategory.name})`,
     );
 
-    // 2. 抓取該分類下的所有商品
-    const prodUrl = `${backendUrl}/store/products?category_id[]=${currentCategory.id}`;
+    // 2. 抓取該分類下的所有商品（含變體價格，供最低價顯示）
+    const prodUrl = `${backendUrl}/store/products?category_id[]=${currentCategory.id}&fields=*variants,*variants.prices,*variants.calculated_price&limit=100`;
     console.log(`🌐 正在呼叫商品 API: ${prodUrl}`);
     const prodRes = await fetch(prodUrl, { headers });
 
@@ -124,19 +124,40 @@ export async function getStaticProps({ params }) {
       slug: cat.handle,
     }));
 
-    const formattedProducts = (prodData.products || []).map((p) => {
-      const firstVariant = p.variants?.[0];
-      let price = 0;
-      let originalPrice = 0;
-      if (firstVariant?.prices && firstVariant.prices.length > 0) {
-        price = firstVariant.prices[0].amount;
-        originalPrice = firstVariant.original_price || price;
+    const getVariantAmount = (v) => {
+      if (
+        v?.calculated_price &&
+        typeof v.calculated_price.calculated_amount === "number"
+      ) {
+        return v.calculated_price.calculated_amount;
       }
+      if (typeof v?.calculated_price === "number") {
+        return v.calculated_price;
+      }
+      if (v?.prices?.length > 0) {
+        const twd = v.prices.find(
+          (pr) =>
+            pr.currency_code?.toLowerCase() === "twd" ||
+            pr.currency_code?.toLowerCase() === "ntd",
+        );
+        return twd ? twd.amount : v.prices[0].amount;
+      }
+      return null;
+    };
+
+    const formattedProducts = (prodData.products || []).map((p) => {
+      const amounts = (p.variants || [])
+        .map(getVariantAmount)
+        .filter((n) => typeof n === "number" && n > 0);
+      const price = amounts.length > 0 ? Math.min(...amounts) : 0;
+      const firstVariant = p.variants?.[0];
+      const originalPrice = firstVariant?.original_price || price;
+
       return {
         id: p.id,
         name: p.title,
         slug: p.handle,
-        price: price,
+        price,
         original_price: originalPrice,
         image_url: resolveMedusaImageUrl(p.thumbnail),
         tags: p.tags?.map((t) => t.value) || [],
@@ -398,6 +419,9 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                           <div className="flex items-end gap-2 mt-1">
                             <span className="text-[#0A6CD0] font-black text-base">
                               NT${price}
+                              <span className="text-[12px] font-bold ml-0.5">
+                                起
+                              </span>
                             </span>
                             {regularPrice && regularPrice !== price && (
                               <del className="text-gray-400 text-xs mb-0.5">

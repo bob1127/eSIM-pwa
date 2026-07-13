@@ -34,6 +34,7 @@ import {
   BookOpenIcon,
   DevicePhoneMobileIcon,
   ChatBubbleLeftRightIcon,
+  UserGroupIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
@@ -128,16 +129,14 @@ const navLinks = [
   { key: "tutorial", label: "啟用教學", href: "/operation-shopee" },
   { key: "tutorial", label: "關於Jeko", href: "/about" },
   { key: "tutorial", label: "合作夥伴", href: "/cooperation" },
+  { key: "contact", label: "聯絡我們", href: "/contact" },
   { key: "usage", label: "蝦皮兌換", href: "/shopee-qrcode" },
   { key: "usage", label: "查詢用量", href: "/data-query" },
 ];
 
 const fullMenuLinks = [
   ...navLinks,
-  { key: "shopee", label: "蝦皮兌換", href: "/shopee-qrcode" },
   { key: "sale", label: "限時特惠", href: "#" },
-  { key: "contact", label: "聯絡我們", href: "/contact" },
-  { key: "partner", label: "合作夥伴", href: "/cooperation" },
 ];
 
 // --- 3. Navbar 主元件 ---
@@ -689,7 +688,13 @@ export default function Navbar({ className }: NavbarProps) {
                 />
                 <MobileSimpleNavItem
                   icon={<ChatBubbleLeftRightIcon className="w-5 h-5" />}
-                  label="聯絡我們 / 合作夥伴"
+                  label="聯絡我們"
+                  href="/contact"
+                  onClick={() => setMobileOpen(false)}
+                />
+                <MobileSimpleNavItem
+                  icon={<UserGroupIcon className="w-5 h-5" />}
+                  label="合作夥伴"
                   href="/cooperation"
                   onClick={() => setMobileOpen(false)}
                 />

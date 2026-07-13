@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { CONTACT_UI, CONTACT_TABS } from "@/lib/contactUi";
+import { CONTACT_UI, CONTACT_TABS, CONTACT_INFO } from "@/lib/contactUi";
 import MaterialIcon from "@/components/MaterialIcon";
 
 export default function ContactPageShell({ activeTab, onTabChange, children }) {
@@ -25,8 +25,8 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
           <span className="text-[#2b579a] font-bold">聯絡我們</span>
         </nav>
 
-        {/* 標題區 — 參考幻冬舎 INQUIRIES */}
-        <div className="mb-8">
+        {/* 標題區 */}
+        <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-black text-[#1e3a5f] tracking-tight">
             聯絡我們
           </h1>
@@ -35,6 +35,42 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
             購買諮詢、合作夥伴申請、退換款事宜，請選擇下方分類填寫表單，我們將於
             1～3 個工作天內回覆。
           </p>
+        </div>
+
+        {/* Email / 電話快捷卡片 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+          <a
+            href={`mailto:${CONTACT_INFO.email}`}
+            className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#2563eb] hover:shadow-sm transition"
+          >
+            <div className="w-11 h-11 rounded-xl bg-[#2b579a]/10 flex items-center justify-center shrink-0">
+              <MaterialIcon name="mail" size={22} className="text-[#2b579a]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Email
+              </p>
+              <p className="text-sm sm:text-base font-black text-[#1e3a5f] truncate">
+                {CONTACT_INFO.email}
+              </p>
+            </div>
+          </a>
+          <a
+            href={CONTACT_INFO.phoneTel}
+            className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#2563eb] hover:shadow-sm transition"
+          >
+            <div className="w-11 h-11 rounded-xl bg-[#2b579a]/10 flex items-center justify-center shrink-0">
+              <MaterialIcon name="call" size={22} className="text-[#2b579a]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                電話
+              </p>
+              <p className="text-sm sm:text-base font-black text-[#1e3a5f]">
+                {CONTACT_INFO.phoneDisplay}
+              </p>
+            </div>
+          </a>
         </div>
 
         {/* 分頁 stepper */}
@@ -89,20 +125,20 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
             {
               icon: "mail",
               label: "Email",
-              val: "support@re-media.com",
-              href: "mailto:support@re-media.com",
+              val: CONTACT_INFO.email,
+              href: `mailto:${CONTACT_INFO.email}`,
+            },
+            {
+              icon: "call",
+              label: "電話",
+              val: CONTACT_INFO.phoneDisplay,
+              href: CONTACT_INFO.phoneTel,
             },
             {
               icon: "chat",
               label: "LINE 官方",
               val: "線上即時諮詢",
               href: "https://lin.ee/y6tdx5q",
-            },
-            {
-              icon: "help_center",
-              label: "常見問題",
-              val: "查看 FAQ",
-              href: "/faq",
             },
           ].map((item) => (
             <a
