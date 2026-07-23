@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
-import { getSupabaseAdminServer } from "@/lib/supabaseAdminServer";
+import { fetchActiveStoreByDomain } from "@/lib/partnerStorefront";
 import { useSession, signIn, signOut } from "next-auth/react";
-import PartnerLayout from "@/components/PartnerLayout";
+import PartnerShopLayout from "@/components/Shop/PartnerShopLayout";
 
 const RESEND_WAIT_SECONDS = 60;
 
@@ -422,7 +422,7 @@ export default function PartnerLoginRegisterPage({ store }) {
     );
 
   return (
-    <PartnerLayout store={store} title="登入與註冊">
+    <PartnerShopLayout store={store} title="登入與註冊">
       <div className="bg-[#f5f6f6] min-h-[calc(100vh-80px)] flex flex-col items-center justify-center px-4 py-12">
         {/* 🌟 專屬深海藍高質感卡片設計 */}
         <div className="w-full max-w-md bg-[#1e3a8a] rounded-[2rem] shadow-2xl p-8 sm:p-10 relative overflow-hidden">
@@ -626,20 +626,14 @@ export default function PartnerLoginRegisterPage({ store }) {
           </p>
         </div>
       </div>
-    </PartnerLayout>
+    </PartnerShopLayout>
   );
 }
 
 // 伺服器端資料抓取
 export async function getServerSideProps(context) {
   const { partnerSlug } = context.params;
-  const db = getSupabaseAdminServer();
-  const { data: store, error } = await db
-    .from("stores")
-    .select("*")
-    .eq("domain", partnerSlug)
-    .eq("status", "active")
-    .single();
-  if (error || !store) return { notFound: true };
+  const store = await fetchActiveStoreByDomain(partnerSlug);
+  if (!store) return { notFound: true };
   return { props: { store } };
 }

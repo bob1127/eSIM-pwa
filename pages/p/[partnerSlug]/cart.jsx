@@ -2,14 +2,17 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
-import { getSupabaseAdminServer } from "@/lib/supabaseAdminServer";
+import {
+  fetchActiveStoreByDomain,
+  fetchStoreProductsForStorefront,
+} from "@/lib/partnerStorefront";
 import { useCart } from "@/components/context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
 import Stepper from "@mui/material/Stepper";
 import Step from "@mui/material/Step";
 import StepLabel from "@mui/material/StepLabel";
 import Box from "@mui/material/Box";
-import PartnerLayout from "@/components/PartnerLayout"; // 🌟 引入統一版型
+import PartnerShopLayout from "@/components/Shop/PartnerShopLayout"; // 🌟 統一使用 /shop Navbar+Footer
 import EsimRefundDisclosure from "@/components/legal/EsimRefundDisclosure";
 import { TrashIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 
@@ -102,7 +105,7 @@ export default function PartnerCart({ store }) {
 
   return (
     // 🌟 使用 PartnerLayout 包裹，Navbar 與 Footer 全自動生成！
-    <PartnerLayout store={store} title="結帳購物車">
+    <PartnerShopLayout store={store} title="結帳購物車">
       <div className="pt-12 max-w-[1400px] mx-auto px-4 md:px-8 py-20 w-full">
         <Box sx={{ width: "100%", marginBottom: "3rem" }}>
           <Stepper activeStep={activeStep} alternativeLabel>
@@ -473,49 +476,22 @@ export default function PartnerCart({ store }) {
           )}
         </AnimatePresence>
       </div>
-    </PartnerLayout>
+    </PartnerShopLayout>
   );
 }
 
 export async function getServerSideProps(context) {
   const { partnerSlug } = context.params;
-  const db = getSupabaseAdminServer();
-  const { data: store, error: storeError } = await db
-    .from("stores")
-    .select("*")
-    .eq("domain", partnerSlug)
-    .eq("status", "active")
-    .single();
-  if (storeError || !store) return { notFound: true };
-  const { data: storeProducts, error: spError } = await db
-    .from("store_products")
-    .select(
-      `product_id, custom_prices, products ( id, name, description, image_url, product_variations ( id, b2b_price ) )`,
-    )
-    .eq("store_id", store.id);
-  if (spError || !storeProducts) return { props: { store, products: [] } };
-  const formattedProducts = storeProducts
-    .filter((sp) => sp.products)
-    .map((sp) => {
-      const p = sp.products;
-      let minPrice = 0;
-      if (p.product_variations?.length > 0) {
-        const prices = p.product_variations.map((v) =>
-          sp.custom_prices?.[v.id] !== undefined
-            ? parseInt(sp.custom_prices[v.id])
-            : Math.round(
-                (v.b2b_price || 0) * (1 + (store.markup_rate || 0) / 100),
-              ),
-        );
-        minPrice = Math.min(...prices);
-      }
-      return {
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        displayPrice: minPrice > 0 ? minPrice : "???",
-        image: p.image_url || null,
-      };
-    });
-  return { props: { store, products: formattedProducts } };
+  const store = await fetchActiveStoreByDomain(partnerSlug);
+  if (!store) return { notFound: true };
+  const formattedProducts = await fetchStoreProductsForStorefront(store);
+  return {
+    props: {
+      store,
+      products: formattedProducts.map((p) => ({
+        ...p,
+        displayPrice: p.displayPrice === "0" ? "???" : p.displayPrice,
+      })),
+    },
+  };
 }

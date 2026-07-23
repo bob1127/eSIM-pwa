@@ -91,10 +91,6 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: "/api/newebpay-notify",
-        destination: "/api/newebpay-notify/",
-      },
-      {
         source: "/api/line/webhook",
         destination: "/api/line/webhook/",
       },

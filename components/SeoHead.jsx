@@ -18,6 +18,7 @@ export default function SeoHead({
   keywords,
   canonical,
   ogImage,
+  ogImageAlt,
   ogType = "website",
   robots = "index, follow",
   breadcrumbs,
@@ -26,13 +27,22 @@ export default function SeoHead({
   noindex = false,
   articlePublishedTime,
   articleModifiedTime,
+  articleSection,
+  articleTags,
+  articleAuthor,
 }) {
   const pageTitle = formatTitle(title);
   const metaDescription = description || "";
   const metaKeywords = keywords || "";
   const canonicalUrl = canonical || absoluteUrl("/");
-  const imageUrl = ogImage ? absoluteUrl(ogImage) : absoluteUrl("/icons/icon-512x512.png");
+  const imageUrl = ogImage
+    ? absoluteUrl(ogImage)
+    : absoluteUrl("/icons/icon-512x512.png");
+  const imageAlt = ogImageAlt || pageTitle;
   const robotsContent = noindex ? "noindex, nofollow" : robots;
+  const tags = Array.isArray(articleTags)
+    ? articleTags.filter(Boolean)
+    : [];
 
   const ldGraph = buildJsonLdGraph({
     breadcrumbs,
@@ -47,13 +57,15 @@ export default function SeoHead({
         <meta name="description" content={metaDescription} />
       )}
       {metaKeywords && <meta name="keywords" content={metaKeywords} />}
-      <meta name="author" content={SITE_NAME_FULL} />
+      <meta name="author" content={articleAuthor || SITE_NAME_FULL} />
       <meta name="robots" content={robotsContent} />
       <meta name="googlebot" content={robotsContent} />
+      <meta name="bingbot" content={robotsContent} />
 
       {/* GEO / 地區語系 */}
       <meta name="geo.region" content={BRAND.region} />
       <meta name="geo.placename" content={BRAND.placename} />
+      <meta name="language" content={BRAND.language} />
       <meta httpEquiv="content-language" content={BRAND.language} />
       <link rel="canonical" href={canonicalUrl} />
       <link rel="alternate" hrefLang="zh-TW" href={canonicalUrl} />
@@ -69,15 +81,36 @@ export default function SeoHead({
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:type" content={ogType} />
       <meta property="og:image" content={imageUrl} />
-      <meta property="og:image:alt" content={pageTitle} />
-      <meta property="og:image:width" content="512" />
-      <meta property="og:image:height" content="512" />
+      <meta property="og:image:secure_url" content={imageUrl} />
+      <meta property="og:image:alt" content={imageAlt} />
+      <meta property="og:image:type" content="image/jpeg" />
 
-      {ogType === "article" && articlePublishedTime && (
-        <meta property="article:published_time" content={articlePublishedTime} />
-      )}
-      {ogType === "article" && articleModifiedTime && (
-        <meta property="article:modified_time" content={articleModifiedTime} />
+      {ogType === "article" && (
+        <>
+          {articlePublishedTime && (
+            <meta
+              property="article:published_time"
+              content={articlePublishedTime}
+            />
+          )}
+          {articleModifiedTime && (
+            <meta
+              property="article:modified_time"
+              content={articleModifiedTime}
+            />
+          )}
+          <meta
+            property="article:author"
+            content={articleAuthor || SITE_NAME_FULL}
+          />
+          {articleSection && (
+            <meta property="article:section" content={articleSection} />
+          )}
+          {tags.map((tag) => (
+            <meta property="article:tag" content={tag} key={`tag-${tag}`} />
+          ))}
+          <meta property="article:publisher" content={SITE_NAME_FULL} />
+        </>
       )}
 
       {/* Twitter Card */}
@@ -87,6 +120,14 @@ export default function SeoHead({
         <meta name="twitter:description" content={metaDescription} />
       )}
       <meta name="twitter:image" content={imageUrl} />
+      <meta name="twitter:image:alt" content={imageAlt} />
+
+      {/* GEO / AI 摘要友好 */}
+      {metaDescription && (
+        <meta name="abstract" content={metaDescription.slice(0, 200)} />
+      )}
+      <meta name="topic" content={articleSection || "旅遊知識"} />
+      <meta name="summary" content={metaDescription.slice(0, 200)} />
 
       <link rel="icon" href={SITE_FAVICON} />
 

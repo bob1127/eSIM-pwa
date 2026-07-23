@@ -16,7 +16,6 @@ import Slider from "../components/Slider.jsx";
 import Link from "next/link.js";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Lenis from "lenis";
 import InfiniteCarousel from "@/components/InfiniteCarousel"; // 🌟 引入剛剛建好的組件
 import CarRentalCharterSection from "../components/CarRentalCharterSection.jsx";
 import JekoRecommendSection from "../components/JekoRecommendSection.jsx";
@@ -283,13 +282,6 @@ export default function Home() {
   useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
-      const lenis = new Lenis();
-      lenis.on("scroll", ScrollTrigger.update);
-      gsap.ticker.add((time) => {
-        lenis.raf(time * 1000);
-      });
-      gsap.ticker.lagSmoothing(0);
-
       const windowContainer = document.querySelector(".jesko-window-container");
       const skyContainer = document.querySelector(".jesko-sky-container");
       const handContainer = document.querySelector(".jesko-hand-container");

@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/router";
 import { useCart } from "../../../components/context/CartContext";
 import Layout from "../../Layout";
+import PartnerShopLayout from "../../../components/Shop/PartnerShopLayout";
 import { buildProductSeo } from "../../../lib/seo.config";
 import {
   resolveOverviewNotices,
@@ -11,6 +12,7 @@ import {
 } from "../../../lib/productOverviewNotices";
 import { useProductAdmin } from "../../../hooks/useProductAdmin";
 import ProductReviewsSection from "../../../components/product/ProductReviewsSection";
+import ProductPromoOfferBanner from "../../../components/product/ProductPromoOfferBanner";
 import MaterialIcon from "../../../components/MaterialIcon";
 import MediaGalleryLightbox from "../../../components/MediaGalleryLightbox";
 import {
@@ -25,6 +27,7 @@ import {
   resolveFaqContent,
   parseFaqContentByCarrier,
 } from "../../../lib/productFaqContent";
+import { parsePromoOfferByCarrier } from "../../../lib/productPromoOffer";
 import {
   normalizeCarrierHtml,
   hasBlockLevelCarrierHtml,
@@ -64,10 +67,11 @@ import {
   parseHotSaleTelecoms,
   isHotSaleTelecom,
 } from "../../../lib/productHotSale";
-
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { Doughnut } from "react-chartjs-2";
-ChartJS.register(ArcElement, Tooltip, Legend);
+import DataEstimatorModal, {
+  getEstimatorDestinationLabel,
+  compareDataAmountsAsc,
+} from "@/components/DataEstimatorModal";
+import { fetchCategoryComparablePlans } from "@/lib/formatMedusaProductPage";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
@@ -113,6 +117,41 @@ function ProductMediaSlide({ item, fill = false, className = "", priority = fals
       className={className}
       draggable={false}
     />
+  );
+}
+
+/** 流量試算 CTA：參考圖深藍 + 金黃配色 */
+function DataEstimatorCta({ onClick, className = "" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`mt-4 w-full text-left rounded-full border border-[#2556b8] bg-[#2d62cc] px-5 py-3.5 sm:px-6 sm:py-4 shadow-sm hover:bg-[#2556b8] transition-colors group ${className}`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm sm:text-[15px] font-bold text-[#f1d13d] leading-snug flex items-center gap-1.5">
+            <MaterialIcon
+              name="calculate"
+              size={18}
+              className="text-[#f1d13d] shrink-0"
+            />
+            還不確定流量嗎？
+          </p>
+          <p className="text-[11px] sm:text-xs text-white/85 mt-1 leading-relaxed">
+            依每日使用習慣估算建議方案，一鍵套用或比較同地區 eSIM。
+          </p>
+        </div>
+        <span className="shrink-0 inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-[#f1d13d] group-hover:brightness-110">
+          開啟試算
+          <MaterialIcon
+            name="arrow_forward"
+            size={16}
+            className="transition-transform group-hover:translate-x-0.5"
+          />
+        </span>
+      </div>
+    </button>
   );
 }
 
@@ -188,7 +227,6 @@ const CARRIER_INFO_MAP = {
     marketingBox: {
       bgColor: "bg-cyan-50",
       borderColor: "border-cyan-100",
-      couponText: "這款 eSIM 加碼 5% 折扣！使用折扣碼：Hello26",
       policyTitle: "公平使用政策 (FUP):",
       policyDesc:
         "每日高速數據用完後，降速至 5Mbps 吃到飽 (高速數據每24小時重置)。",
@@ -201,7 +239,6 @@ const CARRIER_INFO_MAP = {
     marketingBox: {
       bgColor: "bg-cyan-50",
       borderColor: "border-cyan-100",
-      couponText: "這款 eSIM 加碼 5% 折扣！使用折扣碼：Hello26",
       policyTitle: "公平使用政策 (FUP):",
       policyDesc: "無限流量，平均速度8~20Mbps。",
       note: "注意：我們建議您抵達後再新增 eSIM。查看啟用政策。",
@@ -213,7 +250,6 @@ const CARRIER_INFO_MAP = {
     marketingBox: {
       bgColor: "bg-red-50",
       borderColor: "border-red-100",
-      couponText: "支援 TikTok / Netflix 跨區解鎖",
       policyTitle: "流量規範:",
       policyDesc: "本方案為原生日網，支援多數日本限定服務。",
       note: "注意：此線路為日本 IP。",
@@ -225,7 +261,6 @@ const CARRIER_INFO_MAP = {
     marketingBox: {
       bgColor: "bg-gray-50",
       borderColor: "border-gray-100",
-      couponText: "請選擇電信商以查看詳細規格",
       policyTitle: "說明:",
       policyDesc: "不同電信商擁有不同的流量公平使用原則 (FUP)。",
       note: "",
@@ -651,27 +686,6 @@ const CompatibilityModal = ({ isOpen, onClose }) => {
   );
 };
 
-const DataEstimatorModal = ({ isOpen, onClose }) => {
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="估算您的數據用量"
-      maxWidth="max-w-md"
-    >
-      <div className="text-center py-10">
-        <p>數據估算器正在載入中...</p>
-        <button
-          onClick={onClose}
-          className="mt-4 bg-slate-900 text-white px-6 py-2 rounded-lg"
-        >
-          關閉
-        </button>
-      </div>
-    </Modal>
-  );
-};
-
 const CARRIER_HTML_SANITIZE_CONFIG = CARRIER_HTML_SANITIZE;
 
 const CARRIER_QUILL_MODULES = {
@@ -707,7 +721,32 @@ function CarrierHtmlDisplay({ html, className = "", accordion = false }) {
       panelSelector,
       openClass,
       panelOpenClass,
+      // 平滑模式：以 max-height 過渡展開/收合，避免 display:none/block 造成版面瞬間跳動
+      smooth = false,
+      iconSelector = null,
     }) => {
+      const setPanelState = (entry, entryPanel, entryTrigger, isEntryOpen) => {
+        if (!entryPanel) return;
+        if (smooth) {
+          entryPanel.style.overflow = "hidden";
+          entryPanel.style.transition = "max-height .3s ease";
+          entryPanel.style.maxHeight = isEntryOpen
+            ? `${entryPanel.scrollHeight}px`
+            : "0px";
+        } else {
+          entryPanel.classList.toggle(panelOpenClass, isEntryOpen);
+          entryPanel.style.display = isEntryOpen ? "block" : "none";
+        }
+        entry.classList.toggle(openClass, isEntryOpen);
+        if (entryTrigger?.setAttribute) {
+          entryTrigger.setAttribute("aria-expanded", isEntryOpen ? "true" : "false");
+        }
+        const entryIcon = iconSelector ? entry.querySelector(iconSelector) : null;
+        if (entryIcon) {
+          entryIcon.style.transform = `rotate(${isEntryOpen ? 180 : 0}deg)`;
+        }
+      };
+
       root.querySelectorAll(triggerSelector).forEach((trigger) => {
         const item = trigger.closest(itemSelector);
         const panel = item?.querySelector(panelSelector);
@@ -715,30 +754,23 @@ function CarrierHtmlDisplay({ html, className = "", accordion = false }) {
 
         trigger.style.cursor = "pointer";
 
+        // 初始化平滑模式的高度（依目前 openClass 狀態），避免第一次點擊才套用過渡
+        if (smooth) {
+          setPanelState(item, panel, trigger, item.classList.contains(openClass));
+        }
+
         const toggle = (event) => {
           event?.preventDefault();
           const isOpen = item.classList.contains(openClass);
 
           root.querySelectorAll(itemSelector).forEach((entry) => {
-            entry.classList.remove(openClass);
             const entryPanel = entry.querySelector(panelSelector);
             const entryTrigger = entry.querySelector(triggerSelector);
-            if (entryPanel) {
-              entryPanel.classList.remove(panelOpenClass);
-              entryPanel.style.display = "none";
-            }
-            if (entryTrigger?.setAttribute) {
-              entryTrigger.setAttribute("aria-expanded", "false");
-            }
+            setPanelState(entry, entryPanel, entryTrigger, false);
           });
 
           if (!isOpen) {
-            item.classList.add(openClass);
-            panel.classList.add(panelOpenClass);
-            panel.style.display = "block";
-            if (trigger.setAttribute) {
-              trigger.setAttribute("aria-expanded", "true");
-            }
+            setPanelState(item, panel, trigger, true);
           }
         };
 
@@ -764,6 +796,8 @@ function CarrierHtmlDisplay({ html, className = "", accordion = false }) {
       panelSelector: ".jeko-faq-panel",
       openClass: "is-open",
       panelOpenClass: "is-open",
+      smooth: true,
+      iconSelector: ".jeko-faq-icon",
     });
 
     bindAccordion({
@@ -1366,7 +1400,7 @@ export async function getStaticPaths() {
 
 export async function getStaticProps({ params }) {
   try {
-    const { slug } = params;
+    const { slug, category: categoryHandle } = params;
     const headers = getMedusaHeaders();
 
     console.log("\n========================================");
@@ -1435,10 +1469,12 @@ export async function getStaticProps({ params }) {
     const rawDetailedByCarrier = product.metadata?.detailed_content_by_carrier;
     const rawUsageByCarrier = product.metadata?.usage_content_by_carrier;
     const rawFaqByCarrier = product.metadata?.faq_content_by_carrier;
+    const rawPromoByCarrier = product.metadata?.promo_offer_by_carrier;
 
     const formattedProduct = {
       id: product.id,
       name: product.title,
+      subtitle: product.subtitle || "",
       slug: product.handle,
       description: product.description || "",
       detailed_content: product.metadata?.detailed_content || "",
@@ -1446,6 +1482,7 @@ export async function getStaticProps({ params }) {
         parseDetailedContentByCarrier(rawDetailedByCarrier),
       usage_content_by_carrier: parseUsageContentByCarrier(rawUsageByCarrier),
       faq_content_by_carrier: parseFaqContentByCarrier(rawFaqByCarrier),
+      promo_offer_by_carrier: parsePromoOfferByCarrier(rawPromoByCarrier),
       key_features_by_carrier: parsedKeyFeatures,
       carrier_specs_by_carrier:
         parseCarrierSpecsByCarrier(product.metadata?.carrier_specs_by_carrier) ||
@@ -1542,12 +1579,41 @@ export async function getStaticProps({ params }) {
         };
       }) || [];
 
+    // 同分類相關商品變體（流量試算跨商品比較）
+    let comparablePlans = [];
+    try {
+      const resolvedCategory =
+        categoryHandle ||
+        product.categories?.[0]?.handle ||
+        "uncategorized";
+      comparablePlans = await fetchCategoryComparablePlans({
+        categoryHandle: resolvedCategory,
+        currentHandle: product.handle,
+      });
+      console.log(
+        `📊 流量試算可比方案數: ${comparablePlans.length}（分類: ${resolvedCategory}）`,
+      );
+    } catch (err) {
+      console.log("⚠️ 無法載入同分類可比方案，將僅用本商品變體。", err?.message);
+      comparablePlans = formattedVariations.map((v) => ({
+        ...v,
+        productId: product.id,
+        productSlug: product.handle,
+        productName: product.title || "",
+        productLabel: "",
+        productKind: "other",
+        isCurrentProduct: true,
+        categoryHandle: categoryHandle || "",
+      }));
+    }
+
     console.log("========================================\n");
 
     return {
       props: {
         product: formattedProduct,
         variations: formattedVariations,
+        comparablePlans,
       },
       revalidate: 60, // 靜態頁面快取時間
     };
@@ -1563,6 +1629,10 @@ export async function getStaticProps({ params }) {
 export default function ProductPage({
   product: initialProduct,
   variations = [],
+  comparablePlans = [],
+  /** "site" = 主站 Layout；"shop" = /shop Navbar+Footer（夥伴賣場） */
+  shell = "site",
+  store = null,
 }) {
   const { addToCart } = useCart();
   const router = useRouter();
@@ -1579,7 +1649,11 @@ export default function ProductPage({
   const [galleryLightboxIndex, setGalleryLightboxIndex] = useState(0);
   const [featuresOpen, setFeaturesOpen] = useState(true);
   const [mediaTab, setMediaTab] = useState("overview");
-  const [copiedCoupon, setCopiedCoupon] = useState(false);
+  const isPartnerShell = shell === "shop" && store;
+  const productAdmin = useProductAdmin();
+  const isAdmin = isPartnerShell ? false : productAdmin.isAdmin;
+  const adminChecked = isPartnerShell ? true : productAdmin.adminChecked;
+  const authHeaders = productAdmin.authHeaders;
 
   useEffect(() => {
     setProduct(initialProduct);
@@ -1622,6 +1696,9 @@ export default function ProductPage({
           ...(data.faq_content_by_carrier
             ? { faq_content_by_carrier: data.faq_content_by_carrier }
             : {}),
+          ...(data.promo_offer_by_carrier
+            ? { promo_offer_by_carrier: data.promo_offer_by_carrier }
+            : {}),
           detailed_content: data.detailed_content || prev.detailed_content,
         }));
       })
@@ -1644,12 +1721,12 @@ export default function ProductPage({
         ][0];
         if (firstTelecom) initialAttrs["telecom"] = firstTelecom;
 
-        const firstDataAmount = [
+        const dataAmounts = [
           ...new Set(
             variations.map((v) => v.attributes?.data_amount).filter(Boolean),
           ),
-        ][0];
-        if (firstDataAmount) initialAttrs["data_amount"] = firstDataAmount;
+        ].sort(compareDataAmountsAsc);
+        if (dataAmounts[0]) initialAttrs["data_amount"] = dataAmounts[0];
       }
 
       setSelectedAttributes(initialAttrs);
@@ -1694,7 +1771,9 @@ export default function ProductPage({
         filteredVariations.map((v) => v.attributes?.days).filter(Boolean),
       ),
     ];
-    return days.sort((a, b) => Number(a) - Number(b));
+    return days.sort(
+      (a, b) => (parseInt(String(a), 10) || 0) - (parseInt(String(b), 10) || 0),
+    );
   }, [variations, selectedAttributes["telecom"]]);
 
   const availableData = useMemo(() => {
@@ -1713,7 +1792,7 @@ export default function ProductPage({
       ...new Set(
         filtered.map((v) => v.attributes?.data_amount).filter(Boolean),
       ),
-    ];
+    ].sort(compareDataAmountsAsc);
   }, [variations, selectedAttributes["telecom"], selectedAttributes["days"]]);
 
   const handleAttributeSelect = (name, option) => {
@@ -1724,6 +1803,63 @@ export default function ProductPage({
     router.push({ pathname: router.pathname, query: newQuery }, undefined, {
       shallow: true,
     });
+  };
+
+  /** 流量估算器：本商品直接套用；其他商品則導向該商品頁並帶入規格 */
+  const handleEstimatorSelectVariant = ({
+    telecom,
+    days,
+    data_amount,
+    productSlug,
+    isCurrentProduct,
+    categoryHandle: planCategory,
+  }) => {
+    const patch = {};
+    if (telecom != null && telecom !== "") patch.telecom = telecom;
+    if (days != null && days !== "") patch.days = days;
+    if (data_amount != null && data_amount !== "")
+      patch.data_amount = data_amount;
+
+    setIsEstimatorOpen(false);
+
+    const sameProduct =
+      isCurrentProduct ||
+      !productSlug ||
+      String(productSlug) === String(product?.slug);
+
+    if (!sameProduct) {
+      const cat = planCategory || router.query.category || "china";
+      const q = new URLSearchParams(
+        Object.fromEntries(
+          Object.entries(patch).map(([k, v]) => [k, String(v)]),
+        ),
+      ).toString();
+
+      const href =
+        isPartnerShell && store?.domain
+          ? `/p/${store.domain}/${productSlug}${q ? `?${q}` : ""}`
+          : `/product/${cat}/${productSlug}${q ? `?${q}` : ""}`;
+
+      if (typeof window !== "undefined") {
+        window.open(href, "_blank", "noopener,noreferrer");
+      }
+      return;
+    }
+
+    const newAttrs = { ...selectedAttributes, ...patch };
+    const newQuery = { ...router.query, ...patch };
+    setSelectedAttributes(newAttrs);
+    router.push({ pathname: router.pathname, query: newQuery }, undefined, {
+      shallow: true,
+    });
+
+    if (typeof document !== "undefined") {
+      requestAnimationFrame(() => {
+        document
+          .getElementById("product-options")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
   };
 
   const handleAddToCart = () => {
@@ -1740,7 +1876,7 @@ export default function ProductPage({
       id: currentVariation.id,
       variant_id: currentVariation.id,
       parentId: product.id,
-      name: currentVariation.title || product.name,
+      name: product.name,
       price: currentVariation.price,
       sku: currentVariation.sku,
       planId: currentVariation.plan_id,
@@ -1748,6 +1884,12 @@ export default function ProductPage({
       quantity,
       options: specLabel,
       specLabel,
+      ...(isPartnerShell
+        ? {
+            store_id: store.id,
+            type: "esim",
+          }
+        : {}),
     });
     window.dispatchEvent(new Event("open-cart-sidebar"));
   };
@@ -1760,9 +1902,31 @@ export default function ProductPage({
   const actualExperience = resolveActualExperience(product, carrierName);
   const overviewNotices = resolveOverviewNotices(product, carrierName);
   const carrierSpecItems = useMemo(() => {
-    const specs = resolveCarrierSpecs(product, carrierName);
+    const specs = resolveCarrierSpecs(product, carrierName, currentVariation);
     return buildCarrierSpecDisplayItems(specs);
-  }, [product, carrierName]);
+  }, [product, carrierName, currentVariation]);
+
+  const showCarrierSpecsPanel =
+    !!carrierName &&
+    carrierName !== "default" &&
+    carrierSpecItems.length > 0;
+
+  /** 「支援 TikTok 與 ChatGPT」僅在 GPT／TikTok 線路顯示，一般中國移動不顯示 */
+  const displaySubtitle = useMemo(() => {
+    const telecom = String(selectedAttributes.telecom || "");
+    if (!telecom) return null;
+    if (/GPT|TikTok|ChatGPT/i.test(telecom)) {
+      return product?.subtitle || "支援 TikTok 與 ChatGPT";
+    }
+    const attrs = currentVariation?.attributes || {};
+    if (attrs.gpt === true && attrs.tiktok === true) {
+      return product?.subtitle || "支援 TikTok 與 ChatGPT";
+    }
+    if (/-B0$/i.test(String(currentVariation?.sku || ""))) {
+      return product?.subtitle || "支援 TikTok 與 ChatGPT";
+    }
+    return null;
+  }, [selectedAttributes.telecom, currentVariation, product?.subtitle]);
 
   const priceSavings = useMemo(() => {
     if (
@@ -1775,8 +1939,30 @@ export default function ProductPage({
     return currentVariation.original_price - currentVariation.price;
   }, [currentVariation]);
 
+  const formatTelecomLabel = (opt) => {
+    const s = String(opt || "").trim();
+    if (!s) return s;
+    if (/\(\s*CMCC\s*\)/i.test(s) || /\(\s*CUCC\s*\)/i.test(s)) return s;
+    if (/中國移動|CMCC/i.test(s)) return `${s} (CMCC)`;
+    if (/中國聯通|CUCC|Unicom/i.test(s)) return `${s} (CUCC)`;
+    return s;
+  };
+
+  const telecomSectionHint = (() => {
+    const tags = [];
+    if (availableCarriers.some((c) => /中國移動|CMCC/i.test(String(c)))) {
+      tags.push("CMCC");
+    }
+    if (availableCarriers.some((c) => /中國聯通|CUCC|Unicom/i.test(String(c)))) {
+      tags.push("CUCC");
+    }
+    return tags.length ? ` ( ${tags.join(" / ")} )` : "";
+  })();
+
   const choiceSummary = [
-    selectedAttributes.telecom,
+    selectedAttributes.telecom
+      ? formatTelecomLabel(selectedAttributes.telecom)
+      : null,
     selectedAttributes.days ? `${selectedAttributes.days}天` : null,
     selectedAttributes.data_amount,
   ]
@@ -1785,11 +1971,12 @@ export default function ProductPage({
 
   const variantBtnClass = (selected) =>
     selected
-      ? "border-2 border-[#00befa] bg-white text-slate-900 font-semibold"
+      ? isPartnerShell
+        ? "border-2 border-[#0A6CD0] bg-white text-slate-900 font-semibold shadow-[0_0_0_1px_rgba(10,108,208,0.12)]"
+        : "border-2 border-[#00befa] bg-white text-slate-900 font-semibold"
       : "border border-gray-200 bg-white text-slate-700 hover:border-gray-300";
 
-  const discountCode =
-    marketingConfig.couponText?.match(/[：:]\s*([A-Za-z0-9]+)/)?.[1] || "";
+  const PRODUCT_BLUE = "#0A6CD0";
 
   const displayPrice =
     isAllOptionsSelected && currentVariation?.price > 0
@@ -1797,21 +1984,14 @@ export default function ProductPage({
       : null;
   const displayTotal = displayPrice != null ? displayPrice * quantity : null;
 
-  const handleCopyCoupon = async () => {
-    if (!discountCode) return;
-    try {
-      await navigator.clipboard.writeText(discountCode);
-      setCopiedCoupon(true);
-      setTimeout(() => setCopiedCoupon(false), 2000);
-    } catch {
-      /* ignore */
-    }
-  };
-
   const handleBuyNow = () => {
     if (!canPurchase) return;
     handleAddToCart();
-    router.push("/Cart");
+    if (isPartnerShell) {
+      router.push(`/p/${store.domain}/cart/`);
+    } else {
+      router.push("/Cart");
+    }
   };
 
   const canPurchase =
@@ -1844,16 +2024,37 @@ export default function ProductPage({
     [mainSwiper, images.length],
   );
 
-  if (router.isFallback || !product) return <Layout>載入中...</Layout>;
-
   const pageSeo = buildProductSeo(
-    product,
+    { ...product, subtitle: displaySubtitle || "" },
     currentVariation,
     router.query.category,
   );
 
+  const documentTitle = [
+    product?.name,
+    displaySubtitle,
+    currentVariation?.title && currentVariation.title !== product?.name
+      ? currentVariation.title
+      : null,
+  ]
+    .filter(Boolean)
+    .join("｜");
+
+  const PageShell = isPartnerShell ? PartnerShopLayout : Layout;
+  const shellProps = isPartnerShell
+    ? {
+        store,
+        title: documentTitle || product?.name,
+        description: product?.description,
+      }
+    : { seo: pageSeo };
+
+  if (router.isFallback || !product) {
+    return <PageShell {...shellProps}>載入中...</PageShell>;
+  }
+
   return (
-    <Layout seo={pageSeo}>
+    <PageShell {...shellProps}>
       <CompatibilityModal
         isOpen={isCompatOpen}
         onClose={() => setIsCompatOpen(false)}
@@ -1861,39 +2062,91 @@ export default function ProductPage({
       <DataEstimatorModal
         isOpen={isEstimatorOpen}
         onClose={() => setIsEstimatorOpen(false)}
+        destination={getEstimatorDestinationLabel(
+          product,
+          router.query.category,
+        )}
+        productName={product?.name}
+        variations={variations}
+        comparablePlans={comparablePlans}
+        preferredTelecom={selectedAttributes?.telecom || ""}
+        onSelectVariant={handleEstimatorSelectVariant}
       />
 
       <div className="bg-white">
-        <div className="max-w-[1280px] mx-auto py-6 lg:py-10 px-4 sm:px-6">
-          <nav className="text-xs text-gray-400 mb-6 tracking-wide">
-            首頁 / 商店 / {product.name}
-          </nav>
+        <div
+          className={`${
+            isPartnerShell
+              ? "max-w-[1100px] mx-auto py-5 lg:py-8"
+              : "max-w-[1280px] mx-auto py-6 lg:py-10"
+          } px-4 sm:px-6`}
+        >
+          {isPartnerShell ? (
+            <nav className="text-xs text-slate-400 mb-2 tracking-wide flex items-center gap-1.5 flex-wrap">
+              <a
+                href={`/p/${store.domain}/`}
+                className="hover:text-[#0A6CD0]"
+              >
+                {store.store_name || "賣場首頁"}
+              </a>
+              <MaterialIcon name="chevron_right" size={14} />
+              <span className="text-slate-600 truncate max-w-[240px]">
+                {product.name}
+              </span>
+            </nav>
+          ) : (
+            <nav className="text-xs text-gray-400 mb-6 tracking-wide">
+              首頁 / 商店 / {product.name}
+            </nav>
+          )}
         </div>
 
         <ProductStickyNav
-          productName={currentVariation?.title || product.name}
+          productName={product.name}
         />
 
-        <div className="max-w-[1280px] sm:mt-20 mx-auto px-4 sm:px-6 pb-16 lg:pb-20">
+        <div
+          className={`${
+            isPartnerShell
+              ? "max-w-[1100px] mx-auto"
+              : "max-w-[1280px] sm:mt-20 mx-auto"
+          } px-4 sm:px-6 pb-16 lg:pb-20`}
+        >
           <section
             id="purchase-section"
-            className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-8 lg:gap-12 mb-16 lg:mb-20 pt-6"
+            className={
+              isPartnerShell
+                ? "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 mb-14 lg:mb-16 pt-2"
+                : "grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-8 lg:gap-12 mb-16 lg:mb-20 pt-6"
+            }
           >
             {/* ========== 左：媒體畫廊 ========== */}
             <div className="w-full lg:sticky lg:top-24 lg:self-start">
-              <div className="relative bg-white rounded-2xl overflow-hidden group">
-                {priceSavings > 0 && (
-                  <div
-                    className="absolute top-0 left-0 z-20 text-white text-[11px] font-bold leading-tight shadow-md"
-                    style={{
-                      background: ANKER_BLUE,
-                      clipPath: "polygon(0 0, 100% 0, 85% 100%, 0 100%)",
-                      padding: "10px 28px 10px 12px",
-                    }}
-                  >
-                    省 NT${priceSavings}
-                  </div>
-                )}
+              <div
+                className={`relative bg-white rounded-2xl overflow-hidden group ${
+                  isPartnerShell ? "border border-slate-100" : ""
+                }`}
+              >
+                {priceSavings > 0 &&
+                  (isPartnerShell ? (
+                    <div
+                      className="absolute top-3 left-3 z-20 text-white text-[11px] font-bold rounded-md px-2.5 py-1"
+                      style={{ background: "#0A6CD0" }}
+                    >
+                      省 NT${priceSavings}
+                    </div>
+                  ) : (
+                    <div
+                      className="absolute top-0 left-0 z-20 text-white text-[11px] font-bold leading-tight shadow-md"
+                      style={{
+                        background: ANKER_BLUE,
+                        clipPath: "polygon(0 0, 100% 0, 85% 100%, 0 100%)",
+                        padding: "10px 28px 10px 12px",
+                      }}
+                    >
+                      省 NT${priceSavings}
+                    </div>
+                  ))}
                 {images.length > 1 && (
                   <div className="absolute bottom-3 right-3 z-20 bg-black/50 text-white text-xs font-medium px-2.5 py-1 rounded-md">
                     {activeSlide + 1}/{images.length}
@@ -1945,7 +2198,11 @@ export default function ProductPage({
                   centeredSlides={false}
                   watchOverflow
                   onSlideChange={(swiper) => setActiveSlide(swiper.realIndex)}
-                  className="w-full product-main-swiper aspect-[4/5] sm:aspect-[3/4] max-h-[min(75vh,600px)]"
+                  className={`w-full product-main-swiper ${
+                    isPartnerShell
+                      ? "aspect-square max-h-[min(70vh,560px)]"
+                      : "aspect-[4/5] sm:aspect-[3/4] max-h-[min(75vh,600px)]"
+                  }`}
                 >
                   {images.map((item, idx) => (
                     <SwiperSlide key={idx}>
@@ -1954,7 +2211,11 @@ export default function ProductPage({
                         onClick={() =>
                           item.type === "image" && openGalleryLightbox(idx)
                         }
-                        className={`relative block w-full h-full min-h-[340px] sm:min-h-[440px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00befa] focus-visible:ring-offset-2 ${
+                        className={`relative block w-full h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                          isPartnerShell
+                            ? "min-h-[280px] sm:min-h-[360px] focus-visible:ring-[#0A6CD0]"
+                            : "min-h-[340px] sm:min-h-[440px] focus-visible:ring-[#00befa]"
+                        } ${
                           item.type === "image" ? "cursor-zoom-in" : "cursor-default"
                         }`}
                         aria-label={
@@ -1964,7 +2225,13 @@ export default function ProductPage({
                         }
                       >
                         {item.type === "video" ? (
-                          <div className="relative w-full h-full min-h-[340px] sm:min-h-[440px] bg-black flex items-center justify-center">
+                          <div
+                            className={`relative w-full h-full bg-black flex items-center justify-center ${
+                              isPartnerShell
+                                ? "min-h-[280px] sm:min-h-[360px]"
+                                : "min-h-[340px] sm:min-h-[440px]"
+                            }`}
+                          >
                             <ProductMediaSlide
                               item={item}
                               className="w-full h-full max-h-[min(75vh,600px)] object-contain"
@@ -1994,7 +2261,9 @@ export default function ProductPage({
                       onClick={() => goToGallerySlide(idx)}
                       className={`relative shrink-0 w-[72px] h-[72px] sm:w-[80px] sm:h-[80px] rounded-lg overflow-hidden border-2 transition-all ${
                         activeSlide === idx
-                          ? "border-[#00befa]"
+                          ? isPartnerShell
+                            ? "border-[#0A6CD0]"
+                            : "border-[#00befa]"
                           : "border-gray-200 hover:border-gray-400"
                       }`}
                       aria-label={`第 ${idx + 1} 個媒體`}
@@ -2030,7 +2299,7 @@ export default function ProductPage({
                   if (typeof idx === "number") goToGallerySlide(idx);
                 }}
                 images={images}
-                productName={currentVariation?.title || product.name}
+                productName={product.name}
                 initialIndex={galleryLightboxIndex}
                 ariaLabel="商品圖片檢視"
               />
@@ -2084,8 +2353,429 @@ export default function ProductPage({
               )}
             </div>
 
-            {/* ========== 右：商品資訊與選購 ========== */}
-            <div className="w-full flex flex-col">
+            {isPartnerShell ? (
+              <div className="w-full flex flex-col">
+              <h1 className="text-[22px] sm:text-[26px] lg:text-[28px] font-bold text-slate-900 leading-snug tracking-tight mb-1.5">
+                {product.name}
+              </h1>
+              {displaySubtitle ? (
+                <p className="text-[14px] sm:text-[15px] font-semibold text-[#0A6CD0] leading-snug mb-1">
+                  {displaySubtitle}
+                </p>
+              ) : null}
+              {isAllOptionsSelected && currentVariation?.title ? (
+                <p className="text-[14px] sm:text-[15px] font-medium text-slate-500 leading-snug mb-3">
+                  {currentVariation.title}
+                </p>
+              ) : (
+                <div className="mb-3" />
+              )}
+
+              <a
+                href="#product-reviews"
+                className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-[#0A6CD0] mb-4 w-fit"
+              >
+                <span className="inline-flex items-center gap-0.5 text-[#3B9EFF]">
+                  {[...Array(5)].map((_, i) => (
+                    <MaterialIcon key={i} name="star" size={16} filled />
+                  ))}
+                </span>
+                <span className="underline underline-offset-2 decoration-slate-300">
+                  查看用戶評論
+                </span>
+              </a>
+
+              {introBullets[0] ? (
+                <p className="text-[15px] font-bold text-[#0A6CD0] leading-relaxed mb-2">
+                  <FeatureBulletText>{introBullets[0]}</FeatureBulletText>
+                </p>
+              ) : null}
+
+              <div className="text-[13px] sm:text-sm text-slate-600 leading-relaxed mb-3 space-y-1.5">
+                {(introBullets.length > 1 ? introBullets.slice(1, 4) : []).map(
+                  (line, i) => (
+                    <p key={i}>
+                      <FeatureBulletText>{line}</FeatureBulletText>
+                    </p>
+                  ),
+                )}
+                {introBullets.length === 0 && product.description ? (
+                  <p className="line-clamp-3">
+                    {String(product.description)
+                      .replace(/<[^>]+>/g, " ")
+                      .trim()}
+                  </p>
+                ) : null}
+              </div>
+
+              <ProductActualExperience text={actualExperience} />
+
+              <p className="text-xs text-slate-400 mb-5">
+                ID: {currentVariation?.sku || product.slug || product.id}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-2 mb-5">
+                <span className="inline-block bg-sky-50 text-[#0A6CD0] text-[11px] font-bold px-2.5 py-1 rounded-md">
+                  eSIM
+                </span>
+                {activeCarrierInfo.badges?.map((b, i) => (
+                  <span
+                    key={i}
+                    className="inline-block bg-slate-100 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-md"
+                  >
+                    {b.text} {b.type}
+                  </span>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setIsCompatOpen(true)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#0A6CD0] hover:underline ml-auto"
+                >
+                  <MaterialIcon name="phonelink_setup" size={15} />
+                  檢查相容性
+                </button>
+              </div>
+
+              <ProductPromoOfferBanner
+                product={product}
+                carrierName={carrierName}
+                isAdmin={isAdmin}
+                adminChecked={adminChecked}
+                authHeaders={authHeaders}
+                onSaved={(promoMap) =>
+                  setProduct((prev) => ({
+                    ...prev,
+                    promo_offer_by_carrier: promoMap,
+                  }))
+                }
+              />
+
+              {/* 規格選擇 */}
+              {availableCarriers.length > 0 && (
+                <div id="product-options" className="mb-5 scroll-mt-24">
+                  <span className="text-xs font-bold text-slate-500 block mb-2.5">
+                    電信商{telecomSectionHint}
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {availableCarriers.map((opt) => (
+                      <div key={opt} className="relative">
+                        {isHotSaleTelecom(product.hot_sale_telecoms, opt) ? (
+                          <Image
+                            src="/images/hot-sale.png"
+                            alt="熱銷推薦"
+                            width={56}
+                            height={56}
+                            className="absolute -top-3 right-3 z-10 w-14 h-auto pointer-events-none drop-shadow-sm"
+                          />
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => handleAttributeSelect("telecom", opt)}
+                          className={`w-full px-4 py-3.5 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["telecom"] === opt)}`}
+                        >
+                          {formatTelecomLabel(opt)}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {availableDays.length > 0 && (
+                <div className="mb-5">
+                  <span className="text-xs font-bold text-slate-500 block mb-2.5">
+                    天數
+                  </span>
+                  <div className="relative sm:hidden">
+                    <select
+                      id="product-days-select-mobile"
+                      value={String(selectedAttributes["days"] ?? "")}
+                      onChange={(e) =>
+                        handleAttributeSelect("days", e.target.value)
+                      }
+                      className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
+                        selectedAttributes["days"]
+                          ? "bg-white text-slate-900 border-2 border-[#0A6CD0]"
+                          : "bg-white text-slate-500 border border-gray-200"
+                      }`}
+                    >
+                      <option value="" disabled>
+                        請選擇天數
+                      </option>
+                      {availableDays.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt} 天
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
+                      <MaterialIcon
+                        name="expand_more"
+                        size={20}
+                        className="text-slate-400"
+                      />
+                    </div>
+                  </div>
+                  <div className="hidden sm:grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {availableDays.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => handleAttributeSelect("days", opt)}
+                        className={`px-4 py-3.5 text-sm rounded-xl transition-all ${variantBtnClass(String(selectedAttributes["days"]) === String(opt))}`}
+                      >
+                        {opt} 天
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {availableData.length > 0 && (
+                <div className="mb-5">
+                  <span className="text-xs font-bold text-slate-500 block mb-2.5">
+                    數據量
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {availableData.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() =>
+                          handleAttributeSelect("data_amount", opt)
+                        }
+                        className={`px-4 py-3.5 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["data_amount"] === opt)}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentVariation?.tags && currentVariation.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {currentVariation.tags.map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="bg-sky-50 text-[#0A6CD0] border border-sky-100 px-2.5 py-1 rounded-full text-xs font-bold"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <AnimatePresence mode="wait">
+                {showCarrierSpecsPanel && (
+                  <motion.div
+                    key={`specs-${carrierName}`}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="mb-5 p-4 rounded-xl flex flex-wrap items-center gap-x-6 gap-y-3 text-sm bg-slate-50 border border-gray-100"
+                  >
+                    {carrierSpecItems
+                      .filter((item) =>
+                        ["ip_type", "route_type", "network"].includes(item.key),
+                      )
+                      .map((item) => (
+                      <div
+                        key={item.key}
+                        className="flex items-center gap-2 min-w-[7.5rem]"
+                      >
+                        <MaterialIcon
+                          name={item.icon}
+                          size={20}
+                          className="text-slate-500 shrink-0"
+                        />
+                        <span className="font-semibold text-slate-700">
+                          {item.text}
+                        </span>
+                      </div>
+                    ))}
+                    {carrierSpecItems
+                      .filter(
+                        (item) =>
+                          !["ip_type", "route_type", "network"].includes(
+                            item.key,
+                          ),
+                      )
+                      .map((item) => (
+                        <div
+                          key={item.key}
+                          className={`flex items-center gap-2.5 w-full ${
+                            item.fullWidth
+                              ? "pt-3 border-t border-gray-100"
+                              : ""
+                          }`}
+                        >
+                          <MaterialIcon
+                            name={item.icon}
+                            size={20}
+                            className={
+                              item.iconClass || "text-slate-500 shrink-0"
+                            }
+                          />
+                          <span
+                            className={`font-semibold text-slate-700 ${
+                              item.fullWidth ? "text-xs leading-relaxed" : ""
+                            }`}
+                          >
+                            {item.text}
+                          </span>
+                        </div>
+                      ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* 價格 */}
+              <div className="flex flex-wrap items-baseline gap-2 mb-5">
+                <p
+                  className={`text-[28px] sm:text-[32px] font-bold tracking-tight ${
+                    displayPrice != null ? "text-slate-900" : "text-gray-300"
+                  }`}
+                >
+                  {displayTotal != null
+                    ? `NT$${displayTotal.toLocaleString()}`
+                    : displayPrice != null
+                      ? `NT$${displayPrice.toLocaleString()}`
+                      : "請選擇規格"}
+                </p>
+                {displayPrice != null && (
+                  <span className="text-xs text-slate-400">（含稅）</span>
+                )}
+                {priceSavings > 0 && (
+                  <span className="inline-block bg-[#0A6CD0] text-white text-xs font-bold px-2.5 py-1 rounded-md">
+                    省 NT${priceSavings}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm mb-5 -mt-3">
+                <a
+                  href="/login"
+                  className="inline-flex items-center gap-1 font-semibold text-[#0A6CD0] hover:underline"
+                >
+                  登入會員享更多優惠
+                  <MaterialIcon name="arrow_forward" size={16} />
+                </a>
+              </p>
+
+              {/* 數量 */}
+              <div className="mb-5">
+                <div className="inline-flex items-center border border-gray-200 rounded-full overflow-hidden bg-white">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-11 h-11 flex items-center justify-center text-slate-500 hover:bg-slate-50"
+                    aria-label="減少數量"
+                  >
+                    <MaterialIcon name="remove" size={18} />
+                  </button>
+                  <div className="w-12 h-11 flex items-center justify-center font-bold text-slate-800 border-x border-gray-100 text-[15px]">
+                    {quantity}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-11 h-11 flex items-center justify-center text-slate-500 hover:bg-slate-50"
+                    aria-label="增加數量"
+                  >
+                    <MaterialIcon name="add" size={18} />
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-400 mb-4">
+                {canPurchase
+                  ? "現貨供應 — 下單後 Email 寄送 eSIM QR Code"
+                  : choiceSummary
+                    ? `已選：${choiceSummary}`
+                    : "請完整選擇電信商、天數與數據量"}
+              </p>
+
+              {/* CTA：加入購物車（主）＋ 立即購買（次） */}
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                disabled={!canPurchase}
+                className={`w-full h-[52px] font-bold rounded-full text-[15px] text-white transition-all inline-flex items-center justify-center gap-2 mb-3 ${
+                  canPurchase
+                    ? "hover:opacity-90 shadow-sm"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+                style={canPurchase ? { background: PRODUCT_BLUE } : undefined}
+              >
+                <MaterialIcon name="shopping_cart" size={20} />
+                {!isAllOptionsSelected
+                  ? "請選規格"
+                  : currentVariation?.price > 0
+                    ? "加入購物車"
+                    : "尚未定價"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={!canPurchase}
+                className={`w-full h-[52px] font-bold rounded-full text-[15px] transition-all inline-flex items-center justify-center gap-2 border-2 mb-4 ${
+                  canPurchase
+                    ? "bg-white hover:bg-sky-50"
+                    : "border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50"
+                }`}
+                style={
+                  canPurchase
+                    ? { borderColor: PRODUCT_BLUE, color: PRODUCT_BLUE }
+                    : undefined
+                }
+              >
+                立即購買
+              </button>
+
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-xs text-slate-400">分享商品</span>
+                <div className="flex items-center gap-2">
+                  {[
+                    { name: "share", label: "分享" },
+                    { name: "link", label: "複製連結" },
+                  ].map((item) => (
+                    <button
+                      key={item.name}
+                      type="button"
+                      aria-label={item.label}
+                      onClick={async () => {
+                        try {
+                          if (item.name === "link" || item.name === "share") {
+                            await navigator.clipboard.writeText(
+                              typeof window !== "undefined"
+                                ? window.location.href
+                                : "",
+                            );
+                          }
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                      className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 hover:bg-sky-50 hover:text-[#0A6CD0] flex items-center justify-center transition"
+                    >
+                      <MaterialIcon name={item.name} size={16} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <EsimRefundDisclosure compact />
+              </div>
+
+              <DataEstimatorCta onClick={() => setIsEstimatorOpen(true)} />
+
+              <ServiceBenefits />
+              </div>
+            ) : (
+              <div className="w-full flex flex-col">
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div className="flex flex-wrap gap-2">
                   <span className="inline-block bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-md">
@@ -2110,9 +2800,21 @@ export default function ProductPage({
                 </button>
               </div>
 
-              <h1 className="text-2xl sm:text-[28px] lg:text-[32px] font-bold text-slate-900 leading-tight tracking-tight mb-3">
-                {currentVariation?.title || product.name}
+              <h1 className="text-2xl sm:text-[28px] lg:text-[32px] font-bold text-slate-900 leading-tight tracking-tight mb-1.5">
+                {product.name}
               </h1>
+              {displaySubtitle ? (
+                <p className="text-[15px] sm:text-base font-semibold text-[#00befa] leading-snug mb-1">
+                  {displaySubtitle}
+                </p>
+              ) : null}
+              {isAllOptionsSelected && currentVariation?.title ? (
+                <p className="text-[15px] sm:text-base font-medium text-slate-500 leading-snug mb-3">
+                  {currentVariation.title}
+                </p>
+              ) : (
+                <div className="mb-3" />
+              )}
 
               <a
                 href="#product-reviews"
@@ -2165,33 +2867,19 @@ export default function ProductPage({
                 </a>
               </p>
 
-              {marketingConfig.couponText && (
-                <div
-                  className={`flex items-stretch rounded-xl border border-dashed overflow-hidden mb-6 ${marketingConfig.borderColor} ${marketingConfig.bgColor}`}
-                >
-                  <div
-                    className="text-white px-5 py-4 flex flex-col items-center justify-center font-bold shrink-0 min-w-[88px] border-r border-dashed border-white/30"
-                    style={{ background: ANKER_BLUE }}
-                  >
-                    <span className="text-lg leading-none">優惠</span>
-                  </div>
-                  <div className="flex-1 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-slate-800">
-                    <span className="font-medium leading-relaxed">
-                      {marketingConfig.couponText}
-                    </span>
-                    {discountCode && (
-                      <button
-                        type="button"
-                        onClick={handleCopyCoupon}
-                        className="shrink-0 text-sm font-bold hover:underline w-fit"
-                        style={{ color: ANKER_BLUE }}
-                      >
-                        {copiedCoupon ? "已複製！" : "複製折扣碼"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+              <ProductPromoOfferBanner
+                product={product}
+                carrierName={carrierName}
+                isAdmin={isAdmin}
+                adminChecked={adminChecked}
+                authHeaders={authHeaders}
+                onSaved={(promoMap) =>
+                  setProduct((prev) => ({
+                    ...prev,
+                    promo_offer_by_carrier: promoMap,
+                  }))
+                }
+              />
 
               {/* Key Features */}
               <div className="mb-6 border-b border-gray-100 pb-5">
@@ -2245,7 +2933,10 @@ export default function ProductPage({
               </div>
 
               {/* 規格選擇（Anker Choice） */}
-              <h2 className="text-sm font-bold text-slate-900 mb-4">
+              <h2
+                id="product-options"
+                className="text-sm font-bold text-slate-900 mb-4 scroll-mt-24"
+              >
                 方案選擇
                 {choiceSummary ? (
                   <span className="font-normal text-gray-500 ml-1">
@@ -2257,7 +2948,7 @@ export default function ProductPage({
               {availableCarriers.length > 0 && (
                 <div className="mb-5">
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-3">
-                    電信商
+                    電信商{telecomSectionHint}
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {availableCarriers.map((opt) => (
@@ -2276,7 +2967,7 @@ export default function ProductPage({
                           onClick={() => handleAttributeSelect("telecom", opt)}
                           className={`w-full px-4 py-3 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["telecom"] === opt)}`}
                         >
-                          {opt}
+                          {formatTelecomLabel(opt)}
                         </button>
                       </div>
                     ))}
@@ -2377,40 +3068,66 @@ export default function ProductPage({
               )}
 
               <AnimatePresence mode="wait">
-                {currentVariation && carrierSpecItems.length > 0 && (
+                {showCarrierSpecsPanel && (
                   <motion.div
-                    key={`${currentVariation.id}-${carrierName}`}
+                    key={`specs-main-${carrierName}`}
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -5 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="my-5 p-4 rounded-xl grid grid-cols-2 gap-y-3 gap-x-4 text-sm bg-slate-50 border border-gray-100"
+                    className="my-5 p-4 rounded-xl flex flex-wrap items-center gap-x-6 gap-y-3 text-sm bg-slate-50 border border-gray-100"
                   >
-                    {carrierSpecItems.map((item) => (
+                    {carrierSpecItems
+                      .filter((item) =>
+                        ["ip_type", "route_type", "network"].includes(item.key),
+                      )
+                      .map((item) => (
                       <div
                         key={item.key}
-                        className={`flex items-center gap-2.5 ${
-                          item.fullWidth
-                            ? "col-span-2 pt-3 border-t border-gray-100"
-                            : ""
-                        }`}
+                        className="flex items-center gap-2 min-w-[7.5rem]"
                       >
                         <MaterialIcon
                           name={item.icon}
                           size={20}
-                          className={
-                            item.iconClass || "text-slate-500 shrink-0"
-                          }
+                          className="text-slate-500 shrink-0"
                         />
-                        <span
-                          className={`font-semibold text-slate-700 ${
-                            item.fullWidth ? "text-xs leading-relaxed" : ""
-                          }`}
-                        >
+                        <span className="font-semibold text-slate-700">
                           {item.text}
                         </span>
                       </div>
                     ))}
+                    {carrierSpecItems
+                      .filter(
+                        (item) =>
+                          !["ip_type", "route_type", "network"].includes(
+                            item.key,
+                          ),
+                      )
+                      .map((item) => (
+                        <div
+                          key={item.key}
+                          className={`flex items-center gap-2.5 w-full ${
+                            item.fullWidth
+                              ? "pt-3 border-t border-gray-100"
+                              : ""
+                          }`}
+                        >
+                          <MaterialIcon
+                            name={item.icon}
+                            size={20}
+                            className={
+                              item.iconClass || "text-slate-500 shrink-0"
+                            }
+                          />
+                          <span
+                            className={`font-semibold text-slate-700 ${
+                              item.fullWidth ? "text-xs leading-relaxed" : ""
+                            }`}
+                          >
+                            {item.text}
+                          </span>
+                        </div>
+                      ))}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -2457,8 +3174,13 @@ export default function ProductPage({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">
-                      {currentVariation?.title || product.name}
+                      {product.name}
                     </p>
+                    {displaySubtitle ? (
+                      <p className="text-xs font-semibold text-[#00befa] mt-0.5 line-clamp-1">
+                        {displaySubtitle}
+                      </p>
+                    ) : null}
                     <p className="text-xs text-gray-500 mt-1">
                       {choiceSummary || "請選擇方案規格"}
                     </p>
@@ -2467,10 +3189,7 @@ export default function ProductPage({
                     ×{quantity}
                   </span>
                 </div>
-                <p
-                  className="text-sm font-semibold mt-4"
-                  style={{ color: ANKER_BLUE }}
-                >
+                <p className="text-[11px] font-normal text-slate-400 mt-4">
                   •{" "}
                   {canPurchase
                     ? "現貨供應 — 下單後 Email 寄送 eSIM QR Code"
@@ -2539,18 +3258,12 @@ export default function ProductPage({
                 <EsimRefundDisclosure compact />
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsEstimatorOpen(true)}
-                className="mt-4 w-full inline-flex items-center justify-center gap-1 text-xs font-semibold text-gray-500 hover:text-[#00befa] transition-colors"
-              >
-                <MaterialIcon name="calculate" size={16} />
-                不確定流量？開啟流量試算器
-                <MaterialIcon name="arrow_forward" size={14} />
-              </button>
+              <DataEstimatorCta onClick={() => setIsEstimatorOpen(true)} />
 
               <ServiceBenefits />
-            </div>
+              </div>
+            )}
+
           </section>
 
           <ProductTabs
@@ -2560,9 +3273,13 @@ export default function ProductPage({
               setProduct((prev) => ({ ...prev, ...patch }))
             }
           />
-          <ProductReviewsSection productId={product.id} />
+          <ProductReviewsSection
+            productId={product.id}
+            productTitle={product.name}
+            design={isPartnerShell ? "nissin" : "default"}
+          />
         </div>
       </div>
-    </Layout>
+    </PageShell>
   );
 }

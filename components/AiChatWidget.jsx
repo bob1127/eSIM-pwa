@@ -761,9 +761,7 @@ export default function AiChatWidget() {
                   </h3>
                   <div className="text-[11px] opacity-80 flex items-center gap-1 mt-0.5">
                     <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />{" "}
-                    {isLoggedIn
-                      ? `Hi，${userDisplayName}`
-                      : "文字 Groq · 截圖 Gemini"}
+                    {isLoggedIn ? `Hi，${userDisplayName}` : "Live"}
                   </div>
                 </div>
               </div>

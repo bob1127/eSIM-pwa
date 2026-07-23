@@ -1,10 +1,8 @@
 import { useRouter } from "next/router";
-import parse, { domToReact, attributesToProps } from "html-react-parser";
 import Layout from "../Layout";
 import { buildBlogPostSeo } from "../../lib/seo.config";
 import Link from "next/link";
 import ParallaxImage from "../../components/ParallaxImage/page";
-import { ReactLenis } from "@studio-freight/react-lenis";
 import { useRef, useState } from "react";
 import {
   fetchRelatedWpPosts,
@@ -29,26 +27,7 @@ import MediaGalleryLightbox, {
   toGalleryMediaItems,
 } from "../../components/MediaGalleryLightbox";
 import ArticleBlogPostLayout from "../../components/Blog/ArticleBlogPostLayout";
-
-/** WordPress 表格：補 class、避免 inline 隱藏 */
-function prepareWpContentHtml(html) {
-  if (!html) return "";
-  return html
-    .replace(/<table([^>]*)>/gi, (match, attrs = "") => {
-      const cleaned = attrs.replace(
-        /style="[^"]*display\s*:\s*none[^"]*"/gi,
-        "",
-      );
-      if (/class="/i.test(cleaned)) {
-        return `<table${cleaned.replace(/class="([^"]*)"/i, 'class="$1 wp-blog-table"')}>`;
-      }
-      return `<table class="wp-blog-table"${cleaned}>`;
-    })
-    .replace(
-      /<figure([^>]*class="[^"]*wp-block-table[^"]*")/gi,
-      "<figure$1 wp-table-figure",
-    );
-}
+import WpArticleBody from "../../components/Blog/WpArticleBody";
 
 // --- 🔧 工具函式：去除 HTML 標籤 (用於 SEO Description) ---
 function stripHtml(html) {
@@ -300,53 +279,16 @@ export default function PostPage({
     if (firstImageMatch) bannerImage = normalizeWpAssetUrl(firstImageMatch[1]);
   }
 
-  // 🌟 解析內文：圖片、表格（WordPress 區塊）
-  const renderContent = (html) => {
-    const prepared = prepareWpContentHtml(html);
-    const parseOptions = {
-      replace: (node) => {
-        if (node.type !== "tag") return undefined;
-
-        if (node.name === "img" && node.attribs?.src) {
-          return (
-            <div className="my-10 text-center">
-              <img
-                src={normalizeWpAssetUrl(node.attribs.src)}
-                alt={node.attribs.alt || ""}
-                className="max-w-[800px] h-auto mx-auto border border-[#eee]"
-                loading="lazy"
-              />
-            </div>
-          );
-        }
-
-        if (node.name === "table") {
-          const tableProps = attributesToProps(node.attribs || {});
-          const mergedClass = ["wp-blog-table", tableProps.className]
-            .filter(Boolean)
-            .join(" ");
-          return (
-            <div className="wp-table-wrap my-10 overflow-x-auto rounded-xl border border-[#e5e5e5] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
-              <table
-                {...tableProps}
-                className={mergedClass}
-                style={{ ...tableProps.style, display: "table", width: "100%" }}
-              >
-                {domToReact(node.children, parseOptions)}
-              </table>
-            </div>
-          );
-        }
-      },
-    };
-    return parse(prepared, parseOptions);
-  };
-
   // 日期格式化
   const postDate = new Date(post.date);
   const formattedDate = `${postDate.getFullYear()}年${String(postDate.getMonth() + 1)}月${String(postDate.getDate())}日 ${String(postDate.getHours()).padStart(2, "0")}時${String(postDate.getMinutes()).padStart(2, "0")}分`;
 
-  const pageSeo = buildBlogPostSeo(post, bannerImage, yoast);
+  const pageSeo = buildBlogPostSeo(post, bannerImage, yoast, {
+    country: articleCountry || null,
+    categoryNames: articleSubCats || [],
+    relatedPosts: relatedPosts || [],
+    isArticle: !!isArticle,
+  });
 
   // 父分類為「文章」→ TABIPPO 風格版型
   if (isArticle) {
@@ -354,51 +296,41 @@ export default function PostPage({
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.jeko-esim.com.tw";
 
     return (
-      <ReactLenis
-        root
-        options={{ lerp: 0.1, duration: 1.2, smoothTouch: false }}
+      <Layout
+        seo={{
+          ...pageSeo,
+        }}
       >
-        <Layout
-          seo={{
-            ...pageSeo,
-            articlePublishedTime: post.date,
-            articleModifiedTime: post.modified || post.date,
-          }}
-        >
-          <ArticleBlogPostLayout
-            post={post}
-            relatedPosts={relatedPosts}
-            popularTags={popularTags}
-            articleCountry={articleCountry}
-            articleSubCats={articleSubCats}
-            bannerImage={bannerImage}
-            shareUrl={`${siteUrl}/blog/${post.slug}`}
-          />
-          <MediaGalleryLightbox
-            isOpen={reviewMediaGallery.isOpen}
-            onClose={() =>
-              setReviewMediaGallery((gallery) => ({
-                ...gallery,
-                isOpen: false,
-              }))
-            }
-            images={reviewMediaGallery.items}
-            title={reviewMediaGallery.title}
-            initialIndex={reviewMediaGallery.initialIndex}
-            ariaLabel="評論媒體檢視"
-          />
-        </Layout>
-      </ReactLenis>
+        <ArticleBlogPostLayout
+          post={post}
+          relatedPosts={relatedPosts}
+          popularTags={popularTags}
+          articleCountry={articleCountry}
+          articleSubCats={articleSubCats}
+          bannerImage={bannerImage}
+          shareUrl={`${siteUrl}/blog/${post.slug}`}
+        />
+        <MediaGalleryLightbox
+          isOpen={reviewMediaGallery.isOpen}
+          onClose={() =>
+            setReviewMediaGallery((gallery) => ({
+              ...gallery,
+              isOpen: false,
+            }))
+          }
+          images={reviewMediaGallery.items}
+          title={reviewMediaGallery.title}
+          initialIndex={reviewMediaGallery.initialIndex}
+          ariaLabel="評論媒體檢視"
+        />
+      </Layout>
     );
   }
 
   return (
-    <ReactLenis root options={{ lerp: 0.1, duration: 1.2, smoothTouch: false }}>
-      <Layout
+    <Layout
         seo={{
           ...pageSeo,
-          articlePublishedTime: post.date,
-          articleModifiedTime: post.modified || post.date,
         }}
       >
         <div className="bg-white min-h-screen pb-24 font-sans text-[#333]">
@@ -489,14 +421,19 @@ export default function PostPage({
                       </span>
                     </nav>
                     <h1
-                      className="text-[24px] md:text-[28px] font-bold text-[#111] leading-[1.5] mb-6 tracking-tight"
+                      className="seo-speakable-title text-[24px] md:text-[28px] font-bold text-[#111] leading-[1.5] mb-6 tracking-tight"
                       dangerouslySetInnerHTML={{ __html: post.title.rendered }}
                     />
 
+                    {post.excerpt?.rendered && (
+                      <p className="seo-speakable-summary text-[15px] text-[#555] leading-[1.9] mb-6">
+                        {stripHtml(post.excerpt.rendered)}
+                      </p>
+                    )}
                     <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[#e5e5e5] pb-4 gap-4">
                       <div className="flex items-center gap-4 text-[13px] text-[#666]">
                         <span className="font-medium text-[#333]">
-                          WMESIM 編輯部
+                          WMESIM Ｊ編
                         </span>
                         <span>{formattedDate}</span>
                       </div>
@@ -532,9 +469,15 @@ export default function PostPage({
                   </header>
 
                   {/* 內文區塊 */}
-                  <div className="entry-content max-w-none mb-24">
-                    {renderContent(post.content.rendered)}
-                  </div>
+                  <WpArticleBody
+                    html={post.content.rendered}
+                    className="entry-content max-w-none mb-24"
+                    lightboxTitle={
+                      post.title?.rendered
+                        ? String(post.title.rendered).replace(/<[^>]+>/g, "")
+                        : "文章圖片"
+                    }
+                  />
                 </article>
 
                 {/* PR TIMES 區塊：媒體/合作夥伴專區 */}
@@ -1022,8 +965,61 @@ export default function PostPage({
           }
           .entry-content img {
             margin: 40px 0;
-            width: 100%;
+            max-width: 100%;
+            height: auto;
             background: #f9f9f9;
+          }
+          /* 單張圖：直式限制高度、靠左；點擊開整篇幻燈片 */
+          .entry-content .wp-single-img {
+            margin: 40px 0;
+            text-align: left;
+          }
+          .entry-content .wp-single-img__btn {
+            display: inline-block;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            cursor: zoom-in;
+            max-width: 100%;
+            text-align: left;
+          }
+          .entry-content .wp-single-img__media {
+            display: block;
+            width: auto !important;
+            max-width: 100% !important;
+            max-height: min(640px, 70vh) !important;
+            height: auto !important;
+            margin: 0 !important;
+            object-fit: contain;
+            border: 1px solid #eee;
+            background: #f9f9f9;
+          }
+          /* 圖片牆：覆蓋上方 img 規則，避免被拆成全寬直列 */
+          .entry-content .fl-wall {
+            margin: 40px 0;
+          }
+          .entry-content .fl-wall img {
+            margin: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: transparent !important;
+          }
+          /* 投影片 */
+          .entry-content .wp-slideshow {
+            margin: 40px 0;
+          }
+          .entry-content .wp-slideshow img {
+            margin: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            max-height: 70vh !important;
+            object-fit: contain !important;
+            background: transparent !important;
+          }
+          /* Jetpack 並排圖庫由 WpPhotoWall 渲染；勿用 display:contents 拆掉列／欄 */
+          .entry-content .wp-block-jetpack-tiled-gallery:not(.fl-wall) {
+            display: block;
+            width: 100%;
           }
           .entry-content a {
             color: #0056b3;
@@ -1146,7 +1142,6 @@ export default function PostPage({
           ariaLabel="評論媒體檢視"
         />
       </Layout>
-    </ReactLenis>
   );
 }
 
@@ -1196,8 +1191,12 @@ export async function getStaticProps({ params }) {
         post,
         relatedPosts,
         isArticle: !!classified.isArticle,
-        articleCountry: classified.articleCountry || null,
-        articleSubCats: classified.articleSubCats || [],
+        articleCountry:
+          classified.articleCountry || classified.knowledgeCountry || null,
+        articleSubCats: [
+          ...(classified.articleSubCats || []),
+          ...(classified.knowledgeSubCats || []),
+        ],
         popularTags,
       },
       revalidate: 60,

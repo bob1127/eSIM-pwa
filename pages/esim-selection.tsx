@@ -528,16 +528,51 @@ export default function GlobalPlanScanner() {
   const [exchangeRates, setExchangeRates] = useState({ USD: 32.5, HKD: 4.1 });
   const [savedPlanIds, setSavedPlanIds] = useState<string[]>([]);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  /** 建議售價利潤％（漫遊預設 45；原生可另設） */
+  const [profitPercent, setProfitPercent] = useState(45);
+  const [nativeProfitPercent, setNativeProfitPercent] = useState(60);
+  const [customProfitInput, setCustomProfitInput] = useState("45");
 
   useEffect(() => {
     fetchRates();
     fetchPlans();
     const saved = localStorage.getItem("savedPlans");
     if (saved) setSavedPlanIds(JSON.parse(saved));
+    const savedProfit = localStorage.getItem("esimSelectionProfitPercent");
+    const savedNative = localStorage.getItem("esimSelectionNativeProfitPercent");
+    if (savedProfit) {
+      const n = Number(savedProfit);
+      if (!Number.isNaN(n) && n > 0) {
+        setProfitPercent(n);
+        setCustomProfitInput(String(n));
+      }
+    }
+    if (savedNative) {
+      const n = Number(savedNative);
+      if (!Number.isNaN(n) && n > 0) setNativeProfitPercent(n);
+    }
   }, []);
   useEffect(() => {
     localStorage.setItem("savedPlans", JSON.stringify(savedPlanIds));
   }, [savedPlanIds]);
+
+  const applyProfitPercent = (value: number) => {
+    if (Number.isNaN(value) || value <= 0 || value > 500) return;
+    const rounded = Math.round(value * 10) / 10;
+    setProfitPercent(rounded);
+    setCustomProfitInput(String(rounded));
+    localStorage.setItem("esimSelectionProfitPercent", String(rounded));
+  };
+
+  const applyNativeProfitPercent = (value: number) => {
+    if (Number.isNaN(value) || value <= 0 || value > 500) return;
+    const rounded = Math.round(value * 10) / 10;
+    setNativeProfitPercent(rounded);
+    localStorage.setItem(
+      "esimSelectionNativeProfitPercent",
+      String(rounded),
+    );
+  };
   const toggleSavePlan = (id: string) => {
     setSavedPlanIds((prev) =>
       prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id],
@@ -652,8 +687,9 @@ export default function GlobalPlanScanner() {
           baseCurrency === "USD" ? exchangeRates.USD : exchangeRates.HKD;
         const costTWD = Math.ceil(rawPrice * rate);
 
-        const margin = details.isNative ? 1.6 : 1.4;
-        const profitRate = Math.round((margin - 1) * 100) + "%";
+        const percent = details.isNative ? nativeProfitPercent : profitPercent;
+        const margin = 1 + percent / 100;
+        const profitRate = `${percent}%`;
         const suggestedPrice = Math.ceil((costTWD * margin) / 10) * 10 - 1;
 
         return {
@@ -680,6 +716,8 @@ export default function GlobalPlanScanner() {
     exchangeRates,
     savedPlanIds,
     showSavedOnly,
+    profitPercent,
+    nativeProfitPercent,
   ]);
 
   const uniqueCarriers = useMemo(() => {
@@ -792,9 +830,14 @@ export default function GlobalPlanScanner() {
             API 庫存: <span className="text-yellow-400">{rawPlans.length}</span>{" "}
             | 顯示: <span className="text-white">{filteredPlans.length}</span>
           </div>
-          <div>
-            1 USD ≈ {exchangeRates.USD.toFixed(1)} TWD | 1 HKD ≈{" "}
-            {exchangeRates.HKD.toFixed(1)} TWD
+          <div className="flex flex-wrap items-center gap-3">
+            <span>
+              1 USD ≈ {exchangeRates.USD.toFixed(1)} TWD | 1 HKD ≈{" "}
+              {exchangeRates.HKD.toFixed(1)} TWD
+            </span>
+            <span className="text-emerald-300">
+              漫遊利潤 {profitPercent}% · 原生利潤 {nativeProfitPercent}%
+            </span>
           </div>
         </div>
 
@@ -858,6 +901,65 @@ export default function GlobalPlanScanner() {
                 <option value="HKD">HKD</option>
                 <option value="USD">USD</option>
               </select>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5">
+              <span className="text-xs font-bold text-emerald-800 whitespace-nowrap">
+                💰 漫遊利潤:
+              </span>
+              {[30, 35, 40, 45, 50, 55, 60].map((pct) => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => applyProfitPercent(pct)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
+                    profitPercent === pct
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+                  }`}
+                >
+                  {pct}%
+                </button>
+              ))}
+              <div className="flex items-center gap-1 ml-1">
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  step={1}
+                  value={customProfitInput}
+                  onChange={(e) => setCustomProfitInput(e.target.value)}
+                  onBlur={() => applyProfitPercent(Number(customProfitInput))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      applyProfitPercent(Number(customProfitInput));
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  className="w-14 border border-emerald-300 rounded-md px-2 py-1 text-xs font-bold text-emerald-900 bg-white outline-none focus:ring-2 focus:ring-emerald-400"
+                  aria-label="自訂漫遊利潤百分比"
+                />
+                <span className="text-xs font-bold text-emerald-700">%</span>
+              </div>
+              <div className="flex items-center gap-1 border-l border-emerald-200 pl-2 ml-1">
+                <span className="text-[10px] font-bold text-emerald-700 whitespace-nowrap">
+                  原生
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  step={1}
+                  value={nativeProfitPercent}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (!Number.isNaN(n) && n > 0) applyNativeProfitPercent(n);
+                  }}
+                  className="w-14 border border-emerald-300 rounded-md px-2 py-1 text-xs font-bold text-emerald-900 bg-white outline-none focus:ring-2 focus:ring-emerald-400"
+                  aria-label="原生線路利潤百分比"
+                />
+                <span className="text-xs font-bold text-emerald-700">%</span>
+              </div>
             </div>
           </div>
 
@@ -1002,7 +1104,12 @@ export default function GlobalPlanScanner() {
                 <th className="p-4 w-32">降速規則</th>
                 <th className="p-4 w-32">APN / 設定</th>
                 <th className="p-4 w-24 text-right">成本 (TWD)</th>
-                <th className="p-4 w-24 text-right">建議售價</th>
+                <th className="p-4 w-28 text-right">
+                  建議售價
+                  <div className="text-[10px] font-normal text-emerald-600 mt-0.5">
+                    漫遊 {profitPercent}%
+                  </div>
+                </th>
                 <th className="p-4 w-16 text-center">ID</th>
               </tr>
             </thead>

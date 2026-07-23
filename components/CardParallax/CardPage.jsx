@@ -3,25 +3,13 @@ import styles from './page.module.scss'
 import { projects } from './data';
 import Card from './index';
 import { useScroll } from 'framer-motion';
-import { useEffect, useRef } from 'react';
-import Lenis from '@studio-freight/lenis'
+import { useRef } from 'react';
 
 export default function Home() {
     const container = useRef(null);
     const { scrollYProgress } = useScroll({
         target: container,
         offset: ['start start', 'end end']
-    })
-
-    useEffect(() => {
-        const lenis = new Lenis()
-
-        function raf(time) {
-            lenis.raf(time)
-            requestAnimationFrame(raf)
-        }
-
-        requestAnimationFrame(raf)
     })
 
     return (

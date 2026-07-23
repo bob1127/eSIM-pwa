@@ -326,7 +326,10 @@ export default function Navbar({ className }: NavbarProps) {
         )}
       >
         <div
-          className="mx-auto  max-w-[1450px] 2xl:max-w-[1600px] pointer-events-auto rounded-2xl  border-1 border-gray-300 flex flex-col relative"
+          className={cn(
+            "mx-auto max-w-[1450px] 2xl:max-w-[1600px] pointer-events-auto border border-gray-300 flex flex-col relative transition-[border-radius] duration-150",
+            openMega !== "none" ? "rounded-t-2xl rounded-b-none" : "rounded-2xl",
+          )}
           onMouseLeave={() => setOpenMega("none")}
         >
           {/* 上半部：白色區塊 (Logo & 工具列) */}
@@ -434,7 +437,12 @@ export default function Navbar({ className }: NavbarProps) {
           </div>
 
           {/* 下半部：品牌藍色區塊 (選單 - 僅限電腦版顯示) */}
-          <div className="hidden lg:flex bg-[#0A6CD0] rounded-b-2xl h-[56px] relative justify-center items-center px-6 z-20">
+          <div
+            className={cn(
+              "hidden lg:flex bg-[#0A6CD0] h-[56px] relative justify-center items-center px-6 z-20 transition-[border-radius] duration-150",
+              openMega !== "none" ? "rounded-b-none" : "rounded-b-2xl",
+            )}
+          >
             <nav className="flex gap-10 items-center h-full">
               {navLinks.map((link, index) => (
                 <div
@@ -467,7 +475,7 @@ export default function Navbar({ className }: NavbarProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
-                className="absolute top-full left-0 w-full bg-white rounded-b-2xl shadow-2xl pt-4 pb-10 z-40 hidden lg:block border border-t-0 border-gray-100"
+                className="absolute top-full left-0 -mt-px w-full bg-white rounded-b-2xl shadow-2xl pt-4 pb-10 z-40 hidden lg:block border border-t-0 border-gray-300"
               >
                 <div className="px-10 max-w-[1200px] mx-auto">
                   {openMega === "home" && (

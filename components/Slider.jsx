@@ -533,7 +533,7 @@ export default function Slider() {
                 Jeko eSIM
               </h1>
               <p className="mt-2 md:mt-3 text-[15px] md:text-lg text-white/95 font-medium drop-shadow-md">
-                街口eSIM 成為您連接世界的接口
+                接口eSIM 成為您連接世界的接口
               </p>
               <Link
                 href="/product"

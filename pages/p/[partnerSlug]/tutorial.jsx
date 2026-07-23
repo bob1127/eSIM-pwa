@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Layout from "@/components/PartnerLayout";
+import Layout from "@/components/Shop/PartnerShopLayout";
 import Image from "next/image";
 // 🌟 確保引入 supabase
 import { supabase } from "@/lib/supabaseClient";
-import { getSupabaseAdminServer } from "@/lib/supabaseAdminServer";
+import { fetchActiveStoreByDomain } from "@/lib/partnerStorefront";
 
 // 🌟 1. 接收從 getServerSideProps 傳來的 store
 export default function Home({ store }) {
@@ -726,18 +726,10 @@ export default function Home({ store }) {
 // 🌟 3. 在檔案最下方加入 getServerSideProps 抓取分店資料
 export async function getServerSideProps(context) {
   const { partnerSlug } = context.params;
-
-  // 使用 Supabase 根據網址上的 partnerSlug 尋找對應的店鋪資料
-  const db = getSupabaseAdminServer();
-  const { data: store, error } = await db
-    .from("stores")
-    .select("*")
-    .eq("domain", partnerSlug)
-    .eq("status", "active")
-    .single();
+  const store = await fetchActiveStoreByDomain(partnerSlug);
 
   // 如果找不到店鋪或是店鋪已被停權，就顯示 404 頁面
-  if (error || !store) {
+  if (!store) {
     return { notFound: true };
   }
 

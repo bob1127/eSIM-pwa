@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/partner/catalog", label: "選品管理", icon: "shopping_bag" },
   { href: "/partner/products", label: "商品管理", icon: "inventory_2" },
   { href: "/partner/orders", label: "訂單分潤", icon: "receipt_long" },
+  { href: "/partner/blog", label: "文章管理", icon: "article" },
   { href: "/partner/settings", label: "商店設定", icon: "settings" },
 ];
 
@@ -80,8 +81,20 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
             <span className="hidden sm:inline">登出</span>
           </button>
           <div className="hidden md:flex items-center gap-2 border-l border-white/20 pl-3 ml-1">
-            <div className="w-7 h-7 bg-white/15 rounded-full flex items-center justify-center">
-              <MaterialIcon name="storefront" size={16} className="text-blue-200" />
+            <div className="w-7 h-7 bg-white/15 rounded-full flex items-center justify-center overflow-hidden">
+              {user?.user_metadata?.avatar_url || user?.user_metadata?.picture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={
+                    user.user_metadata.avatar_url || user.user_metadata.picture
+                  }
+                  alt=""
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <MaterialIcon name="storefront" size={16} className="text-blue-200" />
+              )}
             </div>
             <span className="text-xs text-blue-200 font-bold max-w-[100px] truncate">
               {store?.store_name || partner.name}

@@ -72,7 +72,7 @@ export default async function handler(req, res) {
     if (status === "active") {
       const { data: existingStore } = await supabaseAdmin
         .from("stores")
-        .select("id")
+        .select("id, status")
         .eq("domain", partner.slug)
         .maybeSingle();
 
@@ -95,6 +95,12 @@ export default async function handler(req, res) {
           });
         }
         storeCreated = true;
+      } else if (existingStore.status !== "active") {
+        // 商店已存在但非 active → 重新啟用，避免賣場連結 404
+        await supabaseAdmin
+          .from("stores")
+          .update({ status: "active", store_name: partner.name })
+          .eq("id", existingStore.id);
       }
     }
 

@@ -3,10 +3,14 @@ import Image from "next/image";
 import { BrandSocialIconLinks } from "@/components/social/SocialBrandIcons";
 
 /**
- * @param {{ forceShow?: boolean }} [props]
+ * @param {{ forceShow?: boolean, hideLinkColumns?: boolean }} [props]
  * forceShow: shop 等頁面在手機也顯示完整 footer（不隱藏）
+ * hideLinkColumns: 隱藏 PRODUCTS / SUPPORT / TAG 三欄（夥伴賣場用）
  */
-export default function Footer({ forceShow = false } = {}) {
+export default function Footer({
+  forceShow = false,
+  hideLinkColumns = false,
+} = {}) {
   return (
     <footer
       className={`${
@@ -15,7 +19,11 @@ export default function Footer({ forceShow = false } = {}) {
     >
       <div className=" lg:max-w-[1300px] w-full md:w-[90%] 2xl:max-w-[1500px] mx-auto px-6 py-12">
         {/* ================= 上半部：Logo、橫向選單、社群圖示 ================= */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 pb-10 border-b border-gray-200">
+        <div
+          className={`flex flex-col md:flex-row justify-between items-start md:items-end gap-8 pb-10 ${
+            hideLinkColumns ? "" : "border-b border-gray-200"
+          }`}
+        >
           <div className="flex flex-col gap-6">
             {/* Logo */}
             <Link href="/" className="inline-block select-none">
@@ -64,146 +72,156 @@ export default function Footer({ forceShow = false } = {}) {
         </div>
 
         {/* ================= 下半部：三欄式資訊區塊 ================= */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-12 pb-10">
-          {/* 第一欄：產品/方案 */}
-          <div>
-            <h3 className="text-xl font-bold tracking-widest text-gray-900 uppercase">
-              PRODUCTS
-            </h3>
-            <span className="text-[11px] font-bold text-gray-900 block mt-1 mb-5">
-              探索方案
-            </span>
-            <ul className="flex flex-col gap-3">
-              <li>
-                <Link
-                  href="/esim/all"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  所有 eSIM 方案
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/shop"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  Jeko 商城
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/esim/japan"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  日本原生 eSIM
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/esim/korea"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  韓國高速 eSIM
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/esim/asia"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  亞洲多國共用
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/esim/global"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  歐美長途方案
-                </Link>
-              </li>
-            </ul>
-          </div>
+        {!hideLinkColumns && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-12 pb-10">
+            {/* 第一欄：產品/方案 */}
+            <div>
+              <h3 className="text-xl font-bold tracking-widest text-gray-900 uppercase">
+                PRODUCTS
+              </h3>
+              <span className="text-[11px] font-bold text-gray-900 block mt-1 mb-5">
+                探索方案
+              </span>
+              <ul className="flex flex-col gap-3">
+                <li>
+                  <Link
+                    href="/esim/all"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    所有 eSIM 方案
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/shop"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    Jeko 商城
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/esim/japan"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    日本原生 eSIM
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/esim/korea"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    韓國高速 eSIM
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/esim/asia"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    亞洲多國共用
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/esim/global"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    歐美長途方案
+                  </Link>
+                </li>
+              </ul>
+            </div>
 
-          {/* 第二欄：支援/教學 (雙欄排列) */}
-          <div>
-            <h3 className="text-xl font-bold tracking-widest text-gray-900 uppercase">
-              SUPPORT
-            </h3>
-            <span className="text-[11px] font-bold text-gray-900 block mt-1 mb-5">
-              客戶服務
-            </span>
-            <ul className="grid grid-cols-2 gap-y-3 gap-x-4">
-              <li>
-                <Link
-                  href="/guide"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  安裝教學
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/support"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  常見問題
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/data-usage"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  查詢數據用量
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/devices"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  支援裝置列表
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/contact"
-                  className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  聯絡我們
-                </Link>
-              </li>
-            </ul>
-          </div>
+            {/* 第二欄：支援/教學 (雙欄排列) */}
+            <div>
+              <h3 className="text-xl font-bold tracking-widest text-gray-900 uppercase">
+                SUPPORT
+              </h3>
+              <span className="text-[11px] font-bold text-gray-900 block mt-1 mb-5">
+                客戶服務
+              </span>
+              <ul className="grid grid-cols-2 gap-y-3 gap-x-4">
+                <li>
+                  <Link
+                    href="/guide"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    安裝教學
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/support"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    常見問題
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/data-usage"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    查詢數據用量
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/devices"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    支援裝置列表
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/contact"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    聯絡我們
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/member-offers"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    會員優惠
+                  </Link>
+                </li>
+              </ul>
+            </div>
 
-          {/* 第三欄：熱門標籤 */}
-          <div>
-            <h3 className="text-xl font-bold tracking-widest text-gray-900 uppercase">
-              TAG
-            </h3>
-            <span className="text-[11px] font-bold text-gray-900 block mt-1 mb-5">
-              熱門關鍵字
-            </span>
-            <div className="flex flex-wrap gap-x-3 gap-y-2">
-              <span className="text-[13px] text-gray-600">
-                <span className="text-sky-500 mr-0.5">#</span>日本eSIM
+            {/* 第三欄：熱門標籤 */}
+            <div>
+              <h3 className="text-xl font-bold tracking-widest text-gray-900 uppercase">
+                TAG
+              </h3>
+              <span className="text-[11px] font-bold text-gray-900 block mt-1 mb-5">
+                熱門關鍵字
               </span>
-              <span className="text-[13px] text-gray-600">
-                <span className="text-sky-500 mr-0.5">#</span>不降速吃到飽
-              </span>
-              <span className="text-[13px] text-gray-600">
-                <span className="text-sky-500 mr-0.5">#</span>韓國上網
-              </span>
-              <span className="text-[13px] text-gray-600">
-                <span className="text-sky-500 mr-0.5">#</span>免換卡
-              </span>
-              <span className="text-[13px] text-gray-600">
-                <span className="text-sky-500 mr-0.5">#</span>原生線路
-              </span>
+              <div className="flex flex-wrap gap-x-3 gap-y-2">
+                <span className="text-[13px] text-gray-600">
+                  <span className="text-sky-500 mr-0.5">#</span>日本eSIM
+                </span>
+                <span className="text-[13px] text-gray-600">
+                  <span className="text-sky-500 mr-0.5">#</span>不降速吃到飽
+                </span>
+                <span className="text-[13px] text-gray-600">
+                  <span className="text-sky-500 mr-0.5">#</span>韓國上網
+                </span>
+                <span className="text-[13px] text-gray-600">
+                  <span className="text-sky-500 mr-0.5">#</span>免換卡
+                </span>
+                <span className="text-[13px] text-gray-600">
+                  <span className="text-sky-500 mr-0.5">#</span>原生線路
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* ================= 底部：公司資訊、付款方式、版權 ================= */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end pt-8 border-t border-gray-200 gap-8">

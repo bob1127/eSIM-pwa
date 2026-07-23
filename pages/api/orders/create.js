@@ -1,4 +1,10 @@
 // 檔案位置: esim-store-front/pages/api/orders/create.js
+//
+// 這一步只負責「把地址/運費寫進 Medusa 購物車」，回傳的 orderId 其實是
+// cartId（欄位名稱保留 orderId 是為了跟舊版前端呼叫的資料形狀相容，不用改
+// shop.jsx / CheckoutForm.jsx）。真正的「建立付款 session + 完成訂單 + 產生
+// 藍新表單」都移到 esim-backend 的 /store/newebpay-checkout 處理，
+// 詳見 pages/api/newebpay-generate-form.ts。
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ success: false, message: "Method Not Allowed" });
@@ -37,7 +43,7 @@ export default async function handler(req, res) {
 
   try {
     console.log(`\n==========================================`);
-    console.log(`[Next.js API] 🚀 開始處理結帳流程，Cart ID: ${cartId}`);
+    console.log(`[Next.js API] 🚀 開始處理結帳流程（地址/運費），Cart ID: ${cartId}`);
 
     const cartCheck = await fetchMedusa("取得購物車", `${MEDUSA_URL}/store/carts/${cartId}`, { headers });
     if (cartCheck.cart?.completed_at) {
@@ -66,44 +72,15 @@ export default async function handler(req, res) {
     if (!shipOptionsData.shipping_options || shipOptionsData.shipping_options.length === 0) throw new Error("無可用運費");
     await fetchMedusa("套用運費", `${MEDUSA_URL}/store/carts/${cartId}/shipping-methods`, { method: "POST", headers, body: JSON.stringify({ option_id: shipOptionsData.shipping_options[0].id }) });
 
-    console.log(`[Next.js API] 💳 步驟 3: 檢查/建立付款集合...`);
+    console.log(`[Next.js API] 💰 步驟 3: 取得最終金額...`);
     const cartData = await fetchMedusa("取得購物車", `${MEDUSA_URL}/store/carts/${cartId}`, { headers });
-    let paymentCollectionId = cartData.cart?.payment_collection?.id;
-    if (!paymentCollectionId) {
-      const payColData = await fetchMedusa("建立付款集合", `${MEDUSA_URL}/store/payment-collections`, { method: "POST", headers, body: JSON.stringify({ cart_id: cartId }) });
-      paymentCollectionId = payColData.payment_collection.id;
-    }
-
-    // 🌟 提前取出購物車總金額，確保藍新有正確的金額可以扣款
     const finalAmount = cartData.cart.total || 0;
 
-    console.log(`[Next.js API] 🔍 步驟 4: 指定付款方式 (pp_system_default)...`);
-    await fetchMedusa("設定付款方式", `${MEDUSA_URL}/store/payment-collections/${paymentCollectionId}/payment-sessions`, { method: "POST", headers, body: JSON.stringify({ provider_id: "pp_system_default" }) });
+    console.log(`[Next.js API] ✅ 地址/運費設定完成，交給 /api/newebpay-generate-form 建單+產生付款表單。`);
 
-    console.log(`[Next.js API] 🎯 步驟 5: 觸發正式送出訂單 (放生 Medusa，準備跳轉)...`);
-    
-    let finalOrderId = cartId; // 預設使用 cartId 當作藍新的訂單編號
-
-    try {
-      // 我們只呼叫一次，然後用 try-catch 包起來。就算 Medusa 吐 409/500，我們也不會中斷程式！
-      const completeResponse = await fetch(`${MEDUSA_URL}/store/carts/${cartId}/complete`, {
-        method: "POST",
-        headers: { ...headers, "Idempotency-Key": `checkout_${cartId}` }
-      });
-      const completeData = await completeResponse.json();
-
-      if (completeResponse.ok && completeData.type === "order") {
-         finalOrderId = completeData.order?.id || completeData.data?.id || cartId;
-         console.log(`[Next.js API] 🎉 訂單順利秒建成功！Order ID: ${finalOrderId}`);
-      } else {
-         console.log(`[Next.js API] ⚠️ Medusa 已進入背景排隊處理，我們不等它了，直接護送客人去金流！`);
-      }
-    } catch (e) {
-      console.log(`[Next.js API] ⚠️ 觸發完成訂單無回應，Medusa 背景處理中。繼續跳轉...`);
-    }
-
-    // 🚀 關鍵：不管 Medusa 後端跑到哪了，我們直接把 OrderId (或 CartId) 和金額丟給藍新結帳！
-    return res.status(200).json({ success: true, orderId: finalOrderId, amount: finalAmount });
+    // orderId 這裡等於 cartId，藍新表單那一步（呼叫 esim-backend /store/newebpay-checkout）
+    // 才會真正把 cart complete 成 Medusa order。
+    return res.status(200).json({ success: true, orderId: cartId, amount: finalAmount });
 
   } catch (error) {
     console.error(`\n[Next.js API] 💥 結帳中斷: ${error.message}\n`);

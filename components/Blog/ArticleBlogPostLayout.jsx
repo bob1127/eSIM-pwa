@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import parse, { domToReact, attributesToProps } from "html-react-parser";
+import { useMemo, useState, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronUp } from "lucide-react";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
+import { domToReact, attributesToProps } from "html-react-parser";
+import WpArticleBody from "@/components/Blog/WpArticleBody";
 
 const RELATED_PER_PAGE = 6;
 
@@ -15,17 +16,6 @@ function stripHtml(html) {
     .replace(/<[^>]*>?/gm, "")
     .replace(/&#\d+;/gm, "")
     .trim();
-}
-
-function prepareWpContentHtml(html) {
-  if (!html) return "";
-  return html.replace(/<table([^>]*)>/gi, (match, attrs = "") => {
-    const cleaned = attrs.replace(/style="[^"]*display\s*:\s*none[^"]*"/gi, "");
-    if (/class="/i.test(cleaned)) {
-      return `<table${cleaned.replace(/class="([^"]*)"/i, 'class="$1 wp-blog-table"')}>`;
-    }
-    return `<table class="wp-blog-table"${cleaned}>`;
-  });
 }
 
 function formatDateJP(isoStr) {
@@ -457,61 +447,24 @@ export default function ArticleBlogPostLayout({
       ? popularTags
       : categoryLabels.slice(0, 8).map((n) => `#${n}`);
 
-  const renderContent = (html) => {
+  const replaceExtras = useCallback(() => {
     let h2Index = 0;
-    const prepared = prepareWpContentHtml(html);
-    const parseOptions = {
-      replace: (node) => {
-        if (node.type !== "tag") return undefined;
-
-        if (node.name === "img" && node.attribs?.src) {
-          return (
-            <div className="my-10">
-              <img
-                src={normalizeWpAssetUrl(node.attribs.src)}
-                alt={node.attribs.alt || ""}
-                className="w-full h-auto"
-                loading="lazy"
-              />
-            </div>
-          );
-        }
-
-        if (node.name === "h2") {
-          const id = `heading-${h2Index++}`;
-          const props = attributesToProps(node.attribs || {});
-          return (
-            <h2
-              {...props}
-              id={id}
-              className="scroll-mt-28 text-[22px] font-bold text-[#111] mt-16 mb-6 leading-[1.5]"
-            >
-              {domToReact(node.children, parseOptions)}
-            </h2>
-          );
-        }
-
-        if (node.name === "table") {
-          const tableProps = attributesToProps(node.attribs || {});
-          const mergedClass = ["wp-blog-table", tableProps.className]
-            .filter(Boolean)
-            .join(" ");
-          return (
-            <div className="wp-table-wrap my-10 overflow-x-auto rounded-xl border border-[#e5e5e5] bg-white">
-              <table
-                {...tableProps}
-                className={mergedClass}
-                style={{ ...tableProps.style, display: "table", width: "100%" }}
-              >
-                {domToReact(node.children, parseOptions)}
-              </table>
-            </div>
-          );
-        }
+    return {
+      onH2: (node, parseOptions) => {
+        const id = `heading-${h2Index++}`;
+        const props = attributesToProps(node.attribs || {});
+        return (
+          <h2
+            {...props}
+            id={id}
+            className="scroll-mt-28 text-[22px] font-bold text-[#111] mt-16 mb-6 leading-[1.5]"
+          >
+            {domToReact(node.children, parseOptions)}
+          </h2>
+        );
       },
     };
-    return parse(prepared, parseOptions);
-  };
+  }, []);
 
   return (
     <div className="bg-white min-h-screen pt-10 pb-20 font-sans text-[#333]">
@@ -540,7 +493,7 @@ export default function ArticleBlogPostLayout({
 
             {/* 標題 — 字級照舊 */}
             <h1
-              className="text-[24px] md:text-[28px] font-bold text-[#111] leading-[1.5] mb-4 tracking-tight"
+              className="seo-speakable-title text-[24px] md:text-[28px] font-bold text-[#111] leading-[1.5] mb-4 tracking-tight"
               dangerouslySetInnerHTML={{ __html: post.title.rendered }}
             />
 
@@ -553,6 +506,12 @@ export default function ArticleBlogPostLayout({
                 <span>（更新 {formatDateMeta(post.modified)}）</span>
               )}
             </div>
+
+            {post.excerpt?.rendered && (
+              <p className="seo-speakable-summary text-[15px] text-[#555] leading-[1.9] mb-4">
+                {stripHtml(post.excerpt.rendered)}
+              </p>
+            )}
 
             <ShareBar url={shareUrl} title={titleText} />
 
@@ -575,9 +534,12 @@ export default function ArticleBlogPostLayout({
             )}
 
             {/* 內文 */}
-            <div className="article-entry-content max-w-none mb-12">
-              {renderContent(post.content.rendered)}
-            </div>
+            <WpArticleBody
+              html={post.content.rendered}
+              className="article-entry-content max-w-none mb-12"
+              replaceExtras={replaceExtras}
+              lightboxTitle={titleText || "文章圖片"}
+            />
 
             {/* Tags */}
             {displayTags.length > 0 && (
@@ -596,11 +558,9 @@ export default function ArticleBlogPostLayout({
 
             <ShareBar url={shareUrl} title={titleText} />
 
-            {/* 編輯部 / 作者盒 */}
+            {/* Ｊ編 / 作者盒 */}
             <div className="mt-10 border border-[#e5e5e5] rounded-sm p-5 md:p-6">
-              <p className="text-[11px] text-[#999] mb-4 tracking-wide">
-                編輯部
-              </p>
+              <p className="text-[11px] text-[#999] mb-4 tracking-wide">Ｊ編</p>
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 rounded-full bg-[#0A6CD0] text-white flex items-center justify-center text-[13px] font-black shrink-0">
                   JEKO
@@ -611,7 +571,7 @@ export default function ArticleBlogPostLayout({
                       <p className="text-[15px] font-bold text-[#111]">
                         Jeko eSIM
                       </p>
-                      <p className="text-[12px] text-[#888] mt-0.5">編輯部</p>
+                      <p className="text-[12px] text-[#888] mt-0.5">Ｊ編</p>
                     </div>
                     <div className="flex items-center gap-3 text-[#555] shrink-0">
                       <a
@@ -652,7 +612,7 @@ export default function ArticleBlogPostLayout({
                 </div>
               </div>
               <p className="mt-5 text-[13px] text-[#666] leading-[1.9]">
-                Jeko eSIM 編輯部專注旅遊通訊與現地生活情報，整理各國 eSIM
+                Jeko eSIM Ｊ編專注旅遊通訊與現地生活情報，整理各國 eSIM
                 方案、交通票券與實用攻略，協助旅客輕鬆出國、無縫連線。
               </p>
             </div>
@@ -708,6 +668,34 @@ export default function ArticleBlogPostLayout({
         }
         .article-entry-content p {
           margin-bottom: 28px;
+        }
+        .article-entry-content img {
+          max-width: 100%;
+          height: auto;
+        }
+        .article-entry-content .wp-single-img {
+          margin: 32px 0;
+          text-align: left;
+        }
+        .article-entry-content .wp-single-img__btn {
+          display: inline-block;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          cursor: zoom-in;
+          max-width: 100%;
+          text-align: left;
+        }
+        .article-entry-content .wp-single-img__media {
+          display: block;
+          width: auto !important;
+          max-width: 100% !important;
+          max-height: min(640px, 70vh) !important;
+          height: auto !important;
+          margin: 0 !important;
+          object-fit: contain;
+          border: 1px solid #eee;
+          background: #f9f9f9;
         }
         .article-entry-content a {
           color: #0a6cd0;

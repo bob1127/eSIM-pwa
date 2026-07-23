@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -14,7 +13,6 @@ export default function VuckoScroll({
   const introRef = useRef(null);
   const desktopContainerRef = useRef(null);
   const rafRef = useRef(0);
-  const lenisRef = useRef(null);
 
   // 專給桌機互動用的計算狀態（用 ref 避免重複 render）
   const stateRef = useRef({
@@ -58,18 +56,6 @@ export default function VuckoScroll({
 
     // 僅桌機開啟互動動畫
     const isDesktop = () => window.innerWidth >= 900;
-
-    // 初始化 Lenis（平滑滾動）
-    if (isDesktop()) {
-      const lenis = new Lenis();
-      lenisRef.current = lenis;
-
-      lenis.on("scroll", ScrollTrigger.update);
-      gsap.ticker.add((time) => {
-        lenis.raf(time * 1000);
-      });
-      gsap.ticker.lagSmoothing(0);
-    }
 
     // 設定初始狀態
     const init = getInitialValues();
@@ -174,13 +160,6 @@ export default function VuckoScroll({
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       ctx.revert();
       ScrollTrigger.getAll().forEach((t) => t.kill());
-      if (lenisRef.current) {
-        gsap.ticker.remove((time) => {
-          lenisRef.current?.raf(time * 1000);
-        });
-        lenisRef.current.destroy();
-        lenisRef.current = null;
-      }
     };
   }, [breakpoints]);
 

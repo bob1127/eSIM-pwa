@@ -7,6 +7,7 @@ import { parseCarrierSpecsByCarrier } from "../../../lib/productCarrierSpecs";
 import { parseHotSaleTelecoms } from "../../../lib/productHotSale";
 import { parseUsageContentByCarrier } from "../../../lib/productUsageContent";
 import { parseFaqContentByCarrier } from "../../../lib/productFaqContent";
+import { parsePromoOfferByCarrier } from "../../../lib/productPromoOffer";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -73,6 +74,9 @@ export default async function handler(req, res) {
       ),
       faq_content_by_carrier: parseFaqContentByCarrier(
         product.metadata?.faq_content_by_carrier,
+      ),
+      promo_offer_by_carrier: parsePromoOfferByCarrier(
+        product.metadata?.promo_offer_by_carrier,
       ),
     });
   } catch (error) {

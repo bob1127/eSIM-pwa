@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef } from "react";
-import { ReactLenis } from "lenis/react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -159,7 +158,6 @@ export default function JeskoScrollHero() {
 
   return (
     <>
-      <ReactLenis root />
       <div ref={containerRef} className="scroll-hero-wrapper">
         <section className="hero">
           {/* Clipped to window aperture — not full-bleed */}

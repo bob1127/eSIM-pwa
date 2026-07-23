@@ -615,6 +615,15 @@ function MegaMenu({ mega, visible }) {
 export default function ShopNavbar({
   cartCount: cartCountProp = 0,
   compact = false,
+  /** 覆寫主選單（夥伴賣場：國家列表，無 mega） */
+  primaryNav = null,
+  /** 次要選單覆寫；傳 [] 可隱藏 */
+  secondaryNav = null,
+  homeHref = "/shop",
+  brandLabel = "Jeko 商城",
+  loginHref = "/login",
+  promoHref = "/shop/deals",
+  supportHref = "/shop/support",
 }) {
   const { cartItems, setIsCartOpen } = useCart();
   const cartCount =
@@ -626,6 +635,9 @@ export default function ShopNavbar({
   const [searchOpen, setSearchOpen] = useState(false);
   const headerRef = useRef(null);
   const hideTimer = useRef(null);
+
+  const navItems = primaryNav ?? SHOP_NAV;
+  const secondaryItems = secondaryNav ?? SECONDARY_NAV;
 
   useEffect(() => {
     const update = () => {
@@ -664,7 +676,7 @@ export default function ShopNavbar({
             className={`${CONTAINER} h-9 flex items-center justify-center relative`}
           >
             <Link
-              href="/shop/deals"
+              href={promoHref}
               className="text-white text-[12px] font-medium hover:underline flex items-center gap-2"
             >
               全站限時 7.5 折優惠，出國必備一次購齊
@@ -672,7 +684,7 @@ export default function ShopNavbar({
               <span className="font-bold">立即選購 &gt;&gt;</span>
             </Link>
             <Link
-              href="/shop/support"
+              href={supportHref}
               className="absolute right-6 lg:right-10 text-white/80 text-[11px] hover:text-white hover:underline"
             >
               客服支援
@@ -683,7 +695,7 @@ export default function ShopNavbar({
           <div className={`${CONTAINER} h-8 flex items-center justify-between`}>
             <div className="flex items-center gap-5 text-[11px] text-white/60 font-medium tracking-wide">
               <Link
-                href="/shop"
+                href={homeHref}
                 className="flex items-center shrink-0 hover:opacity-90 transition-opacity"
               >
                 <Image
@@ -732,7 +744,7 @@ export default function ShopNavbar({
             <div
               className={`${CONTAINER} h-14 flex items-center gap-4 lg:gap-6`}
             >
-              <Link href="/shop" className="flex items-center gap-2.5 shrink-0">
+              <Link href={homeHref} className="flex items-center gap-2.5 shrink-0">
                 <Image
                   src="/images/Logo/logo-no-bg.png"
                   alt="Jeko"
@@ -741,12 +753,12 @@ export default function ShopNavbar({
                   className="h-7 w-auto object-contain"
                 />
                 <span className="hidden xl:block text-[11px] text-slate-400 border-l border-slate-200 pl-2.5 leading-tight">
-                  Jeko 商城
+                  {brandLabel}
                 </span>
               </Link>
 
               <nav className="hidden lg:flex items-center h-full flex-1 min-w-0">
-                {SHOP_NAV.map((item) => (
+                {navItems.map((item) => (
                   <div
                     key={item.key}
                     className="relative h-full flex items-center"
@@ -771,7 +783,7 @@ export default function ShopNavbar({
               </nav>
 
               <nav className="hidden xl:flex items-center h-full gap-0.5 shrink-0">
-                {SECONDARY_NAV.map((item) => (
+                {secondaryItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -811,7 +823,7 @@ export default function ShopNavbar({
                   )}
                 </button>
                 <Link
-                  href="/login"
+                  href={loginHref}
                   className="p-2 hover:bg-slate-50 rounded transition-colors"
                   aria-label="會員"
                 >
@@ -836,7 +848,7 @@ export default function ShopNavbar({
               <div
                 className={`${CONTAINER} h-12 flex items-center justify-between`}
               >
-                <Link href="/shop" className="flex items-center gap-3 shrink-0">
+                <Link href={homeHref} className="flex items-center gap-3 shrink-0">
                   <Image
                     src="/images/Logo/logo-no-bg.png"
                     alt="Jeko"
@@ -845,7 +857,7 @@ export default function ShopNavbar({
                     className="h-7 w-auto object-contain"
                   />
                   <span className="hidden sm:block text-[11px] text-slate-400 border-l border-slate-200 pl-3 leading-tight">
-                    Jeko 商城
+                    {brandLabel}
                   </span>
                 </Link>
 
@@ -878,7 +890,7 @@ export default function ShopNavbar({
                     )}
                   </button>
                   <Link
-                    href="/login"
+                    href={loginHref}
                     className="p-2 hover:bg-slate-50 rounded transition-colors"
                     aria-label="會員"
                   >
@@ -903,7 +915,7 @@ export default function ShopNavbar({
                 className={`${CONTAINER} h-10 hidden lg:flex items-center justify-between`}
               >
                 <nav className="flex items-center h-full">
-                  {SHOP_NAV.map((item) => (
+                  {navItems.map((item) => (
                     <div
                       key={item.key}
                       className="relative h-full flex items-center"
@@ -928,7 +940,7 @@ export default function ShopNavbar({
                 </nav>
 
                 <nav className="flex items-center h-full gap-1">
-                  {SECONDARY_NAV.map((item) => (
+                  {secondaryItems.map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
@@ -975,7 +987,7 @@ export default function ShopNavbar({
 
       {/* ── Mega Dropdown：fixed 滿版，內容對齊 CONTAINER ── */}
       <AnimatePresence>
-        {SHOP_NAV.filter((i) => i.mega).map((item) =>
+        {navItems.filter((i) => i.mega).map((item) =>
           activeKey === item.key ? (
             <div
               key={item.key}
@@ -1032,7 +1044,7 @@ export default function ShopNavbar({
                 </button>
               </div>
               <nav className="flex-1 py-2 overflow-y-auto">
-                {SHOP_NAV.map((item) => (
+                {navItems.map((item) => (
                   <div key={item.key}>
                     <div
                       className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 cursor-pointer"
@@ -1095,7 +1107,7 @@ export default function ShopNavbar({
                   </div>
                 ))}
                 <div className="border-t border-slate-100 mt-2 pt-2">
-                  {SECONDARY_NAV.map((item) => (
+                  {secondaryItems.map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
@@ -1109,7 +1121,7 @@ export default function ShopNavbar({
               </nav>
               <div className="shrink-0 px-4 py-4 border-t border-slate-100">
                 <Link
-                  href="/login"
+                  href={loginHref}
                   className="flex items-center gap-2 w-full px-4 py-2.5 bg-black text-white text-sm font-bold justify-center"
                 >
                   <User className="w-4 h-4" />

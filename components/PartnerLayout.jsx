@@ -7,7 +7,6 @@ import { SplitText } from "gsap/SplitText";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/components/context/CartContext";
 import {
-  GlobeAltIcon,
   ShoppingBagIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
@@ -266,10 +265,12 @@ export default function PartnerLayout({ store, children, title, description }) {
         <div className="flex items-center gap-8">
           <Link href={`/p/${store.domain}`} className="flex items-center gap-2">
             {store.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={store.logo_url}
                 alt={store.store_name}
                 className="h-6 object-contain"
+                referrerPolicy="no-referrer"
               />
             ) : (
               <span className="text-xl font-bold tracking-tight text-[#1c1e21]">
@@ -326,10 +327,12 @@ export default function PartnerLayout({ store, children, title, description }) {
             >
               {user ? (
                 user.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={user.image}
                     alt={user.name}
                     className="w-6 h-6 rounded-full object-cover border border-gray-200"
+                    referrerPolicy="no-referrer"
                   />
                 ) : (
                   <div className="w-6 h-6 bg-[#0064e0] text-white rounded-full flex items-center justify-center text-[10px] font-bold">
@@ -396,10 +399,12 @@ export default function PartnerLayout({ store, children, title, description }) {
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center gap-2 mb-6">
               {store.logo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={store.logo_url}
                   alt={store.store_name}
                   className="h-5 grayscale opacity-70"
+                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <span className="text-lg font-bold tracking-tight text-[#1c1e21]">

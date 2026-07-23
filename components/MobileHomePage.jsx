@@ -224,7 +224,7 @@ function MobileHeroCarousel() {
           Jeko eSIM
         </h1>
         <p className="mt-2 text-[14px] text-white/95 font-medium drop-shadow-md">
-          街口eSIM 成為您連接世界的接口
+          接口eSIM 成為您連接世界的接口
         </p>
         <Link
           href="/product"
@@ -462,7 +462,10 @@ export default function MobileHomePage() {
                   </span>
                   <span className="truncate">{l.label}</span>
                 </span>
-                <span className="text-white/45 text-[15px] shrink-0" aria-hidden>
+                <span
+                  className="text-white/45 text-[15px] shrink-0"
+                  aria-hidden
+                >
                   ›
                 </span>
               </Link>

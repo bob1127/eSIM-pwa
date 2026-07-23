@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import gsap from "gsap";
-import Lenis from "lenis";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Autoplay } from "swiper/modules";
 
@@ -187,23 +186,6 @@ const Card = ({ id, title, img }) => {
 
 // 主元件
 export default function SVGCardCarousel() {
-  // 1. 啟用 Lenis 平滑滾動
-  useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smooth: true,
-    });
-
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-
-    return () => lenis.destroy();
-  }, []);
-
   const cards = [
     {
       id: "card-1",

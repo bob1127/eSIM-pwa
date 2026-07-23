@@ -167,7 +167,7 @@ export default function Home() {
           <div className="flex items-center text-[11px] md:text-[13px] text-[#888] font-bold tracking-widest bg-white/50 px-4 py-1.5 rounded-full backdrop-blur-sm">
             <span>給您提供多方案的旅遊連線新選擇</span>
             <span className="mx-3 text-[#ccc]">|</span>
-            <span>from 街口eSIM</span>
+            <span>from 接口eSIM</span>
             {/* 小黃色 Logo 圓點 */}
             <span className="ml-2 flex items-center justify-center w-[16px] h-[16px] md:w-[18px] md:h-[18px] bg-[#FADE2B] rounded-full text-white text-[8px] font-bold leading-none">
               ツ
@@ -407,7 +407,7 @@ export default function Home() {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[6px] text-gray-500 leading-none mb-0.5">
-                      街口eSIM
+                      接口eSIM
                     </span>
                     <span className="text-[12px] font-black leading-none tracking-tight">
                       Jeko
@@ -464,7 +464,7 @@ export default function Home() {
                         <div className="w-10 h-10 rounded-full border-[3px] border-white"></div>
                       </div>
                       <span className="text-[8px] text-white/90 leading-none mb-1">
-                        街口eSIM
+                        接口eSIM
                       </span>
                       <span className="text-[14px] text-white font-black leading-none tracking-wider">
                         Jeko

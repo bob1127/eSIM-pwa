@@ -200,6 +200,7 @@ export default function AccountSupportView({
                 { label: "iOS 安裝教學", href: "/operation-ios" },
                 { label: "Android 教學", href: "/operation-android" },
                 { label: "FAQ 常見問題", href: "/faq" },
+                { label: "會員優惠", href: "/member-offers" },
                 { label: "退換貨政策", href: "/refund-policy" },
               ].map((l) => (
                 <li key={l.href}>

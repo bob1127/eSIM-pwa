@@ -37,7 +37,7 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
           </p>
         </div>
 
-        {/* Email / 電話快捷卡片 */}
+        {/* Email / LINE 快捷卡片 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
           <a
             href={`mailto:${CONTACT_INFO.email}`}
@@ -56,18 +56,26 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
             </div>
           </a>
           <a
-            href={CONTACT_INFO.phoneTel}
-            className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#2563eb] hover:shadow-sm transition"
+            href={CONTACT_INFO.lineUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#06C755] hover:shadow-sm transition"
           >
-            <div className="w-11 h-11 rounded-xl bg-[#2b579a]/10 flex items-center justify-center shrink-0">
-              <MaterialIcon name="call" size={22} className="text-[#2b579a]" />
+            <div className="w-11 h-11 rounded-xl bg-[#06C755]/15 flex items-center justify-center shrink-0">
+              <Image
+                src="/images/payment/line.svg"
+                alt=""
+                width={22}
+                height={22}
+                className="w-[22px] h-[22px]"
+              />
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                電話
+                LINE
               </p>
               <p className="text-sm sm:text-base font-black text-[#1e3a5f]">
-                {CONTACT_INFO.phoneDisplay}
+                {CONTACT_INFO.lineDisplay}
               </p>
             </div>
           </a>
@@ -120,7 +128,7 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
         </div>
 
         {/* 其他聯絡方式 */}
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             {
               icon: "mail",
@@ -129,16 +137,11 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
               href: `mailto:${CONTACT_INFO.email}`,
             },
             {
-              icon: "call",
-              label: "電話",
-              val: CONTACT_INFO.phoneDisplay,
-              href: CONTACT_INFO.phoneTel,
-            },
-            {
               icon: "chat",
               label: "LINE 官方",
-              val: "線上即時諮詢",
-              href: "https://lin.ee/y6tdx5q",
+              val: CONTACT_INFO.lineHint,
+              href: CONTACT_INFO.lineUrl,
+              useLineIcon: true,
             },
           ].map((item) => (
             <a
@@ -151,11 +154,21 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
               className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-sm hover:border-[#2563eb] hover:shadow-sm transition"
             >
               <div className="w-10 h-10 rounded-sm bg-[#2b579a]/10 flex items-center justify-center shrink-0">
-                <MaterialIcon
-                  name={item.icon}
-                  size={20}
-                  className="text-[#2b579a]"
-                />
+                {item.useLineIcon ? (
+                  <Image
+                    src="/images/payment/line.svg"
+                    alt=""
+                    width={20}
+                    height={20}
+                    className="w-5 h-5"
+                  />
+                ) : (
+                  <MaterialIcon
+                    name={item.icon}
+                    size={20}
+                    className="text-[#2b579a]"
+                  />
+                )}
               </div>
               <div className="min-w-0">
                 <p className="text-[11px] font-bold text-slate-400 uppercase">

@@ -3,7 +3,6 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import Lenis from "@studio-freight/lenis";
 
 const DEFAULT_ITEMS = [
   {
@@ -39,7 +38,6 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
   useEffect(() => {
     if (!items || items.length === 0) return;
 
-    let lenis = null;
     let rafId = null;
     let disposed = false;
     let resizeTimeout = null;
@@ -320,13 +318,7 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
         mesh.rotation.y += (targetY - mesh.rotation.y) * 0.08;
       }
 
-      // === Lenis ===
-      lenis = new Lenis({
-        smoothWheel: true,
-        smoothTouch: true,
-        duration: 1.1,
-        lerp: 0.08,
-      });
+      // === Lenis 平滑滾動已全站停用，改用原生滾動 ===
 
       let currentP = sectionProgress();
       let targetP = currentP;
@@ -342,8 +334,6 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
 
       function raf(time) {
         if (disposed) return;
-
-        lenis.raf(time);
 
         const rawP = sectionProgress();
         targetP = rawP;
@@ -411,7 +401,6 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
     return () => {
       disposed = true;
       if (rafId) cancelAnimationFrame(rafId);
-      lenis?.destroy?.();
       sceneCleanup?.();
     };
   }, [items]);

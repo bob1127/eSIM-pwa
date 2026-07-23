@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
-import { getSupabaseAdminServer } from "@/lib/supabaseAdminServer";
+import { fetchActiveStoreByDomain } from "@/lib/partnerStorefront";
 import { useSession, signOut } from "next-auth/react";
-import PartnerLayout from "@/components/PartnerLayout"; // 🌟 引入統一版型
+import PartnerShopLayout from "@/components/Shop/PartnerShopLayout"; // 🌟 統一使用 /shop Navbar+Footer
 import {
   QrCodeIcon,
   ArrowRightOnRectangleIcon,
@@ -101,7 +101,7 @@ export default function PartnerCustomerAccount({ store }) {
 
   return (
     // 🌟 使用 PartnerLayout 包裹，Navbar 與 Footer 全自動生成！
-    <PartnerLayout store={store} title="會員中心">
+    <PartnerShopLayout store={store} title="會員中心">
       <main className="max-w-5xl mx-auto px-6 py-12 flex flex-col md:flex-row gap-8 w-full">
         {/* 左側：Sidebar */}
         <aside className="w-full md:w-64 shrink-0">
@@ -197,19 +197,13 @@ export default function PartnerCustomerAccount({ store }) {
           )}
         </div>
       </main>
-    </PartnerLayout>
+    </PartnerShopLayout>
   );
 }
 
 export async function getServerSideProps(context) {
   const { partnerSlug } = context.params;
-  const db = getSupabaseAdminServer();
-  const { data: store, error } = await db
-    .from("stores")
-    .select("*")
-    .eq("domain", partnerSlug)
-    .eq("status", "active")
-    .single();
-  if (error || !store) return { notFound: true };
+  const store = await fetchActiveStoreByDomain(partnerSlug);
+  if (!store) return { notFound: true };
   return { props: { store } };
 }

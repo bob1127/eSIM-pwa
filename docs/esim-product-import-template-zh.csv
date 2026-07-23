@@ -1,0 +1,4 @@
+﻿handle,商品名稱,變體名稱,sku,plan_id,幣別,售價,成本,B2B底價,B2B成本率,電信商,使用天數,數據量,線路,可見性,備註
+china-unlimited-cmcc,中國 5G 吃到飽（漫遊）,CMCC+ · 5天 · 吃到飽,China-unlimited-5-B0,1922a825-ffb1-4a62-a4b0-73f6ef918da1,TWD,399,284,,1.30,CMCC+,5天,吃到飽,漫遊線路,,範例：售價399／成本284；b2b可填固定底價或留空用成本率
+china-unlimited-cmcc,中國 5G 吃到飽（漫遊）,CMCC+ · 3天 · 吃到飽,China-unlimited-3-B0,請填真實plan_id,TWD,239,171,,,CMCC+,3天,吃到飽,漫遊線路,,同一handle=同一商品的不同變體
+japan-local-au,日本本地吃到飽,AU(KDDI) · 5天 · 吃到飽,Japan-Local-unlimited-5-D0,請填真實plan_id,TWD,320,,,,AU(KDDI),5天,吃到飽,本地線路,,

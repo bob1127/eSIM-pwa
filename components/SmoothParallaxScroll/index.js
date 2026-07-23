@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './page.module.scss'
 import Image from 'next/image';
-import Lenis from '@studio-freight/lenis'
 import { useTransform, useScroll, motion } from 'framer-motion';
 
 const myLoader = ({ src, width, quality, placeholder }) => {
@@ -44,19 +43,11 @@ export default function Home() {
   const y4 = useTransform(scrollYProgress, [0, 1], [0, height * 3])
 
   useEffect( () => {
-    const lenis = new Lenis()
-
-    const raf = (time) => {
-      lenis.raf(time)
-      requestAnimationFrame(raf)
-    }
-
     const resize = () => {
       setDimension({width: window.innerWidth, height: window.innerHeight})
     }
 
     window.addEventListener("resize", resize)
-    requestAnimationFrame(raf);
     resize();
 
     return () => {

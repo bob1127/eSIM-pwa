@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCart } from "@/components/context/CartContext";
+import { useUser } from "@/components/context/UserContext";
 import { ChevronRight, Tag, Shield, Truck, RotateCcw } from "lucide-react";
 
 // ── 步驟指示器 ──────────────────────────────────────────────────
@@ -34,7 +35,17 @@ function Breadcrumb({ current = 1 }) {
 }
 
 // ── 右欄：訂單摘要 ──────────────────────────────────────────────
-function OrderSummary({ items, coupon, setCoupon, onApplyCoupon, discount }) {
+function OrderSummary({
+  items,
+  coupon,
+  setCoupon,
+  onApplyCoupon,
+  onRemoveCoupon,
+  discount,
+  appliedCode,
+  isApplyingCoupon,
+  couponMessage,
+}) {
   const physicalItems = items.filter((i) => !i.type || i.type === "physical");
 
   const subtotal = physicalItems.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -94,7 +105,7 @@ function OrderSummary({ items, coupon, setCoupon, onApplyCoupon, discount }) {
       <hr className="border-gray-200 mb-4" />
 
       {/* 折扣碼 */}
-      <div className="flex gap-2 mb-5">
+      <div className="flex gap-2 mb-2">
         <div className="relative flex-1">
           <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
@@ -102,17 +113,29 @@ function OrderSummary({ items, coupon, setCoupon, onApplyCoupon, discount }) {
             value={coupon}
             onChange={(e) => setCoupon(e.target.value)}
             placeholder="折扣碼或禮品卡"
-            className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+            disabled={Boolean(appliedCode)}
+            className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 disabled:bg-gray-100 disabled:text-gray-500"
           />
         </div>
         <button
           type="button"
-          onClick={onApplyCoupon}
-          className="px-4 py-2.5 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-700 transition-colors"
+          onClick={appliedCode ? onRemoveCoupon : onApplyCoupon}
+          disabled={isApplyingCoupon || (!appliedCode && !coupon.trim())}
+          className="px-4 py-2.5 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          套用
+          {isApplyingCoupon ? "處理中…" : appliedCode ? "移除" : "套用"}
         </button>
       </div>
+      {couponMessage && (
+        <p
+          className={`mb-5 text-[12px] ${
+            appliedCode ? "text-green-600" : "text-red-500"
+          }`}
+        >
+          {couponMessage}
+        </p>
+      )}
+      {!couponMessage && <div className="mb-5" />}
 
       {/* 金額明細 */}
       <div className="space-y-2 text-sm text-slate-700">
@@ -164,6 +187,7 @@ function OrderSummary({ items, coupon, setCoupon, onApplyCoupon, discount }) {
 export default function ShopCheckoutPage() {
   const router = useRouter();
   const { cartItems, cartId, totalPrice, clearCart } = useCart();
+  const { user, token } = useUser();
 
   const physicalItems = useMemo(
     () => (cartItems || []).filter((i) => !i.type || i.type === "physical"),
@@ -180,8 +204,19 @@ export default function ShopCheckoutPage() {
   });
   const [coupon, setCoupon] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [appliedCode, setAppliedCode] = useState(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [couponMessage, setCouponMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // 會員登入後，若 email 欄位還是空的，先幫忙帶入，方便折扣碼資格判斷
+  useEffect(() => {
+    if (user?.email && !form.email) {
+      setForm((prev) => ({ ...prev, email: user.email }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -200,12 +235,64 @@ export default function ShopCheckoutPage() {
     return errs;
   };
 
-  const handleApplyCoupon = () => {
-    if (coupon.toUpperCase() === "JEKO100") {
-      setDiscount(100);
-    } else {
-      alert("折扣碼無效");
+  const handleApplyCoupon = async () => {
+    const code = coupon.trim();
+    if (!code) return;
+    if (!cartId) {
+      setCouponMessage("購物車尚未初始化，請稍候再試");
+      return;
+    }
+
+    setIsApplyingCoupon(true);
+    setCouponMessage("");
+    try {
+      const res = await fetch("/api/checkout/promotion", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ cartId, code, action: "apply" }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setDiscount(0);
+        setAppliedCode(null);
+        setCouponMessage(data.error || "折扣碼無效");
+        return;
+      }
+
+      setDiscount(data.discount_total || 0);
+      setAppliedCode(data.code || code.toUpperCase());
+      setCouponMessage(`已套用折扣碼 ${data.code || code.toUpperCase()}`);
+    } catch (err) {
       setDiscount(0);
+      setAppliedCode(null);
+      setCouponMessage(err.message || "折扣碼套用失敗，請稍後再試");
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = async () => {
+    if (!cartId || !appliedCode) return;
+    setIsApplyingCoupon(true);
+    try {
+      const res = await fetch("/api/checkout/promotion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cartId, action: "remove" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      setDiscount(data?.discount_total || 0);
+    } catch {
+      setDiscount(0);
+    } finally {
+      setAppliedCode(null);
+      setCoupon("");
+      setCouponMessage("");
+      setIsApplyingCoupon(false);
     }
   };
 
@@ -465,7 +552,11 @@ export default function ShopCheckoutPage() {
               coupon={coupon}
               setCoupon={setCoupon}
               onApplyCoupon={handleApplyCoupon}
+              onRemoveCoupon={handleRemoveCoupon}
               discount={discount}
+              appliedCode={appliedCode}
+              isApplyingCoupon={isApplyingCoupon}
+              couponMessage={couponMessage}
             />
           </aside>
         </div>

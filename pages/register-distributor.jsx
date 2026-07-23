@@ -3,10 +3,12 @@ import Link from "next/link";
 import Image from "next/image";
 import Layout from "./Layout";
 import ConfettiButton from "@/components/ConfettiButton/ConfettiButton";
+import MaterialIcon from "@/components/MaterialIcon";
 import { supabase } from "../lib/supabaseClient";
 
 const FIELD_INPUT_CLASS =
   "w-full bg-transparent text-sm text-slate-800 outline-none border-0 ring-0 shadow-none py-1 placeholder:text-slate-300 focus:ring-0 focus:outline-none";
+const FIELD_PASSWORD_INPUT_CLASS = `${FIELD_INPUT_CLASS} pr-10`;
 
 const STEPS = [
   { id: 1, label: "合作身份" },
@@ -495,6 +497,44 @@ function UnderlineField({ label, hint, required, children }) {
   );
 }
 
+function PasswordRevealField({
+  label,
+  hint,
+  required,
+  value,
+  onChange,
+  placeholder,
+  autoComplete = "new-password",
+  show,
+  onToggleShow,
+}) {
+  return (
+    <UnderlineField label={label} hint={hint} required={required}>
+      <div className="relative">
+        <input
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          className={FIELD_PASSWORD_INPUT_CLASS}
+        />
+        <button
+          type="button"
+          onClick={onToggleShow}
+          aria-label={show ? "隱藏密碼" : "顯示密碼"}
+          className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-[#1a56db] transition"
+        >
+          <MaterialIcon
+            name={show ? "visibility_off" : "visibility"}
+            size={20}
+          />
+        </button>
+      </div>
+    </UnderlineField>
+  );
+}
+
 function StepIndicator({ current, total }) {
   const progress = ((current - 1) / (total - 1)) * 100;
 
@@ -747,6 +787,8 @@ export default function RegisterDistributor() {
   const [verifyingCode, setVerifyingCode] = useState(false);
   const [codeCooldown, setCodeCooldown] = useState(0);
   const [resendWait, setResendWait] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (codeCooldown <= 0) return;
@@ -1198,30 +1240,25 @@ export default function RegisterDistributor() {
 
               {isEmailVerified && (
                 <>
-                  <UnderlineField
+                  <PasswordRevealField
                     label="夥伴後台登入密碼"
                     required
                     hint="審核通過後，以此密碼登入 /partner/login（至少 6 位）"
-                  >
-                    <input
-                      type="password"
-                      value={form.password}
-                      onChange={(e) => set("password", e.target.value)}
-                      placeholder="設定登入密碼"
-                      autoComplete="new-password"
-                      className={FIELD_INPUT_CLASS}
-                    />
-                  </UnderlineField>
-                  <UnderlineField label="確認密碼" required>
-                    <input
-                      type="password"
-                      value={form.confirmPassword}
-                      onChange={(e) => set("confirmPassword", e.target.value)}
-                      placeholder="再輸入一次密碼"
-                      autoComplete="new-password"
-                      className={FIELD_INPUT_CLASS}
-                    />
-                  </UnderlineField>
+                    value={form.password}
+                    onChange={(e) => set("password", e.target.value)}
+                    placeholder="設定登入密碼"
+                    show={showPassword}
+                    onToggleShow={() => setShowPassword((v) => !v)}
+                  />
+                  <PasswordRevealField
+                    label="確認密碼"
+                    required
+                    value={form.confirmPassword}
+                    onChange={(e) => set("confirmPassword", e.target.value)}
+                    placeholder="再輸入一次密碼"
+                    show={showConfirmPassword}
+                    onToggleShow={() => setShowConfirmPassword((v) => !v)}
+                  />
                   {form.confirmPassword &&
                     form.password !== form.confirmPassword && (
                       <p className="text-[12px] text-red-500 -mt-4">

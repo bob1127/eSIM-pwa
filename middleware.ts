@@ -7,7 +7,6 @@ export function middleware(req: NextRequest) {
 
   // trailingSlash: true 時，無尾斜線的 API 會 308；LINE Webhook 不接受 308
   const apiRewriteTargets: Record<string, string> = {
-    "/api/newebpay-notify": "/api/newebpay-notify/",
     "/api/line/webhook": "/api/line/webhook/",
   };
   const rewriteTo = apiRewriteTargets[pathname];
@@ -24,5 +23,5 @@ export function middleware(req: NextRequest) {
 
 // 只比對這條路徑，減少不必要的開銷
 export const config = {
-  matcher: ["/api/newebpay-notify", "/api/line/webhook"],
+  matcher: ["/api/line/webhook"],
 };
