@@ -95,14 +95,21 @@ function HeroCardAction({
   );
 }
 
-function HeroQuickTile({ label, icon, href, external, onClick }) {
+function HeroQuickTile({ label, imageSrc, href, external, onClick }) {
   const cls =
     "group flex flex-col items-center justify-center gap-2 bg-white rounded-xl border border-slate-100 shadow-[0_2px_12px_rgba(15,23,42,0.06)] hover:shadow-[0_6px_20px_rgba(29,92,197,0.12)] hover:border-[#1d5cc5]/25 transition-all duration-200 p-3 sm:p-4 aspect-square w-full";
 
   const inner = (
     <>
-      <span className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#eef4ff] flex items-center justify-center group-hover:bg-[#dbeafe] transition-colors">
-        <MaterialIcon name={icon} size={24} className="text-[#1d5cc5]" />
+      <span className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center">
+        <img
+          src={imageSrc}
+          alt=""
+          width={48}
+          height={48}
+          className="w-full h-full object-contain"
+          draggable={false}
+        />
       </span>
       <span className="text-[10px] sm:text-[11px] font-bold text-[#1d5cc5] text-center leading-snug line-clamp-2">
         {label}
@@ -233,12 +240,16 @@ export default function Slider() {
     router.push("/data-query?setup=traffic#push-notification-section");
   };
 
-  const handleInstallApp = () => {
-    if (isInstallable) {
-      alert(
-        "Chrome 網址列右側應已出現「安裝」圖示（電腦＋箭頭），請點它安裝。\n\n若沒看到，請點右上角 ⋮ →「安裝 Jeko eSIM…」",
-      );
+  const handleInstallApp = async () => {
+    if (isStandalone) {
+      alert("您已安裝 Jeko APP。");
       return;
+    }
+    if (isInstallable) {
+      const outcome = await installPWA();
+      if (outcome === "accepted") return;
+      if (outcome === "dismissed") return;
+      // unavailable：事件過期，引導手動安裝
     }
     if (needsAppleInstall) {
       openInstallGuide("push");
@@ -246,7 +257,7 @@ export default function Slider() {
     }
     if (isChromiumBrowser()) {
       alert(
-        "Chrome 安裝圖示尚未出現，請試試：\n\n1. 回到首頁 jeko-esim.com.tw 停留 30 秒\n2. 點一下頁面任意位置\n3. 重新整理（Cmd+Shift+R）\n4. 右上角 ⋮ 選單找「安裝 Jeko eSIM…」\n5. chrome://settings/content/all → 搜 jeko → 清除資料後重試\n\n※ 不要用無痕視窗",
+        "安裝提示尚未就緒，請試試：\n\n1. 停留在本站約 10–30 秒後再點一次\n2. 重新整理頁面\n3. Chrome 右上角 ⋮ →「安裝應用程式」或「安裝 Jeko eSIM…」\n\n※ 請勿使用無痕視窗",
       );
       return;
     }
@@ -640,28 +651,28 @@ export default function Slider() {
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5 sm:gap-3 md:gap-4">
                   <HeroQuickTile
                     label="加入官方 LINE"
-                    icon="chat"
+                    imageSrc="/images/icon/01.png"
                     href={LINE_OA_URL}
                     external
                   />
                   <HeroQuickTile
                     label="開啟 APP 流量提醒"
-                    icon="notifications_active"
+                    imageSrc="/images/icon/02.png"
                     onClick={handleTrafficAlert}
                   />
                   <HeroQuickTile
                     label="訂單查詢"
-                    icon="receipt_long"
+                    imageSrc="/images/icon/03.png"
                     href="/account"
                   />
                   <HeroQuickTile
                     label="租車包車"
-                    icon="directions_car"
+                    imageSrc="/images/icon/04.png"
                     onClick={() => scrollToSection("car-rental-charter")}
                   />
                   <HeroQuickTile
                     label="住宿"
-                    icon="hotel"
+                    imageSrc="/images/icon/05.png"
                     onClick={() => scrollToSection("accommodation-recommend")}
                   />
                 </div>

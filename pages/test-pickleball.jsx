@@ -733,7 +733,10 @@ export default function TestPickleballPage() {
                       </span>
                     </div>
 
-                    <div className="space-y-0 border-t" style={{ borderColor: AM.border }}>
+                    <div
+                      className="space-y-0 border-t"
+                      style={{ borderColor: AM.border }}
+                    >
                       {visibleCourtSlots.map((slot) => {
                         const isAvailable = slot.state === "available";
                         const isSelected =

@@ -5,8 +5,8 @@ import { getServiceWorkerUrl } from "@/lib/pushSw";
 import { initInstallPromptCapture } from "@/lib/pwaInstallPrompt";
 
 /**
- * 頁面載入即註冊 Service Worker，讓 Chrome 網址列出現 PWA 安裝圖示。
- * next.config.js 設 register:false，改由此元件統一處理，與推播共用 /sw.js。
+ * 頁面載入即註冊 Service Worker，並攔截 beforeinstallprompt
+ * 供「安裝 APP」按鈕直接呼叫系統安裝對話框（Android／Chrome）。
  */
 export default function PWARegister() {
   useEffect(() => {

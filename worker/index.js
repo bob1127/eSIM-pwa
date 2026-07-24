@@ -1,37 +1,41 @@
-// worker/index.js
-const PWA_LOGO = "/images/Logo/jeko-logo.jpg";
+// worker/index.js — next-pwa 會編譯進 public/sw.js
+const DEFAULT_ICON = `${self.location.origin}/images/Logo/icon-192.png`;
+const DEFAULT_BADGE = `${self.location.origin}/images/Logo/icon-192.png`;
 
-// 監聽來自伺服器的推播事件
-self.addEventListener('push', function (event) {
+self.addEventListener("push", function (event) {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'Jeko eSIM 貼心提醒';
-  
+  const title = data.title || "Jeko eSIM 貼心提醒";
+
   const options = {
-    body: data.body || '您有一則新訊息',
-    icon: PWA_LOGO, // 推播彈出時的左側大圖示
-    badge: PWA_LOGO, // 手機上方狀態列的單色小圖示
-    vibrate: [200, 100, 200], // 手機震動節奏
+    body: data.body || "您有一則新訊息",
+    icon: data.icon || DEFAULT_ICON,
+    badge: data.badge || DEFAULT_BADGE,
+    image: data.image || undefined,
+    vibrate: [200, 100, 200],
     data: {
-      url: data.url || '/', // 紀錄客人點擊推播後，要打開哪一個網址
+      url: data.url || "/",
     },
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// 監聽客人點擊推播通知的事件
-self.addEventListener('notificationclick', function (event) {
-  event.notification.close(); // 點擊後關閉通知視窗
-  
-  // 讓手機打開我們剛剛在 data 裡設定的網址 (例如回到訂單頁面)
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-      const urlToOpen = new URL(event.notification.data.url, self.location.origin).href;
-      for (let i = 0; i < clientList.length; i++) {
-        const client = clientList[i];
-        if (client.url === urlToOpen && 'focus' in client) return client.focus();
-      }
-      if (clients.openWindow) return clients.openWindow(urlToOpen);
-    })
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then(function (clientList) {
+        const urlToOpen = new URL(
+          event.notification.data?.url || "/",
+          self.location.origin,
+        ).href;
+        for (let i = 0; i < clientList.length; i++) {
+          const client = clientList[i];
+          if (client.url === urlToOpen && "focus" in client) return client.focus();
+        }
+        if (clients.openWindow) return clients.openWindow(urlToOpen);
+      }),
   );
 });

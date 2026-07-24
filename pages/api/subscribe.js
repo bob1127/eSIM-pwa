@@ -99,11 +99,24 @@ export default async function handler(req, res) {
   }
   step("db_upsert", { ok: true });
 
-  // 4. 發送「訂閱成功」測試推播
+  // 4. 發送「訂閱成功」測試推播（會員不要求手動 ICCID）
+  const isMember = !!userId;
+  const proto = req.headers["x-forwarded-proto"] || "http";
+  const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost:3000";
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    `${proto}://${host}`;
+  const logoUrl = `${origin.replace(/\/$/, "")}/images/Logo/icon-192.png`;
+
   const payload = JSON.stringify({
     title: "✈️ Jeko eSIM 已就緒",
-    body: "推播已開啟！請在下方綁定 ICCID，流量偏低時我們會提醒您。",
-    url: "/data-query/",
+    body: isMember
+      ? "流量通知已開啟！系統會自動對應您的 eSIM，流量偏低時提醒您。"
+      : "推播已開啟！請綁定您的 eSIM，流量偏低時我們會提醒您。",
+    icon: logoUrl,
+    badge: logoUrl,
+    url: isMember ? "/account" : "/data-query/?setup=traffic#push-notification-section",
   });
 
   let testPushOk = false;
@@ -111,7 +124,7 @@ export default async function handler(req, res) {
   try {
     await webpush.sendNotification({ endpoint, keys }, payload);
     testPushOk = true;
-    step("test_push", { ok: true });
+    step("test_push", { ok: true, isMember });
   } catch (pushErr) {
     testPushOk = false;
     testPushError = pushErr.message;
@@ -121,8 +134,11 @@ export default async function handler(req, res) {
 
   return res.status(201).json({
     success: true,
-    message: "訂閱成功！請綁定 ICCID 以啟用流量提醒",
-    needsIccidBind: true,
+    message: isMember
+      ? "訂閱成功！將自動對應本站 eSIM 訂單"
+      : "訂閱成功！請綁定 eSIM 以啟用流量提醒",
+    needsIccidBind: !isMember,
+    isMember,
     testPushOk,
     testPushError,
     userId: userId?.slice(0, 8) || null,

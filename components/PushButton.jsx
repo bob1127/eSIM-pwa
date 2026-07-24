@@ -125,6 +125,12 @@ export default function PushButton({
       if (!publicKey) throw new Error("找不到 NEXT_PUBLIC_VAPID_PUBLIC_KEY");
 
       setCurrentStep("通知權限");
+      // 已被封鎖時 requestPermission 不會再跳出詢問，直接回 denied
+      if (typeof Notification !== "undefined" && Notification.permission === "denied") {
+        throw new Error(
+          "通知已被封鎖。請點網址列左側鎖頭／網站設定 → 通知 → 改為「允許」，再重新整理後重試。",
+        );
+      }
       const permission = await withTimeout(
         Notification.requestPermission(),
         120000,
@@ -132,7 +138,12 @@ export default function PushButton({
       );
       addLog(`權限=${permission}`);
       if (permission !== "granted") {
-        throw new Error(`通知權限=${permission}`);
+        if (permission === "denied") {
+          throw new Error(
+            "通知已被封鎖。請點網址列左側鎖頭／網站設定 → 通知 → 改為「允許」，再重新整理後重試。",
+          );
+        }
+        throw new Error("尚未允許通知權限，請再試一次並選擇「允許」。");
       }
 
       setCurrentStep("Service Worker");

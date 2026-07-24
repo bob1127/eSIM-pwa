@@ -11,7 +11,9 @@ import { buildInstallHintText, isChromiumBrowser } from "@/lib/deviceDetect";
 import { resolveMemberEmail } from "@/lib/memberIdentity";
 import { parseQrcodeData } from "@/lib/esimOrderExtract";
 import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
-import { normalizeIccid } from "@/lib/pushBind";
+import { normalizeIccid, getPushEndpoint } from "@/lib/pushBind";
+import { subscribeToPush } from "@/lib/pushSubscribe";
+import { detectPushSupport, getBrowserContext } from "@/lib/pushSupport";
 import { usePWAInstall } from "./usePWAInstall";
 
 const COLLAPSED_H = 118;
@@ -579,7 +581,7 @@ export default function EsimBottomSheet() {
   const { user: supabaseUser, token } = useUser();
   const { data: session } = useSession();
   const { isLoggedIn, authReady, isGuest } = useAuth();
-  const { isInstallable, deviceType, isStandalone } = usePWAInstall();
+  const { isInstallable, installPWA, deviceType, isStandalone } = usePWAInstall();
 
   // shop 相關頁面：不顯示手機上拉選單，改用完整 Footer
   const isShopRoute =
@@ -599,6 +601,8 @@ export default function EsimBottomSheet() {
   const [usageLoading, setUsageLoading] = useState(false);
   const [guestUsage, setGuestUsage] = useState(null);
   const [guestLoading, setGuestLoading] = useState(false);
+  const [trafficBusy, setTrafficBusy] = useState(false);
+  const [trafficOn, setTrafficOn] = useState(false);
 
   const memberEmail = useMemo(
     () =>
@@ -703,16 +707,14 @@ export default function EsimBottomSheet() {
     if (activeIdx >= plans.length) setActiveIdx(0);
   }, [plans.length, activeIdx]);
 
-  const handleInstall = useCallback(() => {
+  const handleInstall = useCallback(async () => {
     if (isStandalone) {
       alert("您已安裝 Jeko APP。");
       return;
     }
     if (isInstallable) {
-      alert(
-        "Chrome 網址列右側應已出現「安裝」圖示，請點它安裝。\n\n若沒看到，請點右上角 ⋮ →「安裝 Jeko eSIM…」",
-      );
-      return;
+      const outcome = await installPWA();
+      if (outcome === "accepted" || outcome === "dismissed") return;
     }
     if (needsAppleInstall) {
       alert(
@@ -722,16 +724,180 @@ export default function EsimBottomSheet() {
     }
     if (isChromiumBrowser()) {
       alert(
-        "請試試：回到首頁停留後，點右上角 ⋮ 選單找「安裝 Jeko eSIM…」\n\n※ 不要用無痕視窗",
+        "安裝提示尚未就緒，請稍候再點一次，或：\n\nChrome 右上角 ⋮ →「安裝應用程式」／「安裝 Jeko eSIM…」\n\n※ 不要用無痕視窗",
       );
       return;
     }
     alert(buildInstallHintText({ isStandalone }) || "請將本站加入主畫面以安裝 APP。");
-  }, [isInstallable, isStandalone, needsAppleInstall]);
+  }, [isInstallable, installPWA, isStandalone, needsAppleInstall]);
 
   const goLogin = () => {
     router.push(buildLoginUrl("/account"));
   };
+
+  /** 依裝置自動分流：iPhone 先裝 App；Android／電腦直接開通知 */
+  const enableTrafficAlert = useCallback(async () => {
+    if (trafficBusy) return;
+    if (!authReady) return;
+
+    if (isGuest || !isLoggedIn) {
+      alert("請先登入，登入後會自動幫您開啟流量通知。");
+      const path =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}?enableTraffic=1`
+          : "/?enableTraffic=1";
+      router.push(buildLoginUrl(path));
+      return;
+    }
+
+    setTrafficBusy(true);
+    try {
+      const ctx = getBrowserContext();
+      const support = await detectPushSupport();
+      const isApplePhone = !!ctx.isIOS;
+
+      // ── iPhone／iPad：必須先用主畫面 App 開啟 ──
+      if (isApplePhone && !ctx.isStandalone) {
+        setPanel("install");
+        setExpanded(true);
+        alert(
+          "偵測到 iPhone／iPad\n\n請先安裝到主畫面，才能收通知：\n\n1. 點「下載 APP」→ 加入主畫面\n2. 關掉 Safari，改點主畫面圖示打開\n3. 再點「開啟流量通知」並允許通知",
+        );
+        return;
+      }
+
+      if (!support.supported) {
+        alert(
+          support.hint ||
+            "此裝置暫不支援通知，請改用 Chrome，或將本站加入主畫面。",
+        );
+        return;
+      }
+
+      if (
+        typeof Notification !== "undefined" &&
+        Notification.permission === "denied"
+      ) {
+        alert(
+          isApplePhone
+            ? "通知被關掉了。\n\n請到「設定 → 通知」找到 Jeko，改成允許後再試。"
+            : "通知被關掉了。\n\n請點網址列左邊的鎖頭 → 通知 → 允許，然後再點一次即可。",
+        );
+        return;
+      }
+
+      // ── Android／電腦／已安裝的 iPhone App：直接開通知（不強制裝 PWA）──
+      await subscribeToPush({ token });
+
+      const endpoint = await getPushEndpoint();
+      let bound = false;
+      if (endpoint) {
+        const res = await fetch("/api/push/auto-bind-member", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ endpoint }),
+        });
+        const data = await res.json().catch(() => ({}));
+        bound = res.ok && !!data.success;
+      }
+
+      setTrafficOn(true);
+
+      if (bound) {
+        alert("完成！已自動對應您的 eSIM，流量快用完時會通知您。");
+      } else {
+        alert(
+          "通知已開啟！\n\n系統會自動對應本站訂單。若暫時對應不到，到「剩餘用量」查看方案即可，一般會員不必手動輸入 ICCID。",
+        );
+      }
+
+      // Android／Chrome：通知開好後「可選」安裝，不擋主流程
+      if (
+        !isApplePhone &&
+        !isStandalone &&
+        isInstallable &&
+        typeof window !== "undefined" &&
+        window.confirm("通知已開好。\n\n要不要再安裝到主畫面？之後更好找（可略過）。")
+      ) {
+        try {
+          await installPWA();
+        } catch {
+          /* 略過 */
+        }
+      }
+    } catch (err) {
+      const msg = err?.message || String(err);
+      alert(
+        msg.includes("封鎖") || msg.includes("允許")
+          ? msg
+          : `開啟失敗：${msg}\n\n請再試一次。`,
+      );
+    } finally {
+      setTrafficBusy(false);
+    }
+  }, [
+    trafficBusy,
+    authReady,
+    isGuest,
+    isLoggedIn,
+    isInstallable,
+    isStandalone,
+    installPWA,
+    token,
+    router,
+  ]);
+
+  // 登入後帶 ?enableTraffic=1 → 自動開啟
+  useEffect(() => {
+    if (!authReady || !isLoggedIn || isGuest || trafficOn || trafficBusy) return;
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("enableTraffic") !== "1") return;
+
+    params.delete("enableTraffic");
+    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash || ""}`;
+    window.history.replaceState({}, "", next);
+    enableTrafficAlert();
+  }, [authReady, isLoggedIn, isGuest, trafficOn, trafficBusy, enableTrafficAlert]);
+
+  // 進頁靜默檢查：iPhone 未裝 App 不算已開
+  useEffect(() => {
+    if (!authReady || !isLoggedIn) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const ctx = getBrowserContext();
+        if (ctx.isIOS && !ctx.isStandalone) {
+          if (!cancelled) setTrafficOn(false);
+          return;
+        }
+        const endpoint = await getPushEndpoint();
+        if (!endpoint || cancelled) return;
+        if (
+          typeof Notification !== "undefined" &&
+          Notification.permission === "granted"
+        ) {
+          setTrafficOn(true);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, isLoggedIn, isStandalone]);
+
+  const trafficButtonLabel = (() => {
+    if (trafficBusy) return "開啟中…";
+    if (trafficOn) return "流量通知已開";
+    if (needsAppleInstall) return "先安裝再通知";
+    return "開啟流量通知";
+  })();
 
   const openPanel = (id) => {
     if (id === "helper") {
@@ -985,13 +1151,18 @@ export default function EsimBottomSheet() {
                   >
                     購買 eSIM
                   </Link>
-                  <Link
-                    href="/account"
-                    className="flex-1 text-center text-[13px] font-bold py-3 rounded-2xl bg-[#e8f2fc] text-[#0A6CD0] active:opacity-90"
-                    onClick={() => setExpanded(false)}
+                  <button
+                    type="button"
+                    disabled={trafficBusy}
+                    onClick={enableTrafficAlert}
+                    className={`flex-1 text-center text-[13px] font-bold py-3 rounded-2xl active:opacity-90 disabled:opacity-60 ${
+                      trafficOn
+                        ? "bg-[#e8fbf2] text-[#0F8A52]"
+                        : "bg-[#e8f2fc] text-[#0A6CD0]"
+                    }`}
                   >
-                    會員中心
-                  </Link>
+                    {trafficButtonLabel}
+                  </button>
                 </div>
               )}
             </div>

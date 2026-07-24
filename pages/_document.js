@@ -31,9 +31,15 @@ export default function Document() {
                       navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
                     });
                   }
-                  window.addEventListener('beforeinstallprompt', function () {
+                  window.addEventListener('beforeinstallprompt', function (e) {
+                    try { e.preventDefault(); } catch (_) {}
+                    window.__pwaDeferredPrompt = e;
                     window.__pwaInstallAvailable = true;
                     window.dispatchEvent(new Event('pwa-install-available'));
+                  });
+                  window.addEventListener('appinstalled', function () {
+                    window.__pwaDeferredPrompt = null;
+                    window.__pwaInstallAvailable = false;
                   });
                 })();
               `,

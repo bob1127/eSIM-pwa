@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { subscribeToPush as subscribeToPushApi } from "@/lib/pushSubscribe";
 import {
   subscribeInstallPrompt,
   isPwaInstallAvailable,
+  promptInstall,
 } from "@/lib/pwaInstallPrompt";
-import { isSafariBrowser } from "@/lib/deviceDetect";
+import { isSafariBrowser, isChromiumBrowser } from "@/lib/deviceDetect";
 
 export function usePWAInstall() {
   const [isInstallable, setIsInstallable] = useState(false);
   const [deviceType, setDeviceType] = useState("none");
   const [isStandalone, setIsStandalone] = useState(false);
+  const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
     const userAgent = window.navigator.userAgent.toLowerCase();
@@ -33,6 +35,8 @@ export function usePWAInstall() {
         setDeviceType("ios");
       } else if (isMacSafari) {
         setDeviceType("mac");
+      } else if (isChromiumBrowser()) {
+        setDeviceType("android"); // Chrome／Edge／Android：可走 beforeinstallprompt
       }
     }
 
@@ -58,9 +62,24 @@ export function usePWAInstall() {
     };
   }, []);
 
-  const installPWA = async () => {
-    // 安裝由 Chrome 網址列圖示處理，此函式僅供 UI 提示
-  };
+  /**
+   * Android／Chrome：直接跳出系統安裝視窗
+   * @returns {Promise<'accepted'|'dismissed'|'unavailable'>}
+   */
+  const installPWA = useCallback(async () => {
+    if (isStandalone) return "accepted";
+    setInstalling(true);
+    try {
+      const { outcome } = await promptInstall();
+      if (outcome === "accepted") {
+        setIsStandalone(true);
+        setIsInstallable(false);
+      }
+      return outcome;
+    } finally {
+      setInstalling(false);
+    }
+  }, [isStandalone]);
 
   const subscribeToPush = async ({ token, onStep } = {}) => {
     try {
@@ -72,5 +91,12 @@ export function usePWAInstall() {
     }
   };
 
-  return { isInstallable, installPWA, deviceType, isStandalone, subscribeToPush };
+  return {
+    isInstallable,
+    installPWA,
+    installing,
+    deviceType,
+    isStandalone,
+    subscribeToPush,
+  };
 }

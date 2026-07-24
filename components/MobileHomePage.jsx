@@ -24,53 +24,33 @@ const HERO_SLIDES = [
   { image: "/images/location/thailand-01.png" },
 ];
 
-/* 使用 public/images/mobile-icon/ */
+/* 首頁上方快捷：public/images/icon/ */
 const QUICK_ICONS = [
   {
-    label: "精選eSIM",
-    href: "/product",
-    src: "/images/mobile-icon/精選國家.png",
-  },
-  {
-    label: "Jeko 商城",
-    href: "/shop",
-    src: "/images/mobile-icon/Jeko商城.png",
-  },
-  {
-    label: "我的訂單",
-    href: "/account",
-    src: "/images/mobile-icon/我的訂單.png",
-  },
-  {
-    label: "使用教學",
-    href: "#how-to-install",
-    src: "/images/mobile-icon/使用教學.png",
-  },
-  {
-    label: "關於Jeko",
-    href: "/about",
-    src: "/images/mobile-icon/關於jeko.png",
-  },
-  {
-    label: "包車服務",
-    href: "#car-rental-charter",
-    src: "/images/mobile-icon/包車服務.png",
-  },
-  {
-    label: "住宿推薦",
-    href: "#accommodation-section",
-    src: "/images/mobile-icon/住宿推薦.png",
-  },
-  {
-    label: "景點門票",
-    href: "#kkday-section",
-    src: "/images/mobile-icon/景點門票.png",
-  },
-  {
-    label: "聯絡客服",
+    label: "加入官方 LINE",
     href: LINE_OA_URL,
     external: true,
-    src: "/images/mobile-icon/聯絡客服.png",
+    src: "/images/icon/01.png",
+  },
+  {
+    label: "開啟 APP 流量提醒",
+    href: "/data-query?setup=traffic#push-notification-section",
+    src: "/images/icon/02.png",
+  },
+  {
+    label: "訂單查詢",
+    href: "/account",
+    src: "/images/icon/03.png",
+  },
+  {
+    label: "租車包車",
+    href: "#car-rental-charter",
+    src: "/images/icon/04.png",
+  },
+  {
+    label: "住宿",
+    href: "#accommodation-section",
+    src: "/images/icon/05.png",
   },
 ];
 
@@ -276,8 +256,8 @@ export default function MobileHomePage() {
       <MobileHeroCarousel />
 
       {/* ═══ 2. 快捷功能圖示 ═══ */}
-      <div className="mx-4 -mt-10 relative z-10 bg-white rounded-3xl border-1 border-gray-200  px-4 pt-5 pb-4">
-        <div className="grid grid-cols-4 gap-y-3 gap-x-1">
+      <div className="mx-4 -mt-10 relative z-10 bg-white rounded-3xl border-1 border-gray-200 px-3 pt-5 pb-4">
+        <div className="grid grid-cols-5 gap-y-2 gap-x-1">
           {QUICK_ICONS.map((item) => (
             <Link
               key={item.label}
@@ -285,15 +265,18 @@ export default function MobileHomePage() {
               {...(item.external
                 ? { target: "_blank", rel: "noopener noreferrer" }
                 : {})}
-              className="flex flex-col items-center active:opacity-70 transition-opacity"
+              className="flex flex-col items-center gap-1.5 active:opacity-70 transition-opacity"
             >
               <Image
                 src={item.src}
                 alt={item.label}
-                width={72}
-                height={88}
-                className="object-contain w-[72px] h-auto"
+                width={48}
+                height={48}
+                className="object-contain w-11 h-11"
               />
+              <span className="text-[10px] font-bold text-[#1d5cc5] text-center leading-tight line-clamp-2">
+                {item.label}
+              </span>
             </Link>
           ))}
         </div>
