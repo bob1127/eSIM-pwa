@@ -13,6 +13,7 @@ import {
   getLineMessagingConfig,
   isLineBotConfigured,
 } from "../../../lib/lineBot";
+import { getPublicSiteUrl } from "../../../lib/siteUrl";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -65,14 +66,35 @@ async function markLineUnfollow(lineUserId) {
     .eq("line_user_id", lineUserId);
 }
 
+function buildLineAlertNeedMemberMessage() {
+  const dataQueryUrl = `${getPublicSiteUrl()}/data-query`;
+  const loginUrl = `${getPublicSiteUrl()}/login`;
+  return [
+    "⚠️ 無法開啟 LINE 流量提醒",
+    "",
+    "此功能僅限「以 LINE 登入本站」並以該身分購買／綁定 eSIM 的會員使用。",
+    "訪客購買、Email／Google 會員訂單，目前無法自動對應到此 LINE 帳號。",
+    "",
+    "── 若要使用 LINE 自動提醒 ──",
+    `① 請至官網以 LINE 登入：${loginUrl}`,
+    "② 登入後購買，或確認會員中心看得到您的 eSIM",
+    "③ 再回這裡傳「開啟流量提醒」",
+    "",
+    "── 若只想立刻查流量 ──",
+    "不必是 LINE 會員，在官網輸入 ICCID 即可查詢：",
+    dataQueryUrl,
+    "",
+    "也可直接在此對話貼上 ICCID（19～20 碼）查詢。",
+  ].join("\n");
+}
+
 async function enableLineTrafficAlert(lineUserId) {
   const esims = await fetchEsimsByLineUserId(lineUserId);
   const target = esims[0];
   if (!target?.topupId) {
     return {
       ok: false,
-      message:
-        "找不到本站 eSIM 訂單。請先用同一 LINE 登入本站購買，或至會員中心綁定。",
+      message: buildLineAlertNeedMemberMessage(),
     };
   }
 
@@ -187,7 +209,14 @@ async function handleTextMessage(event) {
     if (autoResult?.ok === false) {
       extra = `\n\n⚠️ ${autoResult.error}`;
     } else if (lineUserId && !hasMemberOrders) {
-      extra = "\n\n💡 找不到本站訂單紀錄，請直接傳送 ICCID 查詢。";
+      const dataQueryUrl = `${getPublicSiteUrl()}/data-query`;
+      extra = [
+        "",
+        "",
+        "💡 此 LINE 帳號尚無對應的本站訂單（需以 LINE 登入購買才會自動對應）。",
+        "可直接貼上 ICCID 查詢，或至官網手動輸入：",
+        dataQueryUrl,
+      ].join("\n");
     }
 
     await replyLineMessage(replyToken, {

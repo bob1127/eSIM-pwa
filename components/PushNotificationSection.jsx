@@ -13,7 +13,7 @@ import { detectPushSupport } from "../lib/pushSupport";
 import { getPushEndpoint, ICCID_STORAGE_KEY } from "../lib/pushBind";
 import { useAuth } from "../hooks/useAuth";
 
-const REF_BLUE = "#1d5cc5";
+const REF_BLUE = "#3768C7";
 
 function authHeaders(token) {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -491,11 +491,18 @@ export default function PushNotificationSection({
             {memberIccidIntegrated && memberIccidPanel}
 
             {bindPhase === "bound" && (
-              <div className="bg-emerald-50 border-t border-emerald-100 px-6 py-4 flex items-center gap-2 text-emerald-800 text-sm font-bold">
+              <div
+                className="border-t px-6 py-4 flex items-center gap-2 text-sm font-bold"
+                style={{
+                  backgroundColor: "#EAF0FB",
+                  borderColor: "#D6E2F7",
+                  color: "#2B56A8",
+                }}
+              >
                 <MaterialIcon name="notifications_active" size={20} filled />
                 流量提醒已啟用
                 {boundLabel() && (
-                  <span className="text-xs font-normal text-emerald-700 ml-1">
+                  <span className="text-xs font-normal ml-1 opacity-80">
                     · 監控中：{boundLabel()}
                   </span>
                 )}
@@ -560,13 +567,22 @@ export default function PushNotificationSection({
     <>
       <div className={`flex flex-col gap-4 w-full ${className}`}>
         {bindPhase === "bound" ? (
-          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-5 py-4">
-            <div className="flex items-center gap-2 text-emerald-800 text-sm font-bold">
+          <div
+            className="rounded-xl border px-5 py-4"
+            style={{
+              backgroundColor: "#EAF0FB",
+              borderColor: "#D6E2F7",
+            }}
+          >
+            <div
+              className="flex items-center gap-2 text-sm font-bold"
+              style={{ color: "#2B56A8" }}
+            >
               <MaterialIcon name="notifications_active" size={20} filled />
               流量提醒已啟用
             </div>
             {boundLabel() && (
-              <p className="text-xs text-emerald-700 mt-1.5">
+              <p className="text-xs mt-1.5" style={{ color: "#3768C7" }}>
                 監控中：{boundLabel()}
                 {boundInfo?.bindMethod === "member_auto" && "（會員自動綁定）"}
                 {boundInfo?.bindMethod === "guest_email" && "（Email 驗證）"}

@@ -6,6 +6,7 @@ import {
   fetchMemberEsims,
 } from "./_memberAuth";
 import { userOwnsTopupId } from "../../../lib/esimOrderExtract";
+import { getPublicSiteUrl } from "../../../lib/siteUrl";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -146,9 +147,11 @@ export default async function handler(req, res) {
   }
 
   if (!target?.topupId) {
+    const dataQueryUrl = `${getPublicSiteUrl()}/data-query`;
     return res.status(404).json({
       error: "找不到可監控的 eSIM 訂單",
-      hint: "請先購買 eSIM 或透過 Web 推播綁定 ICCID",
+      hint: `LINE 流量提醒僅限以 LINE 登入並購買／綁定的會員。若只想查流量，可至 ${dataQueryUrl} 輸入 ICCID（不必是 LINE 會員）。`,
+      dataQueryUrl,
     });
   }
 
