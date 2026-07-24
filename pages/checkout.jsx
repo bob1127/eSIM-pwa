@@ -6,7 +6,9 @@ import { motion } from "framer-motion";
 import Layout from "./Layout.js"; // 注意路徑是否正確
 
 const CheckoutPage = () => {
-  const { cartItems, totalPrice } = useCart();
+  const { esimItems, esimTotal } = useCart();
+  const cartItems = esimItems || [];
+  const totalPrice = esimTotal || 0;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({

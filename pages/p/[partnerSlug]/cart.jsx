@@ -36,7 +36,10 @@ const steps = ["購物車", "填寫資料", "完成訂單"];
 
 export default function PartnerCart({ store }) {
   const router = useRouter();
-  const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
+  const { esimItems, esimTotal, updateQuantity, removeFromCart, clearCart } =
+    useCart();
+  const cartItems = esimItems || [];
+  const cartTotal = esimTotal || 0;
 
   const [activeStep, setActiveStep] = useState(0);
   const [removingIndex, setRemovingIndex] = useState(null);
@@ -45,11 +48,6 @@ export default function PartnerCart({ store }) {
 
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
-
-  const cartTotal = cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0,
-  );
 
   const handleRemoveWithAnimation = (index, id, color, size) => {
     setRemovingIndex(index);

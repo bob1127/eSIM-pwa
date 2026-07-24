@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import {
   MemberProfileHeader,
   InnerTabs,
@@ -11,6 +12,7 @@ import {
   AccountPageWrap,
 } from "./AccountShell";
 import MaterialIcon from "@/components/MaterialIcon";
+import { useUser } from "@/components/context/UserContext";
 import { orderItemSummary, refundStatusLabel } from "@/lib/refundPolicy";
 
 const formatNTD = (val) => {
@@ -73,6 +75,40 @@ export default function AccountDashboardView({
   onPartnerPortal,
 }) {
   const [innerTab, setInnerTab] = useState("overview");
+  const { token } = useUser();
+  const { status: nextAuthStatus } = useSession();
+  const [memberCoupons, setMemberCoupons] = useState([]);
+  const [couponsLoading, setCouponsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setCouponsLoading(true);
+      try {
+        const headers = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch("/api/promo/member-coupons", {
+          headers,
+          credentials: "include",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!cancelled) {
+          setMemberCoupons(res.ok && data.success ? data.coupons || [] : []);
+        }
+      } catch {
+        if (!cancelled) setMemberCoupons([]);
+      } finally {
+        if (!cancelled) setCouponsLoading(false);
+      }
+    };
+    if (nextAuthStatus === "loading") return undefined;
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, nextAuthStatus]);
+
+  const availableCoupons = memberCoupons.filter((c) => c.status === "available");
 
   const pendingCount = orders.filter((o) =>
     ["pending", "refund_pending"].includes(String(o.status).toLowerCase()),
@@ -172,6 +208,48 @@ export default function AccountDashboardView({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <NavyPanel
+              title="我的優惠券"
+              icon="confirmation_number"
+              action={
+                <Link
+                  href="/promo"
+                  className="text-[11px] font-bold text-[#2563eb] hover:underline"
+                >
+                  去拉霸
+                </Link>
+              }
+            >
+              {couponsLoading ? (
+                <p className="text-sm text-slate-400 py-3">載入中…</p>
+              ) : availableCoupons.length === 0 ? (
+                <p className="text-sm text-slate-500 py-3">
+                  尚無可用優惠券。到「最新優惠」拉霸抽獎，中獎會自動存入此處。
+                </p>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {availableCoupons.map((c) => (
+                    <li
+                      key={c.id}
+                      className="py-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">
+                          {c.label || `${c.amount} 元折抵`}
+                        </p>
+                        <p className="text-[11px] font-mono text-slate-500 break-all">
+                          {c.code}
+                        </p>
+                      </div>
+                      <span className="text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full w-fit">
+                        NT$ {c.amount}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </NavyPanel>
+
             <NavyPanel
               title="待辦事項"
               icon="checklist"

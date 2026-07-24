@@ -43,8 +43,8 @@ let isSubmittingLock = false;
 // 🌟 新增 hideSubmitButton 屬性
 const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
   const router = useRouter();
-  // 解構出 Medusa 的 cartId
-  const { cartItems, cartId } = useCart();
+  const { esimItems, cartId } = useCart();
+  const cartItems = esimItems || [];
 
   // 🔥 用來控制按鈕外觀變成「處理中...」的狀態
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -190,11 +190,21 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
 
   const handleLinePaySubmit = async () => {
     if (!formData.name || !formData.email || !formData.phone) {
-      alert("請填寫所有必填欄位");
+      alert("請填寫所有必填欄位（姓名、Email、手機）");
       return;
     }
-    alert("目前 LINE Pay 尚未完全對接 Medusa，請先使用 GPay / 一般結帳");
+    alert("目前 LINE Pay 尚未完全對接 Medusa，請先使用藍新金流結帳");
   };
+
+  useEffect(() => {
+    const onLinePay = () => {
+      handleLinePaySubmit();
+    };
+    window.addEventListener("esim-checkout-linepay", onLinePay);
+    return () =>
+      window.removeEventListener("esim-checkout-linepay", onLinePay);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.name, formData.email, formData.phone]);
 
   // --- Render ---
   return (
@@ -205,46 +215,6 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
       transition={{ duration: 0.5 }}
       className="font-sans w-full"
     >
-      {/* Express Checkout */}
-      <div className="mb-8">
-        <p className="text-xs text-center text-gray-500 mb-3">
-          快速結帳 (Express checkout)
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={handleLinePaySubmit}
-            disabled={isSubmitting} // 結帳中也一併鎖定快速結帳按鈕
-            className={`bg-[#00C300] text-white py-2.5 rounded-[4px] font-bold text-lg flex justify-center items-center transition-colors shadow-sm ${
-              isSubmitting
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-[#009f00]"
-            }`}
-          >
-            LINE Pay
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={`bg-black text-white py-2.5 rounded-[4px] font-bold text-lg flex justify-center items-center transition-colors shadow-sm ${
-              isSubmitting
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-gray-800"
-            }`}
-          >
-            <span className="mr-1">G</span>Pay
-          </button>
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div className="relative flex items-center mb-8">
-        <div className="flex-grow border-t border-gray-300"></div>
-        <span className="flex-shrink-0 mx-4 text-gray-400 text-xs">或</span>
-        <div className="flex-grow border-t border-gray-300"></div>
-      </div>
-
       <form id="checkout-form" onSubmit={handleSubmit}>
         {/* Contact */}
         <div className="mb-8">
@@ -366,11 +336,37 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
         </div>
 
         {!hideSubmitButton && (
-          <div className="mt-10 flex flex-col-reverse md:flex-row justify-between items-center gap-4">
+          <div className="mt-10 space-y-3">
+            <p className="text-xs text-center text-gray-500">選擇付款方式</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={handleLinePaySubmit}
+                disabled={isSubmitting}
+                className={`bg-[#00C300] text-white py-3.5 rounded-md font-bold text-base flex justify-center items-center transition-colors shadow-sm ${
+                  isSubmitting
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-[#009f00]"
+                }`}
+              >
+                LINE Pay 結帳
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`bg-[#1e40af] text-white py-3.5 rounded-md font-bold text-base flex justify-center items-center shadow-md transition-all ${
+                  isSubmitting
+                    ? "opacity-60 cursor-not-allowed"
+                    : "hover:bg-[#1e3a8a]"
+                }`}
+              >
+                {isSubmitting ? "正在前往藍新金流…" : "藍新金流結帳"}
+              </button>
+            </div>
             <button
               type="button"
               onClick={onBack}
-              disabled={isSubmitting} // 結帳中也鎖定返回鍵，防止畫面跳轉
+              disabled={isSubmitting}
               className={`text-sm flex items-center gap-1 transition-colors ${
                 isSubmitting
                   ? "text-gray-400 cursor-not-allowed"
@@ -378,17 +374,6 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
               }`}
             >
               <span>&lt;</span> 返回購物車
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting} // 🔥 核心：根據狀態鎖定按鈕
-              className={`bg-[#1773b0] text-white rounded-[5px] px-8 py-4 font-bold text-lg w-full md:w-auto shadow-md transition-all ${
-                isSubmitting
-                  ? "opacity-60 cursor-not-allowed"
-                  : "hover:bg-[#105a8d] hover:shadow-lg transform active:scale-95"
-              }`}
-            >
-              {isSubmitting ? "正在前往藍新金流…" : "前往藍新金流付款"}
             </button>
           </div>
         )}

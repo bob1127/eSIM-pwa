@@ -7,13 +7,16 @@ import Link from "next/link";
 
 const Sidebar = () => {
   const {
-    cartItems,
-    totalPrice,
+    esimItems,
+    esimTotal,
     removeFromCart,
     updateQuantity,
     isOpen,
     setIsOpen,
   } = useCart();
+
+  const cartItems = esimItems || [];
+  const totalPrice = esimTotal || 0;
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);

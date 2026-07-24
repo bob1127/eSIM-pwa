@@ -147,69 +147,75 @@ export default function DataQueryPage() {
           transition={{ duration: 0.45 }}
           className="max-w-[1100px] w-[92%] mx-auto"
         >
-          {/* 標題列 */}
-          <div className="mb-8 md:mb-10">
-            <p
-              className="text-xs font-bold tracking-[0.14em] uppercase mb-2"
-              style={{ color: C.primary }}
-            >
-              Data Usage
-            </p>
-            <h1 className="text-[28px] md:text-[34px] font-black tracking-tight">
-              流量用量指南
-            </h1>
-            <p className="mt-2 text-sm md:text-[15px]" style={{ color: C.muted }}>
-              查詢剩餘流量、開啟低流量通知，出國上網更安心。
-            </p>
-          </div>
-
-          {/* 主功能雙卡 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          {/* 主功能雙卡（相片 Hero，對齊原設計） */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mb-5">
             {/* 查詢 */}
             <section
               id="query-section"
-              className="rounded-2xl border overflow-hidden scroll-mt-28"
-              style={{ backgroundColor: C.card, borderColor: C.line }}
+              className="relative rounded-2xl overflow-hidden scroll-mt-28 min-h-[420px] md:min-h-[460px] flex flex-col justify-end"
             >
               <div
-                className="px-6 py-4 flex items-center justify-between gap-3"
-                style={{ backgroundColor: C.primary }}
+                className="absolute inset-0 bg-cover bg-center"
+                style={{
+                  backgroundImage: "url('/images/hero-img.jpg')",
+                }}
+                aria-hidden
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(12,18,32,0.45) 0%, rgba(12,18,32,0.72) 42%, rgba(8,12,22,0.92) 100%)",
+                }}
+                aria-hidden
+              />
+              <span
+                className="absolute top-4 left-4 z-10 text-[11px] font-bold text-white px-2.5 py-1 rounded-sm tracking-wide"
+                style={{ backgroundColor: C.cta }}
               >
-                <h2 className="text-lg font-bold text-white">查詢 eSIM 用量</h2>
-                <span
-                  className="text-[11px] font-bold text-white px-2.5 py-1 rounded"
-                  style={{ backgroundColor: C.cta }}
-                >
-                  推薦
-                </span>
-              </div>
-              <div className="p-6 md:p-7">
-                <p className="text-sm leading-relaxed mb-5" style={{ color: C.muted }}>
-                  輸入 ICCID 即可查看剩餘流量與方案狀態。數據更新可能有約 30
+                推薦
+              </span>
+              <p
+                className="absolute top-10 right-5 z-[1] text-white/70 text-[15px] md:text-base rotate-[-8deg] select-none pointer-events-none"
+                style={{
+                  fontFamily: '"Segoe Print","Bradley Hand",cursive',
+                  textShadow: "0 1px 2px rgba(0,0,0,0.45)",
+                }}
+                aria-hidden
+              >
+                eSIM 用量查詢 ↓
+              </p>
+
+              <div className="relative z-10 px-5 sm:px-7 pb-6 pt-16 text-white">
+                <h1 className="text-[26px] md:text-[30px] font-black tracking-tight mb-2">
+                  查詢 eSIM 用量
+                </h1>
+                <p className="text-[13px] md:text-sm leading-relaxed text-white/85 mb-5 max-w-md">
+                  輸入 ICCID 即可查看剩餘流量與方案狀態，數據更新可能有 30
                   分鐘延遲。
                 </p>
 
                 <form onSubmit={handleSearch} className="space-y-3">
-                  <div
-                    className="flex items-center rounded-lg px-4 py-3 border"
-                    style={{ borderColor: C.line, backgroundColor: C.page }}
-                  >
+                  <div className="flex items-center rounded-xl px-4 py-3.5 bg-white shadow-sm">
                     <MaterialIcon
                       name="description"
                       size={20}
                       className="shrink-0 mr-3"
-                      style={{ color: C.muted }}
+                      style={{ color: "#9CA3AF" }}
                     />
                     <input
                       type="text"
                       value={iccid}
                       onChange={(e) => setIccid(e.target.value)}
                       placeholder="輸入 ICCID（19～20 碼）"
-                      className="flex-1 bg-transparent border-none outline-none text-sm font-medium min-w-0"
-                      style={{ color: C.text }}
+                      className="flex-1 bg-transparent border-none outline-none text-sm font-medium min-w-0 text-stone-800 placeholder:text-stone-400"
                     />
                   </div>
-                  <PrimaryButton type="submit" disabled={queryLoading}>
+                  <PrimaryButton
+                    type="submit"
+                    disabled={queryLoading}
+                    className="w-full rounded-xl py-3.5"
+                  >
                     {queryLoading ? "查詢中…" : "立即查詢"}
                   </PrimaryButton>
                 </form>
@@ -221,31 +227,21 @@ export default function DataQueryPage() {
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-4 inline-flex items-center gap-2 text-xs font-medium hover:underline"
-                  style={{ color: C.primary }}
+                  className="mt-4 inline-flex items-center gap-2 text-[12px] font-medium text-white/90 hover:text-white"
                 >
                   <MaterialIcon name="chat" size={16} />
-                  官方 LINE 也可傳「查詢用量」或貼上 ICCID
+                  加入官方 LINE，傳「查詢用量」或直接貼上 ICCID 也可查詢
                 </a>
 
                 {queryError && (
-                  <p
-                    className="mt-3 text-sm flex items-center gap-1 font-medium"
-                    style={{ color: C.cta }}
-                  >
+                  <p className="mt-3 text-sm flex items-center gap-1 font-medium text-rose-200">
                     <MaterialIcon name="error" size={16} />
                     {queryError}
                   </p>
                 )}
 
                 {usageResult && (
-                  <div
-                    className="mt-5 rounded-xl border p-4 text-sm"
-                    style={{
-                      borderColor: C.line,
-                      backgroundColor: C.primarySoft,
-                    }}
-                  >
+                  <div className="mt-5 rounded-xl border border-white/20 bg-white/95 p-4 text-sm text-stone-800 backdrop-blur-sm">
                     <p
                       className="font-bold mb-2 flex items-center gap-2"
                       style={{ color: C.primary }}
@@ -254,21 +250,19 @@ export default function DataQueryPage() {
                       查詢結果
                     </p>
                     {usageResult.productName && (
-                      <p style={{ color: C.text }}>方案：{usageResult.productName}</p>
+                      <p>方案：{usageResult.productName}</p>
                     )}
                     {usageResult.remainingMb != null ? (
-                      <p className="font-bold mt-1" style={{ color: C.text }}>
+                      <p className="font-bold mt-1">
                         剩餘流量：約 {usageResult.remainingMb} MB
                         {usageResult.totalMb != null &&
                           ` / ${usageResult.totalMb} MB`}
                       </p>
                     ) : (
-                      <p className="mt-1" style={{ color: C.muted }}>
-                        {usageResult.note}
-                      </p>
+                      <p className="mt-1 text-stone-500">{usageResult.note}</p>
                     )}
                     {usageResult.expiresAt && (
-                      <p className="text-xs mt-1" style={{ color: C.muted }}>
+                      <p className="text-xs mt-1 text-stone-500">
                         有效期限：{usageResult.expiresAt}
                       </p>
                     )}
@@ -278,37 +272,50 @@ export default function DataQueryPage() {
             </section>
 
             {/* 充值 */}
-            <section
-              className="rounded-2xl border overflow-hidden flex flex-col"
-              style={{ backgroundColor: C.card, borderColor: C.line }}
-            >
+            <section className="relative rounded-2xl overflow-hidden min-h-[380px] md:min-h-[460px] flex flex-col justify-end">
               <div
-                className="px-6 py-4 flex items-center justify-between gap-3"
-                style={{ backgroundColor: C.primarySoft }}
+                className="absolute inset-0 bg-cover bg-center"
+                style={{
+                  backgroundImage: "url('/images/japan.jpg')",
+                }}
+                aria-hidden
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(20,40,80,0.35) 38%, rgba(12,24,48,0.88) 100%)",
+                }}
+                aria-hidden
+              />
+              <p
+                className="absolute inset-x-0 top-[18%] z-[1] text-center text-[42px] md:text-[52px] font-black leading-none select-none pointer-events-none"
+                style={{
+                  color: "rgba(55,104,199,0.35)",
+                  letterSpacing: "0.02em",
+                }}
+                aria-hidden
               >
-                <h2 className="text-lg font-bold" style={{ color: C.primary }}>
+                流量即將用盡？
+              </p>
+              <span className="absolute top-4 left-4 z-10 text-[11px] font-bold text-white px-2.5 py-1 rounded-sm tracking-wide bg-stone-700/85">
+                即將上線
+              </span>
+
+              <div className="relative z-10 px-5 sm:px-7 pb-7 pt-16 text-white">
+                <h2 className="text-[26px] md:text-[30px] font-black tracking-tight mb-2">
                   流量即將用盡？
                 </h2>
-                <span
-                  className="text-[11px] font-bold px-2.5 py-1 rounded"
-                  style={{ backgroundColor: "#EEF0F3", color: C.muted }}
-                >
-                  即將上線
-                </span>
-              </div>
-              <div className="p-6 md:p-7 flex flex-col flex-1">
-                <p className="text-sm leading-relaxed mb-6" style={{ color: C.muted }}>
+                <p className="text-[13px] md:text-sm leading-relaxed text-white/85 mb-6 max-w-md">
                   無需重新購買 eSIM，一鍵恢復原有流量，出國上網不中斷。
                 </p>
-                <div className="mt-auto">
-                  <PrimaryButton
-                    type="button"
-                    onClick={() => alert("此功能即將上線")}
-                    className="opacity-80"
-                  >
-                    前往充值方案
-                  </PrimaryButton>
-                </div>
+                <PrimaryButton
+                  type="button"
+                  onClick={() => alert("此功能即將上線")}
+                  className="w-full rounded-xl py-3.5 opacity-95"
+                >
+                  前往充值方案
+                </PrimaryButton>
               </div>
             </section>
           </div>

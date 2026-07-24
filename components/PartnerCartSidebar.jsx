@@ -7,15 +7,19 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function PartnerCartSidebar({ storeDomain }) {
-  // 從 Context 取得購物車狀態與操作函式
-  const { cartItems, isCartOpen, setIsCartOpen, removeFromCart } = useCart();
+  // 從 Context 取得購物車狀態與操作函式（夥伴站只賣 eSIM）
+  const {
+    esimItems,
+    esimCount,
+    esimTotal,
+    isCartOpen,
+    setIsCartOpen,
+    removeFromCart,
+  } = useCart();
 
-  // 計算購物車總數量與總金額
-  const cartItemCount =
-    cartItems?.reduce((total, item) => total + item.quantity, 0) || 0;
-  const cartTotal =
-    cartItems?.reduce((total, item) => total + item.price * item.quantity, 0) ||
-    0;
+  const cartItems = esimItems || [];
+  const cartItemCount = esimCount || 0;
+  const cartTotal = esimTotal || 0;
 
   return (
     <div

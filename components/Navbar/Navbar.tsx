@@ -122,15 +122,15 @@ function isHomePath(path: string | null | undefined) {
 
 // --- 2. 導覽列資料 (桌面版) ---
 const navLinks = [
-  { key: "home", label: "首頁", href: "/", hasMega: true },
   { key: "categories", label: "精選eSIM", href: "/product", hasMega: true },
   { key: "shop", label: "Jeko 商城", href: "/shop" },
   { key: "blog", label: "旅遊須知", href: "/blog" },
   { key: "tutorial", label: "啟用教學", href: "/operation-shopee" },
-  { key: "tutorial", label: "關於Jeko", href: "/about" },
-  { key: "tutorial", label: "合作夥伴", href: "/cooperation" },
+  { key: "about", label: "關於Jeko", href: "/about" },
+  { key: "partner", label: "合作夥伴", href: "/cooperation" },
+  { key: "promo", label: "優惠活動", href: "/promo" },
   { key: "contact", label: "聯絡我們", href: "/contact" },
-  { key: "usage", label: "蝦皮兌換", href: "/shopee-qrcode" },
+  { key: "shopee", label: "蝦皮兌換", href: "/shopee-qrcode" },
   { key: "usage", label: "查詢用量", href: "/data-query" },
 ];
 
@@ -478,34 +478,6 @@ export default function Navbar({ className }: NavbarProps) {
                 className="absolute top-full left-0 -mt-px w-full bg-white rounded-b-2xl shadow-2xl pt-4 pb-10 z-40 hidden lg:block border border-t-0 border-gray-300"
               >
                 <div className="px-10 max-w-[1200px] mx-auto">
-                  {openMega === "home" && (
-                    <div className="flex gap-10">
-                      <div className="flex flex-col space-y-4">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b pb-2">
-                          快速導覽
-                        </p>
-                        <Link
-                          href="/news"
-                          className="font-bold text-stone-900 hover:text-[#0A6CD0]"
-                        >
-                          最新優惠活動
-                        </Link>
-                        <Link
-                          href="/coverage"
-                          className="font-bold text-stone-900 hover:text-[#0A6CD0]"
-                        >
-                          全球訊號覆蓋範圍
-                        </Link>
-                        <Link
-                          href="/support"
-                          className="font-bold text-stone-900 hover:text-[#0A6CD0]"
-                        >
-                          幫助中心
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-
                   {openMega === "categories" && (
                     <>
                       <div className="flex items-end justify-between gap-4 mb-5 border-b border-gray-100 pb-3">
@@ -629,12 +601,6 @@ export default function Navbar({ className }: NavbarProps) {
                   href="/shop"
                   onClick={() => setMobileOpen(false)}
                 />
-                <MobileSimpleNavItem
-                  icon={<GiftIcon className="w-5 h-5" />}
-                  label="最新優惠 / 限時特惠"
-                  href="/news"
-                  onClick={() => setMobileOpen(false)}
-                />
               </div>
 
               {/* 🌟 教學與工具區 */}
@@ -704,6 +670,12 @@ export default function Navbar({ className }: NavbarProps) {
                   icon={<UserGroupIcon className="w-5 h-5" />}
                   label="合作夥伴"
                   href="/cooperation"
+                  onClick={() => setMobileOpen(false)}
+                />
+                <MobileSimpleNavItem
+                  icon={<GiftIcon className="w-5 h-5" />}
+                  label="優惠活動"
+                  href="/promo"
                   onClick={() => setMobileOpen(false)}
                 />
               </div>

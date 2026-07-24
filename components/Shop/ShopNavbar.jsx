@@ -625,9 +625,8 @@ export default function ShopNavbar({
   promoHref = "/shop/deals",
   supportHref = "/shop/support",
 }) {
-  const { cartItems, setIsCartOpen } = useCart();
-  const cartCount =
-    cartItems?.reduce((s, i) => s + i.quantity, 0) || cartCountProp;
+  const { physicalCount, setIsCartOpen } = useCart();
+  const cartCount = physicalCount || cartCountProp;
   const [activeKey, setActiveKey] = useState(null);
   const [headerBottom, setHeaderBottom] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);

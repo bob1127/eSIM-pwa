@@ -69,6 +69,8 @@ const withPWA = require("@ducanh2912/next-pwa").default({
 const nextConfig = {
   reactStrictMode: true, 
   trailingSlash: true,
+  // NextAuth OAuth callback 不可被 308 改成尾斜線，否則 state 失效會變成 error=undefined
+  skipTrailingSlashRedirect: true,
 
   images: {
     formats: ["image/avif", "image/webp"],
@@ -93,6 +95,10 @@ const nextConfig = {
       {
         source: "/api/line/webhook",
         destination: "/api/line/webhook/",
+      },
+      {
+        source: "/api/auth/callback/line/",
+        destination: "/api/auth/callback/line",
       },
     ];
   },

@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-// 🚀 關鍵引入：匯入 NextAuth 的 signIn 函數
-import { signIn } from "next-auth/react";
-import { authLog, logLineLoginStart, getOAuthRedirectUrl } from "../lib/authDebug";
+import {
+  authLog,
+  logLineLoginStart,
+  getOAuthRedirectUrl,
+  startLineLoginWithFormPost,
+} from "../lib/authDebug";
 import { sanitizeRedirect } from "../lib/authRedirect";
 
 const RESEND_WAIT_SECONDS = 60;
@@ -158,17 +161,15 @@ const RegisterForm = ({ onSuccess, redirectTo = "/account" }) => {
   /* ====== LINE 快速登入 (NextAuth) ====== */
   const handleLineLogin = async () => {
     authLog("RegisterForm LINE 登入開始");
+    if (typeof window !== "undefined" && window.location.hostname === "127.0.0.1") {
+      alert("請改用 http://localhost:3000 再開啟 LINE 登入");
+      return;
+    }
     const { callbackUrl } = await logLineLoginStart(
       window.location.origin,
       safeRedirect,
     );
-    const result = await signIn("line", { callbackUrl, redirect: false });
-    authLog("RegisterForm signIn 回傳", result);
-    if (result?.error) {
-      alert(`LINE 登入失敗: ${result.error}`);
-    } else if (result?.url) {
-      window.location.href = result.url;
-    }
+    await startLineLoginWithFormPost(callbackUrl);
   };
 
   return (

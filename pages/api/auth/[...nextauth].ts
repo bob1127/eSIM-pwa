@@ -46,15 +46,27 @@ function isDuplicateUserError(message = "") {
 }
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     LineProvider({
       clientId: process.env.LINE_CLIENT_ID as string,
       clientSecret: process.env.LINE_CLIENT_SECRET as string,
       allowDangerousEmailAccountLinking: true,
+      // 登入時可一併加官方帳號（需在 LINE Developers 把 OA 連結到 Login 頻道）
+      authorization: {
+        params: {
+          bot_prompt: "aggressive",
+        },
+      },
     }),
   ],
   session: {
     strategy: "jwt",
+  },
+  // 只設 signIn：OAuthCallback 會變成 /login?error=OAuthCallback
+  // 不要設 error→/login，否則打到 /api/auth/error（無參數）會變成 ?error=undefined
+  pages: {
+    signIn: "/login",
   },
   callbacks: {
     async signIn({ user, account, profile }) {
@@ -127,8 +139,10 @@ export const authOptions: NextAuthOptions = {
         log("callback.jwt 收到 account", {
           provider: account.provider,
           type: account.type,
+          hasAccessToken: !!account.access_token,
         });
         token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token;
       }
       if (user) {
         log("callback.jwt 寫入 user", { id: user.id, email: user.email });
@@ -161,10 +175,25 @@ export const authOptions: NextAuthOptions = {
       log("event.signOut", { session: !!message.session });
     },
   },
-  pages: {
-    error: "/login",
-  },
-  debug: true,
+  debug: process.env.NODE_ENV === "development",
 };
 
-export default NextAuth(authOptions);
+/**
+ * 包一層 log：從 terminal 可看到 LINE 實際打回來的完整 URL
+ * （用來判斷 Callback 是否指錯成 /api/auth/error）
+ */
+const nextAuthHandler = NextAuth(authOptions);
+
+export default function handler(req: any, res: any) {
+  const q = req.query || {};
+  log("NextAuth 收到請求", {
+    method: req.method,
+    url: req.url,
+    action: q.nextauth,
+    hasCode: typeof q.code === "string",
+    hasState: typeof q.state === "string",
+    error: q.error ?? null,
+    queryKeys: Object.keys(q),
+  });
+  return nextAuthHandler(req, res);
+}

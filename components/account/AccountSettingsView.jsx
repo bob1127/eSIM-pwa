@@ -3,6 +3,7 @@
 import { MemberProfileHeader, NavyPanel, InnerTabs, ACCENT, AccountPageWrap } from "./AccountShell";
 import MaterialIcon from "@/components/MaterialIcon";
 import { useState } from "react";
+import { formatMemberEmailDisplay, isLineSyntheticEmail } from "@/lib/lineAuth";
 
 export default function AccountSettingsView({
   user,
@@ -74,11 +75,16 @@ export default function AccountSettingsView({
                     Email
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     disabled
-                    value={user?.email || ""}
+                    value={formatMemberEmailDisplay(user?.email)}
                     className="w-full px-3 py-2.5 border border-slate-100 bg-slate-50 rounded-sm text-sm text-slate-500"
                   />
+                  {isLineSyntheticEmail(user?.email) && (
+                    <p className="mt-1.5 text-[11px] text-slate-400 leading-relaxed">
+                      LINE 登入通常不會提供真實 Email，系統會以虛擬信箱辨識帳號與訂單。
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">

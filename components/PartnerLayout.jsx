@@ -24,10 +24,9 @@ export default function PartnerLayout({ store, children, title, description }) {
   const [user, setUser] = useState(null);
 
   // 從 CartContext 取得購物車資料 (不再需要 setIsCartOpen)
-  const { cartItems } = useCart();
+  const { esimCount } = useCart();
 
-  const cartItemCount =
-    cartItems?.reduce((total, item) => total + item.quantity, 0) || 0;
+  const cartItemCount = esimCount || 0;
 
   useEffect(() => {
     const fetchUser = async () => {

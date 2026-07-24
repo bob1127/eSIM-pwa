@@ -8,13 +8,14 @@ import ForgotPasswordForm from "../components/ForgotPasswordForm";
 import { supabase } from "../lib/supabaseClient";
 import { useUser } from "../components/context/UserContext";
 
-import { signIn, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import {
   authLog,
   authError,
   parseNextAuthError,
   logLineLoginStart,
   getOAuthRedirectUrl,
+  startLineLoginWithFormPost,
 } from "../lib/authDebug";
 import { sanitizeRedirect } from "../lib/authRedirect";
 
@@ -23,10 +24,12 @@ const LoginRegisterPage = () => {
   const { user: supaUser, isHydrated } = useUser();
   const { status: nextAuthStatus } = useSession();
 
-  const redirectTo = useMemo(
-    () => sanitizeRedirect(router.query.redirect, "/account"),
-    [router.query.redirect],
-  );
+  const redirectTo = useMemo(() => {
+    const fromQuery =
+      router.query.redirect || router.query.callbackUrl || "/account";
+    const raw = Array.isArray(fromQuery) ? fromQuery[0] : fromQuery;
+    return sanitizeRedirect(raw, "/account");
+  }, [router.query.redirect, router.query.callbackUrl]);
 
   const [selected, setSelected] = useState("login");
   const [showForgot, setShowForgot] = useState(false);
@@ -49,6 +52,13 @@ const LoginRegisterPage = () => {
     if (typeof window === "undefined") return;
 
     addLog(`🚩 初始載入網址: ${window.location.href}`);
+
+    // 本機開發：主動清掉可能殘留的 SW，避免 LINE OAuth state cookie 遺失
+    if (process.env.NODE_ENV === "development") {
+      import("../lib/authDebug").then(({ clearServiceWorkersForAuth }) => {
+        clearServiceWorkersForAuth();
+      });
+    }
 
     // 捕捉從跳轉回來時，隱藏在網址列的錯誤碼
     const hash = window.location.hash;
@@ -73,7 +83,15 @@ const LoginRegisterPage = () => {
       if (nextAuthErr) {
         authLog("NextAuth error query", nextAuthErr);
         addLog(`❌ NextAuth [${nextAuthErr.code}]: ${nextAuthErr.hint}`);
-        setMessage(`LINE 登入失敗 [${nextAuthErr.code}]: ${nextAuthErr.hint}`);
+        // URL 若是 error=undefined，代表打到了錯誤的 callback（常見：LINE Console 填成 /api/auth/error）
+        const isUndefinedError =
+          searchParams.get("error") === "undefined" ||
+          !searchParams.get("callbackUrl");
+        setMessage(
+          isUndefinedError && nextAuthErr.code === "OAuthCallback"
+            ? `登入失敗：瀏覽器沒帶上 OAuth state cookie（常見原因：本機殘留 Service Worker）。請到 Chrome → 開發人員工具 → Application → Service Workers 按 Unregister，並清除 Cookies 後再試。Callback 設定看起來是對的。`
+            : `LINE 登入失敗 [${nextAuthErr.code}]: ${nextAuthErr.hint}`,
+        );
       } else {
         setMessage(`第三方登入失敗: ${errDesc}`);
       }
@@ -160,10 +178,24 @@ const LoginRegisterPage = () => {
     }
   };
 
-  // LINE 登入（NextAuth）— 含完整 debug log
+  // LINE 登入：用 form POST（完整導向），避免 fetch 設不到 next-auth.state cookie
   const handleLineLogin = async () => {
+    if (loggingIn) return;
     try {
+      setLoggingIn(true);
       addLog("🟢 點擊 LINE 登入...");
+
+      if (typeof window !== "undefined") {
+        const host = window.location.hostname;
+        if (host === "127.0.0.1") {
+          setMessage(
+            "請改用 http://localhost:3000 開啟再登入 LINE（勿用 127.0.0.1）",
+          );
+          setLoggingIn(false);
+          return;
+        }
+      }
+
       const { callbackUrl, serverConfig } = await logLineLoginStart(
         window.location.origin,
         redirectTo,
@@ -173,25 +205,12 @@ const LoginRegisterPage = () => {
         addLog(`伺服器推算 LINE callback: ${serverConfig.expectedLineCallback}`);
       }
 
-      // redirect:false 可先在 console 看到 OAuth URL（含 redirect_uri）
-      const result = await signIn("line", { callbackUrl, redirect: false });
-      authLog("signIn('line') 回傳", result);
-
-      if (result?.error) {
-        addLog(`❌ signIn error: ${result.error}`);
-        setMessage(`LINE 登入失敗: ${result.error}`);
-        return;
-      }
-      if (result?.url) {
-        addLog(`➡️ 導向 LINE OAuth: ${result.url}`);
-        window.location.href = result.url;
-      } else {
-        addLog("⚠️ signIn 無 url 也無 error");
-      }
+      await startLineLoginWithFormPost(callbackUrl);
     } catch (err) {
       authError("handleLineLogin 例外", err);
       addLog(`❌ ${err.message}`);
       setMessage(`LINE 登入異常: ${err.message}`);
+      setLoggingIn(false);
     }
   };
 

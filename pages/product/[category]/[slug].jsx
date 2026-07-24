@@ -1884,10 +1884,10 @@ export default function ProductPage({
       quantity,
       options: specLabel,
       specLabel,
+      type: "esim",
       ...(isPartnerShell
         ? {
             store_id: store.id,
-            type: "esim",
           }
         : {}),
     });

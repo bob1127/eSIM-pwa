@@ -1,12 +1,20 @@
 import { Html, Head, Main, NextScript } from "next/document";
-import { SITE_FAVICON } from "../lib/pwaConfig";
+import {
+  SITE_FAVICON,
+  SITE_FAVICON_16,
+  SITE_APPLE_TOUCH_ICON,
+  PWA_LOGO,
+} from "../lib/pwaConfig";
 
 export default function Document() {
   return (
     <Html lang="zh-TW">
       <Head>
-        <link rel="icon" href={SITE_FAVICON} sizes="any" />
-        <link rel="shortcut icon" href={SITE_FAVICON} />
+        <link rel="icon" href={SITE_FAVICON} type="image/png" sizes="32x32" />
+        <link rel="icon" href={SITE_FAVICON_16} type="image/png" sizes="16x16" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href={SITE_APPLE_TOUCH_ICON} sizes="180x180" />
+        <link rel="apple-touch-icon" href={PWA_LOGO} sizes="192x192" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

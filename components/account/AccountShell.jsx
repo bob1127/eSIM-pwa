@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import MaterialIcon from "@/components/MaterialIcon";
 import { ACCOUNT_UI } from "@/lib/accountUi";
+import { formatMemberEmailDisplay } from "@/lib/lineAuth";
 
 /** HR Spanner 風格色票 */
 export const ACCENT = {
@@ -235,7 +236,9 @@ export default function AccountShell({
                     <div className={`absolute right-0 top-full mt-1 w-52 bg-white border border-slate-200 rounded-sm shadow-xl ${ACCOUNT_UI.dropdown} py-1 text-sm`}>
                       <div className="px-4 py-2 border-b border-slate-100">
                         <p className="font-bold text-slate-800 truncate">{user?.name}</p>
-                        <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {formatMemberEmailDisplay(user?.email)}
+                        </p>
                         <p className="text-[10px] text-[#2563eb] font-bold mt-0.5">
                           {roleLabel}
                         </p>
@@ -300,7 +303,7 @@ export function MemberProfileHeader({
         : "一般會員";
 
   const fields = [
-    { label: "會員 Email", value: user?.email || "—" },
+    { label: "會員 Email", value: formatMemberEmailDisplay(user?.email) },
     { label: "會員等級", value: roleLabel },
     { label: "有效 eSIM", value: `${stats.activeEsims ?? 0} 張` },
     { label: "加入日期", value: joinDate || "—" },
@@ -363,7 +366,16 @@ export function MemberProfileHeader({
               {fields.map((f) => (
                 <div key={f.label} className="text-sm min-w-0">
                   <p className="text-slate-400 font-medium text-xs mb-0.5">{f.label}</p>
-                  <p className="text-slate-800 font-semibold truncate">{f.value}</p>
+                  <p
+                    className={`text-slate-800 font-semibold ${
+                      f.label === "會員 Email"
+                        ? "whitespace-normal break-words leading-snug"
+                        : "truncate"
+                    }`}
+                    title={f.value}
+                  >
+                    {f.value}
+                  </p>
                 </div>
               ))}
             </div>

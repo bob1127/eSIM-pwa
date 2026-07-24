@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getServerSession } from "next-auth/next";
+import { getToken } from "next-auth/jwt";
 import { authOptions } from "../auth/[...nextauth]";
 import { fetchMemberEsims } from "../../../lib/memberEsims";
 
@@ -30,11 +31,18 @@ export async function resolveMemberEmail(req, res) {
       (session.user.id
         ? `${session.user.id}@line-login.com`
         : `${session.user.name || "line"}@line.jekoesim.com`);
+    // LINE Login access token：用來打 friendship/v1/status
+    const jwt = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+    }).catch(() => null);
+    // LINE providerAccountId 不是 UUID，不可當 supabase user_id
     return {
       email: email.toLowerCase(),
-      userId: session.user.id || null,
+      userId: null,
       source: "line",
       lineUserId: session.user.id || null,
+      lineAccessToken: jwt?.accessToken || null,
     };
   }
 

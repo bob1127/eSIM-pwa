@@ -8,9 +8,24 @@
 //     一律先移除購物車上所有已套用的折扣碼。
 //   - 特定「限新會員」折扣碼（見 lib/memberOnlyPromotions.js）：
 //       必須登入，且該 email 過去沒有任何已完成付款訂單，才允許套用。
+//   - 新會員 50／歡迎禮：須已加入官方 LINE，否則回 need_line_friend 供前端引導。
 import { createClient } from "@supabase/supabase-js";
 import { isMemberOnlyPromoCode } from "../../../lib/memberOnlyPromotions";
 import { isSettledOrderStatus } from "../../../lib/refundPolicy";
+import {
+  isMemberLotteryCouponCode,
+  isWelcomeMemberCouponCode,
+  resolveLotteryPromoForCheckout,
+} from "../../../lib/memberCoupons";
+import {
+  LINE_OA_URL,
+} from "../../../lib/lineOaFriends";
+import {
+  assertWelcomeRedeemAllowed,
+  bindWelcomeRedemption,
+  isWelcomeRelatedCode,
+} from "../../../lib/welcomeGuard";
+import { resolveMemberEmail } from "../push/_memberAuth";
 
 const MEDUSA_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
@@ -30,24 +45,14 @@ const supabaseAdmin =
       )
     : null;
 
-async function getAuthedEmail(req) {
-  const authHeader = req.headers.authorization || "";
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (!token || !supabaseAdmin) return null;
+async function getAuthedMember(req, res) {
   try {
-    const {
-      data: { user },
-    } = await supabaseAdmin.auth.getUser(token);
-    return user?.email ? user.email.toLowerCase() : null;
+    return (await resolveMemberEmail(req, res)) || null;
   } catch {
     return null;
   }
 }
 
-/** 該 email 是否曾經有過已付款成立的訂單（用來判斷是否為「新會員」）
- *  訂單只要曾經付款成立（completed / pending 待發貨 / 已退款等），都代表不是第一次購買，
- *  沿用 lib/refundPolicy.js 的 isSettledOrderStatus 邏輯，與會員中心訂單頁一致。
- */
 async function hasPriorSuccessfulOrder(email) {
   if (!email || !supabaseAdmin) return false;
   const { data, error } = await supabaseAdmin
@@ -56,12 +61,27 @@ async function hasPriorSuccessfulOrder(email) {
     .eq("customer_email", email);
   if (error) {
     console.error("[promotion] 查詢歷史訂單失敗:", error.message);
-    // 查詢失敗時，保守起見視為「不符資格」，避免優惠被誤用
     return true;
   }
   return (data || []).some(
-    (o) => isSettledOrderStatus(o.status) || ["refund_pending", "refunded"].includes(String(o.status || "").toLowerCase()),
+    (o) =>
+      isSettledOrderStatus(o.status) ||
+      ["refund_pending", "refunded"].includes(
+        String(o.status || "").toLowerCase(),
+      ),
   );
+}
+
+function lineFriendBlockedResponse(res, lineOaUrl, error, extra = {}) {
+  return res.status(403).json({
+    success: false,
+    need_line_friend: true,
+    line_oa_url: lineOaUrl || LINE_OA_URL,
+    error:
+      error ||
+      "還未加入官方 LINE？加入官方 LINE 即可立即使用優惠折扣",
+    ...extra,
+  });
 }
 
 async function fetchCart(cartId) {
@@ -123,14 +143,46 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, ...pickTotals(cart) });
     }
 
-    // ── action === "apply" ──────────────────────────────────────
-    const normalizedCode = String(code || "").trim().toUpperCase();
+    let normalizedCode = String(code || "").trim().toUpperCase();
     if (!normalizedCode) {
       return res.status(400).json({ success: false, error: "請輸入折扣碼" });
     }
 
+    const member = await getAuthedMember(req, res);
+    const email = member?.email || null;
+    let memberCouponId = null;
+    let memberCouponRow = null;
+    let displayCode = normalizedCode;
+    let isWelcomeFlow = false;
+
+    if (isMemberLotteryCouponCode(normalizedCode)) {
+      if (!supabaseAdmin) {
+        return res.status(500).json({
+          success: false,
+          error: "優惠券系統尚未設定完成",
+        });
+      }
+      const resolved = await resolveLotteryPromoForCheckout(supabaseAdmin, {
+        code: normalizedCode,
+        email,
+      });
+      if (resolved?.error) {
+        return res.status(resolved.status || 400).json({
+          success: false,
+          error: resolved.error,
+        });
+      }
+      displayCode = normalizedCode;
+      normalizedCode = resolved.medusaCode;
+      memberCouponId = resolved.memberCoupon?.id || null;
+      memberCouponRow = resolved.memberCoupon || null;
+      if (resolved.isWelcome || isWelcomeMemberCouponCode(displayCode)) {
+        isWelcomeFlow = true;
+      }
+    }
+
     if (isMemberOnlyPromoCode(normalizedCode)) {
-      const email = await getAuthedEmail(req);
+      isWelcomeFlow = true;
       if (!email) {
         return res.status(401).json({
           success: false,
@@ -146,7 +198,40 @@ export default async function handler(req, res) {
       }
     }
 
-    // 1) 先取得目前購物車，移除既有折扣碼 → 確保「一次只能套用一組，不可疊加」
+    let welcomeLineUserId = null;
+    if (isWelcomeFlow || isWelcomeRelatedCode(displayCode)) {
+      if (!supabaseAdmin) {
+        return res.status(500).json({
+          success: false,
+          error: "優惠券系統尚未設定完成",
+        });
+      }
+      const gate = await assertWelcomeRedeemAllowed(supabaseAdmin, member, {
+        couponRow: memberCouponRow,
+        isPublicNewMemberCode: isMemberOnlyPromoCode(normalizedCode),
+      });
+      if (!gate.ok) {
+        if (gate.need_line_friend) {
+          return lineFriendBlockedResponse(
+            res,
+            gate.line_oa_url,
+            gate.error,
+            {
+              code: gate.code,
+              checkedVia: gate.checkedVia,
+              reason: gate.reason,
+            },
+          );
+        }
+        return res.status(gate.status || 400).json({
+          success: false,
+          error: gate.error,
+          code: gate.code,
+        });
+      }
+      welcomeLineUserId = gate.lineUserId;
+    }
+
     const currentCart = await fetchCart(cartId);
     const existingCodes = (currentCart?.promotions || [])
       .map((p) => p.code)
@@ -161,7 +246,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2) 套用新的折扣碼
     const applyRes = await fetch(
       `${MEDUSA_URL}/store/carts/${cartId}/promotions`,
       {
@@ -172,7 +256,10 @@ export default async function handler(req, res) {
     );
     const applyData = await applyRes.json().catch(() => ({}));
     if (!applyRes.ok) {
-      throw new Error(applyData?.message || "折扣碼無效或已過期");
+      throw new Error(
+        applyData?.message ||
+          `折扣碼無效或已過期（Medusa 碼：${normalizedCode}）`,
+      );
     }
 
     const updatedCart = applyData.cart;
@@ -183,13 +270,40 @@ export default async function handler(req, res) {
     if (!appliedCodes.includes(normalizedCode)) {
       return res.status(400).json({
         success: false,
-        error: "折扣碼無效或已過期",
+        error: `折扣碼無效或已過期（Medusa 後台需有啟用中的「${normalizedCode}」）`,
+        medusa_code: normalizedCode,
       });
+    }
+
+    // 套用成功：綁定 LINE 核銷（一個 LINE 終身一次）
+    if (welcomeLineUserId && email) {
+      const bound = await bindWelcomeRedemption(supabaseAdmin, {
+        lineUserId: welcomeLineUserId,
+        email,
+        couponId: memberCouponId,
+        couponCode: displayCode,
+        cartId,
+      });
+      if (bound?.already) {
+        // 競態：幾乎同時用兩個帳號套用 → 撤銷本次 Medusa 折扣
+        await fetch(`${MEDUSA_URL}/store/carts/${cartId}/promotions`, {
+          method: "DELETE",
+          headers: medusaHeaders(),
+          body: JSON.stringify({ promo_codes: [normalizedCode] }),
+        });
+        return res.status(400).json({
+          success: false,
+          error: "此 LINE 帳號已使用過新會員 50 元優惠，無法重複使用",
+          code: "LINE_ALREADY_REDEEMED",
+        });
+      }
     }
 
     return res.status(200).json({
       success: true,
-      code: normalizedCode,
+      code: displayCode,
+      medusa_code: normalizedCode,
+      member_coupon_id: memberCouponId,
       ...pickTotals(updatedCart),
     });
   } catch (error) {

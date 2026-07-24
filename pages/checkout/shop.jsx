@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
 import { useCart } from "@/components/context/CartContext";
 import { useUser } from "@/components/context/UserContext";
 import { ChevronRight, Tag, Shield, Truck, RotateCcw } from "lucide-react";
@@ -45,6 +46,9 @@ function OrderSummary({
   appliedCode,
   isApplyingCoupon,
   couponMessage,
+  needLineFriend,
+  lineOaUrl,
+  welcomeHint,
 }) {
   const physicalItems = items.filter((i) => !i.type || i.type === "physical");
 
@@ -126,17 +130,41 @@ function OrderSummary({
           {isApplyingCoupon ? "處理中…" : appliedCode ? "移除" : "套用"}
         </button>
       </div>
+
+      {needLineFriend && (
+        <div className="mb-4 rounded-xl border border-[#06C755]/35 bg-[#06C755]/10 px-3.5 py-3">
+          <p className="text-[13px] font-bold text-slate-800 leading-snug">
+            還未加入官方 LINE？
+          </p>
+          <p className="mt-1 text-[12px] text-slate-600 leading-relaxed">
+            加入官方 LINE 即可立即使用新會員 50 元優惠折扣
+            {welcomeHint ? `（已入帳：${welcomeHint}）` : ""}
+          </p>
+          <a
+            href={lineOaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2.5 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2"
+          >
+            加入官方 LINE 立即使用優惠折扣
+          </a>
+        </div>
+      )}
+
       {couponMessage && (
         <p
           className={`mb-5 text-[12px] ${
-            appliedCode ? "text-green-600" : "text-red-500"
+            appliedCode
+              ? "text-green-600"
+              : needLineFriend
+                ? "text-amber-700"
+                : "text-red-500"
           }`}
         >
           {couponMessage}
         </p>
       )}
       {!couponMessage && <div className="mb-5" />}
-
       {/* 金額明細 */}
       <div className="space-y-2 text-sm text-slate-700">
         <div className="flex justify-between">
@@ -186,13 +214,11 @@ function OrderSummary({
 // ── 主元件 ──────────────────────────────────────────────────────
 export default function ShopCheckoutPage() {
   const router = useRouter();
-  const { cartItems, cartId, totalPrice, clearCart } = useCart();
+  const { cartId, physicalItems, physicalTotal, clearCart } = useCart();
   const { user, token } = useUser();
-
-  const physicalItems = useMemo(
-    () => (cartItems || []).filter((i) => !i.type || i.type === "physical"),
-    [cartItems],
-  );
+  const { data: nextAuthSession, status: nextAuthStatus } = useSession();
+  const isLoggedIn = Boolean(user || nextAuthSession?.user);
+  const authReady = nextAuthStatus !== "loading";
 
   const [form, setForm] = useState({
     email: "",
@@ -207,16 +233,98 @@ export default function ShopCheckoutPage() {
   const [appliedCode, setAppliedCode] = useState(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponMessage, setCouponMessage] = useState("");
+  const [needLineFriend, setNeedLineFriend] = useState(false);
+  const [lineOaUrl, setLineOaUrl] = useState(
+    process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@391huuts",
+  );
+  const [welcomeHint, setWelcomeHint] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
   // 會員登入後，若 email 欄位還是空的，先幫忙帶入，方便折扣碼資格判斷
   useEffect(() => {
-    if (user?.email && !form.email) {
-      setForm((prev) => ({ ...prev, email: user.email }));
+    const email = user?.email || nextAuthSession?.user?.email;
+    if (email && !form.email) {
+      setForm((prev) => ({ ...prev, email }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.email]);
+  }, [user?.email, nextAuthSession?.user?.email]);
+
+  // 登入會員：自動領取歡迎禮 50；已加 LINE 則自動套用，未加則顯示引導
+  useEffect(() => {
+    if (!authReady || !isLoggedIn || !cartId || appliedCode) return undefined;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/promo/member-coupons", {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: "include",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled || !res.ok || !data.success) return;
+
+        if (data.line_oa_url) setLineOaUrl(data.line_oa_url);
+
+        const welcomeCode = data.welcome_coupon?.code;
+        if (welcomeCode) {
+          setWelcomeHint(welcomeCode);
+          setCoupon(welcomeCode);
+        }
+
+        if (data.need_line_for_welcome) {
+          setNeedLineFriend(true);
+          return;
+        }
+
+        if (data.can_use_welcome && welcomeCode) {
+          setNeedLineFriend(false);
+          setIsApplyingCoupon(true);
+          try {
+            const applyRes = await fetch("/api/checkout/promotion", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+              credentials: "include",
+              body: JSON.stringify({
+                cartId,
+                code: welcomeCode,
+                action: "apply",
+              }),
+            });
+            const applyData = await applyRes.json().catch(() => ({}));
+            if (cancelled) return;
+            if (applyData.need_line_friend) {
+              setNeedLineFriend(true);
+              if (applyData.line_oa_url) setLineOaUrl(applyData.line_oa_url);
+              setCouponMessage("");
+              return;
+            }
+            if (applyRes.ok && applyData.success) {
+              setDiscount(applyData.discount_total || 0);
+              setAppliedCode(applyData.code || welcomeCode);
+              setCouponMessage(
+                `已自動套用新會員折價券 ${applyData.code || welcomeCode}`,
+              );
+            }
+          } finally {
+            if (!cancelled) setIsApplyingCoupon(false);
+          }
+        }
+      } catch (e) {
+        console.warn("[checkout] 歡迎禮自動套用略過:", e.message);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authReady, isLoggedIn, token, cartId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -245,6 +353,7 @@ export default function ShopCheckoutPage() {
 
     setIsApplyingCoupon(true);
     setCouponMessage("");
+    setNeedLineFriend(false);
     try {
       const res = await fetch("/api/checkout/promotion", {
         method: "POST",
@@ -252,9 +361,22 @@ export default function ShopCheckoutPage() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: "include",
         body: JSON.stringify({ cartId, code, action: "apply" }),
       });
       const data = await res.json();
+
+      if (data.need_line_friend) {
+        setDiscount(0);
+        setAppliedCode(null);
+        setNeedLineFriend(true);
+        if (data.line_oa_url) setLineOaUrl(data.line_oa_url);
+        setCouponMessage(
+          data.error ||
+            "尚未確認官方 LINE 好友。請加入後重新整理；若仍失敗請登出再以 LINE 重新登入。",
+        );
+        return;
+      }
 
       if (!res.ok || !data.success) {
         setDiscount(0);
@@ -263,6 +385,7 @@ export default function ShopCheckoutPage() {
         return;
       }
 
+      setNeedLineFriend(false);
       setDiscount(data.discount_total || 0);
       setAppliedCode(data.code || code.toUpperCase());
       setCouponMessage(`已套用折扣碼 ${data.code || code.toUpperCase()}`);
@@ -292,6 +415,7 @@ export default function ShopCheckoutPage() {
       setAppliedCode(null);
       setCoupon("");
       setCouponMessage("");
+      setNeedLineFriend(false);
       setIsApplyingCoupon(false);
     }
   };
@@ -333,7 +457,7 @@ export default function ShopCheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          totalPrice: amount || totalPrice,
+          totalPrice: amount || physicalTotal,
           orderInfo: form,
           customOrderId: orderId,
         }),
@@ -557,6 +681,9 @@ export default function ShopCheckoutPage() {
               appliedCode={appliedCode}
               isApplyingCoupon={isApplyingCoupon}
               couponMessage={couponMessage}
+              needLineFriend={needLineFriend}
+              lineOaUrl={lineOaUrl}
+              welcomeHint={welcomeHint}
             />
           </aside>
         </div>

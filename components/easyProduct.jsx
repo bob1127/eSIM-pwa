@@ -67,6 +67,7 @@ const EasyProduct = ({ product, onClose }) => {
       image: product.images[0]?.src,
       color: selectedAttributes.color,
       size: selectedAttributes.size,
+      type: "physical",
     });
     alert("商品已成功加入購物車！");
   };
