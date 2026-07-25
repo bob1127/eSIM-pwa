@@ -25,7 +25,10 @@ import {
 } from "lucide-react";
 
 import { getPublicSiteUrl } from "../lib/siteUrl";
+import { buildLoginUrl } from "../lib/authRedirect";
 import { useAuth } from "../hooks/useAuth";
+import AffiliateChatOffers from "./affiliate/AffiliateChatOffers";
+import ShopChatOffers from "./shop/ShopChatOffers";
 
 /** LINE OA Basic ID（含 @），用於 oaMessage 預填文字 */
 const LINE_OA_ID = process.env.NEXT_PUBLIC_LINE_OA_ID || "@593gvyzn";
@@ -43,7 +46,7 @@ const WELCOME_PROMO_CARDS = [
     title: "新朋友會員優惠",
     subtitle: "註冊會員立刻領迎新折扣",
     cta: "立即加入",
-    href: "/login",
+    href: "__login__",
     image: "/images/優惠折扣.png",
   },
   {
@@ -107,6 +110,187 @@ function getOrCreateGuestId() {
   return id;
 }
 
+const CHAT_UI_STORAGE_KEY = "jeko_jbao_chat_ui_v1";
+const CHAT_UI_IDB_NAME = "jeko_jbao_chat";
+const CHAT_UI_IDB_STORE = "ui";
+const CHAT_UI_IDB_KEY = "current";
+const CHAT_UI_MAX_MESSAGES = 40;
+const CHAT_UI_TTL_MS = 1000 * 60 * 60 * 12; // 12 小時
+
+const DEFAULT_WELCOME_MESSAGE = {
+  id: 1,
+  role: "ai",
+  content: WELCOME_TEXT,
+  promoCards: WELCOME_PROMO_CARDS,
+};
+
+function createSessionId() {
+  return (
+    (typeof crypto !== "undefined" && crypto.randomUUID?.()) ||
+    Math.random().toString(36).slice(2)
+  );
+}
+
+function normalizeStoredMessages(messages) {
+  if (!Array.isArray(messages)) return [];
+  return messages
+    .filter((m) => m && typeof m === "object")
+    .slice(-CHAT_UI_MAX_MESSAGES);
+}
+
+function openChatUiDb() {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === "undefined") {
+      reject(new Error("indexedDB unavailable"));
+      return;
+    }
+    const req = indexedDB.open(CHAT_UI_IDB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(CHAT_UI_IDB_STORE)) {
+        db.createObjectStore(CHAT_UI_IDB_STORE);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error("idb open failed"));
+  });
+}
+
+function idbGet(db, key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CHAT_UI_IDB_STORE, "readonly");
+    const req = tx.objectStore(CHAT_UI_IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result ?? null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function idbPut(db, key, value) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CHAT_UI_IDB_STORE, "readwrite");
+    const req = tx.objectStore(CHAT_UI_IDB_STORE).put(value, key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function idbDelete(db, key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CHAT_UI_IDB_STORE, "readwrite");
+    const req = tx.objectStore(CHAT_UI_IDB_STORE).delete(key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function clearLegacyChatUiStorage() {
+  try {
+    sessionStorage.removeItem(CHAT_UI_STORAGE_KEY);
+    localStorage.removeItem(CHAT_UI_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function parseChatUiPayload(data) {
+  if (!data || !Array.isArray(data.messages) || data.messages.length === 0) {
+    return null;
+  }
+  if (data.updatedAt && Date.now() - data.updatedAt > CHAT_UI_TTL_MS) {
+    return null;
+  }
+  return {
+    sessionId: data.sessionId || null,
+    isOpen: Boolean(data.isOpen),
+    pendingMedia: data.pendingMedia || null,
+    messages: normalizeStoredMessages(data.messages),
+  };
+}
+
+/** IndexedDB 可存截圖 dataURL；舊版 localStorage 僅作備援（可能無圖） */
+async function loadChatUiState() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const db = await openChatUiDb();
+    const data = await idbGet(db, CHAT_UI_IDB_KEY);
+    db.close();
+    const parsed = parseChatUiPayload(data);
+    if (parsed) return parsed;
+    if (data?.updatedAt && Date.now() - data.updatedAt > CHAT_UI_TTL_MS) {
+      const db2 = await openChatUiDb();
+      await idbDelete(db2, CHAT_UI_IDB_KEY);
+      db2.close();
+    }
+  } catch {
+    /* fall through */
+  }
+
+  try {
+    const raw =
+      sessionStorage.getItem(CHAT_UI_STORAGE_KEY) ||
+      localStorage.getItem(CHAT_UI_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = parseChatUiPayload(JSON.parse(raw));
+    if (!parsed) {
+      clearLegacyChatUiStorage();
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function saveChatUiState({ sessionId, isOpen, messages, pendingMedia }) {
+  if (typeof window === "undefined") return;
+
+  const payload = {
+    sessionId,
+    isOpen: Boolean(isOpen),
+    pendingMedia: pendingMedia || null,
+    messages: normalizeStoredMessages(messages),
+    updatedAt: Date.now(),
+  };
+
+  try {
+    const db = await openChatUiDb();
+    await idbPut(db, CHAT_UI_IDB_KEY, payload);
+    db.close();
+    clearLegacyChatUiStorage();
+  } catch {
+    // IndexedDB 失敗時：仍存文字；截圖盡力寫入，爆量再去掉圖
+    try {
+      const withMedia = JSON.stringify(payload);
+      sessionStorage.setItem(CHAT_UI_STORAGE_KEY, withMedia);
+      localStorage.setItem(CHAT_UI_STORAGE_KEY, withMedia);
+    } catch {
+      try {
+        const slim = {
+          ...payload,
+          pendingMedia: pendingMedia
+            ? {
+                kind: pendingMedia.kind,
+                name: pendingMedia.name,
+                dataUrl: null,
+              }
+            : null,
+          messages: payload.messages.map((m) => ({
+            ...m,
+            mediaPreview: null,
+            hadMedia: Boolean(m.mediaPreview) || Boolean(m.hadMedia),
+          })),
+        };
+        const text = JSON.stringify(slim);
+        sessionStorage.setItem(CHAT_UI_STORAGE_KEY, text);
+        localStorage.setItem(CHAT_UI_STORAGE_KEY, text);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+}
+
 /** 非同步儲存訊息到 Supabase（fire-and-forget，不影響 UI） */
 async function persistChatLog({ sessionId, userId, guestId, messages }) {
   try {
@@ -132,34 +316,67 @@ const PRESET_ANSWERS = {
   "韓國有吃到飽嗎？": `有的！「韓國純日用吃到飽」方案不降速。\n詳情：${SITE}/product/korea/`,
 };
 
-const QUICK_QUESTIONS = Object.keys(PRESET_ANSWERS);
+/** 快捷關鍵字（含 eSIM／商城／住宿票券／文章）；無 preset 的會走 AI＋推薦卡） */
+const QUICK_QUESTIONS = [
+  // eSIM
+  "怎麼安裝 eSIM？",
+  "我的手機支援嗎？",
+  "日本推薦哪一款？",
+  "韓國有吃到飽嗎？",
+  "歐洲 eSIM 怎麼選？",
+  // 住宿／門票／交通（聯盟卡）
+  "大阪推薦飯店",
+  "環球影城門票",
+  "韓國交通票券",
+  "東京迪士尼門票",
+  // 商城
+  "出國要帶什麼充電器",
+  "推薦旅行收納包",
+  "有沒有萬用轉接頭",
+  // 旅遊文章／規定
+  "中國大陸登機行動電源規定",
+  "日本通關要注意什麼",
+  "出國前要準備什麼",
+];
+
 
 /** 商品推薦卡（單張） */
 function ProductCard({ card }) {
   const priceLabel =
-    card.minPrice && card.maxPrice && card.minPrice !== card.maxPrice
+    card.priceLabel ||
+    (card.minPrice && card.maxPrice && card.minPrice !== card.maxPrice
       ? `NT$${card.minPrice} 起`
       : card.minPrice
         ? `NT$${card.minPrice}`
-        : null;
+        : null);
+
+  const cta =
+    card.partner === "klook" || card.partner === "kkday"
+      ? "查看詳情"
+      : "立即購買";
 
   return (
     <a
       href={card.url}
       target="_blank"
-      rel="noopener noreferrer"
-      className="flex-shrink-0 w-[160px] rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden group"
+      rel="noopener noreferrer sponsored"
+      className="flex-shrink-0 w-[160px] rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
     >
-      <div className="h-[90px] bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center overflow-hidden">
+      <div className="relative h-[90px] bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center overflow-hidden">
         {card.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={card.imageUrl}
             alt={card.name}
-            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="h-full w-full object-cover"
           />
         ) : (
           <ShoppingCart className="w-8 h-8 text-blue-300" />
+        )}
+        {card.badge && (
+          <span className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/95 text-slate-700 shadow-sm">
+            {card.badge}
+          </span>
         )}
       </div>
       <div className="p-2.5">
@@ -174,8 +391,8 @@ function ProductCard({ card }) {
             {card.variantCount} 種方案
           </p>
         )}
-        <div className="mt-2 w-full text-center text-[10px] bg-blue-600 text-white rounded-full py-1 font-bold group-hover:bg-blue-700 transition-colors">
-          立即購買
+        <div className="mt-2 w-full text-center text-[10px] bg-blue-600 text-white rounded-full py-1 font-bold">
+          {cta}
         </div>
       </div>
     </a>
@@ -200,7 +417,7 @@ function ProductCardCarousel({ cards }) {
       className="mt-2 -mx-0.5"
     >
       <p className="text-[10px] text-slate-400 mb-1.5 flex items-center gap-1">
-        <ShoppingCart className="w-3 h-3" /> 為你推薦
+        <ShoppingCart className="w-3 h-3" /> eSIM 方案推薦
       </p>
       <div className="relative">
         {cards.length > 1 && (
@@ -245,13 +462,11 @@ function PromoCardCarousel({ cards }) {
     const timer = setInterval(() => {
       setActive((i) => {
         const next = (i + 1) % cards.length;
-        if (trackRef.current) {
-          const child = trackRef.current.children[next];
-          child?.scrollIntoView({
-            behavior: "smooth",
-            inline: "start",
-            block: "nearest",
-          });
+        const track = trackRef.current;
+        const child = track?.children?.[next];
+        // 只用 track 的 scrollLeft，避免 scrollIntoView 拉動整個聊天視窗
+        if (track && child) {
+          track.scrollTo({ left: child.offsetLeft, behavior: "smooth" });
         }
         return next;
       });
@@ -302,42 +517,45 @@ function PromoCardCarousel({ cards }) {
           className="flex gap-2 overflow-x-auto scroll-smooth pb-1 px-0.5 snap-x snap-mandatory"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          {cards.map((card) => (
-            <a
-              key={card.id}
-              href={card.href}
-              target={card.href.startsWith("http") ? "_blank" : undefined}
-              rel={
-                card.href.startsWith("http") ? "noopener noreferrer" : undefined
-              }
-              className="snap-start flex-shrink-0 w-[210px] rounded-xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-shadow group bg-white"
-            >
-              <div className="relative h-[100px] bg-slate-100 overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={card.image}
-                  alt={card.title}
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-                <span className="absolute top-2 left-2 inline-flex items-center gap-0.5 text-[9px] font-bold text-white bg-black/45 backdrop-blur-[2px] rounded-full px-1.5 py-0.5">
-                  <Tag className="w-2.5 h-2.5" />
-                  {card.badge}
-                </span>
-                <p className="absolute bottom-2 left-2 right-2 text-[12px] font-bold text-white leading-snug line-clamp-2 drop-shadow">
-                  {card.title}
-                </p>
-              </div>
-              <div className="px-2.5 py-2 flex items-center justify-between gap-2">
-                <p className="text-[10px] text-slate-500 leading-snug line-clamp-2">
-                  {card.subtitle}
-                </p>
-                <span className="shrink-0 text-[10px] font-bold text-blue-600 group-hover:text-blue-700">
-                  {card.cta} →
-                </span>
-              </div>
-            </a>
-          ))}
+          {cards.map((card) => {
+            const href =
+              card.href === "__login__" ? buildLoginUrl() : card.href;
+            const isExternal = href.startsWith("http");
+            return (
+              <a
+                key={card.id}
+                href={href}
+                target={isExternal ? "_blank" : undefined}
+                rel={isExternal ? "noopener noreferrer" : undefined}
+                className="snap-start flex-shrink-0 w-[210px] rounded-xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-shadow group bg-white"
+              >
+                <div className="relative h-[100px] bg-slate-100 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={card.image}
+                    alt={card.title}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                  <span className="absolute top-2 left-2 inline-flex items-center gap-0.5 text-[9px] font-bold text-white bg-black/45 backdrop-blur-[2px] rounded-full px-1.5 py-0.5">
+                    <Tag className="w-2.5 h-2.5" />
+                    {card.badge}
+                  </span>
+                  <p className="absolute bottom-2 left-2 right-2 text-[12px] font-bold text-white leading-snug line-clamp-2 drop-shadow">
+                    {card.title}
+                  </p>
+                </div>
+                <div className="px-2.5 py-2 flex items-center justify-between gap-2">
+                  <p className="text-[10px] text-slate-500 leading-snug line-clamp-2">
+                    {card.subtitle}
+                  </p>
+                  <span className="shrink-0 text-[10px] font-bold text-blue-600 group-hover:text-blue-700">
+                    {card.cta} →
+                  </span>
+                </div>
+              </a>
+            );
+          })}
         </div>
       </div>
       {cards.length > 1 && (
@@ -419,28 +637,51 @@ export default function AiChatWidget() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [pendingMedia, setPendingMedia] = useState(null);
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      role: "ai",
-      content: WELCOME_TEXT,
-      promoCards: WELCOME_PROMO_CARDS,
-    },
-  ]);
+  const [messages, setMessages] = useState([DEFAULT_WELCOME_MESSAGE]);
+  const [chatHydrated, setChatHydrated] = useState(false);
 
-  // 每個對話視窗有唯一 sessionId（刷新頁面會重置）
+  // 每個對話視窗有唯一 sessionId（跳頁會從 storage 還原）
   const sessionIdRef = useRef(null);
   if (!sessionIdRef.current) {
-    sessionIdRef.current =
-      (typeof crypto !== "undefined" && crypto.randomUUID?.()) ||
-      Math.random().toString(36).slice(2);
+    sessionIdRef.current = createSessionId();
   }
   const guestIdRef = useRef(null);
   useEffect(() => {
     guestIdRef.current = getOrCreateGuestId();
   }, []);
 
-  const messagesEndRef = useRef(null);
+  // 跳頁／重整：還原對話、截圖與是否開啟
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const saved = await loadChatUiState();
+      if (cancelled) return;
+      if (saved?.messages?.length) {
+        if (saved.sessionId) sessionIdRef.current = saved.sessionId;
+        setMessages(saved.messages);
+        if (saved.isOpen) setIsOpen(true);
+        if (saved.pendingMedia) setPendingMedia(saved.pendingMedia);
+      }
+      setChatHydrated(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 同步寫入 IndexedDB（含截圖），避免 Layout 重掛載後消失
+  useEffect(() => {
+    if (!chatHydrated) return;
+    saveChatUiState({
+      sessionId: sessionIdRef.current,
+      isOpen,
+      messages,
+      pendingMedia,
+    });
+  }, [messages, isOpen, pendingMedia, chatHydrated]);
+
+  const messagesContainerRef = useRef(null);
+  const stickToBottomRef = useRef(true);
   const scrollRef = useRef(null);
   const [handoffToast, setHandoffToast] = useState(null); // { hasMedia: bool }
 
@@ -509,19 +750,39 @@ export default function AiChatWidget() {
 
   const userInitial = (userDisplayName || "會").trim().charAt(0).toUpperCase();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollToBottom = useCallback((force = false) => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    if (!force && !stickToBottomRef.current) return;
+    // 只捲訊息容器，勿用 scrollIntoView（會連動外層／頁面亂跳）
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+  }, []);
+
+  const handleMessagesScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const gap = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottomRef.current = gap < 96;
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading, pendingMedia]);
+  }, [messages, isLoading, pendingMedia, scrollToBottom]);
 
   useEffect(() => {
     const open = () => setIsOpen(true);
     window.addEventListener("jeko:open-ai-chat", open);
     return () => window.removeEventListener("jeko:open-ai-chat", open);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("jeko:ai-chat-visibility", { detail: { open: isOpen } }),
+    );
+  }, [isOpen]);
 
   const handleWheel = (e) => {
     if (scrollRef.current) {
@@ -530,23 +791,30 @@ export default function AiChatWidget() {
   };
 
   const renderMessageContent = (content) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const parts = content.split(urlRegex);
+    // https 連結，或站內路徑 /shop/... /product/... /blog/...
+    const tokenRegex =
+      /(https?:\/\/[^\s\]）)]+|\/(?:shop|product|blog|esim)[^\s\]）)]*)/g;
+    const parts = String(content || "").split(tokenRegex);
     return parts.map((part, index) => {
-      if (part.match(urlRegex)) {
+      if (!part) return null;
+      if (/^https?:\/\//i.test(part) || /^\/(shop|product|blog|esim)/.test(part)) {
+        const href = part.startsWith("http")
+          ? part
+          : `${typeof window !== "undefined" ? window.location.origin : ""}${part}`;
+        const label = part.length > 64 ? `${part.slice(0, 48)}…` : part;
         return (
           <a
             key={index}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-500 underline hover:text-blue-700 break-all font-bold mx-1"
+            href={href}
+            target={part.startsWith("http") ? "_blank" : undefined}
+            rel={part.startsWith("http") ? "noopener noreferrer" : undefined}
+            className="text-blue-500 underline hover:text-blue-700 break-all font-bold mx-0.5"
           >
-            {part}
+            {label}
           </a>
         );
       }
-      return part;
+      return <span key={index}>{part}</span>;
     });
   };
 
@@ -620,6 +888,8 @@ export default function AiChatWidget() {
     const trimmed = (text || "").trim();
     if ((!trimmed && !media) || isLoading) return;
 
+    stickToBottomRef.current = true;
+
     setMessages((prev) => [
       ...prev,
       {
@@ -692,6 +962,10 @@ export default function AiChatWidget() {
           role: "ai",
           content: aiReply,
           productCards: data.productCards?.length ? data.productCards : null,
+          affiliateCards: data.affiliateCards?.length
+            ? data.affiliateCards
+            : null,
+          shopCards: data.shopCards?.length ? data.shopCards : null,
         },
       ]);
       // 儲存 user + ai 兩則紀錄
@@ -735,8 +1009,8 @@ export default function AiChatWidget() {
     <div
       className={`fixed font-sans ${
         isOpen
-          ? "inset-0 z-[9999999999999] flex flex-col md:inset-auto md:bottom-6 md:right-6 md:z-[999999] md:items-end"
-          : "bottom-[8.75rem] right-4 z-[999999] flex flex-col items-end md:bottom-6 md:right-6"
+          ? "inset-0 z-[12000] flex flex-col md:inset-auto md:bottom-6 md:right-6 md:items-end"
+          : "bottom-[8.75rem] right-4 z-[11000] flex flex-col items-end md:bottom-6 md:right-6"
       }`}
     >
       <AnimatePresence>
@@ -745,7 +1019,7 @@ export default function AiChatWidget() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="bg-white w-full h-[100dvh] max-h-[100dvh] rounded-none shadow-2xl border-0 md:border md:border-gray-100 flex flex-col overflow-hidden md:w-[400px] md:h-[min(600px,70vh)] md:max-h-[80vh] md:rounded-2xl md:mb-4 origin-bottom-right"
+            className="bg-white w-full h-[100dvh] max-h-[100dvh] rounded-none shadow-2xl border-0 md:border md:border-gray-100 flex flex-col overflow-hidden overscroll-contain md:w-[400px] md:h-[min(600px,70vh)] md:max-h-[80vh] md:rounded-2xl md:mb-4 origin-bottom-right"
           >
             <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-4 flex justify-between items-center text-white">
               <div className="flex items-center gap-3">
@@ -797,7 +1071,12 @@ export default function AiChatWidget() {
               </div>
             )}
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+            <div
+              ref={messagesContainerRef}
+              onScroll={handleMessagesScroll}
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-4 bg-slate-50/50"
+              style={{ overflowAnchor: "none" }}
+            >
               {messages.map((msg) => {
                 const isUser = msg.role === "user";
                 return (
@@ -835,6 +1114,12 @@ export default function AiChatWidget() {
                             className="mb-2 max-h-40 rounded-lg object-contain bg-black/10"
                           />
                         )}
+                        {msg.hadMedia && !msg.mediaPreview && (
+                          <div className="mb-2 flex items-center gap-1.5 text-[12px] opacity-90">
+                            <ImagePlus className="w-3.5 h-3.5" />
+                            曾附上截圖
+                          </div>
+                        )}
                         {msg.mediaKind === "video" && !msg.mediaPreview && (
                           <div className="mb-2 flex items-center gap-1.5 text-[12px] opacity-90">
                             <Film className="w-3.5 h-3.5" />
@@ -848,6 +1133,12 @@ export default function AiChatWidget() {
                         </div>
                       </div>
                       {/* 商品推薦卡 */}
+                      {!isUser && msg.shopCards && (
+                        <ShopChatOffers items={msg.shopCards} />
+                      )}
+                      {!isUser && msg.affiliateCards && (
+                        <AffiliateChatOffers items={msg.affiliateCards} />
+                      )}
                       {!isUser && msg.productCards && (
                         <ProductCardCarousel cards={msg.productCards} />
                       )}
@@ -912,10 +1203,12 @@ export default function AiChatWidget() {
                   </div>
                 </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
 
-            <div className="bg-white px-2 pt-3 pb-1 border-t border-gray-50">
+            <div className="bg-white px-2 pt-2 pb-1 border-t border-gray-50">
+              <p className="px-2 pb-1.5 text-[10px] text-slate-400">
+                試試這樣問 · 左右滑看更多
+              </p>
               <div
                 ref={scrollRef}
                 onWheel={handleWheel}
@@ -932,7 +1225,7 @@ export default function AiChatWidget() {
                     key={idx}
                     onClick={() => processChat(q)}
                     disabled={isLoading}
-                    className="whitespace-nowrap px-4 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[12px] font-bold hover:bg-blue-600 hover:text-white transition-all"
+                    className="whitespace-nowrap px-3.5 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[12px] font-bold hover:bg-blue-600 hover:text-white transition-all disabled:opacity-50"
                   >
                     {q}
                   </button>

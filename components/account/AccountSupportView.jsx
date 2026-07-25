@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import MaterialIcon from "@/components/MaterialIcon";
+import { getIosAddToHomeHint } from "@/lib/pushSupport";
 import { AccountPageWrap } from "./AccountShell";
 
 function formatShort(d) {
@@ -169,7 +170,7 @@ export default function AccountSupportView({
               <div>
                 <p className="text-sm font-bold text-amber-900">iPhone 推播需先安裝 PWA</p>
                 <p className="text-xs text-amber-800 mt-0.5">
-                  Safari → 分享 → 加入主畫面，才能接收流量偏低推播。
+                  {getIosAddToHomeHint()}，才能接收流量偏低推播。
                 </p>
               </div>
             </div>

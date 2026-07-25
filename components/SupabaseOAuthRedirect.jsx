@@ -3,10 +3,15 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  sanitizeRedirect,
+  consumeAuthRedirect,
+  peekAuthRedirect,
+} from "@/lib/authRedirect";
 
 /**
  * Supabase OAuth 回傳時 URL hash 帶 access_token。
- * 確保 session 寫入、清除 hash，並導向會員中心。
+ * 確保 session 寫入、清除 hash，並導回原頁（勿強制首頁／會員中心）。
  */
 export default function SupabaseOAuthRedirect() {
   const router = useRouter();
@@ -29,20 +34,29 @@ export default function SupabaseOAuthRedirect() {
       const search = window.location.search;
       window.history.replaceState(null, "", `${path}${search}`);
 
-      if (session && (path === "/" || path === "/login")) {
-        router.replace("/account");
+      if (session && (path === "/" || path === "/login" || path === "/login/")) {
+        const params = new URLSearchParams(search);
+        const fromQuery = params.get("redirect") || params.get("callbackUrl");
+        const dest = sanitizeRedirect(
+          fromQuery || peekAuthRedirect("/account"),
+          "/account",
+        );
+        consumeAuthRedirect(dest);
+        if (dest !== path + search) {
+          router.replace(dest);
+        }
       } else if (!session && hash.includes("error=")) {
         router.replace("/login?error=oauth");
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-          finish(session);
-        }
-      },
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        finish(session);
+      }
+    });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) finish(session);

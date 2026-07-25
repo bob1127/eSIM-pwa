@@ -17,7 +17,7 @@ import {
   getOAuthRedirectUrl,
   startLineLoginWithFormPost,
 } from "../lib/authDebug";
-import { sanitizeRedirect } from "../lib/authRedirect";
+import { sanitizeRedirect, peekAuthRedirect, rememberAuthRedirect } from "../lib/authRedirect";
 
 const LoginRegisterPage = () => {
   const router = useRouter();
@@ -26,9 +26,15 @@ const LoginRegisterPage = () => {
 
   const redirectTo = useMemo(() => {
     const fromQuery =
-      router.query.redirect || router.query.callbackUrl || "/account";
-    const raw = Array.isArray(fromQuery) ? fromQuery[0] : fromQuery;
-    return sanitizeRedirect(raw, "/account");
+      router.query.redirect || router.query.callbackUrl || null;
+    if (fromQuery) {
+      const raw = Array.isArray(fromQuery) ? fromQuery[0] : fromQuery;
+      const safe = sanitizeRedirect(raw, "/account");
+      rememberAuthRedirect(safe);
+      return safe;
+    }
+    // 無 query 時用先前記住的原頁；不要預設首頁
+    return peekAuthRedirect("/account");
   }, [router.query.redirect, router.query.callbackUrl]);
 
   const [selected, setSelected] = useState("login");
@@ -121,9 +127,15 @@ const LoginRegisterPage = () => {
   // 登入成功後回到原頁（或 redirect 參數指定頁面）
   useEffect(() => {
     if (!isLoggedIn) return;
-    addLog(`🚀 登入成功，導回 ${redirectTo}`);
+    const dest = sanitizeRedirect(redirectTo, "/account");
+    try {
+      sessionStorage.removeItem("jeko_auth_redirect");
+    } catch {
+      /* ignore */
+    }
+    addLog(`🚀 登入成功，導回 ${dest}`);
     const timer = setTimeout(() => {
-      router.replace(redirectTo);
+      router.replace(dest);
     }, 800);
     return () => clearTimeout(timer);
   }, [isLoggedIn, redirectTo, router]);

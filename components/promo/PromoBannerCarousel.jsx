@@ -7,7 +7,7 @@ import MaterialIcon from "@/components/MaterialIcon";
 import { buildPromoSlides } from "@/lib/promoBanners";
 
 /**
- * 滿版輪播：中間完整、左右各露出約半張（共可視三張）
+ * 一張滿版輪播：每次只顯示一張 Banner（全寬）
  * 高度依圖片自然比例，不裁切
  */
 export default function PromoBannerCarousel({
@@ -20,9 +20,9 @@ export default function PromoBannerCarousel({
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
       loop: true,
-      align: "center",
+      align: "start",
       skipSnaps: false,
-      containScroll: false,
+      containScroll: "trimSnaps",
       slidesToScroll: 1,
     },
     [
@@ -57,14 +57,9 @@ export default function PromoBannerCarousel({
     <div className={`relative w-full ${className}`}>
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex touch-pan-y">
-          {slides.map((slide, index) => {
-            const active = index === selectedIndex;
+          {slides.map((slide) => {
             const inner = (
-              <div
-                className={`relative w-full overflow-hidden rounded-lg md:rounded-xl bg-stone-100 shadow-sm transition-[transform,opacity] duration-300 ${
-                  active ? "scale-100 opacity-100" : "scale-[0.96] opacity-80"
-                }`}
-              >
+              <div className="relative w-full overflow-hidden bg-stone-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={slide.src}
@@ -78,8 +73,7 @@ export default function PromoBannerCarousel({
             return (
               <div
                 key={slide.key}
-                /* 每張約 50% 寬 → 中間完整 + 左右各半張 */
-                className="min-w-0 shrink-0 grow-0 basis-[50%] px-1.5 sm:px-2"
+                className="min-w-0 shrink-0 grow-0 basis-full"
               >
                 {slide.href ? (
                   <a
@@ -110,7 +104,7 @@ export default function PromoBannerCarousel({
         type="button"
         onClick={scrollPrev}
         aria-label="上一張"
-        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 border border-stone-200 shadow flex items-center justify-center text-stone-700 hover:bg-white"
+        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 border border-stone-200 shadow flex items-center justify-center text-stone-700"
       >
         <MaterialIcon name="chevron_left" size={22} />
       </button>
@@ -118,7 +112,7 @@ export default function PromoBannerCarousel({
         type="button"
         onClick={scrollNext}
         aria-label="下一張"
-        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 border border-stone-200 shadow flex items-center justify-center text-stone-700 hover:bg-white"
+        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 border border-stone-200 shadow flex items-center justify-center text-stone-700"
       >
         <MaterialIcon name="chevron_right" size={22} />
       </button>
@@ -133,7 +127,7 @@ export default function PromoBannerCarousel({
             className={`h-2 rounded-full transition-all ${
               index === selectedIndex
                 ? "w-6 bg-[#3768C7]"
-                : "w-2 bg-stone-300 hover:bg-stone-400"
+                : "w-2 bg-stone-300"
             }`}
           />
         ))}

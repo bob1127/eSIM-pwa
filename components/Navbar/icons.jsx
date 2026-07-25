@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@heroui/react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { buildLoginUrl } from "../../lib/authRedirect";
 
 export const CartIcon = ({ fill = "black", size, height, width, ...props }) => (
   <svg
@@ -202,7 +203,7 @@ export default function App() {
           </Button>
         </div>
       ) : (
-        <Link href="/login">
+        <Link href={buildLoginUrl()}>
           <Button
             isIconOnly
             className="w-full px-1"

@@ -127,7 +127,9 @@ export default function AppInstallGuideModal({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-wider text-[#0A6CD0]">
-                    {platform === "ios"
+                    {platform === "ios" ||
+                    platform === "ios-chrome" ||
+                    platform === "ios-safari"
                       ? "iPhone / iPad"
                       : platform === "mac"
                         ? "Mac"

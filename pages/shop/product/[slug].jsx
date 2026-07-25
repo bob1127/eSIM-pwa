@@ -24,6 +24,7 @@ import { useCart } from "../../../components/context/CartContext";
 import Footer from "../../../components/ui/footer.jsx";
 import MediaGalleryLightbox from "../../../components/MediaGalleryLightbox";
 import MaterialIcon from "../../../components/MaterialIcon";
+import { buildLoginUrl } from "../../../lib/authRedirect";
 
 const CONTAINER = "max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-10";
 
@@ -542,7 +543,7 @@ export default function ShopProductPage() {
                 <Lock className="w-3.5 h-3.5 shrink-0" />
                 <span className="flex-1">登入享安心購保障與會員積分回饋</span>
                 <Link
-                  href="/login"
+                  href={buildLoginUrl(router.asPath)}
                   className="text-[#0A6CD0] font-semibold hover:underline shrink-0"
                 >
                   Sign In &gt;

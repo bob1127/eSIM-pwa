@@ -55,21 +55,9 @@ export default function PromoPage() {
             <MaterialIcon name="chevron_right" size={14} />
             <span className="font-bold text-slate-700">最新優惠</span>
           </nav>
-
-          <header className="mb-6 md:mb-8 text-center md:text-left">
-            <p className="text-xs font-bold tracking-[0.16em] uppercase text-[#3768C7] mb-2">
-              Promotions
-            </p>
-            <h1 className="text-[26px] md:text-[34px] font-black text-slate-900 tracking-tight">
-              最新優惠
-            </h1>
-            <p className="mt-2 text-sm text-slate-500 max-w-xl">
-              左右滑動查看活動 Banner，點擊即可前往領取或選購。
-            </p>
-          </header>
         </div>
 
-        {/* 滿版 Banner：中間完整、左右各半張 */}
+        {/* 一張滿版 Banner 輪播 */}
         <PromoBannerCarousel minSlides={4} className="mb-10 md:mb-14" />
 
         {/* 拉霸抽獎：滿版紅底 */}

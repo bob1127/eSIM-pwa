@@ -276,7 +276,8 @@ export default function DataQueryPage() {
               <div
                 className="absolute inset-0 bg-cover bg-center"
                 style={{
-                  backgroundImage: "url('/images/japan.jpg')",
+                  backgroundImage:
+                    "url('/images/7bf7a01a-6740-4390-800c-566683623985.png')",
                 }}
                 aria-hidden
               />

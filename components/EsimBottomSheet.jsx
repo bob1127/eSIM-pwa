@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { motion, LayoutGroup } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { useUser } from "@/components/context/UserContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,7 +19,17 @@ import AppInstallGuideModal from "./AppInstallGuideModal";
 import MaterialIcon from "@/components/MaterialIcon";
 
 const COLLAPSED_H = 118;
+/** 產品頁預設縮小：只留可上拉的橫槓 */
+export const COLLAPSED_H_PRODUCT = 32;
 const EXPANDED_VH = 78;
+
+/** 導覽藍底液態過渡（維持品牌藍 #0A6CD0） */
+const NAV_LIQUID_SPRING = {
+  type: "spring",
+  stiffness: 300,
+  damping: 26,
+  mass: 0.82,
+};
 
 /* ─── 扁平 SVG icons（無陰影）─── */
 const IconUsage = ({ className = "" }) => (
@@ -37,16 +48,16 @@ const IconMember = ({ className = "" }) => (
   </svg>
 );
 
-const IconQr = ({ white = false }) => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={white ? "#fff" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const IconQr = ({ className = "" }) => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M3 7V5a2 2 0 0 1 2-2h2" />
     <path d="M17 3h2a2 2 0 0 1 2 2v2" />
     <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
     <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-    <rect x="7" y="7" width="3.2" height="3.2" fill={white ? "#fff" : "currentColor"} stroke="none" />
-    <rect x="13.8" y="7" width="3.2" height="3.2" fill={white ? "#fff" : "currentColor"} stroke="none" />
-    <rect x="7" y="13.8" width="3.2" height="3.2" fill={white ? "#fff" : "currentColor"} stroke="none" />
-    <path d="M14 14h1.5v1.5H14zm3 0h1.5v3H14.5v-1.5H16V14zm-3 3.5H15.5V19H14z" fill={white ? "#fff" : "currentColor"} stroke="none" />
+    <rect x="7" y="7" width="3.2" height="3.2" fill="currentColor" stroke="none" />
+    <rect x="13.8" y="7" width="3.2" height="3.2" fill="currentColor" stroke="none" />
+    <rect x="7" y="13.8" width="3.2" height="3.2" fill="currentColor" stroke="none" />
+    <path d="M14 14h1.5v1.5H14zm3 0h1.5v3H14.5v-1.5H16V14zm-3 3.5H15.5V19H14z" fill="currentColor" stroke="none" />
   </svg>
 );
 
@@ -113,7 +124,7 @@ function formatPrice(n) {
   return `NT$ ${Number(n).toLocaleString("zh-TW")}`;
 }
 
-function LoginGate({ onLogin }) {
+function LoginGate() {
   return (
     <div className="flex flex-col items-center text-center px-4 py-8">
       <div className="w-14 h-14 rounded-2xl bg-sky-50 flex items-center justify-center text-[#0A6CD0] mb-3">
@@ -124,7 +135,7 @@ function LoginGate({ onLogin }) {
         登入後即可在此查看 QR Code、剩餘用量與方案資訊
       </p>
       <Link
-        href={buildLoginUrl("/account")}
+        href={buildLoginUrl()}
         className="mt-5 w-full max-w-xs bg-[#0A6CD0] text-white text-[14px] font-bold py-3 rounded-2xl text-center active:opacity-90"
       >
         登入／加入會員
@@ -380,7 +391,7 @@ function UsagePanel({
         </div>
 
         <Link
-          href={buildLoginUrl("/account")}
+          href={buildLoginUrl()}
           className="mt-3 block w-full text-center text-[13px] font-bold py-3 rounded-2xl bg-[#0A6CD0] text-white active:opacity-90"
         >
           登入／註冊會員
@@ -566,6 +577,105 @@ function InstallPanel({ onInstall, isStandalone }) {
   );
 }
 
+/** 優惠活動面板：點數／優惠券摘要，再連到完整優惠頁 */
+function PromoPanel({
+  isGuest,
+  loading,
+  points,
+  coupons = [],
+  onClose,
+}) {
+  const available = coupons.filter((c) => c.status === "available");
+
+  if (isGuest) {
+    return (
+      <div className="px-4 pb-4 space-y-3">
+        <div className="bg-[#f7f8fa] rounded-2xl p-4">
+          <p className="text-[13px] font-bold text-gray-900 mb-3">優惠摘要</p>
+          <div className="flex items-center justify-between text-[13px] py-2 border-b border-gray-100">
+            <span className="text-gray-500">您的剩餘點數</span>
+            <span className="font-bold text-gray-400">登入後查看</span>
+          </div>
+          <div className="pt-3">
+            <p className="text-[13px] text-gray-500 mb-1">目前有的優惠券</p>
+            <p className="text-[12px] text-gray-400">登入後即可查看折價券</p>
+          </div>
+        </div>
+        <LoginGate />
+        <Link
+          href="/promo"
+          onClick={onClose}
+          className="flex items-center justify-center gap-1 w-full text-[14px] font-bold py-3 rounded-2xl border border-[#0A6CD0] text-[#0A6CD0] active:opacity-90"
+        >
+          前進優惠內容
+          <MaterialIcon name="chevron_right" size={18} />
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 pb-4 space-y-3">
+      <div className="bg-[#f7f8fa] rounded-2xl p-4">
+        <div className="flex items-center justify-between py-1">
+          <span className="text-[13px] text-gray-600">您的剩餘點數</span>
+          {loading ? (
+            <span className="text-[13px] text-gray-400">載入中…</span>
+          ) : (
+            <span className="text-[18px] font-black text-[#0A6CD0] tabular-nums">
+              {Number(points || 0).toLocaleString("zh-TW")}
+              <span className="text-[12px] font-bold ml-1 text-gray-500">點</span>
+            </span>
+          )}
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-gray-200/80">
+          <p className="text-[13px] font-bold text-gray-900 mb-2">
+            目前有的優惠券
+          </p>
+          {loading ? (
+            <p className="text-[12px] text-gray-400 py-2">載入中…</p>
+          ) : available.length === 0 ? (
+            <p className="text-[12px] text-gray-500 leading-relaxed py-1">
+              尚無可用優惠券。可至優惠頁拉霸抽獎或領取新會員禮。
+            </p>
+          ) : (
+            <ul className="space-y-2 max-h-[28vh] overflow-y-auto">
+              {available.map((c) => (
+                <li
+                  key={c.id || c.code}
+                  className="flex items-center justify-between gap-2 bg-white rounded-xl px-3 py-2.5 border border-gray-100"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold text-gray-900 truncate">
+                      {c.label || `${c.amount} 元折抵`}
+                    </p>
+                    <p className="text-[11px] font-mono text-gray-400 truncate">
+                      {c.code}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-[12px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    NT${Number(c.amount || 0)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <Link
+        href="/promo"
+        onClick={onClose}
+        className="flex items-center justify-center gap-1 w-full text-[14px] font-bold py-3.5 rounded-2xl bg-[#0A6CD0] text-white active:opacity-90"
+      >
+        前進優惠內容
+        <MaterialIcon name="chevron_right" size={18} />
+      </Link>
+    </div>
+  );
+}
+
 export default function EsimBottomSheet() {
   const router = useRouter();
   const { user: supabaseUser, token } = useUser();
@@ -578,8 +688,16 @@ export default function EsimBottomSheet() {
     typeof router.pathname === "string" &&
     (router.pathname === "/shop" || router.pathname.startsWith("/shop/"));
 
+  // eSIM 產品頁：預設縮成橫槓，避免擋立即購買
+  const isProductRoute = useMemo(() => {
+    const path = String(router.asPath || router.pathname || "").split("?")[0];
+    return path === "/product" || path.startsWith("/product/");
+  }, [router.asPath, router.pathname]);
+
+  const collapsedH = isProductRoute ? COLLAPSED_H_PRODUCT : COLLAPSED_H;
+
   const [expanded, setExpanded] = useState(false);
-  const [panel, setPanel] = useState("qr"); // qr | usage | member | install | all
+  const [panel, setPanel] = useState("qr"); // qr | usage | member | install | promo
   const [dragY, setDragY] = useState(0);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   const startY = useRef(0);
@@ -594,6 +712,9 @@ export default function EsimBottomSheet() {
   const [guestLoading, setGuestLoading] = useState(false);
   const [trafficBusy, setTrafficBusy] = useState(false);
   const [trafficOn, setTrafficOn] = useState(false);
+  const [promoCoupons, setPromoCoupons] = useState([]);
+  const [promoPoints, setPromoPoints] = useState(0);
+  const [promoLoading, setPromoLoading] = useState(false);
 
   const memberEmail = useMemo(
     () =>
@@ -682,6 +803,49 @@ export default function EsimBottomSheet() {
     }
   }, [expanded, isLoggedIn, memberEmail, loadOrders]);
 
+  // 優惠活動面板：載入點數／優惠券
+  useEffect(() => {
+    if (!expanded || panel !== "promo" || !isLoggedIn) return undefined;
+    let cancelled = false;
+
+    (async () => {
+      setPromoLoading(true);
+      try {
+        const headers = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch("/api/promo/member-coupons", {
+          headers,
+          credentials: "include",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && data.success) {
+          const list = Array.isArray(data.coupons) ? data.coupons : [];
+          setPromoCoupons(list);
+          // 尚無獨立點數系統：以可用折價券金額加總作為可折抵點數顯示
+          const pts = list
+            .filter((c) => c.status === "available")
+            .reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+          setPromoPoints(pts);
+        } else {
+          setPromoCoupons([]);
+          setPromoPoints(0);
+        }
+      } catch {
+        if (!cancelled) {
+          setPromoCoupons([]);
+          setPromoPoints(0);
+        }
+      } finally {
+        if (!cancelled) setPromoLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [expanded, panel, isLoggedIn, token]);
+
   // 會員進入用量頁：不自動查，等按按鈕（依需求）
   // QR 切換時可預載用量（可選，保留輕量）
   useEffect(() => {
@@ -713,7 +877,7 @@ export default function EsimBottomSheet() {
   }, [isInstallable, installPWA, isStandalone]);
 
   const goLogin = () => {
-    router.push(buildLoginUrl("/account"));
+    router.push(buildLoginUrl());
   };
 
   /** 依裝置自動分流：iPhone 先裝 App；Android／電腦直接開通知 */
@@ -879,11 +1043,6 @@ export default function EsimBottomSheet() {
   })();
 
   const openPanel = (id) => {
-    if (id === "promo") {
-      setExpanded(false);
-      router.push("/promo");
-      return;
-    }
     setPanel(id);
     setExpanded(true);
   };
@@ -926,20 +1085,25 @@ export default function EsimBottomSheet() {
     typeof window !== "undefined"
       ? (window.innerHeight * EXPANDED_VH) / 100
       : 560;
-  const baseH = expanded ? expandedPx : COLLAPSED_H;
-  const height = Math.max(COLLAPSED_H, baseH - dragY);
+  const baseH = expanded ? expandedPx : collapsedH;
+  const height = Math.max(collapsedH, baseH - dragY);
 
   const navItems = [
-    { id: "usage", label: "剩餘用量", icon: <IconUsage /> },
-    { id: "member", label: "會員", icon: <IconMember /> },
-    { id: "qr", label: "QR Code", center: true, icon: <IconQr white /> },
-    { id: "install", label: "下載 APP", icon: <IconInstall /> },
+    { id: "usage", label: "剩餘用量", Icon: IconUsage },
+    { id: "member", label: "會員", Icon: IconMember },
+    { id: "qr", label: "QR Code", center: true, Icon: IconQr },
+    { id: "install", label: "下載 APP", Icon: IconInstall },
     {
       id: "promo",
       label: "優惠活動",
-      icon: <MaterialIcon name="local_activity" size={22} />,
+      Icon: (props) => (
+        <MaterialIcon name="local_activity" size={22} {...props} />
+      ),
     },
   ];
+
+  /** 收合時維持 QR 為品牌藍 CTA；展開時跟隨目前功能 */
+  const activeNavId = expanded ? panel || "qr" : "qr";
 
   const displayName =
     supabaseUser?.user_metadata?.full_name ||
@@ -948,10 +1112,15 @@ export default function EsimBottomSheet() {
 
   if (isShopRoute) return null;
 
+  const miniCollapsed = isProductRoute && !expanded;
+
   return (
     <>
       {/* 佔位：避免頁面內容被固定底欄遮住 */}
-      <div className="h-[118px] md:hidden" aria-hidden />
+      <div
+        className={`md:hidden ${miniCollapsed ? "h-8" : "h-[118px]"}`}
+        aria-hidden
+      />
 
       {expanded && (
         <button
@@ -971,10 +1140,12 @@ export default function EsimBottomSheet() {
             : "height 0.32s cubic-bezier(0.32, 0.72, 0, 1)",
         }}
       >
-        <div className="h-full bg-white rounded-t-[22px] border-t border-gray-100 flex flex-col overflow-hidden">
+        <div className="h-full bg-white rounded-t-[22px] border-t border-gray-300 flex flex-col overflow-hidden">
           {/* 拉把 */}
           <div
-            className="shrink-0 pt-2.5 pb-1 px-4 touch-none select-none"
+            className={`shrink-0 touch-none select-none ${
+              miniCollapsed ? "py-2.5 px-4" : "pt-2.5 pb-1 px-4"
+            }`}
             onMouseDown={onPointerDown}
             onMouseMove={onPointerMove}
             onMouseUp={onPointerUp}
@@ -1002,91 +1173,135 @@ export default function EsimBottomSheet() {
             }}
           >
             <div className="flex flex-col items-center">
-              <div className="w-9 h-1 rounded-full bg-gray-300 mb-1.5" />
-              <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-800">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <rect x="3" y="4" width="2.2" height="16" rx="0.5" />
-                  <rect x="7" y="4" width="1.4" height="16" rx="0.5" />
-                  <rect x="10" y="4" width="2.8" height="16" rx="0.5" />
-                  <rect x="14.5" y="4" width="1.2" height="16" rx="0.5" />
-                  <rect x="17.5" y="4" width="3.5" height="16" rx="0.5" />
-                </svg>
-                我的 eSIM
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#9ca3af"
-                  strokeWidth="2.5"
-                  className={`transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
-                >
-                  <path d="M18 15l-6-6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* 五格導覽 — 無陰影扁平 */}
-          <div className="shrink-0 px-3 pt-1 pb-2">
-            <div className="grid grid-cols-5 items-end gap-1">
-              {navItems.map((item) =>
-                item.center ? (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openPanel("qr");
-                    }}
-                    className="flex flex-col items-center gap-1 -mt-1"
+              <div
+                className={`rounded-full bg-gray-300 ${
+                  miniCollapsed ? "w-10 h-1" : "w-9 h-1 mb-1.5"
+                }`}
+              />
+              {!miniCollapsed && (
+                <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-800">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden
                   >
-                    <span
-                      className={`w-[52px] h-[52px] rounded-[14px] flex items-center justify-center transition-colors ${
-                        expanded && panel === "qr"
-                          ? "bg-[#095bb8]"
-                          : "bg-[#0A6CD0]"
-                      }`}
-                    >
-                      {item.icon}
-                    </span>
-                    <span className="text-[10px] font-semibold text-gray-700">
-                      {item.label}
-                    </span>
-                  </button>
-                ) : (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openPanel(item.id);
-                    }}
-                    className={`flex flex-col items-center gap-1.5 py-1 transition-colors ${
-                      expanded && panel === item.id
-                        ? "text-[#0A6CD0]"
-                        : "text-gray-600"
-                    }`}
+                    <rect x="3" y="4" width="2.2" height="16" rx="0.5" />
+                    <rect x="7" y="4" width="1.4" height="16" rx="0.5" />
+                    <rect x="10" y="4" width="2.8" height="16" rx="0.5" />
+                    <rect x="14.5" y="4" width="1.2" height="16" rx="0.5" />
+                    <rect x="17.5" y="4" width="3.5" height="16" rx="0.5" />
+                  </svg>
+                  我的 eSIM
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#9ca3af"
+                    strokeWidth="2.5"
+                    className={`transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
                   >
-                    <span className="w-8 h-8 flex items-center justify-center">
-                      {item.icon}
-                    </span>
-                    <span className="text-[10px] font-semibold leading-tight">
-                      {item.label}
-                    </span>
-                  </button>
-                ),
+                    <path
+                      d="M18 15l-6-6-6 6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
               )}
             </div>
           </div>
 
+          {/* 五格導覽 — 產品頁縮小時隱藏 */}
+          {!miniCollapsed && (
+          <div className="shrink-0 px-3 pt-1 pb-2">
+            <LayoutGroup id="esim-sheet-nav">
+              <div className="grid grid-cols-5 items-end gap-1">
+                {navItems.map((item) => {
+                  const isActive = activeNavId === item.id;
+                  const Icon = item.Icon;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openPanel(item.id);
+                      }}
+                      className={`relative flex flex-col items-center gap-1 ${
+                        item.center ? "-mt-1" : "py-1"
+                      }`}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      <span
+                        className={`relative z-0 flex items-center justify-center ${
+                          item.center ? "w-[52px] h-[52px]" : "w-10 h-10"
+                        }`}
+                      >
+                        {isActive && (
+                          <motion.span
+                            layoutId="esim-sheet-nav-liquid"
+                            className="absolute inset-0 rounded-[14px] bg-[#0A6CD0]"
+                            style={{
+                              boxShadow: "0 6px 16px rgba(10, 108, 208, 0.32)",
+                            }}
+                            transition={NAV_LIQUID_SPRING}
+                            initial={false}
+                          />
+                        )}
+                        <motion.span
+                          className="relative z-10 flex items-center justify-center"
+                          animate={{
+                            color: isActive ? "#ffffff" : "#4b5563",
+                            scale: isActive ? 1 : 0.97,
+                          }}
+                          transition={{
+                            duration: 0.25,
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                        >
+                          <Icon />
+                        </motion.span>
+                      </span>
+                      <motion.span
+                        className="text-[10px] font-semibold leading-tight"
+                        animate={{
+                          color: isActive ? "#0A6CD0" : "#374151",
+                        }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {item.label}
+                      </motion.span>
+                    </button>
+                  );
+                })}
+              </div>
+            </LayoutGroup>
+          </div>
+          )}
+
           {/* 展開內容 */}
           {expanded && (
             <div className="flex-1 overflow-y-auto overscroll-contain">
-              {!authReady || (isLoggedIn && ordersLoading && panel !== "usage" && panel !== "install") ? (
+              {!authReady ||
+              (isLoggedIn &&
+                ordersLoading &&
+                panel !== "usage" &&
+                panel !== "install" &&
+                panel !== "promo") ? (
                 <div className="py-10 text-center text-[13px] text-gray-400">
                   載入中…
                 </div>
+              ) : panel === "promo" ? (
+                <PromoPanel
+                  isGuest={isGuest}
+                  loading={promoLoading}
+                  points={promoPoints}
+                  coupons={promoCoupons}
+                  onClose={() => setExpanded(false)}
+                />
               ) : panel === "usage" ? (
                 <UsagePanel
                   isGuest={isGuest}
@@ -1101,7 +1316,7 @@ export default function EsimBottomSheet() {
                   onGuestQuery={queryGuestUsage}
                 />
               ) : isGuest ? (
-                <LoginGate onLogin={goLogin} />
+                <LoginGate />
               ) : panel === "qr" ? (
                 <QrPanel
                   plans={plans}

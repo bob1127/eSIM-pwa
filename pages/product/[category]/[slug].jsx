@@ -74,6 +74,7 @@ import DataEstimatorModal, {
   compareDataAmountsAsc,
 } from "@/components/DataEstimatorModal";
 import { fetchCategoryComparablePlans } from "@/lib/formatMedusaProductPage";
+import { buildLoginUrl } from "@/lib/authRedirect";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
@@ -1609,6 +1610,7 @@ export default function ProductPage({
   const [galleryLightboxIndex, setGalleryLightboxIndex] = useState(0);
   const [featuresOpen, setFeaturesOpen] = useState(true);
   const [mediaTab, setMediaTab] = useState("overview");
+  const [showStickyBuy, setShowStickyBuy] = useState(false);
   const isPartnerShell = shell === "shop" && store;
   const productAdmin = useProductAdmin();
   const isAdmin = isPartnerShell ? false : productAdmin.isAdmin;
@@ -1957,6 +1959,32 @@ export default function ProductPage({
   const canPurchase =
     isAllOptionsSelected && currentVariation && currentVariation.price > 0;
 
+  // 滾過頁內購買區後才顯示底部固定規格／購買列
+  useEffect(() => {
+    const update = () => {
+      const nodes = document.querySelectorAll("[data-product-buy-cta]");
+      if (!nodes.length) {
+        setShowStickyBuy(false);
+        return;
+      }
+      let scrolledPast = false;
+      let stillVisible = false;
+      nodes.forEach((n) => {
+        const r = n.getBoundingClientRect();
+        if (r.bottom < 0) scrolledPast = true;
+        if (r.top < window.innerHeight && r.bottom > 0) stillVisible = true;
+      });
+      setShowStickyBuy(scrolledPast && !stillVisible);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [product?.id, isPartnerShell, canPurchase]);
+
   const images = useMemo(
     () =>
       buildProductMediaList({
@@ -2014,6 +2042,7 @@ export default function ProductPage({
   }
 
   return (
+    <>
     <PageShell {...shellProps}>
       <CompatibilityModal
         isOpen={isCompatOpen}
@@ -2486,20 +2515,53 @@ export default function ProductPage({
                   <span className="text-xs font-bold text-slate-500 block mb-2.5">
                     數據量
                   </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {availableData.map((opt) => (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() =>
-                          handleAttributeSelect("data_amount", opt)
+                  {availableData.length > 3 ? (
+                    <div className="relative">
+                      <select
+                        id="product-data-select"
+                        value={String(selectedAttributes["data_amount"] ?? "")}
+                        onChange={(e) =>
+                          handleAttributeSelect("data_amount", e.target.value)
                         }
-                        className={`px-4 py-3.5 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["data_amount"] === opt)}`}
+                        className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
+                          selectedAttributes["data_amount"]
+                            ? "bg-white text-slate-900 border-2 border-[#0A6CD0]"
+                            : "bg-white text-slate-500 border border-gray-200"
+                        }`}
                       >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
+                        <option value="" disabled>
+                          請選擇數據量
+                        </option>
+                        {availableData.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
+                        <MaterialIcon
+                          name="expand_more"
+                          size={20}
+                          className="text-slate-400"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {availableData.map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() =>
+                            handleAttributeSelect("data_amount", opt)
+                          }
+                          className={`px-4 py-3.5 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["data_amount"] === opt)}`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2605,7 +2667,7 @@ export default function ProductPage({
               </div>
               <p className="text-sm mb-5 -mt-3">
                 <a
-                  href="/login"
+                  href={buildLoginUrl(router.asPath)}
                   className="inline-flex items-center gap-1 font-semibold text-[#0A6CD0] hover:underline"
                 >
                   登入會員享更多優惠
@@ -2647,6 +2709,7 @@ export default function ProductPage({
               </p>
 
               {/* CTA：加入購物車（主）＋ 立即購買（次） */}
+              <div data-product-buy-cta>
               <button
                 type="button"
                 onClick={handleAddToCart}
@@ -2683,6 +2746,7 @@ export default function ProductPage({
               >
                 立即購買
               </button>
+              </div>
 
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-xs text-slate-400">分享商品</span>
@@ -2808,7 +2872,7 @@ export default function ProductPage({
               </div>
               <p className="text-sm mb-5 -mt-2">
                 <a
-                  href="/login"
+                  href={buildLoginUrl(router.asPath)}
                   className="inline-flex items-center gap-1 font-semibold hover:underline"
                   style={{ color: ANKER_BLUE }}
                 >
@@ -2987,20 +3051,53 @@ export default function ProductPage({
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-3">
                     數據量
                   </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {availableData.map((opt) => (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() =>
-                          handleAttributeSelect("data_amount", opt)
+                  {availableData.length > 3 ? (
+                    <div className="relative">
+                      <select
+                        id="product-data-select-partner"
+                        value={String(selectedAttributes["data_amount"] ?? "")}
+                        onChange={(e) =>
+                          handleAttributeSelect("data_amount", e.target.value)
                         }
-                        className={`px-4 py-3 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["data_amount"] === opt)}`}
+                        className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
+                          selectedAttributes["data_amount"]
+                            ? "bg-white text-slate-900 border-2 border-[#00befa]"
+                            : "bg-white text-slate-500 border border-gray-200"
+                        }`}
                       >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
+                        <option value="" disabled>
+                          請選擇數據量
+                        </option>
+                        {availableData.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
+                        <MaterialIcon
+                          name="expand_more"
+                          size={20}
+                          className="text-slate-400"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {availableData.map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() =>
+                            handleAttributeSelect("data_amount", opt)
+                          }
+                          className={`px-4 py-3 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["data_amount"] === opt)}`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -3171,7 +3268,7 @@ export default function ProductPage({
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3" data-product-buy-cta>
                 <button
                   type="button"
                   onClick={handleAddToCart}
@@ -3235,5 +3332,126 @@ export default function ProductPage({
         </div>
       </div>
     </PageShell>
+
+      {/* 滾過頁內購買區後才出現：規格選擇 + 立即購買（層級低於「我的 eSIM」） */}
+      {showStickyBuy && (
+        <div
+          className="fixed inset-x-0 z-[80] md:hidden border-t border-gray-300 bg-white"
+          style={{ bottom: 32 }}
+        >
+          <div className="mx-auto max-w-lg px-3 pt-2.5 pb-2 space-y-2">
+            <div
+              className={`grid gap-1.5 ${
+                [
+                  availableCarriers.length > 0,
+                  availableDays.length > 0,
+                  availableData.length > 0,
+                ].filter(Boolean).length >= 3
+                  ? "grid-cols-3"
+                  : "grid-cols-2"
+              }`}
+            >
+              {availableCarriers.length > 0 && (
+                <label className="min-w-0">
+                  <span className="sr-only">電信商</span>
+                  <select
+                    value={String(selectedAttributes.telecom ?? "")}
+                    onChange={(e) =>
+                      handleAttributeSelect("telecom", e.target.value)
+                    }
+                    className="w-full h-9 rounded-lg border border-slate-200 bg-white pl-2 pr-6 text-[11px] font-semibold text-slate-800 appearance-none"
+                  >
+                    <option value="" disabled>
+                      電信商
+                    </option>
+                    {availableCarriers.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {formatTelecomLabel(opt)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {availableDays.length > 0 && (
+                <label className="min-w-0">
+                  <span className="sr-only">天數</span>
+                  <select
+                    value={String(selectedAttributes.days ?? "")}
+                    onChange={(e) =>
+                      handleAttributeSelect("days", e.target.value)
+                    }
+                    className="w-full h-9 rounded-lg border border-slate-200 bg-white pl-2 pr-6 text-[11px] font-semibold text-slate-800 appearance-none"
+                  >
+                    <option value="" disabled>
+                      天數
+                    </option>
+                    {availableDays.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt} 天
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {availableData.length > 0 && (
+                <label className="min-w-0">
+                  <span className="sr-only">數據量</span>
+                  <select
+                    value={String(selectedAttributes.data_amount ?? "")}
+                    onChange={(e) =>
+                      handleAttributeSelect("data_amount", e.target.value)
+                    }
+                    className="w-full h-9 rounded-lg border border-slate-200 bg-white pl-2 pr-6 text-[11px] font-semibold text-slate-800 appearance-none"
+                  >
+                    <option value="" disabled>
+                      數據
+                    </option>
+                    {availableData.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[10px] text-slate-500">
+                  {choiceSummary || product.name}
+                </p>
+                <p className="text-[15px] font-black text-slate-900">
+                  {displayTotal != null
+                    ? `NT$${Number(displayTotal).toLocaleString()}`
+                    : displayPrice != null
+                      ? `NT$${Number(displayPrice).toLocaleString()}`
+                      : "請選規格"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={!canPurchase}
+                className="h-11 shrink-0 rounded-full px-5 text-[13px] font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                style={
+                  canPurchase
+                    ? { background: isPartnerShell ? ANKER_BLUE : PRODUCT_BLUE }
+                    : undefined
+                }
+              >
+                {canPurchase ? "立即購買" : "請選規格"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 預留底部空間 */}
+      <div
+        className={`md:hidden ${showStickyBuy ? "h-[132px]" : "h-8"}`}
+        aria-hidden
+      />
+    </>
   );
 }

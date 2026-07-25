@@ -44,8 +44,8 @@ export default function FeaturedCountryCard({
       href={`/product/${country.slug}`}
       onClick={onNavigate}
       className={[
-        "group flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm",
-        "hover:shadow-md hover:border-[#0A6CD0]/30 transition-all duration-200 overflow-hidden shrink-0",
+        "flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm",
+        "overflow-hidden shrink-0",
         compact ? "w-[200px]" : "w-[220px] sm:w-[240px]",
       ].join(" ")}
     >
@@ -55,7 +55,7 @@ export default function FeaturedCountryCard({
           <img
             src={country.imageSrc}
             alt={country.name}
-            className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+            className="w-full h-full object-cover"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">

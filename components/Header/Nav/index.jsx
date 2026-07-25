@@ -6,6 +6,7 @@ import styles from "./style.module.scss";
 import { motion } from "framer-motion";
 import { links, footerLinks } from "./data";
 import { perspective, slideIn } from "./anim";
+import { buildLoginUrl } from "../../../lib/authRedirect";
 
 const imgAnim = {
   initial: { width: 0 },
@@ -93,7 +94,7 @@ export default function Nav() {
           </div>
         ) : (
           <button
-            onClick={() => router.push("/login")}
+            onClick={() => router.push(buildLoginUrl(router.asPath))}
             className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded"
           >
             登入 / 註冊

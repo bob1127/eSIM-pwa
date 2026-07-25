@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/router";
 import { useUser } from "./context/UserContext";
+import { buildLoginUrl } from "../lib/authRedirect";
 import {
   pushLog,
   pushError,
@@ -30,6 +32,7 @@ export default function PushButton({
   requireLogin = false,
   theme = "default",
 }) {
+  const router = useRouter();
   const { token, user } = useUser();
 
   const [status, setStatus] = useState("idle"); // idle | warming | loading | subscribed | unsupported | error
@@ -101,6 +104,7 @@ export default function PushButton({
     if (requireLogin && !token) {
       addLog("❌ 未登入");
       alert("請先登入會員，才能開啟流量提醒通知喔！");
+      router.push(buildLoginUrl(router.asPath));
       return;
     }
 

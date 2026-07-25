@@ -51,14 +51,14 @@ function CategoryProductCard({ product, domain }) {
   const countryBadge = product.countryLabel || null;
 
   return (
-    <div className="group flex flex-col">
+    <div className="flex flex-col">
       <Link href={href} className="block relative aspect-square bg-[#f3f3f3] overflow-hidden">
         {product.image ? (
           <Image
             src={product.image}
             alt={product.name}
             fill
-            className="object-contain p-5 transition-transform duration-500 group-hover:scale-[1.04]"
+            className="object-contain p-5"
             sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 20vw"
           />
         ) : (
@@ -79,7 +79,7 @@ function CategoryProductCard({ product, domain }) {
       </Link>
 
       <h3 className="mt-3 text-[13px] sm:text-[14px] font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.5rem]">
-        <Link href={href} className="hover:text-[#0A6CD0] transition-colors">
+        <Link href={href} className="text-slate-900">
           {product.name}
         </Link>
       </h3>
@@ -87,7 +87,7 @@ function CategoryProductCard({ product, domain }) {
       <div className="mt-3 flex gap-2">
         <Link
           href={href}
-          className="flex-1 inline-flex items-center justify-center min-h-[40px] border border-[#0A6CD0] text-[#0A6CD0] text-[12px] sm:text-[13px] font-bold hover:bg-[#0A6CD0] hover:text-white transition-colors px-2"
+          className="flex-1 inline-flex items-center justify-center min-h-[40px] border border-[#0A6CD0] text-[#0A6CD0] text-[12px] sm:text-[13px] font-bold px-2"
         >
           {price > 0 ? `NT$${price.toLocaleString()} 起` : "查看方案"}
         </Link>

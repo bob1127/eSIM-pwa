@@ -349,11 +349,10 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4, delay: index * 0.04 }}
-                      className="group"
                     >
                       <Link href={productLink} className="block">
-                        <div className="card overflow-hidden p-3 bg-white border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all">
-                          <div className="relative w-full aspect-[3/4] mb-3">
+                        <div className="card overflow-hidden p-3 bg-white border border-slate-100">
+                          <div className="relative w-full aspect-[3/4] mb-3 overflow-hidden">
                             <SafeImage
                               src={productImage}
                               alt={product.name}
@@ -362,7 +361,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                               unoptimized={shouldBypassImageOptimization(
                                 productImage,
                               )}
-                              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                              className="object-cover"
                             />
                           </div>
                           <span className="font-bold text-sm text-slate-800 block mb-1 line-clamp-2 min-h-[40px]">

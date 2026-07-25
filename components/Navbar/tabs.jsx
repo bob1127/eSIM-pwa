@@ -7,9 +7,11 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import MenuToggle from "../../components/Header/index";
 import { useRouter } from "next/router";
+import { buildLoginUrl } from "../../lib/authRedirect";
 
 export const SlideTabsExample = () => {
   const router = useRouter();
+  const loginHref = buildLoginUrl(router.asPath);
 
   // Mobile 選單與滾動狀態
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -166,7 +168,7 @@ export const SlideTabsExample = () => {
                         </button>
                       </>
                     ) : (
-                      <Link href="/login" className="flex items-center gap-2">
+                      <Link href={loginHref} className="flex items-center gap-2">
                         <span className="text-sm">登入 / Account</span>
                         <img
                           src="/images/0721_0.jpg"
@@ -227,7 +229,7 @@ export const SlideTabsExample = () => {
                 </>
               ) : (
                 <Link
-                  href="/login"
+                  href={loginHref}
                   className="px-3 py-1 bg-white text-[#3b57ff] rounded hover:bg-gray-100 transition"
                   onClick={() => setIsMenuOpen(false)}
                 >

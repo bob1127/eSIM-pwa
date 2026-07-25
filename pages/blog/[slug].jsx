@@ -10,9 +10,13 @@ import {
   fetchWpPostBySlug,
   fetchWpPosts,
   fetchWpCategories,
+  resolveWpBannerImage,
+  ensureWpPostFeaturedMedia,
   normalizeWpAssetUrl,
   buildBlogCategoryMaps,
   classifyBlogPost,
+  slimWpPostCard,
+  slimWpPostForPage,
 } from "../../lib/wordpress";
 import { useUser } from "../../components/context/UserContext";
 import {
@@ -28,6 +32,7 @@ import MediaGalleryLightbox, {
 } from "../../components/MediaGalleryLightbox";
 import ArticleBlogPostLayout from "../../components/Blog/ArticleBlogPostLayout";
 import WpArticleBody from "../../components/Blog/WpArticleBody";
+import { buildLoginUrl } from "../../lib/authRedirect";
 
 // --- 🔧 工具函式：去除 HTML 標籤 (用於 SEO Description) ---
 function stripHtml(html) {
@@ -232,7 +237,7 @@ export default function PostPage({
 
   const handleToggleLike = async (reviewId, isLiked) => {
     if (!user) {
-      router.push("/login");
+      router.push(buildLoginUrl(router.asPath));
       return;
     }
     try {
@@ -266,18 +271,8 @@ export default function PostPage({
 
   // 🌟 處理 SEO 資訊
   const yoast = post.yoast_head_json || {};
-  // 🌟 處理首圖 Banner：優先抓取精選圖片 -> 備案抓內文第一張圖 -> 預設圖片
-  let bannerImage = "/images/placeholder.jpg";
-  if (post._embedded?.["wp:featuredmedia"]?.[0]?.source_url) {
-    bannerImage = normalizeWpAssetUrl(
-      post._embedded["wp:featuredmedia"][0].source_url,
-    );
-  } else {
-    const firstImageMatch = post.content?.rendered?.match(
-      /<img[^>]+src=["']([^"']+)["']/i,
-    );
-    if (firstImageMatch) bannerImage = normalizeWpAssetUrl(firstImageMatch[1]);
-  }
+  // 左圖 / Banner：優先 WordPress 精選圖片（Featured Image）
+  const bannerImage = resolveWpBannerImage(post);
 
   // 日期格式化
   const postDate = new Date(post.date);
@@ -433,7 +428,7 @@ export default function PostPage({
                     <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[#e5e5e5] pb-4 gap-4">
                       <div className="flex items-center gap-4 text-[13px] text-[#666]">
                         <span className="font-medium text-[#333]">
-                          WMESIM Ｊ編
+                          站在你J編
                         </span>
                         <span>{formattedDate}</span>
                       </div>
@@ -704,7 +699,7 @@ export default function PostPage({
                         登入後即可留下您的旅遊心得與評分
                       </p>
                       <Link
-                        href={`/login?redirect=/blog/${post?.slug}`}
+                        href={buildLoginUrl(router.asPath || `/blog/${post?.slug}`)}
                         className="inline-flex items-center gap-2 bg-[#1f57b8] text-white px-6 py-2.5 text-[13px] font-bold tracking-widest hover:bg-[#174da3] transition-colors"
                       >
                         立即登入 →
@@ -1165,16 +1160,17 @@ export async function getStaticProps({ params }) {
   }
 
   try {
-    const post = await fetchWpPostBySlug(slug);
+    let post = await fetchWpPostBySlug(slug);
     if (!post) {
       return { notFound: true };
     }
+    post = await ensureWpPostFeaturedMedia(post);
 
     const categories = await fetchWpCategories();
     const maps = buildBlogCategoryMaps(categories);
     const classified = classifyBlogPost(post, maps);
 
-    const relatedPosts = classified.isArticle
+    const relatedRaw = classified.isArticle
       ? await fetchRelatedWpPostsForArticle(post, maps, 24)
       : await fetchRelatedWpPosts(post, 4);
 
@@ -1188,8 +1184,8 @@ export async function getStaticProps({ params }) {
 
     return {
       props: {
-        post,
-        relatedPosts,
+        post: slimWpPostForPage(post),
+        relatedPosts: relatedRaw.map(slimWpPostCard).filter(Boolean),
         isArticle: !!classified.isArticle,
         articleCountry:
           classified.articleCountry || classified.knowledgeCountry || null,

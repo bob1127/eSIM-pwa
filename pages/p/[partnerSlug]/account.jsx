@@ -11,6 +11,7 @@ import {
   ClockIcon,
   CreditCardIcon,
 } from "@heroicons/react/24/outline";
+import { buildLoginUrl } from "@/lib/authRedirect";
 
 // 狀態標籤轉換工具
 const statusConfig = (status) => {
@@ -59,7 +60,7 @@ export default function PartnerCustomerAccount({ store }) {
       const currentUser = supaUser || session?.user;
 
       if (!currentUser) {
-        router.push("/login");
+        router.push(buildLoginUrl(router.asPath));
         return;
       }
 

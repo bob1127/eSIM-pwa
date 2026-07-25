@@ -42,9 +42,11 @@ export default function Home() {
           <div className="w-full lg:w-[85%] lg:border-r border-gray-200 h-full flex justify-center items-center">
             <div className="flex flex-col p-6 lg:p-10 w-full">
               {/* 標題區域 */}
-              <h1 className="text-4xl lg:text-6xl font-bold mb-2">Jeko eSIM</h1>
+              <h1 className="text-4xl lg:text-6xl font-bold mb-2">
+                Jeko 接口 eSIM
+              </h1>
               <p className="text-xl lg:text-2xl font-bold mb-4">
-                您出國旅遊的好選擇，各種eSIM方案
+                成為你與世界的接口
               </p>
               <div className="mb-6">
                 <span className="text-gray-900 font-bold text-lg lg:text-2xl block lg:inline">
@@ -55,17 +57,16 @@ export default function Home() {
               {/* 內文區域：手機垂直堆疊，桌機水平排列 */}
               <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 max-w-[1500px]">
                 <div className="flex-1 text-stone-800 text-[16px] tracking-widest leading-relaxed">
-                  我們是一家專注於全球行動連線解決方案的公司，致力於以 eSIM 技術
-                  打破地域界限，讓使用者在世界各地都能輕鬆上網。
-                  透過與多國電信合作，我們提供 彈性方案、即時啟用、透明價格
-                  的數據服務，讓旅行與通訊更自由、更智能。
-                  我們相信，網路不只是連線工具，更是世界互通的橋樑。
-                  讓每一段旅程、每一次溝通，都無縫順暢，這就是我們存在的使命。
+                  Jeko
+                  接口 eSIM，成為你與世界的接口——我們專注於全球行動連線，
+                  以 eSIM
+                  技術打破地域界限，讓你在世界各地都能輕鬆上網。透過與多國電信合作，提供
+                  彈性方案、即時啟用、透明價格
+                  的數據服務，讓旅行與通訊更自由、更智能。網路不只是連線工具，更是通往世界的接口；讓每一段旅程、每一次溝通都無縫順暢，這就是我們的使命。
                 </div>
                 <div className="flex-1 text-stone-800 text-[16px] tracking-widest leading-relaxed">
-                  無論你身處何地，連線只需一瞬。 我們以創新的 eSIM
-                  技術，讓旅人、商務人士與數位生活家，輕鬆擁抱全球高速網路。
-                  免換卡、免等待、免煩惱——世界，從此隨手可連。
+                  無論你身處何地，連線只需一瞬。Jeko 接口 eSIM
+                  以創新技術，讓旅人、商務人士與數位生活家，輕鬆擁抱全球高速網路。免換卡、免等待、免煩惱——世界，從此隨手可連。
                 </div>
               </div>
             </div>

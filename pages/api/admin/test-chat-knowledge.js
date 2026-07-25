@@ -1,8 +1,14 @@
 /**
  * GET /api/admin/test-chat-knowledge?secret=<CRON_SECRET>
  * 診斷：顯示 J寶 知識庫現在能讀到什麼資料
+ * 可加 &q=關鍵字 &refresh=1
  */
 import { getSupabaseAdminServer } from "../../../lib/supabaseAdminServer";
+import {
+  fetchArticleKnowledgeByQuery,
+  clearArticleKnowledgeCache,
+  getArticleKnowledgeCacheInfo,
+} from "../../../lib/chatArticles";
 
 export default async function handler(req, res) {
   const secret = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
@@ -66,6 +72,24 @@ export default async function handler(req, res) {
     }
   } else {
     result.medusa = { skipped: "NEXT_PUBLIC_MEDUSA_BACKEND_URL 未設定" };
+  }
+
+  // ── 3. WordPress 文章知識庫（動態全量）──────────────────────────────
+  try {
+    if (req.query.refresh === "1") clearArticleKnowledgeCache();
+    const q = String(req.query.q || "飛中國 行動電源").trim();
+    const sample = await fetchArticleKnowledgeByQuery(q, 2);
+    result.wordpressArticles = {
+      cache: getArticleKnowledgeCacheInfo(),
+      sampleQuery: q,
+      hasRelevant: sample?.hasRelevant,
+      strongCoverage: sample?.strongCoverage,
+      topScore: sample?.topScore,
+      samplePreview: String(sample?.text || "").slice(0, 1200),
+      sampleLength: String(sample?.text || "").length,
+    };
+  } catch (e) {
+    result.wordpressArticles = { error: e.message };
   }
 
   return res.status(200).json(result);

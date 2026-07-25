@@ -214,12 +214,11 @@ const CategoryPage = ({ slug, categories, initialProducts }) => {
                       initial={{ opacity: 0, y: 40 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.05 }}
-                      className="group"
                     >
                       <Link
                         href={`/product/${product.slug}`}
                         prefetch={false}
-                        className="hover:scale-105 duration-200 block"
+                        className="block"
                       >
                         <div className="card overflow-hidden rounded-xl p-4 bg-white">
                           <SafeImage
@@ -230,7 +229,7 @@ const CategoryPage = ({ slug, categories, initialProducts }) => {
                             unoptimized={shouldBypassImageOptimization(
                               productImage,
                             )}
-                            className="w-full rounded-[30px] border-2 border-gray-300 group-hover:shadow-lg object-contain mb-3"
+                            className="w-full rounded-[30px] border-2 border-gray-300 object-contain mb-3"
                           />
                           <span className="font-bold text-[16px] block mb-1">
                             {product.name}

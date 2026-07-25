@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { buildLoginUrl } from "@/lib/authRedirect";
@@ -143,8 +143,11 @@ const fullMenuLinks = [
 export default function Navbar({ className }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isHomePage = isHomePath(pathname);
-  const loginHref = buildLoginUrl(pathname || "/");
+  const search = searchParams?.toString?.() || "";
+  const returnPath = search ? `${pathname}?${search}` : pathname;
+  const loginHref = buildLoginUrl(returnPath || "/account");
   const [mounted, setMounted] = useState(false);
 
   // --- UI 狀態管理 ---

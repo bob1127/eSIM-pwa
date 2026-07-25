@@ -21,7 +21,7 @@ function ProductCard({ product, domain }) {
   return (
     <Link
       href={href}
-      className="group flex flex-col bg-white border border-slate-100 hover:border-slate-200 transition-colors"
+      className="flex flex-col bg-white border border-slate-100"
     >
       <div className="relative aspect-square bg-[#f5f5f5] overflow-hidden">
         {product.image ? (
@@ -29,7 +29,7 @@ function ProductCard({ product, domain }) {
             src={product.image}
             alt={product.name}
             fill
-            className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
+            className="object-contain p-4"
             sizes="(max-width:640px) 50vw, 25vw"
           />
         ) : (
@@ -39,7 +39,7 @@ function ProductCard({ product, domain }) {
         )}
       </div>
       <div className="p-4 flex flex-col gap-1.5 flex-1">
-        <h3 className="text-[14px] font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#3B9EFF] transition-colors">
+        <h3 className="text-[14px] font-bold text-slate-900 leading-snug line-clamp-2">
           {product.name}
         </h3>
         {product.description ? (

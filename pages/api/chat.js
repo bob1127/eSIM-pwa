@@ -10,6 +10,12 @@ import {
 } from "../../lib/chatSecurity";
 import { fetchProductKnowledge, fetchProductCards } from "../../lib/chatProducts";
 import { fetchArticleKnowledgeByQuery } from "../../lib/chatArticles";
+import { fetchWebKnowledgeByQuery } from "../../lib/chatWebSearch";
+import {
+  fetchAffiliateKnowledge,
+  fetchAffiliateCards,
+} from "../../lib/chatAffiliate";
+import { fetchShopKnowledge, fetchShopCards } from "../../lib/chatShop";
 
 export const config = {
   api: {
@@ -23,12 +29,24 @@ export const config = {
 const BASE_SYSTEM_PROMPT = `你是 Jeko eSIM 的專屬 AI 旅行小幫手【J寶】。
 你具備旅行小幫手與網路連線專家的雙重身份。
 
-【回覆邏輯】
+【回覆邏輯｜正確性優先】
 1. 參考「對話歷史」提供連貫的回答。
-2. 知識來源優先：若使用者詢問方案、價格、國家上網，優先使用下方【最新商品資料庫】；若使用者詢問安裝、設定、教學、疑難排解，優先使用下方【最新文章知識庫（WordPress）】。禁止臆測或憑印象回答。
+2. 知識來源階層（必須遵守，禁止用訓練記憶瞎編名單／規定）：
+   A. 【商品資料庫】→ 方案、價格、國家 eSIM
+   B. 【Jeko 商城推薦｜/shop】→ 充電配件、旅行用品、3C 周邊；引導點聊天室卡片加入購物車或購買
+   C. 【Jeko 聯盟推薦｜Klook／KKday】→ 門票、交通票券、住宿飯店；必須使用列出的「購買連結」（已含分潤參數），可一併推薦
+   D. 【Jeko官網WP知識】→ 有強相關摘錄／FAQ 時，優先依此作答並附官網閱讀連結
+   E. 【網路資料】→ 僅當官網／聯盟／商城皆無強相關、且有提供網路來源時，才可依來源摘要作答並附來源網址
+   F. 若以上都沒有可用依據：明確說尚無法確認；禁止憑印象列出飯店或票券名單
+   G. 有商城或聯盟推薦時，回答結尾可簡短引導點卡片（Jeko 商城／合作夥伴）
 3. 專業優先：針對旅行問題提供具體建議（如：日本通關提 Visit Japan Web 的 QR Code）。
 4. 若使用者提供截圖或影片，先描述你看到的關鍵畫面（設定頁、錯誤訊息、訊號、QR 等），再逐步說明如何排除。
-5. 自然導購：在回答完問題後，才適度附上對應商品的購買連結。
+5. 【導購語氣｜極重要｜先幫再說】
+   - 先寫「基本實用資訊」（規格、注意事項、怎麼選），至少 2～4 句，讓客人覺得有被幫助。
+   - 再自然帶出可選商品；不要一開場就硬推價格與購買路徑。
+   - 若已提供【Jeko 商城推薦】：聊天室會顯示輪播卡片，文字中不要寫「購買：/shop/...」「售價：NT$…」這種清單硬推格式；結尾一句「下方卡片可直接查看或購買」即可。
+   - 若文字要附購買連結：只能貼知識庫列出的完整 https 網址；可用「購買：https://…」這種可點連結。
+   - 禁止把官網首頁（僅網域根路徑）當成商品購買連結。
 6. 語氣：專業、乾淨、親切，使用台灣繁體中文。
 7. 【Emoji 規範｜極重要】只允許使用花 emoji：🌼（或 🌸）。
    - 每則回覆最多使用 1～2 個花 emoji，放在開頭或結尾即可。
@@ -42,7 +60,8 @@ const BASE_SYSTEM_PROMPT = `你是 Jeko eSIM 的專屬 AI 旅行小幫手【J寶
    https://www.google.com/maps/search/?api=1&query=地點名稱
 3. query 請用該地點的正確中文或當地名稱；不同地點不可共用同一個連結。
 4. 若不確定地點是否存在，先說明不確定，並仍用「搜尋連結」格式。
-5. 除地圖搜尋連結、以及你明確知道的官方網址、商品資料庫提供的購買連結外，不要自行發明任何 http/https 連結。`;
+5. 可使用的 http/https 連結僅限：地圖搜尋連結、商品資料庫連結、Jeko 官網文章連結、【Jeko 商城推薦】列出的完整購買連結、【Jeko 聯盟推薦】列出的 Klook／KKday 購買連結、以及【網路資料】區塊明確列出的來源網址。禁止發明未列出的連結。
+6. 使用【網路資料】時，開頭簡短註明「以下依公開網頁整理，建議再向官方確認」。`;
 
 /** 允許的花 emoji；其他 emoji 一律移除 */
 const FLOWER_EMOJI = new Set(["🌼", "🌸", "🌻", "🌺", "💮", "🏵️"]);
@@ -310,13 +329,72 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 8. 拉取知識庫（商品 + WordPress 文章，皆有快取）────────────────
-    const [productKnowledge, articleKnowledge, productCards] = await Promise.all([
+    // ── 8. 知識庫：eSIM + 聯盟 + 官網文章 → 不足再用網路 ─────────────
+    const [
+      productKnowledge,
+      articleResult,
+      productCards,
+      affiliateKnowledge,
+      affiliateCards,
+      shopKnowledge,
+      shopCards,
+    ] = await Promise.all([
       fetchProductKnowledge(msgText),
       fetchArticleKnowledgeByQuery(msgText),
       fetchProductCards(msgText),
+      Promise.resolve(fetchAffiliateKnowledge(msgText)),
+      Promise.resolve(fetchAffiliateCards(msgText)),
+      Promise.resolve(fetchShopKnowledge(msgText)),
+      Promise.resolve(fetchShopCards(msgText)),
     ]);
-    const systemPrompt = `${BASE_SYSTEM_PROMPT}\n\n${productKnowledge}\n\n${articleKnowledge}`;
+
+    const articleKnowledge =
+      typeof articleResult === "string"
+        ? articleResult
+        : articleResult?.text || "";
+    const strongCoverage = Boolean(articleResult?.strongCoverage);
+    const hasAffiliate = Boolean(affiliateCards?.length);
+    const hasShop = Boolean(shopCards?.length);
+
+    // 官網文章不夠、且也沒有可推的聯盟／商城卡時，才補網路資料
+    let webKnowledge = "";
+    let webMeta = { usedWeb: false, provider: null };
+    if (!strongCoverage && !hasAffiliate && !hasShop && msgText) {
+      try {
+        const web = await fetchWebKnowledgeByQuery(msgText);
+        webKnowledge = web?.text || "";
+        webMeta = {
+          usedWeb: Boolean(web?.usedWeb),
+          provider: web?.provider || null,
+        };
+      } catch (e) {
+        console.error("[chat] web knowledge:", e?.message);
+      }
+    }
+
+    const mergedCards = Array.isArray(productCards) ? productCards : [];
+
+    const systemPrompt = [
+      BASE_SYSTEM_PROMPT,
+      productKnowledge,
+      shopKnowledge,
+      affiliateKnowledge,
+      articleKnowledge,
+      webKnowledge,
+      strongCoverage
+        ? "【本次來源】以 Jeko 官網文章為主；不要改用訓練記憶補充名單。"
+        : hasShop && hasAffiliate
+          ? "【本次來源】已提供商城與聯盟商品。請先寫實用說明，再引導點下方卡片；文字勿硬推價格清單。"
+          : hasShop
+            ? "【本次來源】已提供 Jeko 商城商品，聊天室會顯示輪播卡。請先寫基本實用說明，結尾輕提可參考下方卡片；勿在文字寫「購買：/路徑」「售價：NT$」硬推格式。若附連結只用知識庫完整 https 購買連結。"
+            : hasAffiliate
+              ? "【本次來源】已提供 Klook／KKday 聯盟商品；請優先推薦並列出購買連結（可計分潤）。聊天室會顯示同款卡片，請引導使用者點「查看詳情」。"
+              : webMeta.usedWeb
+                ? "【本次來源】官網／聯盟／商城無強相關，已提供【網路資料】；只能引用所列來源，並提醒向官方確認。"
+                : "【本次來源】官網／聯盟／商城無強相關且網路資料不足；請誠實說明無法確認，勿編造。",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
 
     let reply;
     let provider;
@@ -335,7 +413,20 @@ export default async function handler(req, res) {
       provider = "groq";
     }
 
-    return res.status(200).json({ reply, provider, productCards });
+    return res.status(200).json({
+      reply,
+      provider,
+      productCards: mergedCards,
+      affiliateCards: Array.isArray(affiliateCards) ? affiliateCards : [],
+      shopCards: Array.isArray(shopCards) ? shopCards : [],
+      knowledge: {
+        siteStrong: strongCoverage,
+        affiliateUsed: hasAffiliate,
+        shopUsed: hasShop,
+        webUsed: webMeta.usedWeb,
+        webProvider: webMeta.provider,
+      },
+    });
   } catch (error) {
     console.error("chat api error:", error);
     // 對外不洩漏內部錯誤細節

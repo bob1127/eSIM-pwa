@@ -39,12 +39,11 @@ const ParallaxImage = ({ src, alt, title, subtitle = "NEWS" }) => {
         currentY.current = lerp(currentY.current, targetY.current, 0.1);
 
         if (Math.abs(currentY.current - targetY.current) > 0.01) {
-          // 視差移動與放大
-          imageRef.current.style.transform = `translateY(${currentY.current}px) scale(1.15)`;
+          // 僅輕微視差位移，不再 scale 放大（避免精選圖變糊）
+          imageRef.current.style.transform = `translateY(${currentY.current}px)`;
         }
       } else if (imageRef.current && isMobile) {
-        // 手機版維持不動
-        imageRef.current.style.transform = "translateY(0) scale(1.05)";
+        imageRef.current.style.transform = "translateY(0)";
       }
       rafId.current = requestAnimationFrame(animate);
     };
@@ -61,21 +60,21 @@ const ParallaxImage = ({ src, alt, title, subtitle = "NEWS" }) => {
   return (
     <div
       ref={containerRef}
-      // 【修改處】移除了 mt-[80px] md:mt-[100px]，並將電腦版高度改為 100vh 完美滿版
       className="relative w-full h-[70vh] md:h-[100vh] flex flex-col md:flex-row"
     >
       {/* =========================================
-          左側：視差圖片區塊
+          左側：視差圖片區塊（原圖、不壓縮放大）
       ========================================= */}
       <div className="relative w-full h-1/2 md:h-full md:w-1/2 overflow-hidden bg-[#222]">
         <img
           ref={imageRef}
           src={src}
           alt={alt}
-          className="absolute top-0 left-0 w-full h-full object-cover object-center block origin-center"
+          decoding="async"
+          className="absolute top-0 left-0 w-full h-full object-cover object-center block"
           style={{
             willChange: "transform",
-            transform: isMobile ? "scale(1.05)" : "translateY(0) scale(1.15)",
+            transform: "translateY(0)",
           }}
         />
       </div>

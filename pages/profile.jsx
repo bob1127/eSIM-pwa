@@ -1,14 +1,15 @@
 import { useAuth } from "../components/AuthProvider";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
+import { buildLoginUrl } from "../lib/authRedirect";
 
 const ProfilePage = () => {
   const { user, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!user) router.push("/login");
-  }, [user]);
+    if (!user) router.push(buildLoginUrl("/profile"));
+  }, [user, router]);
 
   if (!user) return null;
 

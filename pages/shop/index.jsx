@@ -10,6 +10,11 @@ import ShopCartSidebar from "../../components/Shop/ShopCartSidebar";
 import Footer from "../../components/ui/footer.jsx";
 import { useCart } from "../../components/context/CartContext";
 import { useRouter } from "next/router";
+import {
+  PRODUCT_PDP,
+  PRODUCT_TABS,
+  SHOP_TRAVEL_GEAR as TRAVEL_GEAR,
+} from "../../data/shop/catalog";
 
 const CONTAINER = "max-w-[1680px] mx-auto px-6 lg:px-10";
 
@@ -26,172 +31,6 @@ const PROMO_CARDS = [
     sub: "輕量、防水、好收納",
     img: "https://www.bitplayinc.com/cdn/shop/files/Slider_s4_2000x.jpg?v=1740538574",
     href: "/shop/product/usb-c-cable-240w",
-  },
-];
-
-const PRODUCT_PDP = "/shop/product/usb-c-cable-240w";
-
-// ── Section 2：精選商品（Tab + 輪播）— 圖來自 /images/shop/01 去背圖 ──
-const SHOP_01_IMGS = [
-  "/images/shop/01/p1.avif",
-  "/images/shop/01/p2.avif",
-  "/images/shop/01/p3.avif",
-  "/images/shop/01/p4.webp",
-  "/images/shop/01/p5.webp",
-];
-
-const PRODUCT_TABS = {
-  new: [
-    {
-      title: "65W 氮化鎵旅行充電器",
-      desc: "折疊插頭 · 全球電壓適用",
-      price: 680,
-      original: 880,
-      img: SHOP_01_IMGS[0],
-      href: PRODUCT_PDP,
-    },
-    {
-      title: "日本 5G eSIM 吃到飽（7天）",
-      desc: "即買即用 · QR Code 啟用",
-      price: 299,
-      original: 399,
-      img: SHOP_01_IMGS[1],
-      href: PRODUCT_PDP,
-    },
-    {
-      title: "全球通用轉接插座",
-      desc: "150+ 國家適用",
-      price: 350,
-      original: null,
-      img: SHOP_01_IMGS[2],
-      href: PRODUCT_PDP,
-    },
-    {
-      title: "ANC 降噪無線耳機",
-      desc: "出差旅行必備",
-      price: 1280,
-      original: 1680,
-      img: SHOP_01_IMGS[3],
-      href: PRODUCT_PDP,
-    },
-    {
-      title: "MagSafe 15W 無線充電板",
-      desc: "磁吸對位 · 快速充電",
-      price: 990,
-      original: 1290,
-      img: SHOP_01_IMGS[4],
-      href: PRODUCT_PDP,
-    },
-    {
-      title: "旅行盥洗收納包",
-      desc: "防水材質 · 吊掛設計",
-      price: 320,
-      original: null,
-      img: SHOP_01_IMGS[0],
-      href: PRODUCT_PDP,
-    },
-  ],
-  bestsellers: [
-    {
-      title: "10000mAh USB-C 行動電源",
-      desc: "雙向快充 · 輕薄好攜帶",
-      price: 790,
-      original: 990,
-      img: SHOP_01_IMGS[1],
-      href: PRODUCT_PDP,
-    },
-    {
-      title: "韓國 5G eSIM（5天）",
-      desc: "不限速 · 即開即用",
-      price: 199,
-      original: 269,
-      img: SHOP_01_IMGS[2],
-      href: PRODUCT_PDP,
-    },
-    {
-      title: "旅行收納整理包套組",
-      desc: "分層收納 · 防水材質",
-      price: 450,
-      original: null,
-      img: SHOP_01_IMGS[3],
-      href: PRODUCT_PDP,
-    },
-    {
-      title: "防窺螢幕保護貼 iPhone",
-      desc: "防刮耐磨 · 完美貼合",
-      price: 280,
-      original: null,
-      img: SHOP_01_IMGS[4],
-      href: PRODUCT_PDP,
-    },
-    {
-      title: "車用 PD 快充充電器",
-      desc: "雙孔輸出 · 過熱保護",
-      price: 480,
-      original: 580,
-      img: SHOP_01_IMGS[0],
-      href: PRODUCT_PDP,
-    },
-    {
-      title: "隱形腰包 防扒設計",
-      desc: "貼身收納 · 出國安心",
-      price: 390,
-      original: null,
-      img: SHOP_01_IMGS[1],
-      href: PRODUCT_PDP,
-    },
-  ],
-};
-
-// ── Section 2b：Travel Gear 輪播（包袋／攝影配件） ───────────────
-const TRAVEL_GEAR = [
-  {
-    title: "Lime Green Everyday Backpack",
-    desc: "輕量防水 · 日常與戶外皆宜",
-    price: 1680,
-    original: 2180,
-    img: "https://png.pngtree.com/png-vector/20251101/ourlarge/pngtree-stylish-lime-green-backpack-for-everyday-carry-and-outdoor-adventures-featuring-png-image_17882412.webp",
-    href: PRODUCT_PDP,
-  },
-  {
-    title: "Slim Laptop Briefcase",
-    desc: "極簡輪廓 · 商務出差首選",
-    price: 2480,
-    original: 2980,
-    img: "https://png.pngtree.com/png-vector/20230831/ourmid/pngtree-3d-render-laptop-bag-perspective-view-png-image_9192010.png",
-    href: PRODUCT_PDP,
-  },
-  {
-    title: "tomtoc Laptop Sleeve",
-    desc: "防震內襯 · 筆電配件好收納",
-    price: 990,
-    original: 1290,
-    img: "https://shoplineimg.com/55c37526e37ec6fc5d000002/64a64a983c7aa7001de01a5f/900x.png",
-    href: PRODUCT_PDP,
-  },
-  {
-    title: "Insta360 × PGYTECH Mini Tripod",
-    desc: "手持／腳架兩用 · 運動相機必備",
-    price: 890,
-    original: 1090,
-    img: "https://res.insta360.com/static/854ed74b1296e5db844f4accf2779a95/Main.png",
-    href: PRODUCT_PDP,
-  },
-  {
-    title: "Insta360 Remote Grip",
-    desc: "遙控握把 · 自拍延長更穩",
-    price: 1190,
-    original: 1490,
-    img: "https://www.esentra.com.tw/wp-content/uploads/2025/06/e1e07f3dcc4a6886188a8f58f862ac6a.jpg",
-    href: PRODUCT_PDP,
-  },
-  {
-    title: "Pela Eco Phone Case",
-    desc: "永續材質 · 輕薄防摔保護",
-    price: 690,
-    original: 890,
-    img: "https://shoplineimg.com/5fe41f7ec43d7f0018039a42/68c3e88af795900012f01d60/800x.png",
-    href: PRODUCT_PDP,
   },
 ];
 
@@ -214,7 +53,7 @@ function PromoCard({ card }) {
         src={card.img}
         alt={card.title}
         fill
-        className="object-cover transition-transform duration-500 group-hover:scale-105"
+        className="object-cover"
         sizes="(max-width: 768px) 100vw, 50vw"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
@@ -263,7 +102,7 @@ function ProductCard({ product, onDetail }) {
           src={product.img}
           alt={product.title}
           fill
-          className="object-contain p-8 hover:scale-105 transition-transform duration-300"
+          className="object-contain p-8"
           sizes="(max-width: 768px) 50vw, 25vw"
         />
       </button>
@@ -759,7 +598,7 @@ export default function ShopPage() {
               src={DISCOVER_BANNER.img}
               alt={DISCOVER_BANNER.title}
               fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className="object-cover"
               sizes="100vw"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />

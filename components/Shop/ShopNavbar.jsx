@@ -581,7 +581,7 @@ function MegaMenu({ mega, visible }) {
                     src={p.img}
                     alt={p.title}
                     fill
-                    className="object-contain group-hover:scale-105 transition-transform duration-200"
+                    className="object-contain"
                   />
                 </div>
                 <div className="min-w-0 flex-1">

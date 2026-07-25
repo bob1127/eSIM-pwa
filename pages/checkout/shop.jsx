@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/components/context/CartContext";
 import { useUser } from "@/components/context/UserContext";
+import { buildLoginUrl } from "@/lib/authRedirect";
 import { ChevronRight, Tag, Shield, Truck, RotateCcw } from "lucide-react";
 
 // ── 步驟指示器 ──────────────────────────────────────────────────
@@ -532,7 +533,7 @@ export default function ShopCheckoutPage() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-bold text-slate-800">聯絡資料</h2>
                 <Link
-                  href="/login"
+                  href={buildLoginUrl(router.asPath || "/checkout/shop")}
                   className="text-[12px] text-blue-600 hover:underline"
                 >
                   已有帳號？登入

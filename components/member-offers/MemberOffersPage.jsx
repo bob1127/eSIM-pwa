@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { buildLoginUrl } from "@/lib/authRedirect";
 import { motion } from "framer-motion";
 import MaterialIcon from "@/components/MaterialIcon";
 import {
@@ -82,7 +83,7 @@ export default function MemberOffersPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/login"
+                href={buildLoginUrl("/member-offers")}
                 className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-[#0A6CD0] hover:bg-white/95 transition"
               >
                 登入／註冊領優惠

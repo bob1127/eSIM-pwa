@@ -558,9 +558,11 @@ export default function ArticleBlogPostLayout({
 
             <ShareBar url={shareUrl} title={titleText} />
 
-            {/* Ｊ編 / 作者盒 */}
+            {/* 站在你J編 / 作者盒 */}
             <div className="mt-10 border border-[#e5e5e5] rounded-sm p-5 md:p-6">
-              <p className="text-[11px] text-[#999] mb-4 tracking-wide">Ｊ編</p>
+              <p className="text-[11px] text-[#999] mb-4 tracking-wide">
+                站在你J編
+              </p>
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 rounded-full bg-[#0A6CD0] text-white flex items-center justify-center text-[13px] font-black shrink-0">
                   JEKO
@@ -571,7 +573,9 @@ export default function ArticleBlogPostLayout({
                       <p className="text-[15px] font-bold text-[#111]">
                         Jeko eSIM
                       </p>
-                      <p className="text-[12px] text-[#888] mt-0.5">Ｊ編</p>
+                      <p className="text-[12px] text-[#888] mt-0.5">
+                        站在你J編
+                      </p>
                     </div>
                     <div className="flex items-center gap-3 text-[#555] shrink-0">
                       <a
@@ -612,7 +616,7 @@ export default function ArticleBlogPostLayout({
                 </div>
               </div>
               <p className="mt-5 text-[13px] text-[#666] leading-[1.9]">
-                Jeko eSIM Ｊ編專注旅遊通訊與現地生活情報，整理各國 eSIM
+                Jeko eSIM 站在你J編專注旅遊通訊與現地生活情報，整理各國 eSIM
                 方案、交通票券與實用攻略，協助旅客輕鬆出國、無縫連線。
               </p>
             </div>

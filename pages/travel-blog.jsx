@@ -5,90 +5,73 @@ import Layout from "./Layout";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import Carousel from "../components/EmblaCarousel06/index";
-import { fetchWpPosts } from "../lib/wordpress";
+import { fetchWpPosts, normalizeWpAssetUrl } from "../lib/wordpress";
 
-// 🔧 1. 擷取文章內第一張圖片 URL (備用方案)
+function stripHtml(html) {
+  if (!html) return "";
+  return html.replace(/<[^>]*>?/gm, "").replace(/&#\d+;/gm, "");
+}
+
 function extractFirstImageFromContent(content) {
   if (!content) return null;
   const match = content.match(/<img[^>]+src=["']([^"']+)["']/i);
   return match ? match[1] : null;
 }
 
-// 🔧 2. 去除 HTML 標籤 (用於 Carousel 顯示純文字摘要，避免破版)
-function stripHtml(html) {
-  if (!html) return "";
-  return html.replace(/<[^>]*>?/gm, "").replace(/&#\d+;/gm, "");
+/** build 時就把 WP 全文壓成列表卡，避免 /travel-blog page data ~1MB */
+function mapWpPostToTravelCard(post) {
+  const dateObj = new Date(post.date);
+  const postDate = `${dateObj.getFullYear()}.${String(dateObj.getMonth() + 1).padStart(2, "0")}.${String(dateObj.getDate()).padStart(2, "0")}`;
+
+  let tags = ["最新消息"];
+  const wpTerms = post._embedded?.["wp:term"]?.flat?.() || [];
+  if (wpTerms.length > 0) {
+    tags = wpTerms.slice(0, 3).map((term) => term.name).filter(Boolean);
+  }
+
+  const featureImageUrl =
+    post._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
+  const inlineImage = extractFirstImageFromContent(post.content?.rendered);
+  const excerptHTML = post.excerpt?.rendered || "";
+  const title = post.title?.rendered || "";
+
+  return {
+    id: String(post.id),
+    date: postDate,
+    tags,
+    title,
+    excerptHTML,
+    plainExcerpt: stripHtml(excerptHTML).slice(0, 180),
+    searchText: `${title} ${tags.join(" ")} ${stripHtml(excerptHTML)}`.slice(
+      0,
+      500,
+    ),
+    image:
+      normalizeWpAssetUrl(featureImageUrl) ||
+      normalizeWpAssetUrl(inlineImage) ||
+      "/images/blog/TAIWAN__thumb-_20250304.webp",
+    slug: post.slug,
+  };
 }
 
 export default function InfoPage({ posts = [] }) {
-  // 🌟 1. 定義 Tabs 分類
   const tabs = ["全部", "日本", "韓國", "泰國", "馬來西亞", "中國/香港"];
   const [activeTab, setActiveTab] = useState("全部");
   const [activeId, setActiveId] = useState(null);
 
-  // 🌟 2. 將 WordPress 抓下來的真實文章，轉換為統一格式
-  const wpItems = useMemo(() => {
-    if (!posts || posts.length === 0) return [];
+  const wpItems = useMemo(() => (Array.isArray(posts) ? posts : []), [posts]);
 
-    return posts.map((post) => {
-      // 日期格式化
-      const dateObj = new Date(post.date);
-      const postDate = `${dateObj.getFullYear()}.${String(dateObj.getMonth() + 1).padStart(2, "0")}.${String(dateObj.getDate()).padStart(2, "0")}`;
-
-      // 嘗試從 WP 抓取分類或標籤
-      let tags = ["最新消息"];
-      if (post._embedded && post._embedded["wp:term"]) {
-        const wpTerms = post._embedded["wp:term"].flat();
-        if (wpTerms.length > 0) {
-          tags = wpTerms.slice(0, 3).map((term) => term.name);
-        }
-      }
-
-      // 🚀 關鍵修改：優先抓取 WordPress 的「特色圖片」(Featured Image)
-      let featureImageUrl = null;
-      if (
-        post._embedded &&
-        post._embedded["wp:featuredmedia"] &&
-        post._embedded["wp:featuredmedia"].length > 0
-      ) {
-        featureImageUrl = post._embedded["wp:featuredmedia"][0].source_url;
-      }
-
-      // 備案：去內文抓圖
-      const inlineImage = extractFirstImageFromContent(post.content.rendered);
-
-      return {
-        id: String(post.id),
-        date: postDate,
-        tags: tags,
-        title: post.title.rendered,
-        excerptHTML: post.excerpt.rendered, // 帶 HTML 標籤的摘要給列表用
-        plainExcerpt: stripHtml(post.excerpt.rendered), // 純文字摘要給輪播圖用
-        rawContent: post.content.rendered,
-        // 🚀 圖片抓取優先序： 特色圖片 -> 內文第一張圖 -> 預設圖片
-        image:
-          featureImageUrl ||
-          inlineImage ||
-          "/images/blog/TAIWAN__thumb-_20250304.webp",
-        slug: post.slug,
-      };
-    });
-  }, [posts]);
-
-  // 🌟 3. 根據選擇的 Tab 進行過濾或洗牌
   const displayItems = useMemo(() => {
     if (wpItems.length === 0) return [];
     if (activeTab === "全部") return wpItems;
 
-    // 關鍵字比對過濾
     const filtered = wpItems.filter(
       (item) =>
-        item.title.includes(activeTab) ||
-        item.rawContent.includes(activeTab) ||
-        item.tags.some((tag) => tag.includes(activeTab)),
+        item.title?.includes(activeTab) ||
+        item.searchText?.includes(activeTab) ||
+        item.tags?.some((tag) => tag.includes(activeTab)),
     );
 
-    // 如果該國家目前「沒有」任何相關文章，啟動「洗牌模式」(平移陣列)
     if (filtered.length === 0) {
       const shuffled = [...wpItems];
       const shiftAmount = tabs.indexOf(activeTab);
@@ -448,16 +431,14 @@ function Tile({ src, className = "" }) {
   );
 }
 
-// 🌟 從 WordPress 抓取文章資料
 export async function getStaticProps() {
   try {
-    const posts = await fetchWpPosts({ per_page: 20 });
+    const raw = await fetchWpPosts({ per_page: 20 });
     return {
-      props: { posts },
+      props: { posts: raw.map(mapWpPostToTravelCard) },
       revalidate: 60,
     };
-  } catch (error) {
-    console.error("Fetch Error:", error);
+  } catch {
     return {
       props: { posts: [] },
       revalidate: 60,

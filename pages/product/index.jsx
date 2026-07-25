@@ -126,14 +126,10 @@ const AllProductsPage = ({ initialProducts }) => {
                       initial={{ opacity: 0, y: 40 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.05 }}
-                      className="group"
                     >
-                      <Link
-                        href={productLink}
-                        className="hover:scale-105 duration-200 block"
-                      >
+                      <Link href={productLink} className="block">
                         <div className="card overflow-hidden p-4 bg-white">
-                          <div className="relative w-full aspect-[3/4] mb-3">
+                          <div className="relative w-full aspect-[3/4] mb-3 overflow-hidden">
                             <SafeImage
                               src={productImage}
                               alt={product.name}
@@ -142,7 +138,7 @@ const AllProductsPage = ({ initialProducts }) => {
                               unoptimized={shouldBypassImageOptimization(
                                 productImage,
                               )}
-                              className="object-cover transition-all"
+                              className="object-cover"
                             />
                           </div>
                           <span className="font-bold text-sm text-slate-800 block mb-1 line-clamp-2 min-h-[40px]">

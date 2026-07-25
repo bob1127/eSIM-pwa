@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import MaterialIcon from "@/components/MaterialIcon";
 import { extractEsimsFromOrders } from "@/lib/esimOrderExtract";
 import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
-import { detectPushSupport, isStandalonePWA } from "@/lib/pushSupport";
+import { detectPushSupport, getIosAddToHomeHint, isStandalonePWA } from "@/lib/pushSupport";
 import PushNotificationSection from "@/components/PushNotificationSection";
 import IosPwaPushGuide from "@/components/IosPwaPushGuide";
 import { QuickActionCard, NavyPanel, AccountPageWrap } from "./AccountShell";
@@ -168,7 +168,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
             <p className="text-sm font-bold text-amber-900">iPhone 請先安裝 PWA</p>
             <p className="text-xs text-amber-800 mt-1">
               {pushSupport?.hint ||
-                "Safari → 分享 → 加入主畫面，從主畫面開啟本站後才能使用推播。"}
+                `${getIosAddToHomeHint()}，從主畫面開啟本站後才能使用推播。`}
             </p>
             <div className="mt-2">
               <IosPwaPushGuide />

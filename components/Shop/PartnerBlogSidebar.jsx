@@ -143,7 +143,7 @@ export default function PartnerBlogSidebar({
             </p>
             <Link
               href={`${base}/${pickupProduct.id}/`}
-              className="group block"
+              className="block"
             >
               <div className="relative aspect-[4/5] bg-[#efeee9] overflow-hidden">
                 {pickupProduct.image ? (
@@ -151,15 +151,10 @@ export default function PartnerBlogSidebar({
                     src={pickupProduct.image}
                     alt={pickupProduct.name}
                     fill
-                    className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
+                    className="object-contain p-4"
                     sizes="260px"
                   />
                 ) : null}
-                <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/25">
-                  <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-white border-b border-white pb-0.5">
-                    Read More
-                  </span>
-                </span>
               </div>
               <p className="mt-3 text-[13px] font-bold text-[#0A6CD0] leading-snug">
                 {pickupProduct.name}
