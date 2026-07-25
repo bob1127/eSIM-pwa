@@ -1,0 +1,65 @@
+══════════════════════════════════════════════════════════════
+Jeko eSIM — LINE 官方帳號「在 LINE 內開官網」（LIFF）設定
+══════════════════════════════════════════════════════════════
+
+目的：使用者從官方帳號選單／圖文點擊後，留在 LINE App 內開啟官網。
+
+──────────────────────────────────────────────────────────────
+一、LINE Developers（約 3 分鐘）
+──────────────────────────────────────────────────────────────
+1. 開啟 https://developers.line.biz/console/
+2. 選擇與「LINE Login／官方帳號」同一個 Provider／Channel
+   （建議掛在既有的 LINE Login channel；若沒有 LIFF 頁籤，
+    可在同 Provider 新增「LINE Login」channel 再加 LIFF）
+3. 進入 Channel → LIFF → Add
+4. 填寫：
+   - LIFF app name：Jeko eSIM 官網
+   - Size：Full（全螢幕，適合整站）
+   - Endpoint URL：https://www.jeko-esim.com.tw/liff
+   - Scope：profile（之後若要一鍵登入再開 openid）
+   - Bot link feature：On（可選，方便與官方帳號連動）
+5. 建立後複製「LIFF ID」（形如 1234567890-abcdefgh）
+
+──────────────────────────────────────────────────────────────
+二、網站環境變數
+──────────────────────────────────────────────────────────────
+Vercel → Project → Settings → Environment Variables：
+
+  NEXT_PUBLIC_LIFF_ID=（貼上上一步的 LIFF ID）
+
+正式站 Production 記得填，然後重新 Deploy。
+
+本機 .env.local 也可加同一行方便測試。
+
+──────────────────────────────────────────────────────────────
+三、官方帳號後台（選單／圖文）
+──────────────────────────────────────────────────────────────
+官方帳號管理後台 → 圖文選單 或 圖文訊息：
+
+  連結請填：
+    https://liff.line.me/{LIFF_ID}
+
+  不要只填 https://www.jeko-esim.com.tw
+  （一般網址常會跳出外部瀏覽器）
+
+進會員中心範例：
+  https://liff.line.me/{LIFF_ID}?path=%2Faccount
+
+買 eSIM 首頁：
+  https://liff.line.me/{LIFF_ID}
+  或
+  https://liff.line.me/{LIFF_ID}?path=%2F
+
+──────────────────────────────────────────────────────────────
+四、驗證
+──────────────────────────────────────────────────────────────
+1. 手機 LINE → 打開官方帳號 → 點選單
+2. 應在 LINE 內建瀏覽器開起 Jeko 官網（網址列通常顯示 liff.line.me）
+3. 若出現「尚未設定 LIFF」→ 檢查 NEXT_PUBLIC_LIFF_ID 是否已上正式站
+
+──────────────────────────────────────────────────────────────
+五、之後若要「一鍵登入／註冊」
+──────────────────────────────────────────────────────────────
+目前只做「在 LINE 內開站」。一鍵登入可再串：
+  liff.getIDToken() / profile → 既有 NextAuth LINE Login
+不需重做選單，同一 LIFF 入口即可擴充。
