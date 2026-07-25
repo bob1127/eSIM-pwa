@@ -28,7 +28,7 @@ import { getPublicSiteUrl } from "../lib/siteUrl";
 import { buildLoginUrl } from "../lib/authRedirect";
 import { useAuth } from "../hooks/useAuth";
 import AffiliateChatOffers from "./affiliate/AffiliateChatOffers";
-import ShopChatOffers from "./shop/ShopChatOffers";
+import ShopChatOffers from "./Shop/ShopChatOffers";
 
 /** LINE OA Basic ID（含 @），用於 oaMessage 預填文字 */
 const LINE_OA_ID = process.env.NEXT_PUBLIC_LINE_OA_ID || "@593gvyzn";
