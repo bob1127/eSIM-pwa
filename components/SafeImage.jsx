@@ -10,7 +10,8 @@ function isCfImagesEnabled() {
 
 /**
  * 與 next/image 相同介面；優化失敗時回退原圖。
- * 啟用 NEXT_PUBLIC_CF_IMAGES=1 時走 Cloudflare loader。
+ * - NEXT_PUBLIC_CF_IMAGES=1：Cloudflare loader
+ * - 未啟用 CF：unoptimized 直出（避開 Vercel /_next/image 402）
  */
 export default function SafeImage({
   src,
@@ -32,7 +33,8 @@ export default function SafeImage({
 
   if (!src) return null;
 
-  const forceOriginal = Boolean(unoptimized || useOriginal);
+  // CF 關閉或載入失敗 → 一律原圖，不走 Vercel Image Optimization
+  const forceOriginal = Boolean(unoptimized || useOriginal || !cfOn);
 
   return (
     <Image
@@ -40,7 +42,7 @@ export default function SafeImage({
       alt={alt}
       src={src}
       loader={cfOn && !forceOriginal ? cfImageLoader : undefined}
-      unoptimized={forceOriginal || (!cfOn && Boolean(unoptimized))}
+      unoptimized={forceOriginal}
       onError={handleError}
     />
   );

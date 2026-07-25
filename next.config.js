@@ -66,6 +66,12 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   },
 });
 
+// Vercel Image Optimization 超額會回 402（OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED）
+// 未啟用 Cloudflare Image Transformations 時一律直出原圖，避免整站破圖
+const cfImagesOn =
+  process.env.NEXT_PUBLIC_CF_IMAGES === "1" ||
+  process.env.NEXT_PUBLIC_CF_IMAGES === "true";
+
 const nextConfig = {
   reactStrictMode: true, 
   trailingSlash: true,
@@ -73,8 +79,10 @@ const nextConfig = {
   skipTrailingSlashRedirect: true,
 
   images: {
-    // 與 cfImageLoader 分桶對齊（SafeImage 在啟用 CF 時會掛 loader）
-    // 不設 loader:"custom"，避免未掛 loader 的 <Image> 在 build 報 missing loader
+    // CF 開啟：走 lib/cfImageLoader.js；關閉：unoptimized 直出，不經 /_next/image
+    ...(cfImagesOn
+      ? { loader: "custom", loaderFile: "./lib/cfImageLoader.js" }
+      : { unoptimized: true }),
     deviceSizes: [360, 640, 960, 1280],
     imageSizes: [64, 128, 256, 360],
     formats: ["image/avif", "image/webp"],
