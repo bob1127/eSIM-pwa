@@ -1,9 +1,16 @@
 import { useCallback, useState } from "react";
 import Image from "next/image";
+import cfImageLoader from "../lib/cfImageLoader";
+
+function isCfImagesEnabled() {
+  if (process.env.NODE_ENV === "development") return false;
+  const flag = process.env.NEXT_PUBLIC_CF_IMAGES;
+  return flag === "1" || flag === "true";
+}
 
 /**
- * 與 next/image 相同介面；優化失敗（含 CF 免費額 9422）時改載原圖，避免破圖。
- * 不改 className / fill / sizes，排版不變。
+ * 與 next/image 相同介面；優化失敗時回退原圖。
+ * 啟用 NEXT_PUBLIC_CF_IMAGES=1 時走 Cloudflare loader。
  */
 export default function SafeImage({
   src,
@@ -13,6 +20,7 @@ export default function SafeImage({
   ...props
 }) {
   const [useOriginal, setUseOriginal] = useState(false);
+  const cfOn = isCfImagesEnabled();
 
   const handleError = useCallback(
     (event) => {
@@ -24,12 +32,15 @@ export default function SafeImage({
 
   if (!src) return null;
 
+  const forceOriginal = Boolean(unoptimized || useOriginal);
+
   return (
     <Image
       {...props}
       alt={alt}
       src={src}
-      unoptimized={Boolean(unoptimized || useOriginal)}
+      loader={cfOn && !forceOriginal ? cfImageLoader : undefined}
+      unoptimized={forceOriginal || (!cfOn && Boolean(unoptimized))}
       onError={handleError}
     />
   );

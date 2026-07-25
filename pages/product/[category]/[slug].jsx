@@ -1357,7 +1357,7 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
 
 
 // ==========================================
-// 🚀 4. Medusa API 資料抓取邏輯 (加上除錯日誌)
+// Medusa API 資料抓取
 // ==========================================
 const getMedusaHeaders = () => {
   const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
@@ -1398,32 +1398,23 @@ export async function getStaticProps({ params }) {
     const { slug, category: categoryHandle } = params;
     const headers = getMedusaHeaders();
 
-    console.log("\n========================================");
-    console.log(`🔍 [除錯雷達] 開始抓取商品內頁: /product/.../${slug}`);
-
-    // 🌟 關鍵修復 1：先去抓取 Medusa 的 Region (地區設定)
-    // Medusa 需要知道你在哪個「地區」，才肯把該地區的專屬價格算給你！
     let regionId = "";
     try {
       const regionRes = await fetch(`${backendUrl}/store/regions`, { headers });
       if (regionRes.ok) {
         const regionData = await regionRes.json();
-        // 自動找出 TWD (台幣) 的 Region，如果沒有就抓第一個
         const region =
           regionData.regions?.find(
             (r) => r.currency_code === "twd" || r.currency_code === "TWD",
           ) || regionData.regions?.[0];
         if (region) {
           regionId = region.id;
-          console.log(`✅ 成功取得 Region ID: ${regionId} (${region.name})`);
         }
       }
-    } catch (err) {
-      console.log("⚠️ 無法取得 Region，將以無地區模式請求商品。");
+    } catch {
+      /* ignore */
     }
 
-    // Medusa Store API 預設不回傳 metadata，必須 fields=+metadata
-    // 變體選項需帶 option.title，前台才能正確分出電信商 / 天數 / 數據量
     const query = new URLSearchParams({
       handle: slug,
       fields:
@@ -1432,16 +1423,10 @@ export async function getStaticProps({ params }) {
     if (regionId) query.set("region_id", regionId);
 
     const prodUrl = `${backendUrl}/store/products?${query.toString()}`;
-
-    console.log(`🌐 正在呼叫商品 API: ${prodUrl}`);
-
     const prodRes = await fetch(prodUrl, { headers });
     const prodData = await prodRes.json();
 
-    // 如果 API 還是報錯，這次我們印出真正原因，不讓他偷偷變 404！
     if (!prodRes.ok) {
-      console.log(`❌ API 請求失敗！狀態碼: ${prodRes.status}`);
-      console.log("⚠️ Medusa 錯誤訊息:", JSON.stringify(prodData, null, 2));
       return { notFound: true };
     }
 
@@ -1453,12 +1438,6 @@ export async function getStaticProps({ params }) {
 
     const rawKeyFeatures = product.metadata?.key_features_by_carrier;
     const parsedKeyFeatures = parseKeyFeaturesByCarrier(rawKeyFeatures) || {};
-
-    console.log(
-      "📋 key_features_by_carrier:",
-      rawKeyFeatures ? "有資料" : "無/空",
-      Object.keys(parsedKeyFeatures),
-    );
 
     const rawOverviewNotices = product.metadata?.overview_notices_by_carrier;
     const rawDetailedByCarrier = product.metadata?.detailed_content_by_carrier;
@@ -1496,12 +1475,6 @@ export async function getStaticProps({ params }) {
 
     const formattedVariations =
       product.variants?.map((v) => {
-        console.log(`\n--- 處理變體: ${v.title} ---`);
-        console.log(
-          `原始價格 v.calculated_price:`,
-          JSON.stringify(v.calculated_price),
-        );
-
         let price = 0;
 
         // 🌟 價格相容性處理 (完整支援 Medusa V1 / V2 各種回傳格式)
@@ -1560,8 +1533,6 @@ export async function getStaticProps({ params }) {
           }
         });
 
-        console.log(`解析出的最終價格: ${price}`);
-
         return {
           id: v.id,
           title: v.title,
@@ -1585,11 +1556,7 @@ export async function getStaticProps({ params }) {
         categoryHandle: resolvedCategory,
         currentHandle: product.handle,
       });
-      console.log(
-        `📊 流量試算可比方案數: ${comparablePlans.length}（分類: ${resolvedCategory}）`,
-      );
     } catch (err) {
-      console.log("⚠️ 無法載入同分類可比方案，將僅用本商品變體。", err?.message);
       comparablePlans = formattedVariations.map((v) => ({
         ...v,
         productId: product.id,
@@ -1602,18 +1569,16 @@ export async function getStaticProps({ params }) {
       }));
     }
 
-    console.log("========================================\n");
-
     return {
       props: {
         product: formattedProduct,
         variations: formattedVariations,
         comparablePlans,
       },
-      revalidate: 60, // 靜態頁面快取時間
+      revalidate: 60,
     };
   } catch (e) {
-    console.error("❌ Medusa getStaticProps 發生致命錯誤：", e);
+    console.error("Medusa getStaticProps error:", e);
     return { notFound: true };
   }
 }

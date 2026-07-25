@@ -47,66 +47,24 @@ export async function getStaticPaths() {
   }
 }
 
-// ==========================================
-// 🚀 2. getStaticProps (🌟 已經加上強力除錯日誌)
-// ==========================================
 export async function getStaticProps({ params }) {
   try {
     const { category: categoryHandle } = params;
     const headers = getMedusaHeaders();
 
-    // 🐞================ 除錯開始 ================🐞
-    console.log("\n========================================");
-    console.log(`🔍 [除錯雷達] 開始抓取分類頁面: /product/${categoryHandle}`);
-    console.log(
-      `🔑 Publishable Key 狀態: ${process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ? "🟢 已設定 (有值)" : "🔴 未設定 (缺少金鑰！這會導致抓不到商品)"}`,
-    );
-
-    // 1. 抓取當前分類資料
     const catUrl = `${backendUrl}/store/product-categories?handle=${categoryHandle}`;
-    console.log(`🌐 正在呼叫分類 API: ${catUrl}`);
     const catRes = await fetch(catUrl, { headers });
     const catData = await catRes.json();
     const currentCategory = catData.product_categories?.[0];
 
     if (!currentCategory) {
-      console.log("❌ 找不到分類，將回傳 404");
-      console.log("========================================\n");
       return { notFound: true };
     }
-    console.log(
-      `✅ 成功找到分類 ID: ${currentCategory.id} (名稱: ${currentCategory.name})`,
-    );
 
-    // 2. 抓取該分類下的所有商品（含變體價格，供最低價顯示）
     const prodUrl = `${backendUrl}/store/products?category_id[]=${currentCategory.id}&fields=*variants,*variants.prices,*variants.calculated_price&limit=100`;
-    console.log(`🌐 正在呼叫商品 API: ${prodUrl}`);
     const prodRes = await fetch(prodUrl, { headers });
-
-    if (!prodRes.ok) {
-      console.log(`❌ 呼叫商品 API 失敗！狀態碼: ${prodRes.status}`);
-    }
-
     const prodData = await prodRes.json();
-    const productCount = prodData.products?.length || 0;
 
-    console.log(`📦 Medusa 回傳的商品數量: ${productCount}`);
-
-    if (productCount === 0) {
-      console.log("⚠️ 警告：回傳的商品陣列是空的！完整 API 回傳內容如下：");
-      console.log(JSON.stringify(prodData, null, 2));
-      console.log(
-        "💡 [提示] 如果後台有商品這裡卻是空的，99% 是因為沒有 Publishable Key，導致沒有權限讀取 Sales Channel 的商品。",
-      );
-    } else {
-      console.log(
-        `✅ 成功抓取商品: ${prodData.products.map((p) => p.title).join(", ")}`,
-      );
-    }
-    console.log("========================================\n");
-    // 🐞================ 除錯結束 ================🐞
-
-    // 3. 抓取所有分類表
     const allCatRes = await fetch(`${backendUrl}/store/product-categories`, {
       headers,
     });
