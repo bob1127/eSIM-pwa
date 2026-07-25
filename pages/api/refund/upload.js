@@ -1,18 +1,12 @@
-import { createClient } from "@supabase/supabase-js";
 import formidable from "formidable";
 import fs from "fs";
-import path from "path";
 import { requireCustomerEmail } from "../../../lib/refundAuth";
 import { MAX_REFUND_IMAGES, MAX_IMAGE_BYTES } from "../../../lib/refundPolicy";
+import { buildObjectKey, isR2Configured, uploadToR2 } from "../../../lib/r2";
 
 export const config = { api: { bodyParser: false } };
 
 const ALLOWED_IMAGES = ["image/jpeg", "image/png", "image/webp"];
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-);
 
 function parseForm(req) {
   return new Promise((resolve, reject) => {
@@ -31,6 +25,12 @@ function parseForm(req) {
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  if (!isR2Configured()) {
+    return res.status(503).json({
+      error: "媒體儲存（R2）尚未設定，請聯繫管理員",
+    });
   }
 
   const userEmail = await requireCustomerEmail(req, res);
@@ -74,31 +74,28 @@ export default async function handler(req, res) {
   const uploaded = [];
   const safeEmail = userEmail.replace(/[^a-zA-Z0-9@._-]/g, "_");
 
-  for (const file of fileList) {
-    const ext = path.extname(file.originalFilename || "file") || ".jpg";
-    const storagePath = `${safeEmail}/${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
-    const fileBuffer = fs.readFileSync(file.filepath);
-
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from("refund-evidence")
-      .upload(storagePath, fileBuffer, {
+  try {
+    for (const file of fileList) {
+      const fileBuffer = fs.readFileSync(file.filepath);
+      const key = buildObjectKey(
+        `refund-evidence/${safeEmail}`,
+        file.originalFilename || "screenshot.jpg",
+        "jpg",
+      );
+      const { url, key: storagePath } = await uploadToR2({
+        key,
+        body: fileBuffer,
         contentType: file.mimetype,
-        upsert: false,
       });
-
-    if (uploadError) {
-      return res.status(500).json({ error: `上傳失敗: ${uploadError.message}` });
+      uploaded.push({
+        path: storagePath,
+        url,
+        name: file.originalFilename || "screenshot",
+      });
     }
-
-    const { data: urlData } = supabaseAdmin.storage
-      .from("refund-evidence")
-      .getPublicUrl(storagePath);
-
-    uploaded.push({
-      path: storagePath,
-      url: urlData?.publicUrl || storagePath,
-      name: file.originalFilename || "screenshot",
-    });
+  } catch (err) {
+    console.error("[refund/upload]", err);
+    return res.status(500).json({ error: err.message || "上傳失敗" });
   }
 
   return res.status(200).json({ files: uploaded });

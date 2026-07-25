@@ -5,7 +5,10 @@ import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import Layout from "../../Layout.js";
 import { buildCategorySeo } from "../../../lib/seo.config";
-import { resolveMedusaImageUrl } from "../../../lib/resolveMedusaImageUrl";
+import {
+  resolveMedusaImageUrl,
+  shouldBypassImageOptimization,
+} from "../../../lib/resolveMedusaImageUrl";
 import { sortCategoriesByRank } from "../../../lib/sortCategoriesByRank";
 import CountryFilter from "../../../components/NavbarTestSideBarToggle.jsx";
 import FilterSideBar, { filterProductsByTags } from "../../../components/FilterSideBar";
@@ -397,6 +400,10 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                               src={productImage}
                               alt={product.name}
                               fill
+                              sizes="(max-width: 768px) 50vw, 25vw"
+                              unoptimized={shouldBypassImageOptimization(
+                                productImage,
+                              )}
                               className="rounded-[14px] object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                             />
                           </div>

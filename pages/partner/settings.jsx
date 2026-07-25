@@ -9,8 +9,6 @@ import {
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
 
-const LOGO_BUCKET = "store-logos";
-
 const EMPTY_FOOTER = {
   footer_company_name: "",
   footer_address: "",
@@ -81,22 +79,30 @@ export default function PartnerSettingsPage() {
 
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${store.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from(LOGO_BUCKET)
-        .upload(path, file, { upsert: true, contentType: file.type });
-
-      if (uploadError) throw uploadError;
-
       const {
-        data: { publicUrl },
-      } = supabase.storage.from(LOGO_BUCKET).getPublicUrl(path);
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("請重新登入後再上傳");
+      }
 
-      setLogoUrl(publicUrl);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("storeId", store.id);
+
+      const res = await fetch("/api/partner/upload-logo", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "上傳失敗");
+      }
+      setLogoUrl(data.url);
     } catch (err) {
       console.error("[logo upload]", err);
-      alert("上傳失敗：" + (err.message || "請確認 store-logos bucket 已建立"));
+      alert("上傳失敗：" + (err.message || "請稍後再試"));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

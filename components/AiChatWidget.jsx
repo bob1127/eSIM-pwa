@@ -736,7 +736,7 @@ export default function AiChatWidget() {
       className={`fixed font-sans ${
         isOpen
           ? "inset-0 z-[9999999999999] flex flex-col md:inset-auto md:bottom-6 md:right-6 md:z-[999999] md:items-end"
-          : "bottom-6 right-6 z-[999999] flex flex-col items-end"
+          : "bottom-[8.75rem] right-4 z-[999999] flex flex-col items-end md:bottom-6 md:right-6"
       }`}
     >
       <AnimatePresence>

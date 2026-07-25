@@ -1,21 +1,19 @@
-import crypto from 'crypto';
+import crypto from "crypto";
 
-const {
-  MERCHANT_ID = '3002607',
-  HASH_KEY = 'pwFHCqoQZGmho4w6',
-  HASH_IV = 'EkRm7iFT261dpevs',
-  RETURN_URL = 'https://www.starislandbaby.com.tw/api/ecpay-callback',
-  CLIENT_BACK_URL = 'https://www.starislandbaby.com.tw/thank-you',
-} = process.env;
+const MERCHANT_ID = process.env.MERCHANT_ID;
+const HASH_KEY = process.env.HASH_KEY;
+const HASH_IV = process.env.HASH_IV;
+const RETURN_URL = process.env.RETURN_URL;
+const CLIENT_BACK_URL = process.env.CLIENT_BACK_URL;
 
 function getFormattedTradeDate() {
   const date = new Date();
   const yyyy = date.getFullYear();
-  const MM = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  const HH = String(date.getHours()).padStart(2, '0');
-  const mm = String(date.getMinutes()).padStart(2, '0');
-  const ss = String(date.getSeconds()).padStart(2, '0');
+  const MM = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const HH = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
   return `${yyyy}/${MM}/${dd} ${HH}:${mm}:${ss}`;
 }
 
@@ -23,64 +21,55 @@ function createCheckMacValue(params, hashKey, hashIV) {
   const ordered = Object.keys(params)
     .sort()
     .map((key) => `${key}=${params[key]}`)
-    .join('&');
+    .join("&");
 
   const raw = `HashKey=${hashKey}&${ordered}&HashIV=${hashIV}`;
 
   const encoded = encodeURIComponent(raw)
-    .replace(/%20/g, '+')
-    .replace(/%21/g, '!')
-    .replace(/%28/g, '(')
-    .replace(/%29/g, ')')
-    .replace(/%2A/g, '*');
+    .replace(/%20/g, "+")
+    .replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
 
-  return crypto.createHash('sha256').update(encoded).digest('hex').toUpperCase();
+  return crypto.createHash("sha256").update(encoded.toLowerCase()).digest("hex").toUpperCase();
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).send('Method Not Allowed');
+export default function handler(req, res) {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
+    return res.status(405).end("Method Not Allowed");
   }
 
-  const { items, orderInfo } = req.body;
-
-  if (!items || items.length === 0) {
-    return res.status(400).send('購物車為空');
+  if (!MERCHANT_ID || !HASH_KEY || !HASH_IV || !RETURN_URL || !CLIENT_BACK_URL) {
+    return res.status(503).json({
+      error: "ECPay 未設定（缺少 MERCHANT_ID / HASH_KEY / HASH_IV / RETURN_URL / CLIENT_BACK_URL）",
+    });
   }
 
-  const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tradeNo = `STB${Date.now()}`;
-  const tradeDate = getFormattedTradeDate();
+  try {
+    const { TotalAmount, TradeDesc, ItemName, CustomField1 } = req.body || {};
 
-  const baseParams = {
-    MerchantID: MERCHANT_ID,
-    MerchantTradeNo: tradeNo,
-    MerchantTradeDate: tradeDate,
-    PaymentType: 'aio',
-    TotalAmount: totalAmount,
-    TradeDesc: '星嶼童裝付款',
-    ItemName: items.map((i) => `${i.name}x${i.quantity}`).join('#'),
-    ReturnURL: RETURN_URL,
-    ClientBackURL: CLIENT_BACK_URL,
-    ChoosePayment: 'Credit',
-    EncryptType: '1',
-  };
+    const baseParams = {
+      MerchantID: MERCHANT_ID,
+      MerchantTradeNo: `T${Date.now()}`,
+      MerchantTradeDate: getFormattedTradeDate(),
+      PaymentType: "aio",
+      TotalAmount: String(TotalAmount || 0),
+      TradeDesc: TradeDesc || "Order",
+      ItemName: ItemName || "Item",
+      ReturnURL: RETURN_URL,
+      ClientBackURL: CLIENT_BACK_URL,
+      ChoosePayment: "ALL",
+      EncryptType: "1",
+      CustomField1: CustomField1 || "",
+    };
 
-  const checkMacValue = createCheckMacValue(baseParams, HASH_KEY, HASH_IV);
-  const html = `
-    <html>
-      <body onload="document.forms[0].submit()">
-        <form method="POST" action="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5">
-          ${Object.entries({ ...baseParams, CheckMacValue: checkMacValue })
-            .map(
-              ([key, val]) => `<input type="hidden" name="${key}" value="${val}" />`
-            )
-            .join('\n')}
-        </form>
-      </body>
-    </html>
-  `;
+    const checkMacValue = createCheckMacValue(baseParams, HASH_KEY, HASH_IV);
 
-  res.setHeader('Content-Type', 'text/html');
-  res.status(200).send(html);
+    return res.status(200).json({
+      ...baseParams,
+      CheckMacValue: checkMacValue,
+    });
+  } catch (err) {
+    console.error("[generate-form]", err);
+    return res.status(500).json({ error: "Failed to generate form" });
+  }
 }

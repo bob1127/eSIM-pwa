@@ -1,12 +1,11 @@
 // /pages/api/get-orders.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
+import { getWooCommerceCredentials } from "../../lib/serverEnv";
 
-const WC_API_URL = "https://inf.fjg.mybluehost.me/website_f9214e6b/wp-json/wc/v3/orders";
-
-// 建議在 .env 內用非 NEXT_PUBLIC 前綴（避免意外被前端引用）
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
+const { baseUrl, consumerKey: CONSUMER_KEY, consumerSecret: CONSUMER_SECRET } =
+  getWooCommerceCredentials();
+const WC_API_URL = `${baseUrl}/wp-json/wc/v3/orders`;
 
 type WooOrderLite = {
   id: number;

@@ -7,7 +7,6 @@ import { useSession } from "next-auth/react";
 import { useUser } from "@/components/context/UserContext";
 import { useAuth } from "@/hooks/useAuth";
 import { buildLoginUrl } from "@/lib/authRedirect";
-import { buildInstallHintText, isChromiumBrowser } from "@/lib/deviceDetect";
 import { resolveMemberEmail } from "@/lib/memberIdentity";
 import { parseQrcodeData } from "@/lib/esimOrderExtract";
 import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
@@ -15,6 +14,8 @@ import { normalizeIccid, getPushEndpoint } from "@/lib/pushBind";
 import { subscribeToPush } from "@/lib/pushSubscribe";
 import { detectPushSupport, getBrowserContext } from "@/lib/pushSupport";
 import { usePWAInstall } from "./usePWAInstall";
+import AppInstallGuideModal from "./AppInstallGuideModal";
+import MaterialIcon from "@/components/MaterialIcon";
 
 const COLLAPSED_H = 118;
 const EXPANDED_VH = 78;
@@ -54,17 +55,6 @@ const IconInstall = ({ className = "" }) => (
     <path d="M12 3v12" />
     <path d="m8 11 4 4 4-4" />
     <path d="M5 19h14" />
-  </svg>
-);
-
-const IconHelper = ({ className = "" }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M12 8V4H8" />
-    <rect width="16" height="12" x="4" y="8" rx="2" />
-    <path d="M2 14h2" />
-    <path d="M20 14h2" />
-    <path d="M15 13v2" />
-    <path d="M9 13v2" />
   </svg>
 );
 
@@ -591,6 +581,7 @@ export default function EsimBottomSheet() {
   const [expanded, setExpanded] = useState(false);
   const [panel, setPanel] = useState("qr"); // qr | usage | member | install | all
   const [dragY, setDragY] = useState(0);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
   const startY = useRef(0);
   const dragging = useRef(false);
 
@@ -712,24 +703,14 @@ export default function EsimBottomSheet() {
       alert("您已安裝 Jeko APP。");
       return;
     }
+    // Chromium：先試系統一鍵安裝；失敗再開圖文教學
     if (isInstallable) {
       const outcome = await installPWA();
-      if (outcome === "accepted" || outcome === "dismissed") return;
+      if (outcome === "accepted") return;
+      if (outcome === "dismissed") return;
     }
-    if (needsAppleInstall) {
-      alert(
-        "iPhone / iPad 安裝方式：\n\n1. 點擊底部「分享」按鈕\n2. 選擇「加入主畫面」\n3. 確認加入即可",
-      );
-      return;
-    }
-    if (isChromiumBrowser()) {
-      alert(
-        "安裝提示尚未就緒，請稍候再點一次，或：\n\nChrome 右上角 ⋮ →「安裝應用程式」／「安裝 Jeko eSIM…」\n\n※ 不要用無痕視窗",
-      );
-      return;
-    }
-    alert(buildInstallHintText({ isStandalone }) || "請將本站加入主畫面以安裝 APP。");
-  }, [isInstallable, installPWA, isStandalone, needsAppleInstall]);
+    setShowInstallGuide(true);
+  }, [isInstallable, installPWA, isStandalone]);
 
   const goLogin = () => {
     router.push(buildLoginUrl("/account"));
@@ -760,9 +741,7 @@ export default function EsimBottomSheet() {
       if (isApplePhone && !ctx.isStandalone) {
         setPanel("install");
         setExpanded(true);
-        alert(
-          "偵測到 iPhone／iPad\n\n請先安裝到主畫面，才能收通知：\n\n1. 點「下載 APP」→ 加入主畫面\n2. 關掉 Safari，改點主畫面圖示打開\n3. 再點「開啟流量通知」並允許通知",
-        );
+        setShowInstallGuide(true);
         return;
       }
 
@@ -900,11 +879,9 @@ export default function EsimBottomSheet() {
   })();
 
   const openPanel = (id) => {
-    if (id === "helper") {
+    if (id === "promo") {
       setExpanded(false);
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("jeko:open-ai-chat"));
-      }
+      router.push("/promo");
       return;
     }
     setPanel(id);
@@ -957,7 +934,11 @@ export default function EsimBottomSheet() {
     { id: "member", label: "會員", icon: <IconMember /> },
     { id: "qr", label: "QR Code", center: true, icon: <IconQr white /> },
     { id: "install", label: "下載 APP", icon: <IconInstall /> },
-    { id: "helper", label: "J寶", icon: <IconHelper /> },
+    {
+      id: "promo",
+      label: "優惠活動",
+      icon: <MaterialIcon name="local_activity" size={22} />,
+    },
   ];
 
   const displayName =
@@ -1169,6 +1150,11 @@ export default function EsimBottomSheet() {
           )}
         </div>
       </div>
+
+      <AppInstallGuideModal
+        open={showInstallGuide}
+        onClose={() => setShowInstallGuide(false)}
+      />
     </>
   );
 }

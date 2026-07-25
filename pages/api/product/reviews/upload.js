@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import formidable from "formidable";
 import fs from "fs";
 import path from "path";
+import { buildObjectKey, isR2Configured, uploadToR2 } from "../../../../lib/r2";
 
 export const config = { api: { bodyParser: false } };
 
@@ -10,7 +11,6 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 const ALLOWED_IMAGES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const ALLOWED_VIDEOS = ["video/mp4", "video/quicktime", "video/webm"];
-const BUCKET = "review-media";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -34,6 +34,12 @@ function parseForm(req) {
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  if (!isR2Configured()) {
+    return res.status(503).json({
+      error: "媒體儲存（R2）尚未設定，請聯繫管理員",
+    });
   }
 
   const authHeader = req.headers.authorization;
@@ -100,33 +106,27 @@ export default async function handler(req, res) {
   const urls = [];
   const currentMonth = new Date().toISOString().slice(0, 7);
 
-  for (const file of fileList) {
-    const ext =
-      path.extname(file.originalFilename || "") ||
-      (ALLOWED_VIDEOS.includes(file.mimetype) ? ".mp4" : ".jpg");
-    const storagePath = `${productId}/${currentMonth}/${user.id}/${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
-    const fileBuffer = fs.readFileSync(file.filepath);
-
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from(BUCKET)
-      .upload(storagePath, fileBuffer, {
+  try {
+    for (const file of fileList) {
+      const fileBuffer = fs.readFileSync(file.filepath);
+      const key = buildObjectKey(
+        `review-media/${productId}/${currentMonth}/${user.id}`,
+        file.originalFilename ||
+          (ALLOWED_VIDEOS.includes(file.mimetype) ? "clip.mp4" : "photo.jpg"),
+        ALLOWED_VIDEOS.includes(file.mimetype) ? "mp4" : "jpg",
+      );
+      const { url } = await uploadToR2({
+        key,
+        body: fileBuffer,
         contentType: file.mimetype,
-        upsert: false,
       });
-
-    if (uploadError) {
-      return res.status(500).json({
-        error:
-          uploadError.message === "Bucket not found"
-            ? "儲存空間尚未建立，請聯繫管理員執行 Supabase migration（review-media）"
-            : `上傳失敗: ${uploadError.message}`,
-      });
+      urls.push(url);
     }
-
-    const {
-      data: { publicUrl },
-    } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(storagePath);
-    urls.push(publicUrl);
+  } catch (err) {
+    console.error("[product/reviews/upload]", err);
+    return res.status(500).json({
+      error: err.message || "上傳失敗",
+    });
   }
 
   return res.status(200).json({ urls });

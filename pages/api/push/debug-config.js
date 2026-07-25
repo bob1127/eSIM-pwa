@@ -1,12 +1,16 @@
 /**
  * GET /api/push/debug-config
- * 檢查 Vercel 推播相關環境變數（不含私鑰明文）
+ * 正式環境需帶 Authorization: Bearer {ADMIN_SECRET|CRON_SECRET}
  */
+import { assertDebugAccess } from "../../../lib/serverEnv";
+
 export default function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).end("Method Not Allowed");
   }
+
+  if (!assertDebugAccess(req, res)) return;
 
   const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
   const priv = process.env.VAPID_PRIVATE_KEY || "";
@@ -25,14 +29,13 @@ export default function handler(req, res) {
     vapidPublicPrefix: pub.slice(0, 12) || null,
     vapidPublicLength: pub.length,
     vapidPrivateLength: priv.length,
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || null,
+    supabaseUrlHost: (() => {
+      try {
+        return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || "").host;
+      } catch {
+        return null;
+      }
+    })(),
     nodeEnv: process.env.NODE_ENV,
-    hint: !checks.vapidPublicOk
-      ? "請在 Vercel 設定 NEXT_PUBLIC_VAPID_PUBLIC_KEY"
-      : !checks.vapidPrivateOk
-      ? "請在 Vercel 設定 VAPID_PRIVATE_KEY（與公鑰配對）"
-      : !checks.supabaseServiceOk
-      ? "請設定 SUPABASE_SERVICE_ROLE_KEY"
-      : null,
   });
 }

@@ -35,8 +35,11 @@ export function usePWAInstall() {
         setDeviceType("ios");
       } else if (isMacSafari) {
         setDeviceType("mac");
+      } else if (/android/i.test(userAgent)) {
+        setDeviceType("android");
       } else if (isChromiumBrowser()) {
-        setDeviceType("android"); // Chrome／Edge／Android：可走 beforeinstallprompt
+        // Mac／Windows Chrome：可一鍵安裝；教學圖用 mac 或 android 指南
+        setDeviceType(userAgent.includes("mac") ? "mac" : "android");
       }
     }
 

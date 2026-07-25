@@ -37,6 +37,7 @@ import {
   resolveMedusaImageUrl,
   resolveMedusaImageUrls,
   buildProductMediaList,
+  shouldBypassImageOptimization,
 } from "../../../lib/resolveMedusaImageUrl";
 import EsimRefundDisclosure from "../../../components/legal/EsimRefundDisclosure";
 import Image from "next/image";
@@ -75,13 +76,6 @@ import { fetchCategoryComparablePlans } from "@/lib/formatMedusaProductPage";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
-function isMedusaStaticImage(src) {
-  return (
-    typeof src === "string" &&
-    (src.includes("/static/") || /\.vercel\.app/i.test(src))
-  );
-}
-
 function ProductMediaSlide({ item, fill = false, className = "", priority = false }) {
   if (item.type === "video") {
     return (
@@ -104,7 +98,7 @@ function ProductMediaSlide({ item, fill = false, className = "", priority = fals
         sizes="(max-width: 1024px) 100vw, 55vw"
         className={className}
         priority={priority}
-        unoptimized={isMedusaStaticImage(item.src)}
+        unoptimized={shouldBypassImageOptimization(item.src)}
       />
     );
   }
@@ -2284,7 +2278,7 @@ export default function ProductPage({
                           fill
                           sizes="80px"
                           className="object-cover bg-white"
-                          unoptimized={isMedusaStaticImage(item.src)}
+                          unoptimized={shouldBypassImageOptimization(item.src)}
                         />
                       )}
                     </button>
@@ -3169,7 +3163,11 @@ export default function ProductPage({
                       src={images[0]?.src || "/default-image.jpg"}
                       alt=""
                       fill
+                      sizes="72px"
                       className="object-contain p-1"
+                      unoptimized={shouldBypassImageOptimization(
+                        images[0]?.src || "/default-image.jpg",
+                      )}
                     />
                   </div>
                   <div className="flex-1 min-w-0">

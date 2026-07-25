@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 import SwiperCarousel from "../../components/SwiperCarousel/SwiperCard.jsx";
 import FilterSideBar from "../../components/FilterSideBar";
 import { motion } from "framer-motion";
+import { shouldBypassImageOptimization } from "../../lib/resolveMedusaImageUrl";
 
 // 輔助函式：建立 WooCommerce API 請求 URL (僅在伺服器端使用)
 const getWooCommerceUrl = (endpoint, params = {}) => {
@@ -226,6 +227,9 @@ const CategoryPage = ({ slug, categories, initialProducts }) => {
                             alt={product.name}
                             width={300}
                             height={300}
+                            unoptimized={shouldBypassImageOptimization(
+                              productImage,
+                            )}
                             className="w-full rounded-[30px] border-2 border-gray-300 group-hover:shadow-lg object-contain mb-3"
                           />
                           <span className="font-bold text-[16px] block mb-1">

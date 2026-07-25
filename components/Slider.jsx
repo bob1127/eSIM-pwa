@@ -10,8 +10,9 @@ import MaterialIcon from "@/components/MaterialIcon";
 import { useUser } from "@/components/context/UserContext";
 import { detectPushSupport } from "@/lib/pushSupport";
 import { buildLoginUrl } from "@/lib/authRedirect";
-import { buildInstallHintText, isChromiumBrowser } from "@/lib/deviceDetect";
+import { buildInstallHintText } from "@/lib/deviceDetect";
 import { usePWAInstall } from "./usePWAInstall";
+import AppInstallGuideModal from "./AppInstallGuideModal";
 import HeroCountryPlanPicker from "./HeroCountryPlanPicker";
 
 const LINE_OA_URL =
@@ -188,7 +189,6 @@ export default function Slider() {
   } = usePWAInstall();
 
   const [showPrompt, setShowPrompt] = useState(false);
-  const [promptMode, setPromptMode] = useState("push");
   const [pushLoading, setPushLoading] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [installHint, setInstallHint] = useState(null);
@@ -205,14 +205,13 @@ export default function Slider() {
   const needsAppleInstall =
     !isStandalone && (deviceType === "ios" || deviceType === "mac");
 
-  const openInstallGuide = (mode) => {
-    setPromptMode(mode);
+  const openInstallGuide = () => {
     setShowPrompt(true);
   };
 
   const handleOpenPush = async () => {
     if (needsAppleInstall) {
-      openInstallGuide("push");
+      openInstallGuide();
       return;
     }
 
@@ -234,7 +233,7 @@ export default function Slider() {
 
   const handleTrafficAlert = () => {
     if (needsAppleInstall) {
-      openInstallGuide("traffic");
+      openInstallGuide();
       return;
     }
     router.push("/data-query?setup=traffic#push-notification-section");
@@ -249,19 +248,8 @@ export default function Slider() {
       const outcome = await installPWA();
       if (outcome === "accepted") return;
       if (outcome === "dismissed") return;
-      // unavailable：事件過期，引導手動安裝
     }
-    if (needsAppleInstall) {
-      openInstallGuide("push");
-      return;
-    }
-    if (isChromiumBrowser()) {
-      alert(
-        "安裝提示尚未就緒，請試試：\n\n1. 停留在本站約 10–30 秒後再點一次\n2. 重新整理頁面\n3. Chrome 右上角 ⋮ →「安裝應用程式」或「安裝 Jeko eSIM…」\n\n※ 請勿使用無痕視窗",
-      );
-      return;
-    }
-    alert("請先安裝 Jeko APP，再開啟推播或流量提醒。");
+    openInstallGuide();
   };
 
   const scrollToSection = (hash) => {
@@ -395,15 +383,6 @@ export default function Slider() {
     { scope: containerRef },
   );
 
-  const promptTitle =
-    promptMode === "traffic"
-      ? "安裝 APP 以開啟流量提醒"
-      : "安裝 APP 以開啟推播";
-  const promptDesc =
-    promptMode === "traffic"
-      ? "iPhone 需先將 Jeko 加入主畫面，才能綁定 eSIM 並接收低流量推播。"
-      : "iPhone 需先將 Jeko 加入主畫面，才能接收推播通知。";
-
   return (
     <>
       <style>{`
@@ -428,87 +407,10 @@ export default function Slider() {
         }
       `}</style>
 
-      <AnimatePresence>
-        {showPrompt && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-end bg-black/80 pb-12 px-4"
-            onClick={() => setShowPrompt(false)}
-          >
-            <motion.div
-              initial={{ y: "100%", scale: 0.9 }}
-              animate={{ y: 0, scale: 1 }}
-              exit={{ y: "100%", scale: 0.9 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="bg-white text-black p-6 rounded-3xl w-full max-w-sm flex flex-col items-center text-center shadow-2xl relative mb-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {deviceType === "ios" ? (
-                <>
-                  <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 text-blue-500">
-                    <MaterialIcon name="install_mobile" size={32} />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">{promptTitle}</h3>
-                  <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                    {promptDesc}
-                    <br />
-                    <br />
-                    1. 點擊螢幕正下方的{" "}
-                    <span className="font-bold text-blue-500">分享按鈕</span>
-                    <br />
-                    2. 選擇「
-                    <span className="font-bold text-black bg-gray-100 px-2 py-1 rounded">
-                      加入主畫面
-                    </span>
-                    」
-                  </p>
-                </>
-              ) : (
-                <div className="py-2">
-                  <h3 className="text-xl font-bold mb-4">{promptTitle}</h3>
-                  <p className="text-gray-600 mb-6 text-sm">
-                    請點擊螢幕左上角的「
-                    <span className="font-bold text-black">檔案</span>」選單
-                    <br />
-                    並選擇「
-                    <span className="font-bold text-blue-500">
-                      加入 Dock 中
-                    </span>
-                    」
-                  </p>
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setShowPrompt(false)}
-                className="w-full bg-gray-100 text-gray-800 py-3 rounded-xl font-bold hover:bg-gray-200 transition"
-              >
-                我知道了
-              </button>
-            </motion.div>
-
-            {deviceType === "ios" && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: [0, 15, 0] }}
-                transition={{
-                  opacity: { duration: 0.3 },
-                  y: { repeat: Infinity, duration: 1.2, ease: "easeInOut" },
-                }}
-                className="text-white flex flex-col items-center pointer-events-none"
-              >
-                <span className="text-sm font-bold tracking-widest mb-1 shadow-black drop-shadow-md">
-                  點擊這裡
-                </span>
-                <MaterialIcon name="keyboard_arrow_down" size={40} />
-              </motion.div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AppInstallGuideModal
+        open={showPrompt}
+        onClose={() => setShowPrompt(false)}
+      />
 
       <div className="hero-wrap">
         <section className="hero-container" ref={containerRef}>

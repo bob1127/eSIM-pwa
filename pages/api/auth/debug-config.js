@@ -1,14 +1,17 @@
 /**
  * GET /api/auth/debug-config
- * 檢查 NextAuth / LINE / Supabase 環境（不輸出完整 secret）
+ * 正式環境需帶 Authorization: Bearer {ADMIN_SECRET|CRON_SECRET}
  */
 import { authLog } from "../../../lib/authDebug";
 import { PRODUCTION_SITE_URL, PRODUCTION_SITE_HOST } from "../../../lib/siteUrl";
+import { assertDebugAccess } from "../../../lib/serverEnv";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+
+  if (!assertDebugAccess(req, res)) return;
 
   const nextAuthUrl = process.env.NEXTAUTH_URL || "(未設定)";
   const lineId = process.env.LINE_CLIENT_ID || "";
@@ -41,18 +44,14 @@ export default async function handler(req, res) {
   const report = {
     nodeEnv: process.env.NODE_ENV,
     vercelEnv: process.env.VERCEL_ENV || "(本機)",
-    vercelUrl: process.env.VERCEL_URL || "(本機)",
     nextAuthUrl,
     expectedLineCallback: nextAuthUrl.startsWith("http")
       ? `${nextAuthUrl.replace(/\/$/, "")}/api/auth/callback/line`
-      : "(NEXTAUTH_URL 無效，無法推算 callback)",
-    lineClientIdPrefix: lineId ? `${lineId.slice(0, 6)}...` : "(未設定)",
+      : "(NEXTAUTH_URL 無效)",
     hasLineClientId: !!lineId,
     hasLineClientSecret: hasLineSecret,
     hasNextAuthSecret,
-    supabaseUrl,
     hasSupabaseAnonKey: !!anonKey,
-    anonKeyPrefix: anonKey ? `${anonKey.slice(0, 18)}...` : "(未設定)",
     anonKeyValid,
     anonKeyError,
     hasSupabaseServiceRole: hasServiceRole,
@@ -69,11 +68,11 @@ export default async function handler(req, res) {
         anonKeyValid,
     },
     productionSiteUrl: PRODUCTION_SITE_URL,
-    hint: anonKeyValid
-      ? `LINE Developers 必須登記 expectedLineCallback；正式站 NEXTAUTH_URL=${PRODUCTION_SITE_URL}`
-      : "NEXT_PUBLIC_SUPABASE_ANON_KEY 無效或未更新！請到 Supabase → Jeko-eSIM → Settings → API 複製 anon/publishable key 到 .env.local，然後重啟 npm run dev",
   };
 
-  authLog("debug-config 被呼叫", report);
+  authLog("debug-config 被呼叫", {
+    nodeEnv: report.nodeEnv,
+    checks: report.checks,
+  });
   return res.status(200).json(report);
 }

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { motion, AnimatePresence } from "framer-motion";
 import MaterialIcon from "./MaterialIcon";
+import { shouldBypassImageOptimization } from "../lib/resolveMedusaImageUrl";
 import "swiper/css";
 
 const GALLERY_LB_STYLE = `
@@ -17,13 +18,6 @@ const GALLERY_LB_STYLE = `
     justify-content: center;
   }
 `;
-
-function isMedusaStaticImage(src) {
-  return (
-    typeof src === "string" &&
-    (src.includes("/static/") || /\.vercel\.app/i.test(src))
-  );
-}
 
 function MediaSlide({ item, fill = false, className = "", priority = false }) {
   if (item.type === "video") {
@@ -47,7 +41,7 @@ function MediaSlide({ item, fill = false, className = "", priority = false }) {
         sizes="(max-width: 1024px) 100vw, 55vw"
         className={className}
         priority={priority}
-        unoptimized={isMedusaStaticImage(item.src)}
+        unoptimized={shouldBypassImageOptimization(item.src)}
       />
     );
   }

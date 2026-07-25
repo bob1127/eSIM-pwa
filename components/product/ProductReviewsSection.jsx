@@ -1049,6 +1049,7 @@ export default function ProductReviewsSection({
     if (!window.confirm(confirmMsg)) return;
 
     if (targetMediaUrls?.length > 0) {
+      // 新上傳在 R2；舊檔可能在 Supabase Storage。刪留言以 DB 為主，媒體刪除失敗不阻擋。
       const filePaths = targetMediaUrls
         .map((url) => {
           const decoded = decodeURI(url);
@@ -1058,13 +1059,7 @@ export default function ProductReviewsSection({
         .filter(Boolean);
 
       if (filePaths.length > 0) {
-        const { error: storageError } = await supabase.storage
-          .from("review-media")
-          .remove(filePaths);
-        if (storageError) {
-          setSubmitError(`媒體刪除失敗：${storageError.message}`);
-          return;
-        }
+        await supabase.storage.from("review-media").remove(filePaths);
       }
     }
 

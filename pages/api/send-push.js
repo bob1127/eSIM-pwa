@@ -24,7 +24,13 @@ const supabaseAdmin = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-const INTERNAL_SECRET = process.env.PUSH_INTERNAL_SECRET || "jeko-push-secret-2026";
+const INTERNAL_SECRET = process.env.PUSH_INTERNAL_SECRET || "";
+
+if (!INTERNAL_SECRET || INTERNAL_SECRET.length < 24) {
+  console.warn(
+    "[send-push] PUSH_INTERNAL_SECRET 未設定或過短，內部推播 API 將拒絕請求",
+  );
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -34,7 +40,11 @@ export default async function handler(req, res) {
 
   const { secret, title, body, url, userId } = req.body ?? {};
 
-  if (secret !== INTERNAL_SECRET) {
+  if (!INTERNAL_SECRET || INTERNAL_SECRET.length < 24) {
+    return res.status(500).json({ error: "PUSH_INTERNAL_SECRET 未正確設定" });
+  }
+
+  if (!secret || secret !== INTERNAL_SECRET) {
     return res.status(401).json({ error: "通關密語錯誤" });
   }
 

@@ -10,6 +10,7 @@ import FilterSideBar from "../../components/FilterSideBar";
 import Slider from "../../components/Slider.jsx";
 // 🚀 導入 Supabase Client
 import { supabase } from "../../lib/supabaseClient";
+import { shouldBypassImageOptimization } from "../../lib/resolveMedusaImageUrl";
 
 // --- getStaticProps (從 Supabase 抓取所有資料) ---
 export async function getStaticProps() {
@@ -163,6 +164,10 @@ const AllProductsPage = ({ categories, initialProducts }) => {
                               src={productImage}
                               alt={product.name}
                               fill
+                              sizes="(max-width: 768px) 50vw, 20vw"
+                              unoptimized={shouldBypassImageOptimization(
+                                productImage,
+                              )}
                               className="rounded-[20px] border-2 border-gray-100 group-hover:shadow-lg group-hover:border-blue-100 object-cover transition-all"
                             />
                           </div>
