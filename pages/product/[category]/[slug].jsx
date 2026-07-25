@@ -41,6 +41,7 @@ import {
 } from "../../../lib/resolveMedusaImageUrl";
 import EsimRefundDisclosure from "../../../components/legal/EsimRefundDisclosure";
 import Image from "next/image";
+import SafeImage from "../../../components/SafeImage";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import { motion, AnimatePresence } from "framer-motion";
@@ -91,7 +92,7 @@ function ProductMediaSlide({ item, fill = false, className = "", priority = fals
 
   if (fill) {
     return (
-      <Image
+      <SafeImage
         src={item.src}
         alt={item.alt || "product"}
         fill
@@ -2117,14 +2118,14 @@ export default function ProductPage({
             {/* ========== 左：媒體畫廊 ========== */}
             <div className="w-full lg:sticky lg:top-24 lg:self-start">
               <div
-                className={`relative bg-white rounded-2xl overflow-hidden group ${
-                  isPartnerShell ? "border border-slate-100" : ""
+                className={`relative bg-white overflow-hidden group ${
+                  isPartnerShell ? "border border-slate-100" : "border border-gray-100"
                 }`}
               >
                 {priceSavings > 0 &&
                   (isPartnerShell ? (
                     <div
-                      className="absolute top-3 left-3 z-20 text-white text-[11px] font-bold rounded-md px-2.5 py-1"
+                      className="absolute top-3 left-3 z-20 text-white text-[11px] font-bold px-2.5 py-1"
                       style={{ background: "#0A6CD0" }}
                     >
                       省 NT${priceSavings}
@@ -2142,7 +2143,7 @@ export default function ProductPage({
                     </div>
                   ))}
                 {images.length > 1 && (
-                  <div className="absolute bottom-3 right-3 z-20 bg-black/50 text-white text-xs font-medium px-2.5 py-1 rounded-md">
+                  <div className="absolute bottom-3 right-3 z-20 bg-black/50 text-white text-xs font-medium px-2.5 py-1">
                     {activeSlide + 1}/{images.length}
                   </div>
                 )}
@@ -2156,7 +2157,7 @@ export default function ProductPage({
                         mainSwiper?.slidePrev();
                       }}
                       aria-label="上一張"
-                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 shadow-md border border-gray-100 flex items-center justify-center text-gray-600 hover:bg-white transition-colors opacity-0 group-hover:opacity-100 sm:opacity-100"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/90 shadow-md border border-gray-100 flex items-center justify-center text-gray-600 hover:bg-white transition-colors opacity-0 group-hover:opacity-100 sm:opacity-100"
                     >
                       <MaterialIcon name="chevron_left" size={22} />
                     </button>
@@ -2167,7 +2168,7 @@ export default function ProductPage({
                         mainSwiper?.slideNext();
                       }}
                       aria-label="下一張"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 shadow-md border border-gray-100 flex items-center justify-center text-gray-600 hover:bg-white transition-colors opacity-0 group-hover:opacity-100 sm:opacity-100"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/90 shadow-md border border-gray-100 flex items-center justify-center text-gray-600 hover:bg-white transition-colors opacity-0 group-hover:opacity-100 sm:opacity-100"
                     >
                       <MaterialIcon name="chevron_right" size={22} />
                     </button>
@@ -2177,7 +2178,7 @@ export default function ProductPage({
                 <button
                   type="button"
                   onClick={() => openGalleryLightbox(activeSlide)}
-                  className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-white/90 border border-gray-100 shadow-sm flex items-center justify-center text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100"
+                  className="absolute top-3 right-3 z-20 w-9 h-9 bg-white/90 border border-gray-100 shadow-sm flex items-center justify-center text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100"
                   aria-label="放大檢視"
                 >
                   <MaterialIcon name="fullscreen" size={16} />
@@ -2192,11 +2193,7 @@ export default function ProductPage({
                   centeredSlides={false}
                   watchOverflow
                   onSlideChange={(swiper) => setActiveSlide(swiper.realIndex)}
-                  className={`w-full product-main-swiper ${
-                    isPartnerShell
-                      ? "aspect-square max-h-[min(70vh,560px)]"
-                      : "aspect-[4/5] sm:aspect-[3/4] max-h-[min(75vh,600px)]"
-                  }`}
+                  className="w-full product-main-swiper aspect-[3/4] bg-white"
                 >
                   {images.map((item, idx) => (
                     <SwiperSlide key={idx}>
@@ -2207,8 +2204,8 @@ export default function ProductPage({
                         }
                         className={`relative block w-full h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
                           isPartnerShell
-                            ? "min-h-[280px] sm:min-h-[360px] focus-visible:ring-[#0A6CD0]"
-                            : "min-h-[340px] sm:min-h-[440px] focus-visible:ring-[#00befa]"
+                            ? "focus-visible:ring-[#0A6CD0]"
+                            : "focus-visible:ring-[#00befa]"
                         } ${
                           item.type === "image" ? "cursor-zoom-in" : "cursor-default"
                         }`}
@@ -2219,16 +2216,10 @@ export default function ProductPage({
                         }
                       >
                         {item.type === "video" ? (
-                          <div
-                            className={`relative w-full h-full bg-black flex items-center justify-center ${
-                              isPartnerShell
-                                ? "min-h-[280px] sm:min-h-[360px]"
-                                : "min-h-[340px] sm:min-h-[440px]"
-                            }`}
-                          >
+                          <div className="relative w-full h-full bg-black flex items-center justify-center">
                             <ProductMediaSlide
                               item={item}
-                              className="w-full h-full max-h-[min(75vh,600px)] object-contain"
+                              className="w-full h-full object-contain"
                             />
                           </div>
                         ) : (
@@ -2253,7 +2244,7 @@ export default function ProductPage({
                       key={idx}
                       type="button"
                       onClick={() => goToGallerySlide(idx)}
-                      className={`relative shrink-0 w-[72px] h-[72px] sm:w-[80px] sm:h-[80px] rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`relative shrink-0 w-[72px] aspect-[3/4] sm:w-[80px] overflow-hidden border-2 transition-all ${
                         activeSlide === idx
                           ? isPartnerShell
                             ? "border-[#0A6CD0]"
@@ -2272,12 +2263,12 @@ export default function ProductPage({
                           />
                         </div>
                       ) : (
-                        <Image
+                        <SafeImage
                           src={item.src}
                           alt=""
                           fill
                           sizes="80px"
-                          className="object-cover bg-white"
+                          className="object-contain bg-white"
                           unoptimized={shouldBypassImageOptimization(item.src)}
                         />
                       )}
@@ -3158,8 +3149,8 @@ export default function ProductPage({
                   確認您的選擇
                 </p>
                 <div className="flex gap-3 sm:gap-4">
-                  <div className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] shrink-0 rounded-lg overflow-hidden bg-white border border-gray-200">
-                    <Image
+                  <div className="relative w-16 sm:w-[72px] aspect-[3/4] shrink-0 overflow-hidden bg-white border border-gray-200">
+                    <SafeImage
                       src={images[0]?.src || "/default-image.jpg"}
                       alt=""
                       fill

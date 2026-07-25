@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
+import SafeImage from "./SafeImage";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { motion, AnimatePresence } from "framer-motion";
 import MaterialIcon from "./MaterialIcon";
@@ -34,7 +35,7 @@ function MediaSlide({ item, fill = false, className = "", priority = false }) {
 
   if (fill) {
     return (
-      <Image
+      <SafeImage
         src={item.src}
         alt={item.alt || "media"}
         fill
@@ -237,7 +238,7 @@ export default function MediaGalleryLightbox({
                       key={idx}
                       type="button"
                       onClick={() => goTo(idx)}
-                      className={`relative aspect-[4/3] rounded overflow-hidden border-2 transition-all ${
+                      className={`relative aspect-[3/4] overflow-hidden border-2 transition-all ${
                         lbIndex === idx
                           ? "border-[#00befa]"
                           : "border-transparent opacity-70 hover:opacity-100"
@@ -284,7 +285,7 @@ export default function MediaGalleryLightbox({
                       <div className="flex items-center justify-center w-full h-full">
                         <MediaSlide
                           item={item}
-                          className="max-h-[calc(100vh-220px)] max-w-full w-auto mx-auto object-contain bg-black rounded-lg"
+                          className="max-h-[calc(100vh-220px)] max-w-full w-auto mx-auto object-contain bg-black"
                         />
                       </div>
                     ) : (
@@ -307,7 +308,7 @@ export default function MediaGalleryLightbox({
                     key={idx}
                     type="button"
                     onClick={() => goTo(idx)}
-                    className={`relative shrink-0 w-[72px] h-[52px] sm:w-[88px] sm:h-[60px] rounded-md overflow-hidden transition-all duration-200 ${
+                    className={`relative shrink-0 w-[60px] aspect-[3/4] sm:w-[72px] overflow-hidden transition-all duration-200 ${
                       lbIndex === idx
                         ? "border-2 border-[#00befa] opacity-100 shadow-[0_0_0_1px_rgba(0,190,250,0.4)]"
                         : "border-2 border-transparent opacity-45 hover:opacity-75"

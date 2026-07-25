@@ -1,15 +1,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import Layout from "../Layout.js";
 import CountryFilter from "../../components/NavbarTestSideBarToggle.jsx";
-import SwiperCarousel from "../../components/SwiperCarousel/SwiperCard.jsx";
 import FilterSideBar from "../../components/FilterSideBar";
-import Slider from "../../components/Slider.jsx";
-// 🚀 導入 Supabase Client
 import { supabase } from "../../lib/supabaseClient";
+import SafeImage from "../../components/SafeImage";
 import { shouldBypassImageOptimization } from "../../lib/resolveMedusaImageUrl";
 
 // --- getStaticProps (從 Supabase 抓取所有資料) ---
@@ -160,7 +157,7 @@ const AllProductsPage = ({ categories, initialProducts }) => {
                       >
                         <div className="card overflow-hidden rounded-xl p-4 bg-white">
                           <div className="relative w-full aspect-[3/4] mb-3">
-                            <Image
+                            <SafeImage
                               src={productImage}
                               alt={product.name}
                               fill

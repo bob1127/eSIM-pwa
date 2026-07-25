@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import Layout from "../Layout";
 import CountryFilter from "../../components/NavbarTestSideBarToggle.jsx";
 import { useRouter } from "next/router";
 import SwiperCarousel from "../../components/SwiperCarousel/SwiperCard.jsx";
 import FilterSideBar from "../../components/FilterSideBar";
 import { motion } from "framer-motion";
+import SafeImage from "../../components/SafeImage";
 import { shouldBypassImageOptimization } from "../../lib/resolveMedusaImageUrl";
 
 // 輔助函式：建立 WooCommerce API 請求 URL (僅在伺服器端使用)
@@ -222,7 +222,7 @@ const CategoryPage = ({ slug, categories, initialProducts }) => {
                         className="hover:scale-105 duration-200 block"
                       >
                         <div className="card overflow-hidden rounded-xl p-4 bg-white">
-                          <Image
+                          <SafeImage
                             src={productImage}
                             alt={product.name}
                             width={300}

@@ -73,9 +73,11 @@ const nextConfig = {
   skipTrailingSlashRedirect: true,
 
   images: {
-    formats: ["image/avif", "image/webp"],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    loader: "custom",
+    loaderFile: "./lib/cfImageLoader.js",
+    // 與 cfImageLoader 分桶對齊，減少 Cloudflare unique transformations
+    deviceSizes: [360, 640, 960, 1280],
+    imageSizes: [64, 128, 256, 360],
     minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       { protocol: "https", hostname: "**" },

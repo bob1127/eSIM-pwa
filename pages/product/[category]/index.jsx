@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import SafeImage from "../../../components/SafeImage";
 import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import Layout from "../../Layout.js";
@@ -394,9 +394,9 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                       className="group"
                     >
                       <Link href={productLink} className="block">
-                        <div className="card overflow-hidden rounded-xl p-3 bg-white border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all">
+                        <div className="card overflow-hidden p-3 bg-white border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all">
                           <div className="relative w-full aspect-[3/4] mb-3">
-                            <Image
+                            <SafeImage
                               src={productImage}
                               alt={product.name}
                               fill
@@ -404,7 +404,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                               unoptimized={shouldBypassImageOptimization(
                                 productImage,
                               )}
-                              className="rounded-[14px] object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                             />
                           </div>
                           <span className="font-bold text-sm text-slate-800 block mb-1 line-clamp-2 min-h-[40px]">
