@@ -6,12 +6,12 @@ import { DobermanFooter } from "@/components/partner/DobermanWidgets";
 import { usePartnerSession, partnerLogout, SITE_URL } from "@/lib/partnerAuth";
 
 const NAV_ITEMS = [
-  { href: "/partner/dashboard", label: "儀表板", icon: "space_dashboard" },
-  { href: "/partner/catalog", label: "選品管理", icon: "shopping_bag" },
-  { href: "/partner/products", label: "商品管理", icon: "inventory_2" },
-  { href: "/partner/orders", label: "訂單分潤", icon: "receipt_long" },
-  { href: "/partner/blog", label: "文章管理", icon: "article" },
-  { href: "/partner/settings", label: "商店設定", icon: "settings" },
+  { href: "/partner/dashboard", label: "儀表板", icon: "space_dashboard", models: ["store", "referral"] },
+  { href: "/partner/catalog", label: "選品管理", icon: "shopping_bag", models: ["store"] },
+  { href: "/partner/products", label: "商品管理", icon: "inventory_2", models: ["store"] },
+  { href: "/partner/orders", label: "訂單分潤", icon: "receipt_long", models: ["store", "referral"] },
+  { href: "/partner/blog", label: "文章管理", icon: "article", models: ["store"] },
+  { href: "/partner/settings", label: "商店設定", icon: "settings", models: ["store"] },
 ];
 
 export default function PartnerAdminLayout({ title, children, footerNotice }) {
@@ -32,6 +32,8 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
   if (!user || !partner) return null;
 
   const storeUrl = store ? `${SITE_URL}/p/${store.domain}` : null;
+  const model = partner.cooperation_model === "referral" ? "referral" : "store";
+  const navItems = NAV_ITEMS.filter((item) => item.models.includes(model));
 
   return (
     <div className="min-h-screen bg-[#e8ecf1] flex flex-col font-sans">
@@ -65,13 +67,15 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
               賣場預覽
             </a>
           )}
-          <Link
-            href="/partner/settings"
-            className="flex items-center gap-1.5 text-xs border border-white/30 hover:bg-white/10 px-3 py-1.5 rounded-sm transition font-bold"
-          >
-            <MaterialIcon name="settings" size={16} />
-            <span className="hidden sm:inline">商店設定</span>
-          </Link>
+          {model === "store" && (
+            <Link
+              href="/partner/settings"
+              className="flex items-center gap-1.5 text-xs border border-white/30 hover:bg-white/10 px-3 py-1.5 rounded-sm transition font-bold"
+            >
+              <MaterialIcon name="settings" size={16} />
+              <span className="hidden sm:inline">商店設定</span>
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => partnerLogout(router)}
@@ -107,7 +111,7 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
         {/* ── DOBERMAN サイドバー（ライトグレー） ── */}
         <aside className="w-48 bg-[#f5f6f8] border-r border-slate-200 flex-col shrink-0 hidden md:flex">
           <nav className="flex-1 py-2">
-            {NAV_ITEMS.map(({ href, label, icon }, i) => {
+            {navItems.map(({ href, label, icon }, i) => {
               const active = router.pathname === href;
               return (
                 <div key={href}>
@@ -147,7 +151,7 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {/* モバイルナビ */}
           <div className="md:hidden flex overflow-x-auto bg-[#f5f6f8] border-b border-slate-200 px-2 py-1 gap-1 shrink-0">
-            {NAV_ITEMS.map(({ href, label, icon }) => {
+            {navItems.map(({ href, label, icon }) => {
               const active = router.pathname === href;
               return (
                 <Link

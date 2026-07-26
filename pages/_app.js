@@ -11,6 +11,7 @@ import { PWA_LOGO, PWA_APP_NAME, SITE_FAVICON, SITE_APPLE_TOUCH_ICON } from "../
 import PartnerRecoveryRedirect from "../components/PartnerRecoveryRedirect";
 import SupabaseOAuthRedirect from "../components/SupabaseOAuthRedirect";
 import PWARegister from "../components/PWARegister";
+import ReferralCapture from "../components/ReferralCapture";
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   return (
@@ -35,6 +36,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
             <NextUIProvider>
               <CartProvider>
                 <PWARegister />
+                <ReferralCapture />
                 <PartnerRecoveryRedirect />
                 <SupabaseOAuthRedirect />
                 <Component {...pageProps} />

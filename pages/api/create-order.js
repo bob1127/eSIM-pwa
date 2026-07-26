@@ -1,21 +1,23 @@
 // 檔案位置：pages/api/create-order.js
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
+import {
+  resolveActiveReferralPartner,
+  profitFromReferralPartner,
+} from "../../lib/resolveReferralPartner";
 
-// ⚠️ 注意：這裡使用的是 SERVICE_ROLE_KEY，因為這是在後端 API 執行，
-// 可以繞過 RLS 安全規則，確保客人還沒登入也能建立訂單。
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY 
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
 );
 
 export default async function handler(req, res) {
-  // 只允許 POST 請求
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, message: 'Method Not Allowed' });
+  if (req.method !== "POST") {
+    return res
+      .status(405)
+      .json({ success: false, message: "Method Not Allowed" });
   }
 
   try {
-    // 1. 從前端接收購物車傳來的訂單資料
     const {
       store_id,
       total_amount,
@@ -23,38 +25,57 @@ export default async function handler(req, res) {
       partner_profit,
       coupon_id,
       partner_id,
-      items // 購物車的商品明細陣列
+      referral_code,
+      items,
     } = req.body;
 
-    // 2. 寫入 Supabase orders 資料表
+    let finalPartnerId = partner_id || null;
+    let finalProfit =
+      partner_profit != null && partner_profit !== ""
+        ? Number(partner_profit)
+        : 0;
+
+    // 主站／無賣場：用推薦 Cookie 代碼歸因
+    if (!store_id && !finalPartnerId && referral_code) {
+      const refPartner = await resolveActiveReferralPartner(referral_code);
+      if (refPartner) {
+        finalPartnerId = refPartner.id;
+        finalProfit = profitFromReferralPartner(
+          refPartner,
+          total_amount,
+          b2b_cost,
+        );
+      }
+    }
+
     const { data: newOrder, error } = await supabase
-      .from('orders')
+      .from("orders")
       .insert([
         {
           store_id: store_id || null,
           total_amount: total_amount,
           b2b_cost: b2b_cost,
-          partner_profit: partner_profit,
+          partner_profit: finalProfit,
           coupon_id: coupon_id || null,
-          partner_id: partner_id || null,
-          item_details: items,         // 將購物車商品陣列直接存為 JSON
-          status: 'pending'            // 剛建立的訂單都是待付款
-        }
+          partner_id: finalPartnerId,
+          item_details: items,
+          status: "pending",
+        },
       ])
-      .select() // 寫入後把新增的那筆資料抓回來
+      .select()
       .single();
 
     if (error) throw error;
 
-    // 3. 回傳成功訊息與新建立的訂單 ID
     return res.status(200).json({
       success: true,
-      message: '訂單建立成功',
-      orderId: newOrder.id
+      message: "訂單建立成功",
+      orderId: newOrder.id,
     });
-
   } catch (error) {
-    console.error('建立訂單失敗:', error);
-    return res.status(500).json({ success: false, message: '伺服器發生錯誤，無法建立訂單' });
+    console.error("建立訂單失敗:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "伺服器發生錯誤，無法建立訂單" });
   }
 }

@@ -15,6 +15,7 @@ import {
 } from "@/components/partner/DobermanWidgets";
 import MaterialIcon from "@/components/MaterialIcon";
 import { usePartnerSession, fetchPartnerStats, SITE_URL } from "@/lib/partnerAuth";
+import { buildReferralShareUrl } from "@/lib/partnerReferral";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
 
 const DashboardDonut = dynamic(() => import("@/components/partner/PartnerDashboardDonut"), {
@@ -112,17 +113,123 @@ export default function PartnerDashboard() {
   const [topName, topCount] = useMemo(() => topProduct(valid), [valid]);
 
   const storeUrl = store ? `${SITE_URL}/p/${store.domain}` : null;
+  const isReferral = partner?.cooperation_model === "referral";
+  const referralUrl =
+    isReferral && (partner.referral_code || partner.slug)
+      ? buildReferralShareUrl(
+          SITE_URL,
+          partner.referral_code || partner.slug,
+        )
+      : null;
   const isGood = !loading && totals.count > 0 && totals.profit > 0;
+
+  const copyReferral = async () => {
+    if (!referralUrl) return;
+    try {
+      await navigator.clipboard.writeText(referralUrl);
+      alert("已複製專屬推薦連結");
+    } catch {
+      prompt("請手動複製連結：", referralUrl);
+    }
+  };
 
   return (
     <PartnerAdminLayout
       title="儀表板"
       footerNotice={
-        storeUrl
-          ? `賣場連結：${storeUrl} — 系統運作正常。`
-          : undefined
+        referralUrl
+          ? `推薦連結：${referralUrl}`
+          : storeUrl
+            ? `賣場連結：${storeUrl} — 系統運作正常。`
+            : undefined
       }
     >
+      {referralUrl && (
+        <div className="mx-5 mt-4 mb-2 space-y-3">
+          <div className="rounded-xl border border-[#1a56db]/25 bg-white px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-bold text-[#1a56db] uppercase tracking-wide mb-1">
+                您的專屬推薦連結（貼社群會顯示行銷圖）
+              </p>
+              <p className="text-sm font-mono font-bold text-slate-800 break-all">
+                {referralUrl}
+              </p>
+              <p className="text-[11px] text-slate-500 mt-1">
+                售價與官網相同 · Cookie 30 天內下單計入業績 · 分潤計算見下方說明
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={copyReferral}
+              className="shrink-0 h-10 px-4 rounded-full bg-[#1a56db] text-white text-sm font-bold hover:bg-[#1344b5]"
+            >
+              複製連結
+            </button>
+          </div>
+
+          {/* 敏感：分潤怎麼算（僅夥伴後台） */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-[13px] text-slate-700 leading-relaxed">
+            <p className="text-[12px] font-black text-slate-900 mb-2 tracking-wide">
+              分潤怎麼算（僅供您參考，請勿對外公開細節）
+            </p>
+            {(() => {
+              const rate = Number(partner.referral_rate);
+              const partnerPts =
+                Number.isFinite(rate) && rate > 0 ? rate : 20;
+              const siteMarkup = 50;
+              const ofSellApprox = Math.round(
+                (partnerPts / (100 + siteMarkup)) * 1000,
+              ) / 10;
+              const exCost = 305;
+              const exSell = 459;
+              const exPartner = Math.round((exCost * partnerPts) / 100);
+              return (
+                <>
+                  <ul className="list-disc pl-5 space-y-1.5 mb-3">
+                    <li>
+                      您的約定分潤：
+                      <strong className="text-[#1a56db]">
+                        方案成本的 {partnerPts}%
+                      </strong>
+                      （系統欄位 referral_rate）
+                    </li>
+                    <li>
+                      旅客付的是官網售價；您
+                      <strong>不需自己訂價</strong>。
+                    </li>
+                    <li>
+                      若官網約抓 {siteMarkup}% 成本加成，您這檔大約等於
+                      <strong className="text-[#1a56db]">
+                        {" "}
+                        售價的 {ofSellApprox}%
+                      </strong>
+                      （方便對照官網標價心算）。
+                    </li>
+                    <li>
+                      Cookie{" "}
+                      <strong>30 天</strong>
+                      ：經您的連結進入後，30 天內在官網下單仍計入您的分潤。
+                    </li>
+                  </ul>
+                  <div className="rounded-lg bg-white border border-slate-200 px-3 py-2.5 text-[12px]">
+                    <p className="font-bold text-slate-800 mb-1">舉例（日本 5 天方案）</p>
+                    <p>
+                      成本約 NT${exCost} · 官網售價約 NT${exSell} → 您約拿{" "}
+                      <strong className="text-[#1a56db]">NT${exPartner}</strong>
+                      （成本 × {partnerPts}%；約售價{" "}
+                      {Math.round((exPartner / exSell) * 1000) / 10}%）
+                    </p>
+                    <p className="text-slate-500 mt-1">
+                      ※實際金額以訂單結算為準；不同方案成本／售價不同，後台訂單列表可看每筆分潤。
+                    </p>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
       {/* ── レポート期間バー ── */}
       <ReportPeriodBar
         rangeStart={rangeStart}
@@ -141,7 +248,9 @@ export default function PartnerDashboard() {
             ? "正在讀取分潤數據..."
             : totals.count > 0
               ? `期間內 ${totals.count} 筆訂單・累計分潤 ${fmt(totals.profit)}・分潤率 ${totals.rate}%`
-              : "您的專屬賣場已開通，前往選品管理加入 eSIM 方案後即可開始推廣。"
+              : isReferral
+                ? "複製上方專屬推薦連結，分享給旅客即可開始累積分潤。"
+                : "您的專屬賣場已開通，前往選品管理加入 eSIM 方案後即可開始推廣。"
         }
       />
 

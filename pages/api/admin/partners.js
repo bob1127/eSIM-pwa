@@ -5,6 +5,13 @@ import {
   sendPartnerApprovalEmail,
   mailErrorMessage,
 } from "../../../lib/partnerApprovalEmail";
+import {
+  buildReferralShareUrl,
+  DEFAULT_REFERRAL_RATE,
+  normalizeReferralCode,
+  allocateUniquePartnerCode,
+  suggestCodeFromName,
+} from "../../../lib/partnerReferral";
 
 const supabaseAdmin =
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -58,18 +65,43 @@ export default async function handler(req, res) {
     }
 
     const wasPending = partner.status === "pending";
+    const cooperationModel = partner.cooperation_model || "store";
+    const isReferral = cooperationModel === "referral";
 
-    const { error: updateErr } = await supabaseAdmin
+    const patch = { status };
+    if (status === "active" && isReferral) {
+      let code =
+        normalizeReferralCode(partner.referral_code) ||
+        normalizeReferralCode(partner.slug);
+      if (!code) {
+        code = await allocateUniquePartnerCode(supabaseAdmin, {
+          preferredBase: suggestCodeFromName(partner.name),
+          forReferral: true,
+        });
+      }
+      patch.referral_code = code;
+      if (!normalizeReferralCode(partner.slug)) {
+        patch.slug = code;
+      }
+      if (partner.referral_rate == null) {
+        patch.referral_rate = DEFAULT_REFERRAL_RATE;
+      }
+    }
+
+    const { data: updatedRows, error: updateErr } = await supabaseAdmin
       .from("partners")
-      .update({ status })
-      .eq("id", id);
+      .update(patch)
+      .eq("id", id)
+      .select("*");
 
     if (updateErr) {
       return res.status(500).json({ error: updateErr.message });
     }
 
+    const updatedPartner = updatedRows?.[0] || { ...partner, ...patch };
+
     let storeCreated = false;
-    if (status === "active") {
+    if (status === "active" && !isReferral) {
       const { data: existingStore } = await supabaseAdmin
         .from("stores")
         .select("id, status")
@@ -90,13 +122,13 @@ export default async function handler(req, res) {
           return res.status(200).json({
             ok: true,
             warning: `夥伴已批准，但建立店鋪失敗：${storeErr.message}`,
-            partner: { ...partner, status },
+            partner: updatedPartner,
             storeUrl: `${siteUrl}/p/${partner.slug}`,
+            referralUrl: null,
           });
         }
         storeCreated = true;
       } else if (existingStore.status !== "active") {
-        // 商店已存在但非 active → 重新啟用，避免賣場連結 404
         await supabaseAdmin
           .from("stores")
           .update({ status: "active", store_name: partner.name })
@@ -108,7 +140,10 @@ export default async function handler(req, res) {
     let emailError = null;
     if (status === "active" && wasPending) {
       try {
-        await sendPartnerApprovalEmail({ partner, siteUrl });
+        await sendPartnerApprovalEmail({
+          partner: updatedPartner,
+          siteUrl,
+        });
         emailSent = true;
       } catch (err) {
         console.error("[partners] approval email failed:", err?.message || err);
@@ -116,13 +151,25 @@ export default async function handler(req, res) {
       }
     }
 
+    const referralUrl =
+      status === "active" && isReferral
+        ? buildReferralShareUrl(
+            siteUrl,
+            updatedPartner.referral_code || updatedPartner.slug,
+          )
+        : null;
+
     return res.status(200).json({
       ok: true,
-      partner: { ...partner, status },
+      partner: updatedPartner,
       storeCreated,
       emailSent,
       emailError,
-      storeUrl: status === "active" ? `${siteUrl}/p/${partner.slug}` : null,
+      storeUrl:
+        status === "active" && !isReferral
+          ? `${siteUrl}/p/${partner.slug}`
+          : null,
+      referralUrl,
     });
   }
 

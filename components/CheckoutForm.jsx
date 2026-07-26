@@ -121,6 +121,15 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
     try {
       console.log("🚀 1. 開始呼叫 Next.js 中間層 API...");
 
+      // 專屬推薦 Cookie（?ref=）帶入結帳，供分潤歸因
+      let referralCode = "";
+      try {
+        const { readReferralCookie } = await import("../lib/partnerReferral");
+        referralCode = readReferralCookie() || "";
+      } catch {
+        /* ignore */
+      }
+
       // 只傳 cartId 和客人的地址資料給 Next.js API
       const orderRes = await fetch("/api/orders/create", {
         method: "POST",
@@ -130,6 +139,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
           orderInfo: {
             ...formData,
             customerId: memberInfo?.id || null,
+            referral_code: referralCode || undefined,
           },
         }),
       });

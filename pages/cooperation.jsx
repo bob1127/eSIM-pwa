@@ -1,21 +1,127 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
+import { useState } from "react";
 import Link from "next/link";
 import Layout from "./Layout";
+import Carousel, {
+  COOPERATION_LIQUID_TABS,
+} from "../components/ThreeHorizontalSlider.jsx";
 import {
   ChevronRightIcon,
-  HandThumbUpIcon,
   CurrencyDollarIcon,
   ClockIcon,
   DevicePhoneMobileIcon,
   ChartBarIcon,
 } from "@heroicons/react/24/solid";
-import { motion } from "framer-motion";
-import Marquee from "react-marquee-slider";
+import { motion, AnimatePresence } from "framer-motion";
+
+/** 下方區塊文案：隨專屬連結 / 專屬商店切換（版型不變） */
+const MODE_COPY = {
+  referral: {
+    tags: ["\\ 簡單 /", "\\ 快速 /", "\\ 高回饋 /"],
+    advantageTitleBefore: "選擇我們的",
+    advantageTitleHighlight: "優勢",
+    cards: [
+      {
+        title: ["Jeko的", "分潤制度"],
+        big: { num: "25", suffix: "%", badge: "up" },
+        desc: ["只要透過專屬連結下單", "即可獲得高額的現金回饋"],
+      },
+      {
+        title: ["不須繁瑣審核", "最快當日開通"],
+        icon: "clock",
+        desc: ["無門檻限制，填表後客服將", "火速為您開通專屬推薦連結"],
+      },
+      {
+        title: ["客服・行銷・SEO", "我們全程支援"],
+        icon: "chart",
+        desc: ["客服、行銷與 SEO 皆由 Jeko 協助", "您專心推廣，後勤交給我們"],
+      },
+    ],
+    banner: {
+      lead: "業績達標再加碼",
+      rest: "，讓您的分潤更上一層樓！",
+      baseLabel: "基本分潤",
+      base: "25",
+      bonusLabel: "達標獎金",
+      bonus: "5",
+      maxLabel: "最高可達",
+      max: "30",
+      note: "※以上為範例。客服／行銷／SEO 由我們支援；達標門檻詳見專屬合約。",
+    },
+    ctaTitle: {
+      before: "歡迎成為我們",
+      highlight: "『專屬連結』",
+      after: "夥伴的一員",
+    },
+    flow: {
+      sub: "從註冊到提領收入",
+      title: "分潤與請款流程說明",
+      desc: "推廣訂單自動記錄，客服／行銷／SEO 由我們支援，不須複雜手續即可每月領取分潤。",
+      periodLabel: "推廣期間",
+      buyerLabel: ["一般使用者的", "購買流程"],
+      step1: { main: "點擊連結", sub: "進入官網" },
+      partnerStep1: { main: "產生訂單", sub: "累積獎金" },
+    },
+  },
+  store: {
+    tags: ["\\ 風格 /", "\\ AI選品 /", "\\ 一鍵開通 /"],
+    advantageTitleBefore: "選擇專屬商店的",
+    advantageTitleHighlight: "優勢",
+    cards: [
+      {
+        title: ["打造商店風格", "形象隨你定義"],
+        big: { num: "品牌", suffix: "", badge: "自訂" },
+        desc: ["Banner、店名、色系、Logo、圖片", "完整打造屬於你的商店風格"],
+      },
+      {
+        title: ["AI 自動選品", "一鍵開通無煩惱"],
+        icon: "clock",
+        desc: [
+          "智能推薦上架方案，開立商店零負擔",
+          "審核通過後即可一鍵開通賣場",
+        ],
+      },
+      {
+        title: ["客服・行銷・SEO", "我們全程支援"],
+        icon: "chart",
+        desc: ["客服、行銷與 SEO 皆由 Jeko 協助", "您專心經營，後勤交給我們"],
+      },
+    ],
+    banner: {
+      lead: "風格＋AI選品",
+      rest: "，賣場利潤再加碼衝更高！",
+      baseLabel: "基本加價",
+      base: "25",
+      bonusLabel: "達標獎金",
+      bonus: "5",
+      maxLabel: "最高可達",
+      max: "30",
+      note: "※以上為範例。可自訂商店風格；自動選品一鍵開通；客服／行銷／SEO 由我們支援。",
+    },
+    ctaTitle: {
+      before: "歡迎成為我們",
+      highlight: "『專屬商店』",
+      after: "夥伴的一員",
+    },
+    flow: {
+      sub: "從開通賣場到提領收入",
+      title: "賣場營運與請款流程",
+      desc: "設定商店風格、自動選品一鍵開通後即可營運；客服／行銷／SEO 由我們支援，訂單自動累積分潤。",
+      periodLabel: "賣場營運",
+      buyerLabel: ["旅客在賣場的", "購買流程"],
+      step1: { main: "進入賣場", sub: "選購方案" },
+      partnerStep1: { main: "賣場出單", sub: "累積分潤" },
+    },
+  },
+};
 
 export default function Home() {
+  const [coopMode, setCoopMode] = useState("referral");
+  const copy = MODE_COPY[coopMode] || MODE_COPY.referral;
+  const registerHref = `/register-distributor?mode=${coopMode}`;
+  const registerStoreHref = "/register-distributor?mode=store";
+
   const subNews = [
     {
       id: 1,
@@ -34,44 +140,6 @@ export default function Home() {
       title: "專人協助",
       date: "2023.11.02",
       category: "提供客服與合作支援。",
-    },
-  ];
-  // 🌟 跑馬燈假資料 (大頭貼 & Logo)
-  const marqueeItems = [
-    { type: "avatar", src: "https://i.pravatar.cc/150?u=student1" },
-    { type: "logo", src: "https://via.placeholder.com/150x50?text=Travel+Co" },
-    { type: "avatar", src: "https://i.pravatar.cc/150?u=freelancer1" },
-    {
-      type: "logo",
-      src: "https://via.placeholder.com/150x50?text=Hotel+Group",
-    },
-    { type: "avatar", src: "https://i.pravatar.cc/150?u=student2" },
-    { type: "logo", src: "https://via.placeholder.com/150x50?text=Airline" },
-    { type: "avatar", src: "https://i.pravatar.cc/150?u=freelancer2" },
-    { type: "logo", src: "https://via.placeholder.com/150x50?text=Agency" },
-  ];
-
-  // 🌟 下方Banner區塊合作夥伴Logo (假資料)
-  const partnerLogos = [
-    {
-      name: "JCB",
-      src: "https://upload.wikimedia.org/wikipedia/commons/4/40/JCB_logo.svg",
-    },
-    {
-      name: "VISA",
-      src: "https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg",
-    },
-    {
-      name: "Mastercard",
-      src: "https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg",
-    },
-    {
-      name: "Diners Club",
-      src: "https://upload.wikimedia.org/wikipedia/commons/a/a6/Diners_Club_Logo3.svg",
-    },
-    {
-      name: "SAISON CARD",
-      src: "https://upload.wikimedia.org/wikipedia/commons/d/df/Saison_Card_logo.svg",
     },
   ];
 
@@ -233,6 +301,7 @@ export default function Home() {
           </div>
         </motion.div>
       </section>
+
       <section className="py-20 bg-[#F7F9FB] font-sans">
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 flex flex-col gap-6 md:gap-8">
           {/* =========================================
@@ -261,7 +330,7 @@ export default function Home() {
                 </p>
                 {/* 藍色藥丸按鈕 */}
                 <Link
-                  href="/register-distributor"
+                  href={registerHref}
                   className="bg-[#2550D6] hover:bg-[#1a3ca8] transition-colors duration-300 text-white text-[14px] font-bold px-8 py-3.5 rounded-full flex items-center gap-3 w-fit shadow-lg"
                 >
                   立即申請合作
@@ -303,8 +372,11 @@ export default function Home() {
                   不受時間地點限制，只要你有手機電腦。即可開始販售您的eSIM
                 </p>
                 {/* 藍色藥丸按鈕 */}
-                <button className="bg-[#2550D6] hover:bg-[#1a3ca8] transition-colors duration-300 text-white text-[14px] font-bold px-8 py-3.5 rounded-full flex items-center gap-3 w-fit shadow-lg">
-                  詳細を見る
+                <Link
+                  href={registerStoreHref}
+                  className="bg-[#2550D6] hover:bg-[#1a3ca8] transition-colors duration-300 text-white text-[14px] font-bold px-8 py-3.5 rounded-full flex items-center gap-3 w-fit shadow-lg"
+                >
+                  申請專屬商店
                   <svg
                     width="18"
                     height="18"
@@ -319,7 +391,7 @@ export default function Home() {
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
                   </svg>
-                </button>
+                </Link>
               </div>
             </div>
           </div>
@@ -327,7 +399,10 @@ export default function Home() {
           {/* =========================================
             下半部：全寬橫幅卡片
         ========================================= */}
-          <div className="group relative w-full bg-[#1E4AD1] rounded-[32px] overflow-hidden cursor-pointer flex flex-col md:flex-row items-center p-0   transition-colors duration-300 hover:bg-[#163aab] shadow-lg">
+          <Link
+            href={registerHref}
+            className="group relative w-full bg-[#1E4AD1] rounded-[32px] overflow-hidden cursor-pointer flex flex-col md:flex-row items-center p-0 transition-colors duration-300 hover:bg-[#163aab] shadow-lg"
+          >
             {/* 左側內嵌圖片 */}
             <div className="w-full md:w-[35%] lg:w-[35%] h-[200px] md:h-[220px] rounded-l-[24px] overflow-hidden shrink-0">
               <img
@@ -368,9 +443,372 @@ export default function Home() {
                 </svg>
               </div>
             </div>
+          </Link>
+        </div>
+      </section>
+
+      <Carousel
+        backgroundClassName="bg-[#F7F9FB]"
+        textTone="light"
+        showGallery={false}
+        liquidTabs={COOPERATION_LIQUID_TABS}
+        activeTab={coopMode}
+        onActiveTabChange={setCoopMode}
+      />
+
+      {/* =========================================
+          合作教學影片（暫隱藏）
+      ========================================= */}
+      <section className="hidden relative w-full bg-white pb-20 pt-4 z-20">
+        <div className="mx-auto max-w-[800px] w-[92%] flex flex-col items-center">
+          <h2 className="text-[22px] md:text-[28px] font-black text-[#1E4AD1] mb-6 tracking-wider text-center">
+            合作模式與教學說明
+          </h2>
+          <div className="w-full aspect-video rounded-xl overflow-hidden shadow-[0_10px_40px_rgb(0,0,0,0.15)] border-[4px] md:border-[8px] border-[#EFF6FC] bg-black">
+            <iframe
+              className="w-full h-full"
+              src="https://www.youtube.com/embed/s21mVJiZyCE?si=AXjLz_PxtDwVmCtR"
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            ></iframe>
+          </div>
+          <p className="mt-5 text-[13px] md:text-[14px] text-slate-500 font-bold tracking-widest bg-slate-100 px-4 py-1.5 rounded-full">
+            ※ 此影片為暫時放置的示意影片
+          </p>
+        </div>
+      </section>
+
+      {/* =========================================
+          區塊一：選ばれる理由 (合作夥伴優勢)
+      ========================================= */}
+      <section className="relative w-full bg-[#F7F9FB] py-20 z-20 font-sans border-t border-slate-200">
+        <div className="mx-auto max-w-[1000px] w-[92%] flex flex-col items-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={coopMode}
+              className="w-full flex flex-col items-center"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="text-[#1E4AD1] font-bold text-[14px] md:text-[16px] mb-2 tracking-widest flex items-center gap-2">
+                {copy.tags.map((t) => (
+                  <span key={t}>{t}</span>
+                ))}
+              </div>
+              <h2 className="text-[28px] md:text-[36px] font-black text-[#333] mb-12 tracking-wider">
+                {copy.advantageTitleBefore}
+                <span className="text-[#1E4AD1]">
+                  {copy.advantageTitleHighlight}
+                </span>
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-10">
+                {copy.cards.map((card, i) => (
+                  <div
+                    key={`${coopMode}-card-${i}`}
+                    className="bg-white border-[2px] border-[#1E4AD1] rounded-lg p-8 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <h3 className="text-[#1E4AD1] font-bold text-[15px] md:text-[16px] leading-relaxed h-[48px] flex items-center justify-center">
+                      {card.title[0]}
+                      <br />
+                      {card.title[1]}
+                    </h3>
+                    {card.big ? (
+                      <div className="text-[54px] font-black text-[#333] my-4 leading-none">
+                        {card.big.num}
+                        {card.big.suffix ? (
+                          <span className="text-[32px]">{card.big.suffix}</span>
+                        ) : null}{" "}
+                        {card.big.badge ? (
+                          <span className="text-lg text-[#215dcd]">
+                            {card.big.badge}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : card.icon === "clock" ? (
+                      <div className="my-4 text-[#333]">
+                        <ClockIcon className="w-16 h-16" strokeWidth={1.5} />
+                      </div>
+                    ) : (
+                      <div className="my-4 text-[#333] relative">
+                        <ChartBarIcon className="w-16 h-16" strokeWidth={1.5} />
+                        <div className="absolute -bottom-1 -right-2 bg-[#1E4AD1] text-white rounded-full p-1">
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-[13px] text-[#333] font-medium leading-relaxed">
+                      {card.desc[0]}
+                      <br />
+                      {card.desc[1]}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="w-full bg-white border-[2px] border-[#1E4AD1] rounded-lg overflow-hidden relative shadow-md">
+                <div className="absolute -top-3 -left-3 w-16 h-16 bg-[#1E4AD1] rounded-full flex items-center justify-center border-4 border-white z-10">
+                  <CurrencyDollarIcon className="w-8 h-8 text-[#FADE2B]" />
+                </div>
+
+                <div className="bg-[#1E4AD1] text-white py-3 px-6 md:px-16 text-center font-bold text-[16px] md:text-[18px] tracking-widest pl-12">
+                  <span className="text-[#FADE2B] font-black">
+                    {copy.banner.lead}
+                  </span>
+                  {copy.banner.rest}
+                </div>
+                <div className="py-8 px-4 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
+                  <div className="flex flex-col items-center">
+                    <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
+                      {copy.banner.baseLabel}
+                    </span>
+                    <span className="text-5xl font-black text-[#1E4AD1]">
+                      {copy.banner.base}
+                      <span className="text-3xl">%</span>
+                    </span>
+                  </div>
+
+                  <div className="text-4xl text-slate-300 font-black hidden md:block">
+                    +
+                  </div>
+
+                  <div className="flex flex-col items-center">
+                    <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
+                      {copy.banner.bonusLabel}
+                    </span>
+                    <span className="text-5xl font-black text-[#1E4AD1]">
+                      {copy.banner.bonus}
+                      <span className="text-3xl">%</span>
+                    </span>
+                  </div>
+
+                  <div className="text-4xl text-slate-300 font-black hidden md:block">
+                    =
+                  </div>
+
+                  <div className="flex flex-col items-center">
+                    <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
+                      {copy.banner.maxLabel}
+                    </span>
+                    <span className="text-6xl md:text-7xl font-black text-[#1E4AD1]">
+                      {copy.banner.max}
+                      <span className="text-4xl">%</span>
+                    </span>
+                  </div>
+                </div>
+                <div className="w-full text-center text-[11px] text-slate-500 pb-3">
+                  {copy.banner.note}
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </section>
+
+      {/* =========================================
+          CTA Section（藍黃設計）
+      ========================================= */}
+      <section className="relative w-full bg-white pb-16 pt-10 z-20 border-t border-slate-100">
+        <div className="mx-auto max-w-[800px] w-[92%] flex flex-col items-center">
+          <div className="text-[#333] font-bold text-[15px] md:text-[18px] mb-3 flex items-center gap-2 text-center flex-wrap justify-center">
+            <span className="text-xl text-[#FADE2B]">\</span>
+            <span className="border-b-2 border-[#1E4AD1] pb-0.5">
+              {copy.ctaTitle.before}
+              <span className="text-[#1E4AD1] font-black tracking-wide">
+                {copy.ctaTitle.highlight}
+              </span>
+              {copy.ctaTitle.after}
+            </span>
+            <span className="text-xl text-[#FADE2B]">/</span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+            <Link
+              href={registerHref}
+              className="group relative flex items-center justify-center w-full sm:w-[320px] bg-[#1E4AD1] text-white py-4 rounded-full font-bold text-[16px] md:text-[18px] shadow-[0_4px_14px_rgba(30,74,209,0.35)] hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(30,74,209,0.45)] transition-all"
+            >
+              立即填寫表單申請
+              <span className="absolute right-6 w-5 h-5 border-2 border-[#FADE2B] rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                <ChevronRightIcon className="w-3 h-3 text-[#FADE2B]" />
+              </span>
+            </Link>
+            <a
+              href="https://lin.ee/y6tdx5q"
+              target="_blank"
+              rel="noreferrer"
+              className="group relative flex items-center justify-center w-full sm:w-[320px] bg-white text-[#1E4AD1] border-2 border-[#1E4AD1] py-4 rounded-full font-bold text-[16px] md:text-[18px] hover:bg-[#EFF6FC] transition-all"
+            >
+              LINE快速聯繫
+              <span className="absolute right-6 w-5 h-5 border-2 border-[#1E4AD1] bg-[#FADE2B] rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                <ChevronRightIcon className="w-3 h-3 text-[#1E4AD1]" />
+              </span>
+            </a>
           </div>
         </div>
       </section>
+
+      {/* =========================================
+          區塊二：分潤與請款流程說明
+      ========================================= */}
+      <section className="relative w-full bg-[#FAFAFA] py-20 z-20 font-sans border-t border-slate-200">
+        <div className="mx-auto max-w-[1000px] w-[92%] flex flex-col items-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`flow-${coopMode}`}
+              className="w-full flex flex-col items-center"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <h3 className="text-[16px] md:text-[18px] font-bold text-[#333] mb-2 tracking-widest">
+                {copy.flow.sub}
+              </h3>
+              <h2 className="text-[26px] md:text-[34px] font-black text-[#1E4AD1] mb-6 tracking-wider text-center">
+                {copy.flow.title}
+              </h2>
+              <p className="text-[14px] text-[#333] font-medium mb-12 text-center">
+                {copy.flow.desc}
+              </p>
+
+              <div className="w-full max-w-[800px] relative">
+                <div className="flex justify-between items-end mb-4 px-4 md:px-32 relative z-10">
+                  <div className="flex flex-col items-center">
+                    <div className="bg-white border-2 border-[#333] font-bold text-[14px] px-6 py-1 rounded mb-2">
+                      當月
+                    </div>
+                    <div className="text-[12px] font-bold text-[#333]">
+                      {copy.flow.periodLabel}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="bg-white border-2 border-[#333] font-bold text-[14px] px-6 py-1 rounded mb-2">
+                      次月
+                    </div>
+                    <div className="text-[12px] font-bold text-[#333]">
+                      訂單結算日
+                    </div>
+                    <div className="bg-[#CF213A] text-white text-[10px] px-3 py-0.5 rounded-full mt-1">
+                      例：15日
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="bg-white border-2 border-[#333] font-bold text-[14px] px-6 py-1 rounded mb-2">
+                      次次月
+                    </div>
+                    <div className="text-[12px] font-bold text-[#333]">
+                      獎金匯款日
+                    </div>
+                    <div className="bg-white border border-slate-300 text-[#333] text-[10px] px-3 py-0.5 rounded-full mt-1">
+                      例：5日
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-2 border-[#A5B4CB] rounded-xl bg-white overflow-hidden flex flex-col shadow-sm">
+                  <div className="flex flex-col md:flex-row items-stretch bg-white">
+                    <div className="w-full md:w-[220px] bg-white border-b md:border-b-0 md:border-r-2 border-[#A5B4CB] flex items-center justify-center py-6 md:py-0">
+                      <span className="text-[#5B7382] font-bold text-[15px] md:text-[16px] text-center leading-relaxed">
+                        {copy.flow.buyerLabel[0]}
+                        <br />
+                        {copy.flow.buyerLabel[1]}
+                      </span>
+                    </div>
+                    <div className="flex-1 flex items-center justify-between p-6 md:p-8 relative">
+                      <div className="flex flex-col items-center">
+                        <span className="font-black text-[#333] text-[16px]">
+                          {copy.flow.step1.main}
+                        </span>
+                        <span className="text-[13px] text-[#666] mt-1">
+                          {copy.flow.step1.sub}
+                        </span>
+                      </div>
+                      <ChevronRightIcon className="w-5 h-5 text-slate-300" />
+                      <div className="w-20 h-20 rounded-full bg-slate-200 flex flex-col items-center justify-center border-2 border-slate-300 z-10">
+                        <span className="text-sm font-bold text-slate-600">
+                          結帳
+                        </span>
+                      </div>
+                      <div className="absolute top-0 bottom-0 left-[50%] w-px border-l-2 border-dotted border-[#CF213A] -z-10"></div>
+                      <div className="absolute top-0 bottom-0 right-[15%] w-px border-l-2 border-dotted border-slate-300 -z-10"></div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col md:flex-row items-stretch border-t-2 border-[#1E4AD1]">
+                    <div className="w-full md:w-[220px] bg-[#1E4AD1] text-white flex flex-col items-center justify-center py-6 md:py-8">
+                      <span className="text-[18px] font-black italic leading-none mb-1">
+                        PARTNER
+                      </span>
+                      <span className="text-[14px] font-bold">
+                        合作夥伴專屬後台
+                      </span>
+                    </div>
+                    <div className="flex-1 flex items-center justify-between p-6 md:p-8 relative bg-[#F8FAFC]">
+                      <div className="flex flex-col items-center">
+                        <span className="font-black text-[#333] text-[16px]">
+                          {copy.flow.partnerStep1.main}
+                        </span>
+                        <span className="text-[13px] text-[#666] mt-1">
+                          {copy.flow.partnerStep1.sub}
+                        </span>
+                      </div>
+                      <ChevronRightIcon className="w-5 h-5 text-slate-300" />
+
+                      <div className="w-24 h-24 rounded-full bg-[#1E4AD1] text-white flex flex-col items-center justify-center shadow-md z-10 border-4 border-white">
+                        <DevicePhoneMobileIcon className="w-6 h-6 mb-1" />
+                        <span className="text-[12px] font-bold leading-tight text-center">
+                          報表
+                          <br />
+                          結算
+                        </span>
+                      </div>
+
+                      <div className="absolute top-[20%] bottom-[20%] left-[45%] right-[20%] bg-[#e4ecf9] -z-10 flex items-center justify-center clip-path-arrow">
+                        <div className="flex flex-col items-center pl-8">
+                          <span className="text-[11px] font-bold text-[#1E4AD1]">
+                            系統自動出帳
+                          </span>
+                          <span className="text-[16px] font-black text-[#1E4AD1]">
+                            匯款至指定帳戶
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="w-20 h-20 rounded-full bg-[#1E4AD1] text-white flex flex-col items-center justify-center shadow-md z-10">
+                        <span className="text-[12px] font-bold leading-tight text-center">
+                          獎金
+                          <br />
+                          入帳
+                        </span>
+                      </div>
+
+                      <div className="absolute top-0 bottom-0 left-[50%] w-px border-l-2 border-dotted border-[#CF213A] -z-20"></div>
+                      <div className="absolute top-0 bottom-0 right-[15%] w-px border-l-2 border-dotted border-slate-300 -z-20"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </section>
+
       <section className="bg-[#F6F8F9] py-20 font-sans">
         <div className="max-w-[1100px] mx-auto px-4 md:px-8">
           {/* 標題 */}
@@ -383,8 +821,8 @@ export default function Home() {
             {/* =========================================
               左側：主打新聞 (Featured News)
           ========================================= */}
-            <a
-              href="#"
+            <Link
+              href={registerHref}
               className="group block bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300"
             >
               {/* 上半部：視覺海報 (利用 CSS 重現截圖中的設計) */}
@@ -443,16 +881,16 @@ export default function Home() {
                   <span>可以自由決定您的利潤</span>
                 </div>
               </div>
-            </a>
+            </Link>
 
             {/* =========================================
               右側：新聞列表 (List News)
           ========================================= */}
             <div className="flex flex-col gap-4 md:gap-5 justify-between">
               {subNews.map((news) => (
-                <a
+                <Link
                   key={news.id}
-                  href="#"
+                  href={registerHref}
                   className="group flex h-[120px] md:h-auto md:flex-1 bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300"
                 >
                   {/* 縮圖區域 (模擬黃色 TSUNORU 圖案) */}
@@ -485,7 +923,7 @@ export default function Home() {
                       <span>{news.category}</span>
                     </div>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
           </div>
@@ -494,13 +932,13 @@ export default function Home() {
             底部：藍色按鈕
         ========================================= */}
           <div className="mt-8 flex justify-end">
-            <a
-              href="#"
+            <Link
+              href={registerHref}
               className="relative group inline-flex items-center justify-center bg-[#0066D6] hover:bg-[#0052ad] text-white font-bold text-[15px] tracking-widest px-10 py-4 rounded-full transition-all duration-300 shadow-md"
             >
               {/* 按鈕左側的極小裝飾圓點 (如截圖細節) */}
               <span className="absolute left-4 w-1.5 h-1.5 bg-[#00428a] rounded-full"></span>
-              聯絡我們
+              立即申請
               <svg
                 width="18"
                 height="18"
@@ -515,339 +953,16 @@ export default function Home() {
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>
               </svg>
-            </a>
-          </div>
-        </div>
-      </section>
-      {/* =========================================
-          CTA Section (白色背景區塊)
-      ========================================= */}
-      <section className="relative w-full bg-white pb-16 pt-10 z-20">
-        <div className="mx-auto max-w-[800px] w-[92%] flex flex-col items-center">
-          <div className="text-[#CF213A] font-bold text-[15px] md:text-[18px] mb-3 flex items-center gap-2">
-            <span className="text-xl">\</span>
-            <span className="border-b-2 border-[#CF213A] pb-0.5">
-              歡迎成為我們的一員
-            </span>
-            <span className="text-xl">/</span>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-            <button className="group relative flex items-center justify-center w-full sm:w-[320px] bg-[#CF213A] text-white py-4 rounded-full font-bold text-[16px] md:text-[18px] shadow-[0_4px_14px_rgba(207,33,58,0.4)] hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(207,33,58,0.5)] transition-all">
-              立即填寫表單申請
-              <span className="absolute right-6 w-5 h-5 border-2 border-white rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                <ChevronRightIcon className="w-3 h-3 text-white" />
-              </span>
-            </button>
-            <button className="group relative flex items-center justify-center w-full sm:w-[320px] bg-white text-[#CF213A] border-2 border-[#CF213A] py-4 rounded-full font-bold text-[16px] md:text-[18px] hover:bg-red-50 transition-all">
-              LINE快速聯繫
-              <span className="absolute right-6 w-5 h-5 border-2 border-[#CF213A] rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                <ChevronRightIcon className="w-3 h-3 text-[#CF213A]" />
-              </span>
-            </button>
+            </Link>
           </div>
         </div>
       </section>
 
       {/* =========================================
-          合作教學影片 
+          合作夥伴 Banner（Logo 跑馬燈暫不顯示，之後再加入）
       ========================================= */}
-      <section className="relative w-full bg-white pb-20 pt-4 z-20">
-        <div className="mx-auto max-w-[800px] w-[92%] flex flex-col items-center">
-          <h2 className="text-[22px] md:text-[28px] font-black text-[#1E4AD1] mb-6 tracking-wider text-center">
-            合作模式與教學說明
-          </h2>
-          <div className="w-full aspect-video rounded-xl overflow-hidden shadow-[0_10px_40px_rgb(0,0,0,0.15)] border-[4px] md:border-[8px] border-[#EFF6FC] bg-black">
-            <iframe
-              className="w-full h-full"
-              src="https://www.youtube.com/embed/s21mVJiZyCE?si=AXjLz_PxtDwVmCtR"
-              title="YouTube video player"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            ></iframe>
-          </div>
-          <p className="mt-5 text-[13px] md:text-[14px] text-slate-500 font-bold tracking-widest bg-slate-100 px-4 py-1.5 rounded-full">
-            ※ 此影片為暫時放置的示意影片
-          </p>
-        </div>
-      </section>
-
-      {/* =========================================
-          區塊一：選ばれる理由 (合作夥伴優勢)
-      ========================================= */}
-      <section className="relative w-full bg-[#F7F9FB] py-20 z-20 font-sans border-t border-slate-200">
-        <div className="mx-auto max-w-[1000px] w-[92%] flex flex-col items-center">
-          <div className="text-[#1E4AD1] font-bold text-[14px] md:text-[16px] mb-2 tracking-widest flex items-center gap-2">
-            <span>\ 簡單 /</span>
-            <span>\ 快速 /</span>
-            <span>\ 高回饋 /</span>
-          </div>
-          <h2 className="text-[28px] md:text-[36px] font-black text-[#333] mb-12 tracking-wider">
-            選擇我們的<span className="text-[#1E4AD1]">優勢</span>
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-10">
-            {/* 卡片 1 */}
-            <div className="bg-white border-[2px] border-[#1E4AD1] rounded-lg p-8 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="text-[#1E4AD1] font-bold text-[15px] md:text-[16px] leading-relaxed h-[48px] flex items-center justify-center">
-                業界最高水準的
-                <br />
-                分潤制度
-              </h3>
-              <div className="text-[54px] font-black text-[#333] my-4 leading-none">
-                15<span className="text-[32px]">%</span>
-              </div>
-              <p className="text-[13px] text-[#333] font-medium leading-relaxed">
-                只要透過專屬連結下單
-                <br />
-                即可獲得高額的現金回饋
-              </p>
-            </div>
-
-            {/* 卡片 2 */}
-            <div className="bg-white border-[2px] border-[#1E4AD1] rounded-lg p-8 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="text-[#1E4AD1] font-bold text-[15px] md:text-[16px] leading-relaxed h-[48px] flex items-center justify-center">
-                不須繁瑣審核
-                <br />
-                最快當日開通
-              </h3>
-              <div className="my-4 text-[#333]">
-                <ClockIcon className="w-16 h-16" strokeWidth={1.5} />
-              </div>
-              <p className="text-[13px] text-[#333] font-medium leading-relaxed">
-                無門檻限制，填表後客服將
-                <br />
-                火速為您開通專屬推薦連結
-              </p>
-            </div>
-
-            {/* 卡片 3 */}
-            <div className="bg-white border-[2px] border-[#1E4AD1] rounded-lg p-8 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="text-[#1E4AD1] font-bold text-[15px] md:text-[16px] leading-relaxed h-[48px] flex items-center justify-center">
-                專屬數據後台
-                <br />
-                成效一目了然
-              </h3>
-              <div className="my-4 text-[#333] relative">
-                <ChartBarIcon className="w-16 h-16" strokeWidth={1.5} />
-                <div className="absolute -bottom-1 -right-2 bg-[#1E4AD1] text-white rounded-full p-1">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                </div>
-              </div>
-              <p className="text-[13px] text-[#333] font-medium leading-relaxed">
-                提供透明的點擊與轉單報表
-                <br />
-                隨時掌握您的推廣收入
-              </p>
-            </div>
-          </div>
-
-          {/* 公式 Banner */}
-          <div className="w-full bg-white border-[2px] border-[#1E4AD1] rounded-lg overflow-hidden relative shadow-md">
-            <div className="absolute -top-3 -left-3 w-16 h-16 bg-[#1E4AD1] rounded-full flex items-center justify-center border-4 border-white z-10">
-              <CurrencyDollarIcon className="w-8 h-8 text-[#FADE2B]" />
-            </div>
-
-            <div className="bg-[#1E4AD1] text-white py-3 px-6 md:px-16 text-center font-bold text-[16px] md:text-[18px] tracking-widest pl-12">
-              <span className="text-[#FADE2B] font-black">業績達標再加碼</span>
-              ，讓您的分潤更上一層樓！
-            </div>
-            <div className="py-8 px-4 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
-              <div className="flex flex-col items-center">
-                <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
-                  基本分潤
-                </span>
-                <span className="text-5xl font-black text-[#1E4AD1]">
-                  10<span className="text-3xl">%</span>
-                </span>
-              </div>
-
-              <div className="text-4xl text-slate-300 font-black hidden md:block">
-                +
-              </div>
-
-              <div className="flex flex-col items-center">
-                <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
-                  達標獎金
-                </span>
-                <span className="text-5xl font-black text-[#1E4AD1]">
-                  5<span className="text-3xl">%</span>
-                </span>
-              </div>
-
-              <div className="text-4xl text-slate-300 font-black hidden md:block">
-                =
-              </div>
-
-              <div className="flex flex-col items-center">
-                <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
-                  最高可達
-                </span>
-                <span className="text-6xl md:text-7xl font-black text-[#1E4AD1]">
-                  15<span className="text-4xl">%</span>
-                </span>
-              </div>
-            </div>
-            <div className="w-full text-center text-[11px] text-slate-500 pb-3">
-              ※上記は一例です。詳細的達標門檻將於專屬合約中說明。
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================
-          區塊二：分潤與請款流程說明
-      ========================================= */}
-      <section className="relative w-full bg-[#FAFAFA] py-20 z-20 font-sans border-t border-slate-200">
-        <div className="mx-auto max-w-[1000px] w-[92%] flex flex-col items-center">
-          <h3 className="text-[16px] md:text-[18px] font-bold text-[#333] mb-2 tracking-widest">
-            從註冊到提領收入
-          </h3>
-          <h2 className="text-[26px] md:text-[34px] font-black text-[#1E4AD1] mb-6 tracking-wider text-center">
-            分潤與請款流程說明
-          </h2>
-          <p className="text-[14px] text-[#333] font-medium mb-12 text-center">
-            推廣產生的訂單將自動記錄，不須複雜的手續即可每月領取您的分潤。
-          </p>
-
-          <div className="w-full max-w-[800px] relative">
-            <div className="flex justify-between items-end mb-4 px-4 md:px-32 relative z-10">
-              <div className="flex flex-col items-center">
-                <div className="bg-white border-2 border-[#333] font-bold text-[14px] px-6 py-1 rounded mb-2">
-                  當月
-                </div>
-                <div className="text-[12px] font-bold text-[#333]">
-                  推廣期間
-                </div>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-white border-2 border-[#333] font-bold text-[14px] px-6 py-1 rounded mb-2">
-                  次月
-                </div>
-                <div className="text-[12px] font-bold text-[#333]">
-                  訂單結算日
-                </div>
-                <div className="bg-[#CF213A] text-white text-[10px] px-3 py-0.5 rounded-full mt-1">
-                  例：15日
-                </div>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-white border-2 border-[#333] font-bold text-[14px] px-6 py-1 rounded mb-2">
-                  次次月
-                </div>
-                <div className="text-[12px] font-bold text-[#333]">
-                  獎金匯款日
-                </div>
-                <div className="bg-white border border-slate-300 text-[#333] text-[10px] px-3 py-0.5 rounded-full mt-1">
-                  例：5日
-                </div>
-              </div>
-            </div>
-
-            <div className="border-2 border-[#A5B4CB] rounded-xl bg-white overflow-hidden flex flex-col shadow-sm">
-              <div className="flex flex-col md:flex-row items-stretch bg-white">
-                <div className="w-full md:w-[220px] bg-white border-b md:border-b-0 md:border-r-2 border-[#A5B4CB] flex items-center justify-center py-6 md:py-0">
-                  <span className="text-[#5B7382] font-bold text-[15px] md:text-[16px] text-center leading-relaxed">
-                    一般使用者的
-                    <br />
-                    購買流程
-                  </span>
-                </div>
-                <div className="flex-1 flex items-center justify-between p-6 md:p-8 relative">
-                  <div className="flex flex-col items-center">
-                    <span className="font-black text-[#333] text-[16px]">
-                      點擊連結
-                    </span>
-                    <span className="text-[13px] text-[#666] mt-1">
-                      進入官網
-                    </span>
-                  </div>
-                  <ChevronRightIcon className="w-5 h-5 text-slate-300" />
-                  <div className="w-20 h-20 rounded-full bg-slate-200 flex flex-col items-center justify-center border-2 border-slate-300 z-10">
-                    <span className="text-sm font-bold text-slate-600">
-                      結帳
-                    </span>
-                  </div>
-                  <div className="absolute top-0 bottom-0 left-[50%] w-px border-l-2 border-dotted border-[#CF213A] -z-10"></div>
-                  <div className="absolute top-0 bottom-0 right-[15%] w-px border-l-2 border-dotted border-slate-300 -z-10"></div>
-                </div>
-              </div>
-
-              <div className="flex flex-col md:flex-row items-stretch border-t-2 border-[#1E4AD1]">
-                <div className="w-full md:w-[220px] bg-[#1E4AD1] text-white flex flex-col items-center justify-center py-6 md:py-8">
-                  <span className="text-[18px] font-black italic leading-none mb-1">
-                    PARTNER
-                  </span>
-                  <span className="text-[14px] font-bold">
-                    合作夥伴專屬後台
-                  </span>
-                </div>
-                <div className="flex-1 flex items-center justify-between p-6 md:p-8 relative bg-[#F8FAFC]">
-                  <div className="flex flex-col items-center">
-                    <span className="font-black text-[#333] text-[16px]">
-                      產生訂單
-                    </span>
-                    <span className="text-[13px] text-[#666] mt-1">
-                      累積獎金
-                    </span>
-                  </div>
-                  <ChevronRightIcon className="w-5 h-5 text-slate-300" />
-
-                  <div className="w-24 h-24 rounded-full bg-[#1E4AD1] text-white flex flex-col items-center justify-center shadow-md z-10 border-4 border-white">
-                    <DevicePhoneMobileIcon className="w-6 h-6 mb-1" />
-                    <span className="text-[12px] font-bold leading-tight text-center">
-                      報表
-                      <br />
-                      結算
-                    </span>
-                  </div>
-
-                  <div className="absolute top-[20%] bottom-[20%] left-[45%] right-[20%] bg-[#e4ecf9] -z-10 flex items-center justify-center clip-path-arrow">
-                    <div className="flex flex-col items-center pl-8">
-                      <span className="text-[11px] font-bold text-[#1E4AD1]">
-                        系統自動出帳
-                      </span>
-                      <span className="text-[16px] font-black text-[#1E4AD1]">
-                        匯款至指定帳戶
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="w-20 h-20 rounded-full bg-[#1E4AD1] text-white flex flex-col items-center justify-center shadow-md z-10">
-                    <span className="text-[12px] font-bold leading-tight text-center">
-                      獎金
-                      <br />
-                      入帳
-                    </span>
-                  </div>
-
-                  <div className="absolute top-0 bottom-0 left-[50%] w-px border-l-2 border-dotted border-[#CF213A] -z-20"></div>
-                  <div className="absolute top-0 bottom-0 right-[15%] w-px border-l-2 border-dotted border-slate-300 -z-20"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================
-          合作夥伴與廠商 Banner 區塊
-      ========================================= */}
-      <section className="relative w-full bg-white pb-24 pt-10 z-20 border-t border-slate-200">
-        <div className="mx-auto max-w-[1100px] w-[92%] flex flex-col items-center">
+      <section className="relative w-full bg-white pb-20 pt-10 z-20 border-t border-slate-200">
+        <div className="mx-auto max-w-[1100px] w-[92%] flex flex-col items-center text-center">
           <div className="w-full flex items-center justify-center gap-4 mb-3">
             <div className="flex-grow h-px bg-slate-200"></div>
             <h3 className="text-[18px] md:text-[22px] font-black text-[#1E4AD1] tracking-wider whitespace-nowrap">
@@ -856,37 +971,10 @@ export default function Home() {
             <div className="flex-grow h-px bg-slate-200"></div>
           </div>
 
-          <p className="text-xs md:text-sm text-[#5B7382] font-medium mb-12 text-center leading-relaxed">
-            ※合作廠商包含各大旅遊機構、學生社團及自由接案者，共同打造優質旅遊體驗
+          <p className="text-xs md:text-sm text-[#5B7382] font-medium max-w-[640px] leading-relaxed">
+            ※歡迎旅遊業者、飯店民宿、KOL／部落客與自由接案者加入——可選「專屬連結」分享官網同價分潤，或開「專屬商店」自訂風格、自動
+            選品一鍵開通；客服、行銷與 SEO 皆由我們支援。
           </p>
-
-          <div className="w-full overflow-hidden">
-            <Marquee velocity={25} minScale={0.7} resetAfterTries={200}>
-              {partnerLogos.map((logo, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-center h-10 md:h-12 w-auto min-w-[100px] mx-8 md:mx-16"
-                >
-                  {logo.name === "SAISON CARD" ? (
-                    <div className="flex items-center gap-1.5 px-3 py-1 bg-[#004B91] rounded shadow-sm">
-                      <span className="text-white font-serif font-bold text-lg md:text-xl">
-                        SAISON
-                      </span>
-                      <span className="text-white font-sans font-medium text-[9px] md:text-[10px] mt-1">
-                        CARD
-                      </span>
-                    </div>
-                  ) : (
-                    <img
-                      src={logo.src}
-                      alt={`${logo.name} Logo`}
-                      className="h-full w-auto object-contain max-w-[140px]"
-                    />
-                  )}
-                </div>
-              ))}
-            </Marquee>
-          </div>
         </div>
       </section>
 

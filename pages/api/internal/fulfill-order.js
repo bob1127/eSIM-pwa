@@ -10,8 +10,8 @@
 import axios from "axios";
 import crypto from "crypto";
 import FormData from "form-data";
-import nodemailer from "nodemailer";
 import PLAN_ID_MAP from "../../../lib/esim/planMap";
+import { sendMail } from "../../../lib/mailTransporter";
 
 const ACCOUNT = (process.env.ESIM_ACCOUNT || "test_account_9999").trim();
 const SECRET = (process.env.ESIM_SECRET || "7119968f9ff07654ga485487822g").trim();
@@ -32,23 +32,13 @@ function signHeaders() {
   return { timestamp, nonce, signature };
 }
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-  tls: { rejectUnauthorized: false },
-});
-
 async function sendEsimEmail(to, orderNumber, imagesHtml) {
-  await transporter.sendMail({
-    from: `"eSIM 團隊" <${process.env.GMAIL_USER}>`,
+  await sendMail({
     to,
+    fromName: "Jeko eSIM",
     subject: `🎉 您的 eSIM 訂單已準備就緒！（訂單 ${orderNumber}）`,
     html: `<div style="font-family: sans-serif;"><h2>您好！</h2><p>您的 eSIM 如下：</p>${imagesHtml}</div>`,
+    text: `您的 eSIM 訂單 ${orderNumber} 已準備就緒，請至信箱 HTML 版本查看 QR Code。`,
   });
 }
 

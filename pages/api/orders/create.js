@@ -6,6 +6,12 @@
 // 藍新表單」都移到 esim-backend 的 /store/newebpay-checkout 處理，
 // 詳見 pages/api/newebpay-generate-form.ts。
 
+import {
+  linkCartToReferral,
+  resolveActiveReferralPartner,
+} from "../../../lib/resolveReferralPartner";
+import { normalizeReferralCode } from "../../../lib/partnerReferral";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ success: false, message: "Method Not Allowed" });
 
@@ -64,8 +70,30 @@ export default async function handler(req, res) {
       phone: orderInfo.phone,
     };
 
+    // 專屬推薦連結：綁定 Medusa cart ↔ 夥伴（Cookie / 前端帶入）
+    const referralCode = normalizeReferralCode(
+      orderInfo?.referral_code || orderInfo?.referralCode || "",
+    );
+    if (referralCode) {
+      const refPartner = await resolveActiveReferralPartner(referralCode);
+      if (refPartner) {
+        await linkCartToReferral(cartId, refPartner, referralCode);
+      }
+    }
+
     console.log(`[Next.js API] 📍 步驟 1: 更新地址...`);
-    await fetchMedusa("更新地址", `${MEDUSA_URL}/store/carts/${cartId}`, { method: "POST", headers, body: JSON.stringify({ email: orderInfo.email, shipping_address: addressPayload, billing_address: addressPayload }) });
+    await fetchMedusa("更新地址", `${MEDUSA_URL}/store/carts/${cartId}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        email: orderInfo.email,
+        shipping_address: addressPayload,
+        billing_address: addressPayload,
+        ...(referralCode
+          ? { metadata: { jeko_referral_code: referralCode } }
+          : {}),
+      }),
+    });
 
     console.log(`[Next.js API] 🚚 步驟 2: 抓取並設定運費方案...`);
     const shipOptionsData = await fetchMedusa("取得運費選項", `${MEDUSA_URL}/store/shipping-options?cart_id=${cartId}`, { headers });

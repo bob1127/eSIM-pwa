@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import MaterialIcon from "@/components/MaterialIcon";
 import { bossFetch } from "@/lib/bossAdminClient";
-import { parsePartnerType } from "@/lib/partnerDescriptionParse";
+import { SITE_URL } from "@/lib/seo.config";
+import { buildReferralShareUrl } from "@/lib/partnerReferral";
+import { parsePartnerType, parseCooperationModel } from "@/lib/partnerDescriptionParse";
 import PartnerDetailPanel from "@/components/admin/PartnerDetailPanel";
 import { MetricTile } from "./AccountShell";
 
@@ -46,13 +48,23 @@ export default function AccountBossPartnersPanel() {
       if (data.warning) {
         setToast(data.warning);
       } else if (newStatus === "active") {
-        const storeLine = data.storeUrl || `www.jeko-esim.com.tw/p/${partner.slug}`;
+        const storeLine = data.storeUrl || "";
+        const refLine = data.referralUrl || "";
+        const linkLine = refLine
+          ? `推薦連結：${refLine}`
+          : storeLine
+            ? `賣場：${storeLine}`
+            : "";
         if (data.emailSent) {
-          setToast(`已批准！開通通知信已寄至 ${partner.email} · 賣場：${storeLine}`);
+          setToast(
+            `已批准！開通通知信已寄至 ${partner.email}${linkLine ? ` · ${linkLine}` : ""}`,
+          );
         } else if (data.emailError) {
-          setToast(`已批准，但開通通知信寄送失敗：${data.emailError} · 賣場：${storeLine}`);
+          setToast(
+            `已批准，但開通通知信寄送失敗：${data.emailError}${linkLine ? ` · ${linkLine}` : ""}`,
+          );
         } else {
-          setToast(`已批准！賣場：${storeLine}`);
+          setToast(`已批准！${linkLine || partner.name}`);
         }
       } else {
         setToast(`已將 ${partner.name} 設為停用`);
@@ -160,18 +172,34 @@ export default function AccountBossPartnersPanel() {
                       <div className="text-xs text-slate-400">{p.email}</div>
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className="bg-blue-50 text-[#2563eb] px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap">
-                        {parsePartnerType(p.description)}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="bg-blue-50 text-[#2563eb] px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap w-fit">
+                          {parsePartnerType(p.description)}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-bold">
+                          {parseCooperationModel(p.description, p)}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3.5">
-                      <Link
-                        href={`/p/${p.slug}`}
-                        target="_blank"
-                        className="font-mono text-xs text-[#2563eb] bg-slate-50 px-2 py-1 rounded-sm hover:underline"
-                      >
-                        /p/{p.slug}
-                      </Link>
+                      {p.cooperation_model === "referral" ? (
+                        <a
+                          href={buildReferralShareUrl(SITE_URL, p.referral_code || p.slug)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-mono text-xs text-[#2563eb] bg-slate-50 px-2 py-1 rounded-sm hover:underline break-all"
+                        >
+                          /r/{p.referral_code || p.slug}
+                        </a>
+                      ) : (
+                        <Link
+                          href={`/p/${p.slug}`}
+                          target="_blank"
+                          className="font-mono text-xs text-[#2563eb] bg-slate-50 px-2 py-1 rounded-sm hover:underline"
+                        >
+                          /p/{p.slug}
+                        </Link>
+                      )}
                     </td>
                     <td className="px-4 py-3.5">
                       {p.status === "pending" && (

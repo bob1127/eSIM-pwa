@@ -528,10 +528,15 @@ export default function GlobalPlanScanner() {
   const [exchangeRates, setExchangeRates] = useState({ USD: 32.5, HKD: 4.1 });
   const [savedPlanIds, setSavedPlanIds] = useState<string[]>([]);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
-  /** 建議售價利潤％（漫遊預設 45；原生可另設） */
+  /** 建議售價利潤％（漫遊／原生分開，對成本加成；即官網動態售價） */
   const [profitPercent, setProfitPercent] = useState(45);
   const [nativeProfitPercent, setNativeProfitPercent] = useState(60);
   const [customProfitInput, setCustomProfitInput] = useState("45");
+  /**
+   * 專屬連結：只設「給夥伴的成本加成點數」
+   * 售價＝官網建議售價（漫遊/原生利潤）；你自動拿＝該方案利潤％ − 夥伴％
+   */
+  const [partnerRatePercent, setPartnerRatePercent] = useState(20);
 
   useEffect(() => {
     fetchRates();
@@ -540,6 +545,7 @@ export default function GlobalPlanScanner() {
     if (saved) setSavedPlanIds(JSON.parse(saved));
     const savedProfit = localStorage.getItem("esimSelectionProfitPercent");
     const savedNative = localStorage.getItem("esimSelectionNativeProfitPercent");
+    const savedPartner = localStorage.getItem("esimSelectionPartnerRate");
     if (savedProfit) {
       const n = Number(savedProfit);
       if (!Number.isNaN(n) && n > 0) {
@@ -550,6 +556,10 @@ export default function GlobalPlanScanner() {
     if (savedNative) {
       const n = Number(savedNative);
       if (!Number.isNaN(n) && n > 0) setNativeProfitPercent(n);
+    }
+    if (savedPartner) {
+      const n = Number(savedPartner);
+      if (!Number.isNaN(n) && n >= 0 && n <= 500) setPartnerRatePercent(n);
     }
   }, []);
   useEffect(() => {
@@ -572,6 +582,13 @@ export default function GlobalPlanScanner() {
       "esimSelectionNativeProfitPercent",
       String(rounded),
     );
+  };
+
+  const applyPartnerRatePercent = (value: number) => {
+    if (Number.isNaN(value) || value < 0 || value > 500) return;
+    const rounded = Math.round(value * 10) / 10;
+    setPartnerRatePercent(rounded);
+    localStorage.setItem("esimSelectionPartnerRate", String(rounded));
   };
   const toggleSavePlan = (id: string) => {
     setSavedPlanIds((prev) =>
@@ -691,6 +708,18 @@ export default function GlobalPlanScanner() {
         const margin = 1 + percent / 100;
         const profitRate = `${percent}%`;
         const suggestedPrice = Math.ceil((costTWD * margin) / 10) * 10 - 1;
+        const grossProfit = suggestedPrice - costTWD;
+        // 與官網同價；夥伴／你拆「成本加成點數」
+        const partnerSharePct = partnerRatePercent;
+        const ownerSharePct = Math.round((percent - partnerSharePct) * 10) / 10;
+        const splitOk = partnerSharePct <= percent;
+        const partnerProfitRaw = Math.round(
+          (costTWD * partnerSharePct) / 100,
+        );
+        const partnerProfit = splitOk
+          ? Math.min(partnerProfitRaw, Math.max(0, grossProfit))
+          : partnerProfitRaw;
+        const ownerProfit = grossProfit - partnerProfit;
 
         return {
           ...p,
@@ -700,7 +729,14 @@ export default function GlobalPlanScanner() {
           dataValue,
           costTWD,
           profitRate,
+          markupPercent: percent,
           suggestedPrice,
+          grossProfit,
+          partnerSharePct,
+          ownerSharePct,
+          partnerProfit,
+          ownerProfit,
+          splitOk,
           dayInt: parseInt(p.day) || 0,
           typeLabel: details.isNative ? `🔴 ${config.name}原生` : "🔵 漫遊線路",
           typeClass: details.isNative
@@ -718,6 +754,7 @@ export default function GlobalPlanScanner() {
     showSavedOnly,
     profitPercent,
     nativeProfitPercent,
+    partnerRatePercent,
   ]);
 
   const uniqueCarriers = useMemo(() => {
@@ -836,7 +873,13 @@ export default function GlobalPlanScanner() {
               {exchangeRates.HKD.toFixed(1)} TWD
             </span>
             <span className="text-emerald-300">
-              漫遊利潤 {profitPercent}% · 原生利潤 {nativeProfitPercent}%
+              官網售價：漫遊 {profitPercent}% · 原生 {nativeProfitPercent}%
+            </span>
+            <span className="text-violet-300">
+              專屬連結同價 · 給夥伴 {partnerRatePercent}% → 漫遊我留{" "}
+              {Math.round((profitPercent - partnerRatePercent) * 10) / 10}% ·
+              原生我留{" "}
+              {Math.round((nativeProfitPercent - partnerRatePercent) * 10) / 10}%
             </span>
           </div>
         </div>
@@ -961,6 +1004,66 @@ export default function GlobalPlanScanner() {
                 <span className="text-xs font-bold text-emerald-700">%</span>
               </div>
             </div>
+          </div>
+
+          {/* 專屬推薦連結：只選給夥伴趴數；售價跟官網一樣 */}
+          <div className="flex flex-wrap items-center gap-3 bg-violet-50 border border-violet-200 rounded-lg px-3 py-2.5">
+            <span className="text-xs font-bold text-violet-900 whitespace-nowrap">
+              🔗 專屬分潤連結
+            </span>
+            <span className="text-[10px] font-bold text-violet-600 bg-white/70 border border-violet-100 rounded px-2 py-0.5">
+              售價＝官網（夥伴不訂價）
+            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold text-violet-700 whitespace-nowrap">
+                給夥伴（成本加成點數）
+              </span>
+              {[10, 15, 20, 25, 30].map((pct) => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => applyPartnerRatePercent(pct)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
+                    partnerRatePercent === pct
+                      ? "bg-violet-600 text-white shadow-sm"
+                      : "bg-white text-violet-800 border border-violet-200 hover:bg-violet-100"
+                  }`}
+                >
+                  {pct}%
+                </button>
+              ))}
+              <input
+                type="number"
+                min={0}
+                max={500}
+                step={1}
+                value={partnerRatePercent}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (!Number.isNaN(n)) applyPartnerRatePercent(n);
+                }}
+                className="w-14 border border-violet-300 rounded-md px-2 py-1 text-xs font-bold text-violet-900 bg-white outline-none focus:ring-2 focus:ring-violet-400"
+                aria-label="給夥伴的成本加成百分比"
+              />
+              <span className="text-xs font-bold text-violet-700">%</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold">
+              <span className="text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-md px-2 py-1">
+                漫遊：夥伴 {partnerRatePercent}% → 我{" "}
+                {Math.round((profitPercent - partnerRatePercent) * 10) / 10}%
+                {partnerRatePercent > profitPercent ? " ⚠️超額" : ""}
+              </span>
+              <span className="text-rose-700 bg-rose-50 border border-rose-100 rounded-md px-2 py-1">
+                原生：夥伴 {partnerRatePercent}% → 我{" "}
+                {Math.round((nativeProfitPercent - partnerRatePercent) * 10) /
+                  10}
+                %{partnerRatePercent > nativeProfitPercent ? " ⚠️超額" : ""}
+              </span>
+            </div>
+            <p className="w-full text-[10px] text-violet-600/90 leading-snug m-0">
+              改上方「漫遊／原生利潤」會同步改官網建議售價；你的份＝該方案利潤％ −
+              夥伴％。例：總利潤 50%、給夥伴 20% → 你自動拿 30%。
+            </p>
           </div>
 
           {/* 第二排：排序與進階篩選 */}
@@ -1107,7 +1210,13 @@ export default function GlobalPlanScanner() {
                 <th className="p-4 w-28 text-right">
                   建議售價
                   <div className="text-[10px] font-normal text-emerald-600 mt-0.5">
-                    漫遊 {profitPercent}%
+                    漫遊 {profitPercent}% · 原生 {nativeProfitPercent}%
+                  </div>
+                </th>
+                <th className="p-4 w-40 text-right bg-violet-50 text-violet-800 border-b-2 border-violet-200">
+                  專屬分潤（同官網價）
+                  <div className="text-[10px] font-normal text-violet-600 mt-0.5 normal-case tracking-normal">
+                    給夥伴 {partnerRatePercent}% · 我＝利潤％−夥伴
                   </div>
                 </th>
                 <th className="p-4 w-16 text-center">ID</th>
@@ -1238,6 +1347,32 @@ export default function GlobalPlanScanner() {
                     <div className="text-[10px] text-gray-400 mt-1">
                       (抓 {p.profitRate} 利潤)
                     </div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">
+                      毛利 ${p.grossProfit}
+                    </div>
+                  </td>
+                  <td className="p-4 align-top text-right bg-violet-50/40">
+                    <div className="text-[10px] text-violet-500 mb-1">
+                      拆 {p.markupPercent}%（夥伴 {p.partnerSharePct}% / 我{" "}
+                      {p.ownerSharePct}%）
+                    </div>
+                    <div className="text-sm font-bold text-violet-700">
+                      夥伴 ${p.partnerProfit}
+                    </div>
+                    <div
+                      className={`text-sm font-bold mt-0.5 ${
+                        !p.splitOk || p.ownerProfit < 0
+                          ? "text-red-600"
+                          : "text-emerald-700"
+                      }`}
+                    >
+                      我 ${p.ownerProfit}
+                    </div>
+                    {!p.splitOk && (
+                      <div className="text-[10px] mt-1 font-medium text-red-600">
+                        ⚠️ 夥伴％超過本方案利潤％
+                      </div>
+                    )}
                   </td>
                   <td className="p-4 align-top text-center">
                     <button

@@ -2,8 +2,8 @@ import { supabase } from "../../../lib/supabaseClient";
 import axios from "axios";
 import crypto from "crypto";
 import FormData from "form-data";
-import nodemailer from "nodemailer";
 import PLAN_ID_MAP from "../../../lib/esim/planMap";
+import { sendMail } from "../../../lib/mailTransporter";
 
 // 修改後的讀取方式 (加上 .trim() 防呆)
 const ACCOUNT = (process.env.ESIM_ACCOUNT || "test_account_9999").trim();
@@ -25,17 +25,6 @@ function signHeaders() {
   const signature = crypto.createHmac("sha256", Buffer.from(hexKey, "utf8")).update(dataToSign).digest("hex");
   return { timestamp, nonce, signature };
 }
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,             
-  secure: true,          
-  auth: {
-    user: process.env.GMAIL_USER, 
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-  tls: { rejectUnauthorized: false }
-});
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ message: "Method Not Allowed" });
@@ -163,11 +152,12 @@ export default async function handler(req, res) {
       </div>
     `).join("");
 
-    await transporter.sendMail({
-      from: `"FeGo eSIM 自動發貨" <${process.env.GMAIL_USER}>`,
+    await sendMail({
       to: customerEmail,
+      fromName: "Jeko eSIM 自動發貨",
       subject: `🎉 您的 eSIM 訂單已準備就緒！`,
       html: `<div style="font-family: sans-serif;"><h2>您好！</h2><p>您的 eSIM 如下：</p>${qrCodeHtml}</div>`,
+      text: "您的 eSIM 訂單已準備就緒，請至信箱 HTML 版本查看 QR Code。",
     });
 
     return res.status(200).json({ success: true, message: "發貨完成", codes: fulfilledCodes });

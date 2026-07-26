@@ -1,7 +1,8 @@
 // components/ThreeHorizontalSlider.jsx
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 
 const DEFAULT_ITEMS = [
@@ -29,13 +30,72 @@ const DEFAULT_ITEMS = [
   },
 ];
 
-export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
+/** 合作頁預設：專屬連結 / 專屬商店 */
+export const COOPERATION_LIQUID_TABS = [
+  {
+    id: "referral",
+    label: "專屬連結",
+    eyebrow: "分享連結賺分潤，售價與官網相同",
+    title: "專屬連結",
+    lines: [
+      "複製專屬推薦連結，貼到 LINE／社群即可開始推廣",
+      "官網下單自動計入分潤・客服／行銷／SEO 由我們支援",
+    ],
+  },
+  {
+    id: "store",
+    label: "專屬商店",
+    eyebrow: "打造專屬商店風格，自動選品一鍵開通",
+    title: "專屬商店",
+    lines: [
+      "自訂 Banner、店名、色系、Logo 與形象圖片",
+      "AI 自動選品・一鍵開通・客服／行銷／SEO 全程支援",
+    ],
+  },
+];
+
+export default function ThreeHorizontalSlider({
+  items = DEFAULT_ITEMS,
+  /** 背景 class；about 維持預設藍漸層，合作頁可改淺底 */
+  backgroundClassName = "bg-gradient-to-r from-[#0059b8] via-[#0071cf] to-[#0095e6]",
+  /** dark = 白字（藍底）；light = 深字（淺底） */
+  textTone = "dark",
+  /** false 時只留標題區，不跑下方 3D 圖片橫滑（合作頁用） */
+  showGallery = true,
+  /**
+   * 有傳入時啟用液態切換＋依 tab 換文案（合作頁）
+   * 未傳入則維持 HOME / PRODUCT 靜態（about）
+   */
+  liquidTabs = null,
+  /** 受控：與下方區塊同步切換 */
+  activeTab: controlledTab = undefined,
+  onActiveTabChange,
+}) {
   const canvasRef = useRef(null);
   const sectionRef = useRef(null);
   const fpsRef = useRef(null);
   const progRef = useRef(null);
+  const tabs =
+    Array.isArray(liquidTabs) && liquidTabs.length >= 2 ? liquidTabs : null;
+  const [internalTab, setInternalTab] = useState(tabs?.[0]?.id || "referral");
+  const activeTab =
+    controlledTab !== undefined && controlledTab !== null
+      ? controlledTab
+      : internalTab;
+  const setActiveTab = (id) => {
+    setInternalTab(id);
+    onActiveTabChange?.(id);
+  };
+  const activeContent =
+    tabs?.find((t) => t.id === activeTab) || tabs?.[0] || null;
+
+  const titleClass = textTone === "light" ? "text-slate-800" : "text-[#f5f4f3]";
+  const headingClass =
+    textTone === "light" ? "text-slate-900" : "text-[#f5f4f3]";
+  const subClass = textTone === "light" ? "text-slate-600" : "text-[#f5f4f3]";
 
   useEffect(() => {
+    if (!showGallery) return;
     if (!items || items.length === 0) return;
 
     let rafId = null;
@@ -107,7 +167,7 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
         45,
         window.innerWidth / window.innerHeight,
         0.1,
-        1000
+        1000,
       );
 
       const renderer = new THREE.WebGLRenderer({
@@ -132,7 +192,7 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
         parentWidth,
         parentHeight,
         segmentsX,
-        segmentsY
+        segmentsY,
       );
 
       const pos = geometry.attributes.position.array;
@@ -240,7 +300,7 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
                 drawX,
                 drawY,
                 drawW - overflowR,
-                drawH
+                drawH,
               );
               ctx.drawImage(
                 img,
@@ -251,7 +311,7 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
                 0,
                 drawY,
                 overflowR,
-                drawH
+                drawH,
               );
             } else if (drawX < 0) {
               const overflowL = -drawX;
@@ -264,7 +324,7 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
                 0,
                 drawY,
                 drawW - overflowL,
-                drawH
+                drawH,
               );
               ctx.drawImage(
                 img,
@@ -275,7 +335,7 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
                 texCanvas.width - overflowL,
                 drawY,
                 overflowL,
-                drawH
+                drawH,
               );
             } else {
               ctx.drawImage(img, drawX, drawY, drawW, drawH);
@@ -284,7 +344,7 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
             ctx.fillText(
               title,
               rect.x + rect.width / 2,
-              texCanvas.height * 0.5
+              texCanvas.height * 0.5,
             );
           }
         }
@@ -403,38 +463,131 @@ export default function ThreeHorizontalSlider({ items = DEFAULT_ITEMS }) {
       if (rafId) cancelAnimationFrame(rafId);
       sceneCleanup?.();
     };
-  }, [items]);
+  }, [items, showGallery]);
 
   return (
     <section
       ref={sectionRef}
-      className="sliderSection bg-gradient-to-r from-[#0059b8] via-[#0071cf] to-[#0095e6]"
-      style={{ height: "320vh" }}
+      className={`sliderSection ${backgroundClassName}`.trim()}
+      style={{ height: showGallery ? "320vh" : "auto" }}
     >
-      <div className="stickyWrap bg-gradient-to-r from-[#0059b8] via-[#0071cf] to-[#0095e6]">
-        <canvas ref={canvasRef} />
+      <div
+        className={`stickyWrap ${backgroundClassName}`.trim()}
+        style={
+          showGallery
+            ? undefined
+            : { position: "relative", height: "auto", minHeight: "auto" }
+        }
+      >
+        {showGallery && <canvas ref={canvasRef} />}
 
-        <div className="title pointer-events-none mb-10 relative z-[10] mt-16 flex flex-col items-center justify-center px-4 text-center leading-none">
-          <p className="max-w-[980px] text-[18px] font-semibold tracking-[0.12em] text-[#f5f4f3] md:text-[26px]">
-            全球旅遊必備神器！免換實體卡
-          </p>
-          <p className="mt-3 text-[64px] font-extrabold tracking-[0.18em] text-[#f5f4f3] md:text-[96px]">
-            eSIM
-          </p>
-          <p className="mt-4 max-w-[620px] text-[11px] leading-relaxed text-[#f5f4f3] md:text-[12px]">
-            掃描 QR Code 即刻開通高速網路
-            <br className="hidden md:block" />
-            快速找到您想去的旅遊目的地的 eSIM 卡
-          </p>
-
-          <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#E5E9F2] px-1.5 py-1">
-            <button className="pointer-events-auto rounded-full bg-[#0052FF] px-5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-[#003fd1]">
-              HOME
-            </button>
-            <button className="pointer-events-auto rounded-full bg-transparent px-5 py-1.5 text-[11px] font-semibold text-[#0052FF] transition hover:text-[#003fd1]">
-              PRODUCT
-            </button>
+        <div
+          className={`title relative z-[10] flex flex-col items-center justify-center px-4 text-center leading-none ${
+            showGallery
+              ? "pointer-events-none mb-10 mt-16"
+              : "pointer-events-auto py-16 md:py-24"
+          }`}
+        >
+          <div className="relative w-full max-w-[980px] min-h-[200px] md:min-h-[240px] flex flex-col items-center justify-center">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={activeContent?.id || "default"}
+                className="flex flex-col items-center"
+                initial={{ opacity: 0, y: 14, filter: "blur(6px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <p
+                  className={`max-w-[980px] text-[18px] font-semibold tracking-[0.12em] md:text-[26px] ${titleClass}`}
+                >
+                  {activeContent?.eyebrow || "全球旅遊必備神器！免換實體卡"}
+                </p>
+                <p
+                  className={`mt-3 text-[52px] font-extrabold tracking-[0.08em] md:text-[88px] md:tracking-[0.14em] ${headingClass}`}
+                >
+                  {activeContent?.title || "eSIM"}
+                </p>
+                <p
+                  className={`mt-4 max-w-[620px] text-[11px] leading-relaxed md:text-[12px] ${subClass}`}
+                >
+                  {activeContent?.lines ? (
+                    <>
+                      {activeContent.lines[0]}
+                      <br className="hidden md:block" />
+                      {activeContent.lines[1]}
+                    </>
+                  ) : (
+                    <>
+                      掃描 QR Code 即刻開通高速網路
+                      <br className="hidden md:block" />
+                      快速找到您想去的旅遊目的地的 eSIM 卡
+                    </>
+                  )}
+                </p>
+              </motion.div>
+            </AnimatePresence>
           </div>
+
+          {tabs ? (
+            <div
+              className="mt-6 relative inline-flex items-center rounded-full bg-[#E5E9F2] p-1.5"
+              role="tablist"
+              aria-label="合作模式切換"
+            >
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setActiveTab(tab.id)}
+                    className="relative min-w-[7.5rem] rounded-full px-5 py-2 text-[11px] md:text-[12px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[#0052FF]/40"
+                  >
+                    {isActive && (
+                      <motion.span
+                        layoutId="cooperation-liquid-pill"
+                        className="absolute inset-0 rounded-full bg-[#0052FF] shadow-[0_6px_16px_rgba(0,82,255,0.28)]"
+                        transition={{
+                          type: "spring",
+                          stiffness: 520,
+                          damping: 36,
+                          mass: 0.65,
+                        }}
+                        style={{ borderRadius: 9999 }}
+                      />
+                    )}
+                    <motion.span
+                      className="relative z-[1] inline-block"
+                      animate={{
+                        color: isActive ? "#ffffff" : "#0052FF",
+                      }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {tab.label}
+                    </motion.span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#E5E9F2] px-1.5 py-1 pointer-events-none">
+              <button
+                type="button"
+                className="rounded-full bg-[#0052FF] px-5 py-1.5 text-[11px] font-semibold text-white shadow-sm"
+              >
+                HOME
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-transparent px-5 py-1.5 text-[11px] font-semibold text-[#0052FF]"
+              >
+                PRODUCT
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="overlay" />
