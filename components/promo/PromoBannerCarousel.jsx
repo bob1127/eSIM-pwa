@@ -7,8 +7,9 @@ import MaterialIcon from "@/components/MaterialIcon";
 import { buildPromoSlides } from "@/lib/promoBanners";
 
 /**
- * 一張滿版輪播：每次只顯示一張 Banner（全寬）
- * 高度依圖片自然比例，不裁切
+ * 優惠頁 Hero Banner
+ * - 手機：一張滿版
+ * - 電腦：置中一張約 50% 寬，左右各露出相鄰 Banner 約一半
  */
 export default function PromoBannerCarousel({
   minSlides = 4,
@@ -16,13 +17,22 @@ export default function PromoBannerCarousel({
 }) {
   const slides = buildPromoSlides(minSlides);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
       loop: true,
-      align: "start",
+      align: isDesktop ? "center" : "start",
       skipSnaps: false,
-      containScroll: "trimSnaps",
+      containScroll: isDesktop ? false : "trimSnaps",
       slidesToScroll: 1,
     },
     [
@@ -33,6 +43,16 @@ export default function PromoBannerCarousel({
       }),
     ],
   );
+
+  useEffect(() => {
+    emblaApi?.reInit({
+      loop: true,
+      align: isDesktop ? "center" : "start",
+      skipSnaps: false,
+      containScroll: isDesktop ? false : "trimSnaps",
+      slidesToScroll: 1,
+    });
+  }, [emblaApi, isDesktop]);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -59,7 +79,7 @@ export default function PromoBannerCarousel({
         <div className="flex touch-pan-y">
           {slides.map((slide) => {
             const inner = (
-              <div className="relative w-full overflow-hidden bg-stone-100">
+              <div className="relative w-full overflow-hidden bg-stone-100 md:rounded-xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={slide.src}
@@ -73,7 +93,7 @@ export default function PromoBannerCarousel({
             return (
               <div
                 key={slide.key}
-                className="min-w-0 shrink-0 grow-0 basis-full"
+                className="min-w-0 shrink-0 grow-0 basis-full md:basis-1/2 md:px-2"
               >
                 {slide.href ? (
                   <a

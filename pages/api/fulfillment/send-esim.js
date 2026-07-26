@@ -1,30 +1,16 @@
 import { supabase } from "../../../lib/supabaseClient";
 import axios from "axios";
-import crypto from "crypto";
 import FormData from "form-data";
 import PLAN_ID_MAP from "../../../lib/esim/planMap";
 import { sendMail } from "../../../lib/mailTransporter";
-
-// 修改後的讀取方式 (加上 .trim() 防呆)
-const ACCOUNT = (process.env.ESIM_ACCOUNT || "test_account_9999").trim();
-const SECRET = (process.env.ESIM_SECRET || "7119968f9ff07654ga485487822g").trim();
-const SALT_HEX = (process.env.ESIM_SALT || "c38ab89bd01537b3915848d689090e56").trim();
-const BASE_URL = (process.env.ESIM_BASE_URL || "https://microesim.cn").trim();
-
-function signHeaders() {
-  const timestamp = Date.now().toString();
-  const nonce = crypto.randomBytes(6).toString("hex");
-  const hexKey = crypto.pbkdf2Sync(
-    SECRET, 
-    Buffer.from(SALT_HEX, "hex"), 
-    1024, 
-    32, 
-    "sha256"
-  ).toString("hex");
-  const dataToSign = ACCOUNT + nonce + timestamp;
-  const signature = crypto.createHmac("sha256", Buffer.from(hexKey, "utf8")).update(dataToSign).digest("hex");
-  return { timestamp, nonce, signature };
-}
+import { notifyOrderStatus } from "../../../lib/orderNotify";
+import {
+  ESIM_ACCOUNT as ACCOUNT,
+  ESIM_BASE_URL as BASE_URL,
+  resolveChannelDataplanId,
+  signMicroesimHeaders as signHeaders,
+  shouldForceTestPlan,
+} from "../../../lib/esim/microesimClient";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ message: "Method Not Allowed" });
@@ -48,8 +34,7 @@ export default async function handler(req, res) {
 
     for (const item of purchasedItems) {
       const rawPlanId = item.planId || item.sku;
-      const cleanedSku = rawPlanId?.trim().replace(/\u200B/g, "").replace(/,/g, "-");
-      const finalPlanId = PLAN_ID_MAP[cleanedSku] || cleanedSku;
+      const finalPlanId = resolveChannelDataplanId(rawPlanId, PLAN_ID_MAP);
 
       const quantity = item.quantity || 1;
 
@@ -58,7 +43,10 @@ export default async function handler(req, res) {
         continue;
       }
 
-      console.log(`📡 使用帳號 ${ACCOUNT} 向供應商連線: ${BASE_URL}`);
+      console.log(
+        `📡 使用帳號 ${ACCOUNT} 向供應商連線: ${BASE_URL}` +
+          (shouldForceTestPlan() ? `（測試方案 ${finalPlanId}）` : `（plan ${finalPlanId}）`),
+      );
 
       let active_type = "ACTIVEDBYDEVICE";
       try {
@@ -143,6 +131,16 @@ export default async function handler(req, res) {
 
     // 更新 Supabase
     await supabase.from("orders").update({ status: "completed", qrcode_data: fulfilledCodes }).eq("id", orderId);
+
+    // 出貨完成 → Email / LINE / Push 即時通知
+    try {
+      await notifyOrderStatus(
+        { ...order, status: "completed", qrcode_data: fulfilledCodes },
+        "fulfilled",
+      );
+    } catch (notifyErr) {
+      console.error("[send-esim] fulfilled notify:", notifyErr?.message || notifyErr);
+    }
 
     // 寄信
     const qrCodeHtml = fulfilledCodes.map(code => `

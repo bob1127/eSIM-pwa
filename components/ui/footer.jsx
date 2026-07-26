@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { BrandSocialIconLinks } from "@/components/social/SocialBrandIcons";
+import { SUPPORT_EMAIL, COMPANY_EMAIL, COMPANY_NAME } from "@/lib/contactUi";
 
 /**
  * @param {{ forceShow?: boolean, hideLinkColumns?: boolean }} [props]
@@ -242,12 +243,29 @@ export default function Footer({
             </Link>
             <div className="text-[11px] text-gray-500 leading-relaxed font-medium">
               <p className="text-gray-900 font-bold mb-1 text-[12px]">
-                藍鏈數位企業社
+                {COMPANY_NAME}
               </p>
               <p>臺中市北屯區平安里文心路四段750 號地下室之一</p>
               <p>(僅提供收取信件及包裹服務)</p>
               <b>60982396</b>
-              <p>客服信箱：info@bluelink.com.tw</p>
+              <p>
+                Jeko 客服：
+                <a
+                  href={`mailto:${SUPPORT_EMAIL}`}
+                  className="hover:text-[#0A6CD0] underline-offset-2 hover:underline"
+                >
+                  {SUPPORT_EMAIL}
+                </a>
+              </p>
+              <p>
+                公司信箱：
+                <a
+                  href={`mailto:${COMPANY_EMAIL}`}
+                  className="hover:text-[#0A6CD0] underline-offset-2 hover:underline"
+                >
+                  {COMPANY_EMAIL}
+                </a>
+              </p>
               <p>客服電話：0939-767-977</p>
             </div>
           </div>

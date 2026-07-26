@@ -1,9 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
-import { useCart } from "./context/CartContext"; // 確保路徑正確
+import Link from "next/link";
+import { useCart } from "./context/CartContext";
 import { motion } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
+import { buildLoginUrl } from "@/lib/authRedirect";
+import {
+  buildCheckoutAutofillPatches,
+  mergeCheckoutForm,
+  saveCheckoutProfile,
+} from "@/lib/checkoutProfile";
+import { supabase } from "@/lib/supabaseClient";
 
 // --- Component: 浮動標籤輸入框 (Shopify 風格核心) ---
 const FloatingInput = ({
@@ -14,6 +23,7 @@ const FloatingInput = ({
   placeholder,
   type = "text",
   required = false,
+  readOnly = false,
 }) => (
   <div className="relative w-full">
     <input
@@ -23,7 +33,10 @@ const FloatingInput = ({
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="peer w-full border border-gray-300 rounded-md px-3 pt-5 pb-2 text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-shadow"
+      readOnly={readOnly}
+      className={`peer w-full border border-gray-300 rounded-md px-3 pt-5 pb-2 text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-shadow ${
+        readOnly ? "bg-slate-50 text-slate-700" : ""
+      }`}
       required={required}
     />
     <label
@@ -45,9 +58,11 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
   const router = useRouter();
   const { esimItems, cartId } = useCart();
   const cartItems = esimItems || [];
+  const { user: supabaseUser, session, authReady, isLoggedIn } = useAuth();
 
-  // 🔥 用來控制按鈕外觀變成「處理中...」的狀態
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [autofillNote, setAutofillNote] = useState("");
+  const touchedRef = useRef({});
 
   const [formData, setFormData] = useState({
     name: "",
@@ -57,42 +72,111 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
     city: "",
     address: "",
     postalCode: "",
-    saveInfo: false,
+    saveInfo: true,
     newsOffers: true,
   });
 
   const [memberInfo, setMemberInfo] = useState(null);
 
-  // --- Effect: 載入預存資料 ---
+  // --- Effect: 社群 / Email 登入 + 本機儲存 → 自動帶入空白欄位 ---
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedUser = localStorage.getItem("user");
-      if (savedUser) {
-        const user = JSON.parse(savedUser);
-        setMemberInfo(user);
-        setFormData((prev) => ({
-          ...prev,
-          name: user.name || "",
-          email: user.email || "",
-          phone: user.phone || "",
-        }));
-      }
+    if (!authReady || typeof window === "undefined") return;
+
+    let legacyLocalUser = null;
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) legacyLocalUser = JSON.parse(raw);
+    } catch {
+      /* ignore */
     }
-  }, []);
+
+    const { identity, patches } = buildCheckoutAutofillPatches({
+      supabaseUser,
+      nextAuthUser: session?.user || null,
+      legacyLocalUser,
+    });
+
+    if (identity?.id || identity?.email) {
+      setMemberInfo({
+        id: identity.id,
+        name: identity.name,
+        email: identity.email,
+        phone: identity.phone,
+        image: identity.image,
+        source: identity.source,
+      });
+    } else if (!isLoggedIn) {
+      setMemberInfo(null);
+    }
+
+    setFormData((prev) => {
+      const safePatches = patches.map((patch) => {
+        if (!patch) return patch;
+        const next = { ...patch };
+        for (const key of Object.keys(next)) {
+          if (touchedRef.current[key]) delete next[key];
+        }
+        return next;
+      });
+      const merged = mergeCheckoutForm(prev, safePatches);
+      if (merged !== prev) {
+        const filled = ["email", "name", "phone", "address", "city"].filter(
+          (k) => !String(prev[k] || "").trim() && String(merged[k] || "").trim(),
+        );
+        if (filled.length) {
+          const via =
+            identity.source === "nextauth"
+              ? "LINE／社群登入"
+              : identity.source === "supabase"
+                ? "會員帳號"
+                : "先前儲存資料";
+          setAutofillNote(`已自動帶入${via}資料，可直接修改`);
+        }
+      }
+      return merged;
+    });
+  }, [
+    authReady,
+    isLoggedIn,
+    supabaseUser,
+    session?.user?.email,
+    session?.user?.name,
+    session?.user?.id,
+  ]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    touchedRef.current[name] = true;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
   };
 
-  // --- Logic: 建立訂單 (Medusa ➔ Next.js API ➔ NewebPay) ---
+  const persistProfileIfNeeded = async () => {
+    if (formData.saveInfo) {
+      saveCheckoutProfile(formData);
+    }
+    if (supabaseUser && (formData.name || formData.phone)) {
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            full_name: formData.name || undefined,
+            phone: formData.phone || undefined,
+            checkout_city: formData.city || undefined,
+            checkout_address: formData.address || undefined,
+            checkout_postal_code: formData.postalCode || undefined,
+          },
+        });
+      } catch (err) {
+        console.warn("[checkout] 同步會員資料略過:", err?.message || err);
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 🛡️ 第 1 道防護：表單驗證 (放最前面，不符合就擋掉)
     if (
       !formData.name ||
       !formData.email ||
@@ -108,20 +192,18 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
       return;
     }
 
-    // 🛡️ 第 2 道防護：攔截重複點擊！(如果鎖是關上的，直接踢掉這個請求)
     if (isSubmittingLock) {
       console.log("⏳ 系統處理中，已攔截重複點擊！");
       return;
     }
 
-    // 🛡️ 檢查通過，立刻上鎖！(包含背景變數與 UI 狀態)
     isSubmittingLock = true;
     setIsSubmitting(true);
 
     try {
+      await persistProfileIfNeeded();
       console.log("🚀 1. 開始呼叫 Next.js 中間層 API...");
 
-      // 專屬推薦 Cookie（?ref=）帶入結帳，供分潤歸因
       let referralCode = "";
       try {
         const { readReferralCookie } = await import("../lib/partnerReferral");
@@ -130,7 +212,6 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
         /* ignore */
       }
 
-      // 只傳 cartId 和客人的地址資料給 Next.js API
       const orderRes = await fetch("/api/orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,7 +219,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
           cartId: cartId,
           orderInfo: {
             ...formData,
-            customerId: memberInfo?.id || null,
+            customerId: memberInfo?.id || supabaseUser?.id || null,
             referral_code: referralCode || undefined,
           },
         }),
@@ -163,7 +244,6 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
       const { orderId, amount } = orderResult;
       console.log("✅ 3. 拿到 Medusa Order ID:", orderId, "準備跳轉藍新金流…");
 
-      // 購物車已在 Medusa 完成，清除本地 ID 避免重複結帳
       localStorage.removeItem("medusa_cart_id");
 
       sessionStorage.setItem(
@@ -176,7 +256,6 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
         }),
       );
 
-      // 先 push 中繼頁再 POST 藍新，保留瀏覽紀錄：產品/購物車 → 中繼 → 藍新
       sessionStorage.setItem(
         "newebpay_checkout_payload",
         JSON.stringify({
@@ -192,7 +271,6 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
       console.error("❌ 結帳流程出錯:", err);
       alert(`發生錯誤：${err.message}`);
     } finally {
-      // 🛡️ 最終保險：不管結帳成功或失敗，最後一定要解開鎖定，讓客人有重試的機會
       isSubmittingLock = false;
       setIsSubmitting(false);
     }
@@ -216,7 +294,12 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.name, formData.email, formData.phone]);
 
-  // --- Render ---
+  const loginHref = buildLoginUrl(
+    typeof window !== "undefined"
+      ? `${window.location.pathname}${window.location.search}`
+      : "/Cart",
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -226,22 +309,32 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
       className="font-sans w-full"
     >
       <form id="checkout-form" onSubmit={handleSubmit}>
-        {/* Contact */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold text-gray-900">聯絡資訊</h2>
-            {!memberInfo && (
-              <button
-                type="button"
+            {isLoggedIn || memberInfo?.email ? (
+              <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full">
+                已登入
+                {memberInfo?.name ? ` · ${memberInfo.name}` : ""}
+              </span>
+            ) : (
+              <Link
+                href={loginHref}
                 className="text-sm text-blue-600 hover:underline"
               >
                 登入
-              </button>
+              </Link>
             )}
           </div>
+          {autofillNote ? (
+            <p className="mb-3 text-xs text-slate-500 bg-slate-50 border border-slate-100 rounded-md px-3 py-2">
+              {autofillNote}
+            </p>
+          ) : null}
           <FloatingInput
             label="電子郵件 (Email)"
             name="email"
+            type="email"
             value={formData.email}
             onChange={handleChange}
             placeholder="電子郵件"
@@ -265,7 +358,6 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
           </div>
         </div>
 
-        {/* Delivery */}
         <div className="mb-8">
           <h2 className="text-lg font-bold text-gray-900 mb-4">運送地址</h2>
           <div className="space-y-3">

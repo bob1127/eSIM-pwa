@@ -1419,7 +1419,7 @@ export async function getStaticProps({ params }) {
     const query = new URLSearchParams({
       handle: slug,
       fields:
-        "+metadata,*variants,*variants.prices,*variants.calculated_price,*variants.options,*variants.options.option",
+        "+metadata,*variants,*variants.metadata,*variants.prices,*variants.calculated_price,*variants.options,*variants.options.option",
     });
     if (regionId) query.set("region_id", regionId);
 
@@ -1842,7 +1842,13 @@ export default function ProductPage({
       price: currentVariation.price,
       sku: currentVariation.sku,
       planId: currentVariation.plan_id,
-      image: product.image_url || "/default-image.jpg",
+      image: product.image_url || "/images/jeko-esim.png",
+      slug: product.slug || product.handle,
+      categorySlug:
+        router.query.category ||
+        product.category_slug ||
+        product.categories?.[0]?.slug ||
+        "japan",
       quantity,
       options: specLabel,
       specLabel,
@@ -2187,7 +2193,7 @@ export default function ProductPage({
                   centeredSlides={false}
                   watchOverflow
                   onSlideChange={(swiper) => setActiveSlide(swiper.realIndex)}
-                  className="w-full product-main-swiper aspect-[3/4] bg-white"
+                  className="w-full product-main-swiper !h-[min(52vh,460px)] bg-white"
                 >
                   {images.map((item, idx) => (
                     <SwiperSlide key={idx}>
@@ -2232,13 +2238,13 @@ export default function ProductPage({
 
               {/* 縮圖列（單行） */}
               {images.length > 1 && (
-                <div className="mt-4 flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
+                <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
                   {images.map((item, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => goToGallerySlide(idx)}
-                      className={`relative shrink-0 w-[72px] aspect-[3/4] sm:w-[80px] overflow-hidden border-2 transition-all ${
+                      className={`relative shrink-0 w-[64px] h-[80px] sm:w-[72px] sm:h-[90px] overflow-hidden border-2 transition-all ${
                         activeSlide === idx
                           ? isPartnerShell
                             ? "border-[#0A6CD0]"

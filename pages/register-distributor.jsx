@@ -383,7 +383,7 @@ const STEP_TITLES = {
   },
   2: {
     title: "告訴我們您的基本資料",
-    sub: "Email 驗證後請設定夥伴後台登入密碼，審核通過即可登入。",
+    sub: "Email 驗證後請設定備援密碼；若已用 LINE／Google 登入再申請，審核通過後可一鍵進後台。",
   },
   3: null, // 依身份動態
   4: {
@@ -1137,9 +1137,43 @@ export default function RegisterDistributor() {
       referralCode = codeData.code;
     }
 
+    const {
+      data: { session: currentSession },
+    } = await supabase.auth.getSession();
+
+    let accessToken = currentSession?.access_token || "";
+
+    // 僅有 LINE（NextAuth）session 時，先換成 Supabase token 以便綁定
+    if (!accessToken) {
+      try {
+        const bridgeRes = await fetch("/api/auth/line-supabase-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        const bridge = await bridgeRes.json();
+        if (bridgeRes.ok && bridge.success && bridge.tokenHash) {
+          const { data: otpData, error: otpErr } =
+            await supabase.auth.verifyOtp({
+              token_hash: bridge.tokenHash,
+              type: "email",
+            });
+          if (!otpErr) {
+            accessToken = otpData?.session?.access_token || "";
+          }
+        }
+      } catch {
+        /* 未 LINE 登入則略過 */
+      }
+    }
+
+    const authHeaders = {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
+
     const authRes = await fetch("/api/partner/register-auth", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders,
       body: JSON.stringify({ email, password: form.password }),
     });
     const authData = await authRes.json();
@@ -1150,18 +1184,20 @@ export default function RegisterDistributor() {
       throw new Error(msg);
     }
 
-    const { error } = await supabase.from("partners").insert([
-      {
-        name: form.companyName.trim(),
-        slug,
-        email,
-        status: "pending",
-        description: descriptionParts,
-        cooperation_model: isReferral ? "referral" : "store",
-        referral_code: referralCode,
-        referral_rate: 20,
-      },
-    ]);
+    const partnerRow = {
+      name: form.companyName.trim(),
+      slug,
+      email,
+      status: "pending",
+      description: descriptionParts,
+      cooperation_model: isReferral ? "referral" : "store",
+      referral_code: referralCode,
+      referral_rate: 25,
+    };
+    if (authData.authUserId) partnerRow.auth_user_id = authData.authUserId;
+    if (authData.lineUserId) partnerRow.line_user_id = authData.lineUserId;
+
+    const { error } = await supabase.from("partners").insert([partnerRow]);
 
     if (error) {
       if (error.message.includes("duplicate") || error.code === "23505") {
@@ -1498,7 +1534,8 @@ export default function RegisterDistributor() {
 
                 {isEmailVerified && (
                   <div className="text-[12px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
-                    Email 已驗證，請設定下方登入密碼
+                    Email 已驗證。建議先在官網用 LINE／Google
+                    登入後再送出申請，審核通過後可用同一按鈕進後台；以下密碼作為備援登入。
                   </div>
                 )}
 
@@ -1877,9 +1914,9 @@ export default function RegisterDistributor() {
                 onClick={submitApplication}
                 onSuccess={() => setSubmitted(true)}
                 disabled={
-                !agreed ||
-                (form.cooperationModel === "store" && !form.slug.trim())
-              }
+                  !agreed ||
+                  (form.cooperationModel === "store" && !form.slug.trim())
+                }
                 successDelay={1100}
                 className="flex-1 py-4 rounded-full font-bold text-sm bg-[#1a56db] hover:bg-[#1344b5] disabled:bg-slate-300 disabled:hover:bg-slate-300 text-white transition-all shadow-[0_4px_14px_rgba(26,86,219,0.35)] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none disabled:hover:translate-y-0"
                 loadingLabel="送出中..."

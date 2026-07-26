@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/check-traffic",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/unpaid-reminders",
+      "schedule": "*/30 * * * *"
     }
   ],
   "redirects": [

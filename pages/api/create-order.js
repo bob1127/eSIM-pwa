@@ -4,6 +4,7 @@ import {
   resolveActiveReferralPartner,
   profitFromReferralPartner,
 } from "../../lib/resolveReferralPartner";
+import { notifyOrderStatus } from "../../lib/orderNotify";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -27,6 +28,9 @@ export default async function handler(req, res) {
       partner_id,
       referral_code,
       items,
+      customer_email,
+      customer_name,
+      payment_info,
     } = req.body;
 
     let finalPartnerId = partner_id || null;
@@ -40,10 +44,11 @@ export default async function handler(req, res) {
       const refPartner = await resolveActiveReferralPartner(referral_code);
       if (refPartner) {
         finalPartnerId = refPartner.id;
-        finalProfit = profitFromReferralPartner(
+        finalProfit = await profitFromReferralPartner(
           refPartner,
           total_amount,
           b2b_cost,
+          { admin: supabase },
         );
       }
     }
@@ -60,12 +65,31 @@ export default async function handler(req, res) {
           partner_id: finalPartnerId,
           item_details: items,
           status: "pending",
+          customer_email: customer_email
+            ? String(customer_email).trim().toLowerCase()
+            : null,
+          customer_name: customer_name ? String(customer_name).trim() : null,
+          payment_info: payment_info || null,
         },
       ])
       .select()
       .single();
 
     if (error) throw error;
+
+    // 待付款即時通知（Email / LINE / Push；無聯絡方式會 skip）
+    if (newOrder?.customer_email) {
+      try {
+        await notifyOrderStatus(newOrder, "unpaid_created", {
+          admin: supabase,
+        });
+      } catch (notifyErr) {
+        console.error(
+          "[create-order] unpaid notify failed:",
+          notifyErr?.message || notifyErr,
+        );
+      }
+    }
 
     return res.status(200).json({
       success: true,

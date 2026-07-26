@@ -1,13 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
 import { supabase } from "@/lib/supabaseClient";
 import {
   partnerLoginBlockMessage,
   verifyPartnerAccess,
 } from "@/lib/partnerAuth";
+import {
+  logLineLoginStart,
+  startLineLoginWithFormPost,
+} from "@/lib/authDebug";
 
 const INPUT_CLASS =
   "w-full bg-white/10 border border-white/30 rounded-xl px-4 py-3 text-white placeholder:text-blue-300 text-sm outline-none focus:bg-white/20 focus:border-white/60 transition";
@@ -259,16 +264,49 @@ function PartnerHeroPanel() {
 
 export default function PartnerLogin() {
   const router = useRouter();
+  const { status: nextAuthStatus } = useSession();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState("");
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(true);
 
+  const finishPartnerLogin = useCallback(async () => {
+    const access = await verifyPartnerAccess();
+    if (!access?.ok) {
+      await supabase.auth.signOut();
+      setError(access?.message || partnerLoginBlockMessage(access?.partner));
+      return false;
+    }
+    router.replace("/partner/dashboard");
+    return true;
+  }, [router]);
+
+  /** LINE NextAuth → 換成 Supabase session 再開後台 */
+  const syncLineToSupabase = useCallback(async () => {
+    const res = await fetch("/api/auth/line-supabase-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success || !data.tokenHash) {
+      throw new Error(data.message || "LINE 帳號同步失敗");
+    }
+    const { error: otpErr } = await supabase.auth.verifyOtp({
+      token_hash: data.tokenHash,
+      type: "email",
+    });
+    if (otpErr) throw otpErr;
+    return finishPartnerLogin();
+  }, [finishPartnerLogin]);
+
   useEffect(() => {
     if (router.query.error === "not_partner") {
-      setError("此帳號尚未通過合作夥伴審核，或尚未申請成為夥伴。");
+      setError(
+        "此帳號尚未通過合作夥伴審核，或尚未綁定夥伴資格。請用申請時的 Email 登入一次，或重新申請時先用社群登入。",
+      );
     }
 
     let cancelled = false;
@@ -283,10 +321,24 @@ export default function PartnerLogin() {
 
         if (user) {
           const access = await verifyPartnerAccess();
-
           if (access?.ok) {
             router.replace("/partner/dashboard");
             return;
+          }
+        }
+
+        // 已 LINE 登入但尚無 Supabase session → 嘗試橋接
+        if (nextAuthStatus === "authenticated" && !user) {
+          setOauthLoading("line");
+          try {
+            const ok = await syncLineToSupabase();
+            if (ok || cancelled) return;
+          } catch (err) {
+            if (!cancelled) {
+              setError(err?.message || "LINE 登入後無法進入夥伴後台");
+            }
+          } finally {
+            if (!cancelled) setOauthLoading("");
           }
         }
       } finally {
@@ -294,18 +346,19 @@ export default function PartnerLogin() {
       }
     }
 
+    if (nextAuthStatus === "loading") return;
     checkSession();
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, nextAuthStatus, syncLineToSupabase]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const { data, error: authErr } = await supabase.auth.signInWithPassword({
+    const { error: authErr } = await supabase.auth.signInWithPassword({
       email: form.email.trim(),
       password: form.password,
     });
@@ -316,16 +369,54 @@ export default function PartnerLogin() {
       return;
     }
 
-    const access = await verifyPartnerAccess();
+    const ok = await finishPartnerLogin();
+    if (!ok) setLoading(false);
+  };
 
-    if (!access?.ok) {
-      await supabase.auth.signOut();
-      setError(access?.message || partnerLoginBlockMessage(access?.partner));
-      setLoading(false);
-      return;
+  const handleOAuth = async (provider) => {
+    setError("");
+    setOauthLoading(provider);
+    try {
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const redirectTo = `${origin}/partner/login`;
+      const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo,
+          skipBrowserRedirect: false,
+        },
+      });
+      if (oauthErr) throw oauthErr;
+      if (data?.url) window.location.assign(data.url);
+      else throw new Error("未取得授權網址，請確認 Supabase OAuth 設定");
+    } catch (err) {
+      setError(
+        `${provider === "google" ? "Google" : "Facebook"} 登入失敗：${err.message}`,
+      );
+      setOauthLoading("");
     }
+  };
 
-    router.push("/partner/dashboard");
+  const handleLineLogin = async () => {
+    if (oauthLoading) return;
+    setError("");
+    setOauthLoading("line");
+    try {
+      if (typeof window !== "undefined" && window.location.hostname === "127.0.0.1") {
+        setError("請改用 http://localhost:3000 再開啟 LINE 登入");
+        setOauthLoading("");
+        return;
+      }
+      const { callbackUrl } = await logLineLoginStart(
+        window.location.origin,
+        "/partner/login",
+      );
+      await startLineLoginWithFormPost(callbackUrl);
+    } catch (err) {
+      setError(`LINE 登入異常：${err.message}`);
+      setOauthLoading("");
+    }
   };
 
   if (checking) {
@@ -366,10 +457,12 @@ export default function PartnerLogin() {
                 <br />
                 管理後台
               </h1>
-              <p className="text-blue-100 text-sm leading-relaxed mb-10">
-                登入後可管理您的專屬 eSIM 賣場、查看分潤成效、選品定價。
+              <p className="text-blue-100 text-sm leading-relaxed mb-6">
+                請使用「申請合作夥伴時填寫的 Email」與密碼；若該 Email
+                綁定 Google／Facebook，或申請時已用 LINE
+                登入，也可直接快速登入。
                 <span className="block mt-2 text-blue-200/90 text-xs">
-                  若剛完成申請，請先等候開通通知信；審核通過前無法登入。
+                  審核通過前無法進入後台。建議先用社群登入再申請，通過後可一鍵進後台。
                 </span>
               </p>
             </>
@@ -384,59 +477,98 @@ export default function PartnerLogin() {
               }}
             />
           ) : (
-            <form onSubmit={handleLogin} className="flex flex-col gap-5">
-              <div>
-                <label className="block text-xs font-bold text-blue-200 mb-1.5 uppercase tracking-wide">
-                  Email 地址
-                </label>
-                <input
-                  required
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="your@email.com"
-                  className={INPUT_CLASS}
-                />
+            <>
+              <div className="flex flex-col gap-2.5 mb-5">
+                <button
+                  type="button"
+                  disabled={!!oauthLoading || loading}
+                  onClick={() => handleOAuth("google")}
+                  className="flex items-center justify-center gap-2 w-full bg-white/10 border border-white/30 hover:bg-white/20 disabled:opacity-60 py-3 rounded-xl text-sm font-bold text-white transition"
+                >
+                  {oauthLoading === "google" ? "導向 Google..." : "Google 快速登入"}
+                </button>
+                <button
+                  type="button"
+                  disabled={!!oauthLoading || loading}
+                  onClick={() => handleOAuth("facebook")}
+                  className="flex items-center justify-center gap-2 w-full bg-white/10 border border-white/30 hover:bg-white/20 disabled:opacity-60 py-3 rounded-xl text-sm font-bold text-white transition"
+                >
+                  {oauthLoading === "facebook"
+                    ? "導向 Facebook..."
+                    : "Facebook 快速登入"}
+                </button>
+                <button
+                  type="button"
+                  disabled={!!oauthLoading || loading}
+                  onClick={handleLineLogin}
+                  className="flex items-center justify-center gap-2 w-full bg-[#06C755] hover:brightness-105 disabled:opacity-60 py-3 rounded-xl text-sm font-bold text-white transition"
+                >
+                  {oauthLoading === "line" ? "LINE 登入中..." : "LINE 快速登入"}
+                </button>
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-blue-200 uppercase tracking-wide">
-                    密碼
+
+              <div className="relative flex items-center py-1 mb-5">
+                <div className="flex-grow border-t border-white/20" />
+                <span className="flex-shrink-0 mx-3 text-[10px] text-blue-200/80">
+                  或使用 Email
+                </span>
+                <div className="flex-grow border-t border-white/20" />
+              </div>
+
+              <form onSubmit={handleLogin} className="flex flex-col gap-5">
+                <div>
+                  <label className="block text-xs font-bold text-blue-200 mb-1.5 uppercase tracking-wide">
+                    Email 地址
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowForgot(true);
-                      setError("");
-                    }}
-                    className="text-xs font-bold text-blue-200 hover:text-white transition"
-                  >
-                    忘記密碼？
-                  </button>
+                  <input
+                    required
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="your@email.com"
+                    className={INPUT_CLASS}
+                  />
                 </div>
-                <PasswordInput
-                  value={form.password}
-                  onChange={(e) =>
-                    setForm({ ...form, password: e.target.value })
-                  }
-                  show={showPassword}
-                  onToggleShow={() => setShowPassword((v) => !v)}
-                  autoComplete="current-password"
-                />
-              </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-blue-200 uppercase tracking-wide">
+                      密碼
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgot(true);
+                        setError("");
+                      }}
+                      className="text-xs font-bold text-blue-200 hover:text-white transition"
+                    >
+                      忘記密碼？
+                    </button>
+                  </div>
+                  <PasswordInput
+                    value={form.password}
+                    onChange={(e) =>
+                      setForm({ ...form, password: e.target.value })
+                    }
+                    show={showPassword}
+                    onToggleShow={() => setShowPassword((v) => !v)}
+                    autoComplete="current-password"
+                  />
+                </div>
 
-              {error && (
-                <p className="text-sm text-blue-100 leading-relaxed">{error}</p>
-              )}
+                {error && (
+                  <p className="text-sm text-blue-100 leading-relaxed">{error}</p>
+                )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[#4ade80] hover:bg-[#22c55e] disabled:opacity-60 text-slate-900 font-black py-4 rounded-full text-base transition shadow-lg mt-2"
-              >
-                {loading ? "登入中..." : "登入夥伴後台 →"}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={loading || !!oauthLoading}
+                  className="w-full bg-[#4ade80] hover:bg-[#22c55e] disabled:opacity-60 text-slate-900 font-black py-4 rounded-full text-base transition shadow-lg mt-2"
+                >
+                  {loading ? "登入中..." : "登入夥伴後台 →"}
+                </button>
+              </form>
+            </>
           )}
 
           {!showForgot && (

@@ -57,7 +57,7 @@ export default function PromoPage() {
           </nav>
         </div>
 
-        {/* 一張滿版 Banner 輪播 */}
+        {/* Banner：手機滿版；電腦左右露出相鄰一半 */}
         <PromoBannerCarousel minSlides={4} className="mb-10 md:mb-14" />
 
         {/* 拉霸抽獎：滿版紅底 */}

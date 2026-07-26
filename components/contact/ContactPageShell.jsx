@@ -37,8 +37,8 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
           </p>
         </div>
 
-        {/* Email / LINE 快捷卡片 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+        {/* Email / LINE / 公司信箱 快捷卡片 */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
           <a
             href={`mailto:${CONTACT_INFO.email}`}
             className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#2563eb] hover:shadow-sm transition"
@@ -48,10 +48,30 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Email
+                Jeko 客服
               </p>
               <p className="text-sm sm:text-base font-black text-[#1e3a5f] truncate">
                 {CONTACT_INFO.email}
+              </p>
+            </div>
+          </a>
+          <a
+            href={`mailto:${CONTACT_INFO.companyEmail}`}
+            className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#2563eb] hover:shadow-sm transition"
+          >
+            <div className="w-11 h-11 rounded-xl bg-[#2b579a]/10 flex items-center justify-center shrink-0">
+              <MaterialIcon
+                name="corporate_fare"
+                size={22}
+                className="text-[#2b579a]"
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                {CONTACT_INFO.companyName}
+              </p>
+              <p className="text-sm sm:text-base font-black text-[#1e3a5f] truncate">
+                {CONTACT_INFO.companyEmail}
               </p>
             </div>
           </a>
@@ -126,77 +146,6 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
           </div>
           {children}
         </div>
-
-        {/* 其他聯絡方式 */}
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[
-            {
-              icon: "mail",
-              label: "Email",
-              val: CONTACT_INFO.email,
-              href: `mailto:${CONTACT_INFO.email}`,
-            },
-            {
-              icon: "chat",
-              label: "LINE 官方",
-              val: CONTACT_INFO.lineHint,
-              href: CONTACT_INFO.lineUrl,
-              useLineIcon: true,
-            },
-          ].map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              target={item.href.startsWith("http") ? "_blank" : undefined}
-              rel={
-                item.href.startsWith("http") ? "noopener noreferrer" : undefined
-              }
-              className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-sm hover:border-[#2563eb] hover:shadow-sm transition"
-            >
-              <div className="w-10 h-10 rounded-sm bg-[#2b579a]/10 flex items-center justify-center shrink-0">
-                {item.useLineIcon ? (
-                  <Image
-                    src="/images/payment/line.svg"
-                    alt=""
-                    width={20}
-                    height={20}
-                    className="w-5 h-5"
-                  />
-                ) : (
-                  <MaterialIcon
-                    name={item.icon}
-                    size={20}
-                    className="text-[#2b579a]"
-                  />
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold text-slate-400 uppercase">
-                  {item.label}
-                </p>
-                <p className="text-sm font-bold text-[#1e3a5f] truncate">
-                  {item.val}
-                </p>
-              </div>
-            </a>
-          ))}
-        </div>
-
-        <p className="text-center text-[11px] text-slate-400 mt-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 hover:text-[#2563eb]"
-          >
-            <Image
-              src="/images/Logo/logo-no-bg.png"
-              alt=""
-              width={20}
-              height={20}
-              className="opacity-60"
-            />
-            返回 Jeko.eSIM 首頁
-          </Link>
-        </p>
       </div>
     </div>
   );

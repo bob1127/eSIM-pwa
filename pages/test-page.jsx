@@ -149,7 +149,7 @@ export default function HomePage() {
               地址：台中市烏日區溪南路一段348巷33號
             </p>
             <p className="text-slate-400 text-sm mt-2">
-              Email: service@jekoesim.com
+              Email: support@jeko-esim.com.tw
             </p>
           </div>
         </div>

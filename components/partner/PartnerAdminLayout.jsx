@@ -33,6 +33,7 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
 
   const storeUrl = store ? `${SITE_URL}/p/${store.domain}` : null;
   const model = partner.cooperation_model === "referral" ? "referral" : "store";
+  const isReferral = model === "referral";
   const navItems = NAV_ITEMS.filter((item) => item.models.includes(model));
 
   return (
@@ -86,7 +87,9 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
           </button>
           <div className="hidden md:flex items-center gap-2 border-l border-white/20 pl-3 ml-1">
             <div className="w-7 h-7 bg-white/15 rounded-full flex items-center justify-center overflow-hidden">
-              {user?.user_metadata?.avatar_url || user?.user_metadata?.picture ? (
+              {!isReferral &&
+              (user?.user_metadata?.avatar_url ||
+                user?.user_metadata?.picture) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={
@@ -97,11 +100,18 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <MaterialIcon name="storefront" size={16} className="text-blue-200" />
+                <MaterialIcon
+                  name={isReferral ? "link" : "storefront"}
+                  size={16}
+                  className="text-blue-200"
+                />
               )}
             </div>
             <span className="text-xs text-blue-200 font-bold max-w-[100px] truncate">
-              {store?.store_name || partner.name}
+              {isReferral ? partner.name : store?.store_name || partner.name}
+            </span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-blue-100">
+              {isReferral ? "專屬連結" : "專屬商店"}
             </span>
           </div>
         </div>

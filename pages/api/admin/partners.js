@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import { requireMedusaAdminFromRequest } from "../../../lib/medusaAdminAuth";
 import { getSiteUrl } from "../../../lib/siteUrl";
 import {
@@ -12,15 +11,8 @@ import {
   allocateUniquePartnerCode,
   suggestCodeFromName,
 } from "../../../lib/partnerReferral";
-
-const supabaseAdmin =
-  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
-    ? createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY,
-        { auth: { autoRefreshToken: false, persistSession: false } },
-      )
-    : null;
+import { getSupabaseAdmin } from "../../../lib/partnerServer";
+import { findAuthUserIdByEmail } from "../../../lib/partnerBind";
 
 export default async function handler(req, res) {
   const admin = await requireMedusaAdminFromRequest(req);
@@ -28,6 +20,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "需要 Medusa 管理員登入" });
   }
 
+  const supabaseAdmin = getSupabaseAdmin();
   if (!supabaseAdmin) {
     return res.status(500).json({
       error: "伺服器未設定 SUPABASE_SERVICE_ROLE_KEY",
@@ -83,9 +76,20 @@ export default async function handler(req, res) {
       if (!normalizeReferralCode(partner.slug)) {
         patch.slug = code;
       }
-      if (partner.referral_rate == null) {
+      if (
+        partner.referral_rate == null ||
+        Number(partner.referral_rate) === 20
+      ) {
         patch.referral_rate = DEFAULT_REFERRAL_RATE;
       }
+    }
+
+    if (status === "active" && !partner.auth_user_id) {
+      const authUserId = await findAuthUserIdByEmail(
+        supabaseAdmin,
+        partner.email,
+      );
+      if (authUserId) patch.auth_user_id = authUserId;
     }
 
     const { data: updatedRows, error: updateErr } = await supabaseAdmin
@@ -115,7 +119,7 @@ export default async function handler(req, res) {
             store_name: partner.name,
             status: "active",
             markup_rate: 20,
-            user_id: null,
+            user_id: updatedPartner.auth_user_id || null,
           },
         ]);
         if (storeErr) {
@@ -131,8 +135,20 @@ export default async function handler(req, res) {
       } else if (existingStore.status !== "active") {
         await supabaseAdmin
           .from("stores")
-          .update({ status: "active", store_name: partner.name })
+          .update({
+            status: "active",
+            store_name: partner.name,
+            ...(updatedPartner.auth_user_id
+              ? { user_id: updatedPartner.auth_user_id }
+              : {}),
+          })
           .eq("id", existingStore.id);
+      } else if (updatedPartner.auth_user_id) {
+        await supabaseAdmin
+          .from("stores")
+          .update({ user_id: updatedPartner.auth_user_id })
+          .eq("id", existingStore.id)
+          .is("user_id", null);
       }
     }
 

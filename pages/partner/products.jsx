@@ -577,7 +577,7 @@ function ReportTab({ stats, partner, store }) {
                       o.status==="completed"?"bg-[#d1fae5] text-[#065f46]":
                       o.status==="pending"?"bg-[#fef3c7] text-[#92400e]":
                       "bg-slate-100 text-slate-500"}`}>
-                      {o.status==="completed"?"已完成":o.status==="pending"?"待付款":"其他"}
+                      {o.status==="completed"?"已付款":o.status==="pending"?"待付款":"其他"}
                     </span>
                     <div>
                       <p className="text-xs font-bold text-slate-700">

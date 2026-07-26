@@ -8,29 +8,16 @@
 // 但改成直接接收 { orderId, items, email }，不再依賴 Supabase orders 表
 // （付款狀態與 QRCode 現在都存在 Medusa order.metadata 裡）。
 import axios from "axios";
-import crypto from "crypto";
 import FormData from "form-data";
 import PLAN_ID_MAP from "../../../lib/esim/planMap";
 import { sendMail } from "../../../lib/mailTransporter";
-
-const ACCOUNT = (process.env.ESIM_ACCOUNT || "test_account_9999").trim();
-const SECRET = (process.env.ESIM_SECRET || "7119968f9ff07654ga485487822g").trim();
-const SALT_HEX = (process.env.ESIM_SALT || "c38ab89bd01537b3915848d689090e56").trim();
-const BASE_URL = (process.env.ESIM_BASE_URL || "https://microesim.cn").trim();
-
-function signHeaders() {
-  const timestamp = Date.now().toString();
-  const nonce = crypto.randomBytes(6).toString("hex");
-  const hexKey = crypto
-    .pbkdf2Sync(SECRET, Buffer.from(SALT_HEX, "hex"), 1024, 32, "sha256")
-    .toString("hex");
-  const dataToSign = ACCOUNT + nonce + timestamp;
-  const signature = crypto
-    .createHmac("sha256", Buffer.from(hexKey, "utf8"))
-    .update(dataToSign)
-    .digest("hex");
-  return { timestamp, nonce, signature };
-}
+import {
+  ESIM_ACCOUNT as ACCOUNT,
+  ESIM_BASE_URL as BASE_URL,
+  resolveChannelDataplanId,
+  signMicroesimHeaders as signHeaders,
+  shouldForceTestPlan,
+} from "../../../lib/esim/microesimClient";
 
 async function sendEsimEmail(to, orderNumber, imagesHtml) {
   await sendMail({
@@ -68,8 +55,7 @@ export default async function handler(req, res) {
 
     for (const item of items) {
       const rawPlanId = item.sku || item.planId;
-      const cleanedSku = String(rawPlanId || "").trim().replace(/\u200B/g, "").replace(/,/g, "-");
-      const finalPlanId = PLAN_ID_MAP[cleanedSku] || cleanedSku;
+      const finalPlanId = resolveChannelDataplanId(rawPlanId, PLAN_ID_MAP);
       const quantity = item.quantity || 1;
 
       if (!finalPlanId) {
@@ -77,7 +63,12 @@ export default async function handler(req, res) {
         continue;
       }
 
-      console.log(`📡 [fulfill-order] 使用帳號 ${ACCOUNT} 向供應商連線: ${BASE_URL}（訂單 ${orderId}）`);
+      console.log(
+        `📡 [fulfill-order] 使用帳號 ${ACCOUNT} 向供應商連線: ${BASE_URL}` +
+          `（訂單 ${orderId}` +
+          (shouldForceTestPlan() ? `，測試方案 ${finalPlanId}` : `，plan ${finalPlanId}`) +
+          `）`,
+      );
 
       let active_type = "ACTIVEDBYDEVICE";
       try {

@@ -7,10 +7,11 @@ export const fmt = (n) => `NT$${Math.round(Number(n) || 0).toLocaleString()}`;
 export const METRIC_HELP = {
   totalProfit: {
     title: "累計分潤（淨收益）",
-    body: "在所選報表期間內，透過您的專屬賣場或折扣碼成交之有效訂單，合計歸屬於您的分潤金額。",
+    body: "在所選報表期間內，透過您的專屬推薦連結或專屬賣場成交之有效訂單，合計歸屬於您的分潤金額。",
     bullets: [
-      "統計範圍：狀態為「已完成」或「待付款」的訂單",
-      "計算方式：客戶實付金額 − 底價成本 − 金流手續費（約 2.8%）",
+      "統計範圍：狀態為「已付款」或「待付款」的訂單",
+      "專屬連結：依約定成本加成點數計算分潤",
+      "專屬商店：客戶實付 − 底價等成本後之夥伴分潤",
       "已取消、已退款訂單不計入",
       "此為預估淨收益，實際匯款以每月結算為準",
     ],
@@ -24,12 +25,22 @@ export const METRIC_HELP = {
       "營收 − 底價 = 毛分潤（尚未扣除金流手續費）",
     ],
   },
+  referralVolume: {
+    title: "推廣訂單金額",
+    body: "經您的專屬推薦連結成交之訂單金流概況（售價與官網相同，您不需訂價）。",
+    bullets: [
+      "旅客付款合計：客戶在官網實際付款總額",
+      "方案成本合計：對應方案的供應成本合計",
+      "您的分潤依「成本 × 約定趴數」計算，詳見儀表板上方說明",
+    ],
+  },
   profitRate: {
     title: "分潤率分析",
     body: "反映報表期間內，分潤占店鋪營收的比例，以及有效推廣訂單數量。",
     bullets: [
       "分潤率 = 累計分潤 ÷ 店鋪營收 × 100%",
-      "有效訂單：已完成 + 待付款，不含取消訂單",
+      "有效訂單：已付款 + 待付款，不含取消／退款",
+      "訂單詳情可分別查看「已付款」「待付款」狀態",
       "分潤率會因各商品定價、折扣活動而有所浮動",
     ],
   },
@@ -71,25 +82,20 @@ export const METRIC_HELP = {
   orderVolume: {
     title: "訂單量分析（近 6 期）",
     body: "柱狀圖顯示近 6 個月份的有效推廣訂單數量。",
-    bullets: [
-      "僅計入已完成與待付款訂單",
-      "可用於觀察推廣成效與季節性變化",
-    ],
+    bullets: ["僅計入已付款與待付款訂單", "可用於觀察推廣成效與季節性變化"],
   },
   cumulativeProfit: {
     title: "累計分潤",
     body: "所有有效訂單（含待結算）的分潤合計，不限報表期間篩選。",
-    bullets: [
-      "含已完成與待付款訂單",
-      "為歷史累計總額，非單月數據",
-    ],
+    bullets: ["含已付款與待付款訂單", "為歷史累計總額，非單月數據"],
   },
   validOrders: {
     title: "有效訂單",
-    body: "透過您的賣場產生、且尚未取消的有效訂單總筆數。",
+    body: "透過您的賣場或推薦連結產生、且尚未取消的有效訂單總筆數。",
     bullets: [
-      "已完成：客戶已付款且訂單處理完成",
+      "已付款：客戶已完成付款／結帳（狀態：已完成）",
       "待付款：客戶已下單但尚未完成付款",
+      "詳情列表會清楚標示以上兩種狀態",
     ],
   },
   storeRevenueAll: {
@@ -121,8 +127,15 @@ export function MetricHelpPopup({ open, onClose, title, body, bullets = [] }) {
       >
         <div className="flex items-center justify-between px-5 py-3 border-b-2 border-slate-200 bg-[#f8fafc]">
           <div className="flex items-center gap-2 min-w-0">
-            <MaterialIcon name="info" size={22} className="text-[#1a56db] shrink-0" />
-            <h2 id="metric-help-title" className="text-sm font-black text-slate-800 truncate">
+            <MaterialIcon
+              name="info"
+              size={22}
+              className="text-[#1a56db] shrink-0"
+            />
+            <h2
+              id="metric-help-title"
+              className="text-sm font-black text-slate-800 truncate"
+            >
               {title}
             </h2>
           </div>
@@ -136,12 +149,21 @@ export function MetricHelpPopup({ open, onClose, title, body, bullets = [] }) {
           </button>
         </div>
         <div className="px-5 py-4 space-y-3">
-          {body && <p className="text-sm text-slate-700 leading-relaxed">{body}</p>}
+          {body && (
+            <p className="text-sm text-slate-700 leading-relaxed">{body}</p>
+          )}
           {bullets.length > 0 && (
             <ul className="space-y-2 border-t border-slate-200 pt-3">
               {bullets.map((item) => (
-                <li key={item} className="flex items-start gap-2 text-xs text-slate-600 leading-relaxed">
-                  <MaterialIcon name="arrow_right" size={14} className="text-[#1a56db] shrink-0 mt-0.5" />
+                <li
+                  key={item}
+                  className="flex items-start gap-2 text-xs text-slate-600 leading-relaxed"
+                >
+                  <MaterialIcon
+                    name="arrow_right"
+                    size={14}
+                    className="text-[#1a56db] shrink-0 mt-0.5"
+                  />
                   <span>{item}</span>
                 </li>
               ))}
@@ -170,16 +192,26 @@ export function MetricPanelHeader({ icon, title, help, href }) {
   const inner = (
     <>
       <div className="flex items-center gap-2 min-w-0">
-        <MaterialIcon name={icon} size={20} className="text-[#1a56db] shrink-0" />
+        <MaterialIcon
+          name={icon}
+          size={20}
+          className="text-[#1a56db] shrink-0"
+        />
         <span
           className={`text-sm font-bold text-slate-800 truncate ${
-            clickable ? "underline decoration-dotted decoration-slate-400 underline-offset-2" : ""
+            clickable
+              ? "underline decoration-dotted decoration-slate-400 underline-offset-2"
+              : ""
           }`}
         >
           {title}
         </span>
         {clickable && (
-          <MaterialIcon name="help_outline" size={16} className="text-slate-400 shrink-0" />
+          <MaterialIcon
+            name="help_outline"
+            size={16}
+            className="text-slate-400 shrink-0"
+          />
         )}
       </div>
       <MaterialIcon
@@ -286,7 +318,7 @@ export function ReportPeriodBar({
           onClick={() => onQuickRange("thisMonth")}
           className="text-sm text-slate-700 font-bold hover:underline"
         >
-          当月
+          當月
         </button>
       </div>
       <button
@@ -305,7 +337,12 @@ export function DobermanStatusBanner({ title, message, loading }) {
   return (
     <div className="bg-[#1a56db] px-6 py-4 flex items-center gap-5">
       <div className="w-16 h-16 bg-white/15 flex items-center justify-center shrink-0 border-2 border-white/30">
-        <MaterialIcon name="verified_user" size={36} className="text-white" filled />
+        <MaterialIcon
+          name="verified_user"
+          size={36}
+          className="text-white"
+          filled
+        />
       </div>
       <div>
         <p className="text-2xl font-black text-white tracking-wide">
@@ -323,13 +360,18 @@ export function DobermanPanel({ icon, title, rows, children, href, help }) {
       <MetricPanelHeader icon={icon} title={title} help={help} href={href} />
       <div className="px-4 py-4">
         {rows?.map((row) => (
-          <div key={row.label} className="flex justify-between items-center py-1.5">
+          <div
+            key={row.label}
+            className="flex justify-between items-center py-1.5"
+          >
             <span className="text-xs text-slate-500 flex items-center gap-1.5">
               {row.arrow && (
                 <MaterialIcon
                   name={row.arrow === "up" ? "arrow_upward" : "arrow_downward"}
                   size={16}
-                  className={row.arrow === "up" ? "text-[#1a56db]" : "text-red-400"}
+                  className={
+                    row.arrow === "up" ? "text-[#1a56db]" : "text-red-400"
+                  }
                 />
               )}
               {row.label}
@@ -337,7 +379,9 @@ export function DobermanPanel({ icon, title, rows, children, href, help }) {
             <span className="text-2xl font-black text-[#1a56db] tabular-nums">
               {row.value}
               {row.unit && (
-                <span className="text-xs font-bold text-slate-500 ml-1">{row.unit}</span>
+                <span className="text-xs font-bold text-slate-500 ml-1">
+                  {row.unit}
+                </span>
               )}
             </span>
           </div>
@@ -348,18 +392,31 @@ export function DobermanPanel({ icon, title, rows, children, href, help }) {
   );
 }
 
-export function DobermanTopCard({ icon, title, topLabel, count, countUnit = "筆", help }) {
+export function DobermanTopCard({
+  icon,
+  title,
+  topLabel,
+  count,
+  countUnit = "筆",
+  help,
+}) {
   return (
     <div className="bg-white border border-slate-200 overflow-hidden">
       <MetricPanelHeader icon={icon} title={title} help={help} />
       <div className="px-4 py-4 flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Top</p>
-          <p className="text-sm font-bold text-slate-700 truncate">{topLabel}</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">
+            Top
+          </p>
+          <p className="text-sm font-bold text-slate-700 truncate">
+            {topLabel}
+          </p>
         </div>
         <p className="text-2xl font-black text-[#1a56db] tabular-nums shrink-0">
           {count}
-          <span className="text-xs font-bold text-slate-500 ml-0.5">{countUnit}</span>
+          <span className="text-xs font-bold text-slate-500 ml-0.5">
+            {countUnit}
+          </span>
         </p>
       </div>
     </div>

@@ -123,14 +123,19 @@ function isHomePath(path: string | null | undefined) {
 // --- 2. 導覽列資料 (桌面版) ---
 const navLinks = [
   { key: "categories", label: "精選eSIM", href: "/product", hasMega: true },
-  { key: "shop", label: "Jeko 商城", href: "/shop" },
+  { key: "shop", label: "Jeko 商城", href: "/shop", comingSoon: true },
   { key: "blog", label: "旅遊須知", href: "/blog" },
   { key: "tutorial", label: "啟用教學", href: "/operation-shopee" },
   { key: "about", label: "關於Jeko", href: "/about" },
   { key: "partner", label: "合作夥伴", href: "/cooperation" },
   { key: "promo", label: "優惠活動", href: "/promo" },
   { key: "contact", label: "聯絡我們", href: "/contact" },
-  { key: "shopee", label: "蝦皮兌換", href: "/shopee-qrcode" },
+  {
+    key: "shopee",
+    label: "蝦皮兌換",
+    href: "/shopee-qrcode",
+    comingSoon: true,
+  },
   { key: "usage", label: "查詢用量", href: "/data-query" },
 ];
 
@@ -155,6 +160,13 @@ export default function Navbar({ className }: NavbarProps) {
   const [navVisible, setNavVisible] = useState(true);
   const [openMega, setOpenMega] = useState<string>("none");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [comingSoonLabel, setComingSoonLabel] = useState<string | null>(null);
+
+  const showComingSoon = (label: string) => {
+    setComingSoonLabel(label);
+    setMobileOpen(false);
+    setOpenMega("none");
+  };
 
   /** 捲動超過此距離才視為離開頁面頂部 */
   const TOP_HIDE_THRESHOLD = 48;
@@ -331,7 +343,9 @@ export default function Navbar({ className }: NavbarProps) {
         <div
           className={cn(
             "mx-auto max-w-[1450px] 2xl:max-w-[1600px] pointer-events-auto border border-gray-300 flex flex-col relative transition-[border-radius] duration-150",
-            openMega !== "none" ? "rounded-t-2xl rounded-b-none" : "rounded-2xl",
+            openMega !== "none"
+              ? "rounded-t-2xl rounded-b-none"
+              : "rounded-2xl",
           )}
           onMouseLeave={() => setOpenMega("none")}
         >
@@ -455,12 +469,22 @@ export default function Navbar({ className }: NavbarProps) {
                     setOpenMega(link.hasMega ? link.key : "none")
                   }
                 >
-                  <Link
-                    href={link.href}
-                    className="text-white text-sm font-bold tracking-wide"
-                  >
-                    {link.label}
-                  </Link>
+                  {link.comingSoon ? (
+                    <button
+                      type="button"
+                      onClick={() => showComingSoon(link.label)}
+                      className="text-white text-sm font-bold tracking-wide"
+                    >
+                      {link.label}
+                    </button>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-white text-sm font-bold tracking-wide"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                   {/* Hover 黃色底線特效 */}
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[4px] bg-[#FFD43A] transition-all duration-300 w-0 group-hover:w-full" />
                 </div>
@@ -601,8 +625,8 @@ export default function Navbar({ className }: NavbarProps) {
                 <MobileSimpleNavItem
                   icon={<ShoppingBagIcon className="w-5 h-5" />}
                   label="Jeko 商城"
-                  href="/shop"
-                  onClick={() => setMobileOpen(false)}
+                  comingSoon
+                  onClick={() => showComingSoon("Jeko 商城")}
                 />
               </div>
 
@@ -626,8 +650,8 @@ export default function Navbar({ className }: NavbarProps) {
                 <MobileSimpleNavItem
                   icon={<QrCodeIcon className="w-5 h-5" />}
                   label="蝦皮訂單兌換"
-                  href="/shopee-qrcode"
-                  onClick={() => setMobileOpen(false)}
+                  comingSoon
+                  onClick={() => showComingSoon("蝦皮兌換")}
                 />
                 <MobileSimpleNavItem
                   icon={<WifiIcon className="w-5 h-5" />}
@@ -730,6 +754,42 @@ export default function Navbar({ className }: NavbarProps) {
           </motion.nav>
         )}
       </AnimatePresence>
+
+      {/* 即將上線提示 */}
+      <AnimatePresence>
+        {comingSoonLabel && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10050] flex items-center justify-center bg-black/40 px-5"
+            onClick={() => setComingSoonLabel(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 6 }}
+              transition={{ type: "spring", stiffness: 420, damping: 32 }}
+              className="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-slate-100 p-6 text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-black text-slate-900 mb-2">
+                {comingSoonLabel}
+              </h3>
+              <p className="text-sm text-slate-500 leading-relaxed mb-5">
+                即將上線，敬請期待！
+              </p>
+              <button
+                type="button"
+                onClick={() => setComingSoonLabel(null)}
+                className="w-full h-11 rounded-full bg-[#0A6CD0] text-white text-sm font-bold hover:bg-[#0859ad] transition"
+              >
+                知道了
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
@@ -737,13 +797,36 @@ export default function Navbar({ className }: NavbarProps) {
 // --- 輔助組件 ---
 
 // 手機版清單項目
-function MobileSimpleNavItem({ icon, label, href, onClick }: any) {
+function MobileSimpleNavItem({
+  icon,
+  label,
+  href,
+  onClick,
+  comingSoon = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  href?: string;
+  onClick?: () => void;
+  comingSoon?: boolean;
+}) {
+  const className =
+    "flex h-12 w-full items-center gap-4 rounded-xl border border-neutral-200 bg-white px-5 shadow-sm transition-colors active:bg-slate-50";
+
+  if (comingSoon || !href) {
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        <div className="text-slate-400">{icon}</div>
+        <span className="text-[13px] font-black text-slate-700">{label}</span>
+        <span className="ml-auto text-[10px] font-bold text-[#0A6CD0] bg-blue-50 px-2 py-0.5 rounded-full">
+          即將上線
+        </span>
+      </button>
+    );
+  }
+
   return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className="flex h-12 w-full items-center gap-4 rounded-xl border border-neutral-200 bg-white px-5 shadow-sm transition-colors active:bg-slate-50"
-    >
+    <Link href={href} onClick={onClick} className={className}>
       <div className="text-slate-400">{icon}</div>
       <span className="text-[13px] font-black text-slate-700">{label}</span>
     </Link>

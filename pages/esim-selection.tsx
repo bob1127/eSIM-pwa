@@ -309,33 +309,114 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
     else if (apn.includes("mobile.three.com.hk")) carrier = "3HK 漫遊";
   }
 
-  // IP & App Support
+  // IP & App Support（原生：日／韓／泰／越）
   let isNative = false;
   let ipRegion = "當地 IP";
+
+  const networksBlob = String(p.networks || p.operator || "").toLowerCase();
+  const planNameRaw = String(p.name || p.channel_dataplan_name || "");
+  const isLocalNamed = /\blocal\b/i.test(planNameRaw);
+
+  // 優先用 ip 欄位，避免 networks 等字串誤判成 gateway
+  const ipField = String(p.ip || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
+  if (/^([A-Z]{2})(,[A-Z]{2})*$/.test(ipField)) {
+    rawGateway = ipField;
+  }
+
+  const NATIVE_REGION_RULES: Array<{
+    code: string;
+    label: string;
+    apnHints: string[];
+    netHints: string[];
+    /** 韓／泰／越：需 Local 名稱（或極明確本地 APN）；日本可僅靠 APN／電信 */
+    requireLocalName: boolean;
+  }> = [
+    {
+      code: "JP",
+      label: "🇯🇵 日本原生 IP",
+      apnHints: [".jp", "au-net", "vmobile.jp"],
+      netHints: ["docomo", "kddi", "iij"],
+      requireLocalName: false,
+    },
+    {
+      code: "KR",
+      label: "🇰🇷 韓國原生 IP",
+      apnHints: ["lte.sktelecom", "lguplus", "internet.lguplus", "ktfreetel"],
+      netHints: ["skt", "kt[", "lgu"],
+      requireLocalName: true,
+    },
+    {
+      code: "TH",
+      label: "🇹🇭 泰國原生 IP",
+      apnHints: ["www.dtac", "myais"],
+      netHints: ["true", "ture", "ais", "dtac"],
+      requireLocalName: true,
+    },
+    {
+      code: "VN",
+      label: "🇻🇳 越南原生 IP",
+      apnHints: ["m-wap", "m3-world", "v-internet", "m9-wintel"],
+      netHints: ["viettel", "mobifone", "vinaphone", "wintel"],
+      requireLocalName: true,
+    },
+  ];
+
+  const matchNativeRule = (rule: (typeof NATIVE_REGION_RULES)[number]) => {
+    if (isRoamingAPN) return false;
+    const apnHit = rule.apnHints.some((h) => apn.includes(h));
+    const netHit = rule.netHints.some((h) => networksBlob.includes(h));
+    const gwHit = rawGateway === rule.code;
+
+    if (rule.requireLocalName) {
+      // 韓／泰／越：名稱含 Local + 當地單一 IP（且非漫遊 APN）
+      if (gwHit && isLocalNamed) return true;
+      // 無 Local 字樣但 APN 極明確本地時也接受
+      if (gwHit && apnHit) return true;
+      return false;
+    }
+
+    // 日本：當地 IP + 本地 APN／Docomo·KDDI·IIJ（不含純 SoftBank 漫遊感）
+    if (gwHit && (apnHit || netHit)) return true;
+    if (!rawGateway && apnHit) return true;
+    return false;
+  };
 
   if (rawGateway) {
     const gws = rawGateway.split(",").map((g) => {
       if (g === "HK") return "🇭🇰 香港";
       if (g === "SG") return "🇸🇬 新加坡";
       if (g === "JP") return "🇯🇵 日本";
+      if (g === "KR") return "🇰🇷 韓國";
+      if (g === "TH") return "🇹🇭 泰國";
+      if (g === "VN") return "🇻🇳 越南";
       return g;
     });
-    const isSingleJP = rawGateway === "JP";
-    if (isSingleJP && !isRoamingAPN) {
+
+    const hit = NATIVE_REGION_RULES.find((rule) => matchNativeRule(rule));
+    if (hit) {
       isNative = true;
-      ipRegion = "🇯🇵 日本原生 IP";
+      ipRegion = hit.label;
     } else {
       isNative = false;
-      ipRegion = gws.join("/") + (isSingleJP ? " 漫遊 IP" : " IP");
+      const isSingleLocal = /^[A-Z]{2}$/.test(rawGateway);
+      ipRegion =
+        gws.join("/") +
+        (isSingleLocal && !isRoamingAPN ? " IP" : isSingleLocal ? " 漫遊 IP" : " IP");
     }
   } else {
     if (isRoamingAPN) {
       isNative = false;
       if (apn.includes("3gnet")) ipRegion = "🇭🇰/🇸🇬 混合 IP";
       else ipRegion = "🇭🇰 香港 IP (漫遊)";
-    } else if (apn.includes(".jp") || apn.includes("au-net")) {
-      isNative = true;
-      ipRegion = "🇯🇵 日本原生 IP";
+    } else {
+      const hit = NATIVE_REGION_RULES.find((rule) => matchNativeRule(rule));
+      if (hit) {
+        isNative = true;
+        ipRegion = hit.label;
+      }
     }
   }
 

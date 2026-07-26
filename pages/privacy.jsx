@@ -134,7 +134,12 @@ export default function PrivacyPage() {
         <p>隱私權相關問題，請聯繫：</p>
         <ul>
           <li>
-            Email：<a href="mailto:support@re-media.com">support@re-media.com</a>
+            Jeko 客服：
+            <a href="mailto:support@jeko-esim.com.tw">support@jeko-esim.com.tw</a>
+          </li>
+          <li>
+            藍鏈數位企業社：
+            <a href="mailto:info@bluelink.com.tw">info@bluelink.com.tw</a>
           </li>
           <li>
             LINE 官方帳號：

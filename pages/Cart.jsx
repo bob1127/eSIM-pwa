@@ -34,6 +34,45 @@ const TruckIcon = () => (
 
 const steps = ["購物車", "填寫資料", "付款完成"];
 
+function getCartItemHref(item) {
+  if (item?.href) return item.href;
+  if (item?.categorySlug && item?.slug) {
+    return `/product/${item.categorySlug}/${item.slug}`;
+  }
+  if (item?.slug) return `/product/${item.slug}`;
+  return null;
+}
+
+function CartItemThumb({ item, size = "md" }) {
+  const href = getCartItemHref(item);
+  const src = item?.image || "/images/jeko-esim.png";
+  const box =
+    size === "sm"
+      ? "w-14 h-14 rounded-lg"
+      : "w-full md:w-[150px] rounded-lg";
+  const img = (
+    <div
+      className={`${box} flex-shrink-0 overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center`}
+    >
+      <img
+        src={src}
+        alt={item?.name || "商品"}
+        className="w-full h-full object-contain p-1"
+      />
+    </div>
+  );
+  if (!href) return img;
+  return (
+    <Link
+      href={href}
+      className="block hover:opacity-80 transition-opacity"
+      title="返回商品頁"
+    >
+      {img}
+    </Link>
+  );
+}
+
 const CartPage = () => {
   const { updateQuantity, removeFromCart, cartId, esimItems, esimTotal } =
     useCart();
@@ -330,29 +369,22 @@ const CartPage = () => {
                           }`}
                         >
                           {/* 圖片區塊 */}
-                          <div className="w-full md:w-[150px] flex-shrink-0 flex items-start justify-center bg-gray-50 rounded-lg p-2">
-                            <Link
-                              href={`/product/${item.slug || "#"}`}
-                              className="block w-full"
-                            >
-                              <img
-                                src={item.image}
-                                alt={item.name}
-                                className="w-full h-auto object-contain mix-blend-multiply cursor-pointer hover:opacity-80 transition-opacity"
-                              />
-                            </Link>
-                          </div>
+                          <CartItemThumb item={item} size="md" />
 
                           {/* 商品資訊區 */}
                           <div className="flex-grow">
                             <div className="flex justify-between items-start mb-2">
                               <h2 className="text-lg font-bold text-gray-900">
-                                <Link
-                                  href={`/product/${item.slug || "#"}`}
-                                  className="hover:text-blue-600 transition-colors"
-                                >
-                                  {item.name}
-                                </Link>
+                                {getCartItemHref(item) ? (
+                                  <Link
+                                    href={getCartItemHref(item)}
+                                    className="hover:text-blue-600 transition-colors"
+                                  >
+                                    {item.name}
+                                  </Link>
+                                ) : (
+                                  item.name
+                                )}
                               </h2>
                               <p className="text-lg font-bold text-gray-900">
                                 ${item.price}
@@ -518,20 +550,32 @@ const CartPage = () => {
                         {displayItems.map((item, idx) => (
                           <div
                             key={idx}
-                            className="flex justify-between items-start border-b border-gray-100 pb-4 last:border-0 last:pb-0"
+                            className="flex justify-between items-start border-b border-gray-100 pb-4 last:border-0 last:pb-0 gap-3"
                           >
-                            <div className="pr-4">
-                              <h4 className="text-sm font-bold text-gray-900 leading-tight mb-1">
-                                {item.name}
-                              </h4>
-                              <p className="text-xs text-gray-500">
-                                規格:{" "}
-                                {item.specLabel || item.options || item.color}
-                                <br />
-                                數量: {item.quantity}
-                              </p>
+                            <div className="flex gap-3 min-w-0 flex-1 pr-2">
+                              <CartItemThumb item={item} size="sm" />
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-bold text-gray-900 leading-tight mb-1">
+                                  {getCartItemHref(item) ? (
+                                    <Link
+                                      href={getCartItemHref(item)}
+                                      className="hover:text-blue-600 transition-colors"
+                                    >
+                                      {item.name}
+                                    </Link>
+                                  ) : (
+                                    item.name
+                                  )}
+                                </h4>
+                                <p className="text-xs text-gray-500">
+                                  規格:{" "}
+                                  {item.specLabel || item.options || item.color}
+                                  <br />
+                                  數量: {item.quantity}
+                                </p>
+                              </div>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right shrink-0">
                               <span className="text-sm font-bold text-gray-900">
                                 ${(item.price * item.quantity).toFixed(2)}
                               </span>

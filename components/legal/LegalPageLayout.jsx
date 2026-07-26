@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Layout from "../../pages/Layout";
 import { SOCIAL_LINKS } from "@/lib/seo.config";
+import { SUPPORT_EMAIL, COMPANY_EMAIL } from "@/lib/contactUi";
 
 /**
  * 服務條款 / 隱私權等政策頁共用版型
@@ -73,10 +74,17 @@ export default function LegalPageLayout({
             </p>
             <div className="flex flex-wrap justify-center gap-3 text-xs font-bold">
               <a
-                href={`mailto:support@re-media.com`}
+                href={`mailto:${SUPPORT_EMAIL}`}
                 className="text-[#1a56db] hover:underline"
               >
-                support@re-media.com
+                {SUPPORT_EMAIL}
+              </a>
+              <span className="text-slate-300">|</span>
+              <a
+                href={`mailto:${COMPANY_EMAIL}`}
+                className="text-[#1a56db] hover:underline"
+              >
+                {COMPANY_EMAIL}
               </a>
               {SOCIAL_LINKS.line && (
                 <>

@@ -61,7 +61,7 @@ export async function getStaticProps({ params }) {
       return { notFound: true };
     }
 
-    const prodUrl = `${backendUrl}/store/products?category_id[]=${currentCategory.id}&fields=*variants,*variants.prices,*variants.calculated_price&limit=100`;
+    const prodUrl = `${backendUrl}/store/products?category_id[]=${currentCategory.id}&fields=+metadata,*variants,*variants.prices,*variants.calculated_price&limit=100`;
     const prodRes = await fetch(prodUrl, { headers });
     const prodData = await prodRes.json();
 
@@ -113,6 +113,11 @@ export async function getStaticProps({ params }) {
       const price = amounts.length > 0 ? Math.min(...amounts) : 0;
       const firstVariant = p.variants?.[0];
       const originalPrice = firstVariant?.original_price || price;
+      const isTestPlan = !!(
+        p.metadata?.microesim_test ||
+        p.metadata?.test_plan ||
+        String(p.title || "").includes("測試購買")
+      );
 
       return {
         id: p.id,
@@ -122,8 +127,12 @@ export async function getStaticProps({ params }) {
         original_price: originalPrice,
         image_url: resolveMedusaImageUrl(p.thumbnail),
         tags: p.tags?.map((t) => t.value) || [],
+        isTestPlan,
       };
     });
+
+    // MicroeSIM 測試購買商品置頂，方便串接驗證
+    formattedProducts.sort((a, b) => Number(b.isTestPlan) - Number(a.isTestPlan));
 
     return {
       props: {

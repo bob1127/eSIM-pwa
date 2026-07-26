@@ -15,8 +15,16 @@ import {
 } from "@/components/partner/DobermanWidgets";
 import MaterialIcon from "@/components/MaterialIcon";
 import { usePartnerSession, fetchPartnerStats, SITE_URL } from "@/lib/partnerAuth";
-import { buildReferralShareUrl } from "@/lib/partnerReferral";
+import {
+  buildReferralShareUrl,
+  DEFAULT_REFERRAL_RATE,
+  REFERRAL_BONUS_RATE,
+  REFERRAL_BONUS_ORDER_THRESHOLD,
+  referralRateForMonthCount,
+  monthBoundsIso,
+} from "@/lib/partnerReferral";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
+import { paymentMethodLabel, buyerDisplayName } from "@/lib/orderDisplay";
 
 const DashboardDonut = dynamic(() => import("@/components/partner/PartnerDashboardDonut"), {
   ssr: false,
@@ -123,6 +131,30 @@ export default function PartnerDashboard() {
       : null;
   const isGood = !loading && totals.count > 0 && totals.profit > 0;
 
+  /** 本月有效單量 → 決定目前分潤趴數（25% / 30%） */
+  const monthTier = useMemo(() => {
+    const { start, end } = monthBoundsIso();
+    const startMs = new Date(start).getTime();
+    const endMs = new Date(end).getTime();
+    const monthOrders = (stats?.orders || []).filter((o) => {
+      const t = new Date(o.created_at).getTime();
+      return t >= startMs && t <= endMs && isSettledOrderStatus(o.status);
+    });
+    const count = monthOrders.length;
+    const effectiveRate = referralRateForMonthCount(partner, count);
+    const threshold = REFERRAL_BONUS_ORDER_THRESHOLD;
+    const remain = Math.max(0, threshold - count);
+    return {
+      count,
+      threshold,
+      remain,
+      effectiveRate,
+      baseRate: DEFAULT_REFERRAL_RATE,
+      bonusRate: REFERRAL_BONUS_RATE,
+      hit: count >= threshold,
+    };
+  }, [stats?.orders, partner]);
+
   const copyReferral = async () => {
     if (!referralUrl) return;
     try {
@@ -170,184 +202,270 @@ export default function PartnerDashboard() {
           {/* 敏感：分潤怎麼算（僅夥伴後台） */}
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-[13px] text-slate-700 leading-relaxed">
             <p className="text-[12px] font-black text-slate-900 mb-2 tracking-wide">
-              分潤怎麼算（僅供您參考，請勿對外公開細節）
+              分潤說明
             </p>
-            {(() => {
-              const rate = Number(partner.referral_rate);
-              const partnerPts =
-                Number.isFinite(rate) && rate > 0 ? rate : 20;
-              const siteMarkup = 50;
-              const ofSellApprox = Math.round(
-                (partnerPts / (100 + siteMarkup)) * 1000,
-              ) / 10;
-              const exCost = 305;
-              const exSell = 459;
-              const exPartner = Math.round((exCost * partnerPts) / 100);
-              return (
-                <>
-                  <ul className="list-disc pl-5 space-y-1.5 mb-3">
-                    <li>
-                      您的約定分潤：
-                      <strong className="text-[#1a56db]">
-                        方案成本的 {partnerPts}%
-                      </strong>
-                      （系統欄位 referral_rate）
-                    </li>
-                    <li>
-                      旅客付的是官網售價；您
-                      <strong>不需自己訂價</strong>。
-                    </li>
-                    <li>
-                      若官網約抓 {siteMarkup}% 成本加成，您這檔大約等於
-                      <strong className="text-[#1a56db]">
-                        {" "}
-                        售價的 {ofSellApprox}%
-                      </strong>
-                      （方便對照官網標價心算）。
-                    </li>
-                    <li>
-                      Cookie{" "}
-                      <strong>30 天</strong>
-                      ：經您的連結進入後，30 天內在官網下單仍計入您的分潤。
-                    </li>
-                  </ul>
-                  <div className="rounded-lg bg-white border border-slate-200 px-3 py-2.5 text-[12px]">
-                    <p className="font-bold text-slate-800 mb-1">舉例（日本 5 天方案）</p>
-                    <p>
-                      成本約 NT${exCost} · 官網售價約 NT${exSell} → 您約拿{" "}
-                      <strong className="text-[#1a56db]">NT${exPartner}</strong>
-                      （成本 × {partnerPts}%；約售價{" "}
-                      {Math.round((exPartner / exSell) * 1000) / 10}%）
-                    </p>
-                    <p className="text-slate-500 mt-1">
-                      ※實際金額以訂單結算為準；不同方案成本／售價不同，後台訂單列表可看每筆分潤。
-                    </p>
-                  </div>
-                </>
-              );
-            })()}
+            <div className="mb-3 rounded-lg border border-[#1a56db]/20 bg-white px-3 py-2.5">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1.5">
+                <p className="text-[12px] font-bold text-slate-800">
+                  本月進度
+                  <span className="ml-2 text-[#1a56db]">
+                    {loading ? "…" : `${monthTier.count} / ${monthTier.threshold}`}
+                  </span>
+                  <span className="ml-1 font-medium text-slate-500">有效訂單</span>
+                </p>
+                <p className="text-[12px] font-black text-[#1a56db]">
+                  本月分潤 {loading ? "…" : `${monthTier.effectiveRate}%`}
+                </p>
+              </div>
+              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#1a56db] transition-all"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.round(
+                        (monthTier.count / monthTier.threshold) * 100,
+                      ),
+                    )}%`,
+                  }}
+                />
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1.5">
+                {monthTier.hit
+                  ? `已達標：本月有效單皆以成本 × ${monthTier.bonusRate}% 結算；次月重新計算。`
+                  : `再 ${monthTier.remain} 筆達標，本月改為成本 × ${monthTier.bonusRate}%（達標後本月先前訂單一併調升）。`}
+              </p>
+            </div>
+            <ul className="list-disc pl-5 space-y-1.5 mb-3">
+              <li>
+                分潤依
+                <strong className="text-[#1a56db]">產品成本價</strong>
+                計算：基本{" "}
+                <strong className="text-[#1a56db]">
+                  {monthTier.baseRate}%
+                </strong>
+                ；當月有效訂單達 {monthTier.threshold} 筆 →{" "}
+                <strong className="text-[#1a56db]">
+                  {monthTier.bonusRate}%
+                </strong>
+                ；次月重算，未達標回到基本。
+              </li>
+              <li>
+                旅客付官網售價，您
+                <strong>不用自己訂價</strong>。
+              </li>
+              <li>
+                旅客點您的連結後
+                <strong> 30 天內</strong>
+                在官網下單，分潤都算您的。
+              </li>
+            </ul>
+            <div className="rounded-lg bg-white border border-slate-200 px-3 py-2.5 text-[12px]">
+              <p className="font-bold text-slate-800 mb-1">舉例</p>
+              <p>
+                方案成本 NT$300 → 基本約拿{" "}
+                <strong className="text-[#1a56db]">
+                  NT${Math.round((300 * monthTier.baseRate) / 100)}
+                </strong>
+                ；達標月約拿{" "}
+                <strong className="text-[#1a56db]">
+                  NT${Math.round((300 * monthTier.bonusRate) / 100)}
+                </strong>
+              </p>
+              <p className="text-slate-500 mt-1">
+                實際金額以訂單結算為準，可在「訂單分潤」查看每筆明細。
+              </p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── レポート期間バー ── */}
-      <ReportPeriodBar
-        rangeStart={rangeStart}
-        rangeEnd={rangeEnd}
-        onRangeStartChange={setRangeStart}
-        onRangeEndChange={setRangeEnd}
-        onQuickRange={handleQuickRange}
-      />
+      {/* 與下方區塊同寬：報表期間 + 橫幅 + 指標 + 訂單 */}
+      <div className="px-5 pb-5">
+        {/* ── レポート期間バー ── */}
+        <ReportPeriodBar
+          rangeStart={rangeStart}
+          rangeEnd={rangeEnd}
+          onRangeStartChange={setRangeStart}
+          onRangeEndChange={setRangeEnd}
+          onQuickRange={handleQuickRange}
+        />
 
-      {/* ── 良好バナー ── */}
-      <DobermanStatusBanner
-        loading={loading}
-        title={isGood ? "良好" : totals.count > 0 ? "推廣進行中" : "準備就緒"}
-        message={
-          loading
-            ? "正在讀取分潤數據..."
-            : totals.count > 0
-              ? `期間內 ${totals.count} 筆訂單・累計分潤 ${fmt(totals.profit)}・分潤率 ${totals.rate}%`
-              : isReferral
-                ? "複製上方專屬推薦連結，分享給旅客即可開始累積分潤。"
-                : "您的專屬賣場已開通，前往選品管理加入 eSIM 方案後即可開始推廣。"
-        }
-      />
+        {/* ── 良好バナー ── */}
+        <DobermanStatusBanner
+          loading={loading}
+          title={isGood ? "良好" : totals.count > 0 ? "推廣進行中" : "準備就緒"}
+          message={
+            loading
+              ? "正在讀取分潤數據..."
+              : totals.count > 0
+                ? `期間內 ${totals.count} 筆訂單・累計分潤 ${fmt(totals.profit)}・分潤率 ${totals.rate}%`
+                : isReferral
+                  ? "複製上方專屬推薦連結，分享給旅客即可開始累積分潤。"
+                  : "您的專屬賣場已開通，前往選品管理加入 eSIM 方案後即可開始推廣。"
+          }
+        />
 
-      {/* ── 2×2 メトリクスグリッド ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 border-x border-b border-slate-200">
-        <div className="border-b lg:border-r border-slate-200">
-          <DobermanPanel
-            icon="payments"
-            title="累計分潤（淨收益）"
-            help={METRIC_HELP.totalProfit}
-            rows={[{ label: "分潤合計", value: loading ? "..." : fmt(totals.profit) }]}
-          />
-        </div>
-        <div className="border-b border-slate-200">
-          <DobermanPanel
-            icon="language"
-            title="店鋪營收報表"
-            help={METRIC_HELP.storeRevenue}
-            rows={[
-              { label: "受取合計", arrow: "up", value: loading ? "..." : fmt(totals.revenue) },
-              { label: "底價成本", arrow: "down", value: loading ? "..." : fmt(totals.cost) },
-            ]}
-          />
-        </div>
-        <div className="lg:border-r border-b lg:border-b-0 border-slate-200">
-          <DobermanPanel
-            icon="filter_alt"
-            title="分潤率分析"
-            help={METRIC_HELP.profitRate}
-            rows={[
-              { label: "分潤率", value: loading ? "..." : totals.rate, unit: "%" },
-              { label: "有效訂單", value: loading ? "..." : totals.count, unit: "筆" },
-            ]}
-          />
-        </div>
-        <div>
-          <div className="bg-white border-0 overflow-hidden h-full">
-            <MetricPanelHeader
-              icon="donut_large"
-              title="商品分潤報表"
-              help={METRIC_HELP.productShare}
+        {/* ── 2×2 メトリクスグリッド ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 border-x border-b border-slate-200">
+          <div className="border-b lg:border-r border-slate-200">
+            <DobermanPanel
+              icon="payments"
+              title="累計分潤（淨收益）"
+              help={METRIC_HELP.totalProfit}
+              rows={[{ label: "分潤合計", value: loading ? "..." : fmt(totals.profit) }]}
             />
-            <div className="px-4 py-3">
-              <DashboardDonut
-                share={share}
-                totalProfit={totals.profit}
-                loading={loading}
+          </div>
+          <div className="border-b border-slate-200">
+            <DobermanPanel
+              icon="language"
+              title={isReferral ? "推廣訂單金額" : "店鋪營收報表"}
+              help={isReferral ? METRIC_HELP.referralVolume : METRIC_HELP.storeRevenue}
+              rows={[
+                {
+                  label: isReferral ? "旅客付款合計" : "受取合計",
+                  arrow: "up",
+                  value: loading ? "..." : fmt(totals.revenue),
+                },
+                {
+                  label: isReferral ? "方案成本合計" : "底價成本",
+                  arrow: "down",
+                  value: loading ? "..." : fmt(totals.cost),
+                },
+              ]}
+            />
+          </div>
+          <div className="lg:border-r border-b lg:border-b-0 border-slate-200">
+            <DobermanPanel
+              icon="filter_alt"
+              title="分潤率分析"
+              help={METRIC_HELP.profitRate}
+              rows={[
+                { label: "分潤率", value: loading ? "..." : totals.rate, unit: "%" },
+                { label: "有效訂單", value: loading ? "..." : totals.count, unit: "筆" },
+              ]}
+            />
+          </div>
+          <div>
+            <div className="bg-white border-0 overflow-hidden h-full">
+              <MetricPanelHeader
+                icon="donut_large"
+                title="商品分潤報表"
+                help={METRIC_HELP.productShare}
               />
+              <div className="px-4 py-3">
+                <DashboardDonut
+                  share={share}
+                  totalProfit={totals.profit}
+                  loading={loading}
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ── トップランキング行 ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border-x border-b border-slate-200 mt-0">
-        <div className="border-b md:border-b-0 md:border-r border-slate-200">
+        {/* ── トップランキング行 ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border-x border-b border-slate-200 mt-0">
+          <div className="border-b md:border-b-0 md:border-r border-slate-200">
+            <DobermanTopCard
+              icon="filter_list"
+              title="熱銷商品 Top"
+              help={METRIC_HELP.topProduct}
+              topLabel={topName}
+              count={topCount}
+              countUnit="張"
+            />
+          </div>
           <DobermanTopCard
-            icon="filter_list"
-            title="熱銷商品 Top"
-            help={METRIC_HELP.topProduct}
-            topLabel={topName}
-            count={topCount}
-            countUnit="張"
+            icon="category"
+            title={isReferral ? "推廣方案種類" : "商品分類"}
+            help={METRIC_HELP.productCategory}
+            topLabel={share[0]?.[0] || "—"}
+            count={share.length}
+            countUnit="種"
           />
         </div>
-        <DobermanTopCard
-          icon="category"
-          title="商品分類"
-          help={METRIC_HELP.productCategory}
-          topLabel={share[0]?.[0] || "—"}
-          count={share.length}
-          countUnit="種"
-        />
-      </div>
 
-      {/* ── 最近注文 + クイック操作 ── */}
-      <div className="p-5 space-y-4">
-        {/* クイック操作（4 アイコン） */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { href: "/partner/catalog", icon: "add_shopping_cart", label: "選品上架", sub: "從商品池加入方案" },
-            { href: "/partner/products", icon: "price_change", label: "定價管理", sub: "設定各方案售價" },
-            { href: "/partner/orders", icon: "receipt", label: "訂單列表", sub: "查看分潤明細" },
-            { href: "/partner/settings", icon: "store", label: "商店設定", sub: "編輯品牌資訊" },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="bg-white border border-slate-200 rounded-sm p-4 flex flex-col items-center gap-2 hover:border-[#1a56db] hover:shadow-md transition group text-center"
-            >
-              <div className="w-11 h-11 rounded-full bg-[#1a3a6b] group-hover:bg-[#1a56db] text-white flex items-center justify-center transition">
-                <MaterialIcon name={item.icon} size={22} />
-              </div>
-              <p className="text-sm font-black text-slate-800">{item.label}</p>
-              <p className="text-[10px] text-slate-400">{item.sub}</p>
-            </Link>
-          ))}
+        {/* ── 最近注文 + クイック操作 ── */}
+        <div className="pt-4 space-y-4">
+        {/* 商店模式才顯示選品／定價／商店設定；專屬連結只保留訂單 */}
+        <div
+          className={`grid gap-3 ${
+            isReferral
+              ? "grid-cols-1 sm:grid-cols-2 max-w-xl"
+              : "grid-cols-2 md:grid-cols-4"
+          }`}
+        >
+          {(isReferral
+            ? [
+                {
+                  href: "/partner/orders",
+                  icon: "receipt",
+                  label: "訂單分潤",
+                  sub: "查看每筆推薦分潤",
+                },
+                {
+                  href: "#copy-referral",
+                  icon: "content_copy",
+                  label: "複製推薦連結",
+                  sub: "分享官網同價連結",
+                  onClick: copyReferral,
+                },
+              ]
+            : [
+                {
+                  href: "/partner/catalog",
+                  icon: "add_shopping_cart",
+                  label: "選品上架",
+                  sub: "從商品池加入方案",
+                },
+                {
+                  href: "/partner/products",
+                  icon: "price_change",
+                  label: "定價管理",
+                  sub: "設定各方案售價",
+                },
+                {
+                  href: "/partner/orders",
+                  icon: "receipt",
+                  label: "訂單列表",
+                  sub: "查看分潤明細",
+                },
+                {
+                  href: "/partner/settings",
+                  icon: "store",
+                  label: "商店設定",
+                  sub: "編輯品牌資訊",
+                },
+              ]
+          ).map((item) =>
+            item.onClick ? (
+              <button
+                key={item.label}
+                type="button"
+                onClick={item.onClick}
+                className="bg-white border border-slate-200 rounded-sm p-4 flex flex-col items-center gap-2 hover:border-[#1a56db] hover:shadow-md transition group text-center"
+              >
+                <div className="w-11 h-11 rounded-full bg-[#1a3a6b] group-hover:bg-[#1a56db] text-white flex items-center justify-center transition">
+                  <MaterialIcon name={item.icon} size={22} />
+                </div>
+                <p className="text-sm font-black text-slate-800">{item.label}</p>
+                <p className="text-[10px] text-slate-400">{item.sub}</p>
+              </button>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="bg-white border border-slate-200 rounded-sm p-4 flex flex-col items-center gap-2 hover:border-[#1a56db] hover:shadow-md transition group text-center"
+              >
+                <div className="w-11 h-11 rounded-full bg-[#1a3a6b] group-hover:bg-[#1a56db] text-white flex items-center justify-center transition">
+                  <MaterialIcon name={item.icon} size={22} />
+                </div>
+                <p className="text-sm font-black text-slate-800">{item.label}</p>
+                <p className="text-[10px] text-slate-400">{item.sub}</p>
+              </Link>
+            ),
+          )}
         </div>
 
         {/* 最近注文テーブル */}
@@ -370,22 +488,26 @@ export default function PartnerDashboard() {
               <thead className="bg-white text-slate-500 text-xs border-b border-slate-100">
                 <tr>
                   <th className="px-5 py-2.5 text-left font-bold">訂單 / 日期</th>
+                  <th className="px-5 py-2.5 text-left font-bold">買家</th>
+                  <th className="px-5 py-2.5 text-left font-bold">付款方式</th>
                   <th className="px-5 py-2.5 text-left font-bold">金額</th>
                   <th className="px-5 py-2.5 text-left font-bold">分潤</th>
-                  <th className="px-5 py-2.5 text-left font-bold">状態</th>
+                  <th className="px-5 py-2.5 text-left font-bold">付款狀態</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="text-center py-8 text-slate-400 text-sm">
+                    <td colSpan={6} className="text-center py-8 text-slate-400 text-sm">
                       載入中...
                     </td>
                   </tr>
                 ) : (stats?.orders || []).slice(0, 5).length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="text-center py-10 text-slate-400 text-sm">
-                      尚無推廣訂單，分享賣場連結開始賺取分潤
+                    <td colSpan={6} className="text-center py-10 text-slate-400 text-sm">
+                      {isReferral
+                        ? "尚無推廣訂單，複製上方專屬連結開始賺取分潤"
+                        : "尚無推廣訂單，分享賣場連結開始賺取分潤"}
                     </td>
                   </tr>
                 ) : (
@@ -398,6 +520,17 @@ export default function PartnerDashboard() {
                         <p className="text-xs text-slate-400 mt-0.5">
                           {new Date(order.created_at).toLocaleDateString("zh-TW")}
                         </p>
+                      </td>
+                      <td className="px-5 py-3">
+                        <p className="text-xs font-bold text-slate-800 truncate max-w-[140px]">
+                          {buyerDisplayName(order)}
+                        </p>
+                        <p className="text-[11px] text-slate-400 truncate max-w-[140px]">
+                          {order.customer_email || "—"}
+                        </p>
+                      </td>
+                      <td className="px-5 py-3 text-xs text-slate-600 font-medium">
+                        {paymentMethodLabel(order)}
                       </td>
                       <td className="px-5 py-3 font-bold text-slate-800">
                         {fmt(order.total_amount)}
@@ -416,7 +549,7 @@ export default function PartnerDashboard() {
                           }`}
                         >
                           {order.status === "completed"
-                            ? "已完成"
+                            ? "已付款"
                             : order.status === "pending"
                               ? "待付款"
                               : order.status}
@@ -453,6 +586,7 @@ export default function PartnerDashboard() {
             </button>
           </div>
         )}
+      </div>
       </div>
     </PartnerAdminLayout>
   );

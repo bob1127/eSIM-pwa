@@ -18,12 +18,25 @@ export function analyzePlan(plan: any): PlanAnalysis {
 
   // --- 判斷邏輯設定 (你可以隨時回來這裡新增關鍵字) ---
   
-  // A. 原生特徵 (Native Hints)
-  // 如果 APN 包含這些，極高機率是原生
-  const NATIVE_APN_HINTS = ["vmobile.jp", "spmode", "emov", "au.com", "kt.freet", "lte.sktelecom.com", "truemove", "ais", "dtac"];
+  // A. 原生特徵 (Native Hints) — 日／韓／泰／越本地 APN
+  const NATIVE_APN_HINTS = [
+    "vmobile.jp",
+    "au-net",
+    "spmode",
+    "emov",
+    "lte.sktelecom",
+    "lguplus",
+    "kt.freet",
+    "www.dtac",
+    "myais",
+    "m-wap",
+    "m3-world",
+    "v-internet",
+    "m9-wintel",
+  ];
   
-  // B. 漫遊特徵 (Roaming Hints)
-  const ROAMING_APN_HINTS = ["e-ideas", "3gnet", "cmhk", "cmlink", "globaldata", "plus", "internet", "drei"];
+  // B. 漫遊特徵 (Roaming Hints) — 勿把一般 internet 當漫遊（泰 Local 常用）
+  const ROAMING_APN_HINTS = ["e-ideas", "3gnet", "cmhk", "cmlink", "globaldata", "plus.4g", "drei", "mobile.three.com.hk"];
 
   // --- 開始判斷 ---
 

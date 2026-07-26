@@ -79,7 +79,16 @@ const normalizeItem = (product) => {
     name: product.name || product.title || "商品",
     price: Number(product.price) || 0,
     quantity: Math.max(1, Number(product.quantity) || 1),
-    image: product.image || product.thumbnail || "/images/default-image.jpg",
+    image: product.image || product.thumbnail || "/images/jeko-esim.png",
+    slug: product.slug || product.handle || null,
+    categorySlug: product.categorySlug || product.category || null,
+    href:
+      product.href ||
+      (product.categorySlug && (product.slug || product.handle)
+        ? `/product/${product.categorySlug}/${product.slug || product.handle}`
+        : product.slug || product.handle
+          ? `/product/${product.slug || product.handle}`
+          : null),
     specLabel: specLabel || "未指定規格",
     options: specLabel,
     color: product.color || specLabel,

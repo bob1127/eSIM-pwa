@@ -56,7 +56,10 @@ export default function RefundPolicyPage() {
               加入官方 LINE
             </a>
             後提交審核申請；亦可來信{" "}
-            <a href="mailto:support@re-media.com">support@re-media.com</a> 或透過{" "}
+            <a href="mailto:support@jeko-esim.com.tw">support@jeko-esim.com.tw</a>
+            {" "}或{" "}
+            <a href="mailto:info@bluelink.com.tw">info@bluelink.com.tw</a>
+            {" "}或透過{" "}
             <Link href="/contact">聯絡我們</Link>，提供<strong>訂單編號</strong>與
             <strong>購買 Email</strong>。
           </li>
@@ -164,7 +167,12 @@ export default function RefundPolicyPage() {
             後提交退款或售後審核申請。
           </li>
           <li>
-            Email：<a href="mailto:support@re-media.com">support@re-media.com</a>
+            Jeko 客服：
+            <a href="mailto:support@jeko-esim.com.tw">support@jeko-esim.com.tw</a>
+          </li>
+          <li>
+            藍鏈數位企業社：
+            <a href="mailto:info@bluelink.com.tw">info@bluelink.com.tw</a>
           </li>
           <li>
             標題建議：<code className="text-xs bg-slate-100 px-1">【eSIM 退款申請】訂單編號 XXXXX</code>

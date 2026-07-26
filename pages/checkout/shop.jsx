@@ -8,6 +8,11 @@ import { useSession } from "next-auth/react";
 import { useCart } from "@/components/context/CartContext";
 import { useUser } from "@/components/context/UserContext";
 import { buildLoginUrl } from "@/lib/authRedirect";
+import {
+  buildCheckoutAutofillPatches,
+  mergeCheckoutForm,
+  saveCheckoutProfile,
+} from "@/lib/checkoutProfile";
 import { ChevronRight, Tag, Shield, Truck, RotateCcw } from "lucide-react";
 
 // ── 步驟指示器 ──────────────────────────────────────────────────
@@ -242,14 +247,22 @@ export default function ShopCheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // 會員登入後，若 email 欄位還是空的，先幫忙帶入，方便折扣碼資格判斷
+  // 社群 / Email 登入 + 本機儲存 → 自動帶入空白欄位
   useEffect(() => {
-    const email = user?.email || nextAuthSession?.user?.email;
-    if (email && !form.email) {
-      setForm((prev) => ({ ...prev, email }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.email, nextAuthSession?.user?.email]);
+    if (!authReady) return;
+    const { patches } = buildCheckoutAutofillPatches({
+      supabaseUser: user,
+      nextAuthUser: nextAuthSession?.user || null,
+    });
+    setForm((prev) => mergeCheckoutForm(prev, patches));
+  }, [
+    authReady,
+    user?.email,
+    user?.user_metadata?.full_name,
+    user?.user_metadata?.phone,
+    nextAuthSession?.user?.email,
+    nextAuthSession?.user?.name,
+  ]);
 
   // 登入會員：自動領取歡迎禮 50；已加 LINE 則自動套用，未加則顯示引導
   useEffect(() => {
@@ -439,6 +452,8 @@ export default function ShopCheckoutPage() {
 
     setIsSubmitting(true);
     try {
+      saveCheckoutProfile(form);
+
       // Step 1: 建立 Medusa 訂單
       const orderRes = await fetch("/api/orders/create", {
         method: "POST",

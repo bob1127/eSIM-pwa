@@ -25,7 +25,7 @@ const MODE_COPY = {
       {
         title: ["Jeko的", "分潤制度"],
         big: { num: "25", suffix: "%", badge: "up" },
-        desc: ["只要透過專屬連結下單", "即可獲得高額的現金回饋"],
+        desc: ["只要透過專屬連結下單", "即可獲得分潤回饋"],
       },
       {
         title: ["不須繁瑣審核", "最快當日開通"],
@@ -35,7 +35,7 @@ const MODE_COPY = {
       {
         title: ["客服・行銷・SEO", "我們全程支援"],
         icon: "chart",
-        desc: ["客服、行銷與 SEO 皆由 Jeko 協助", "您專心推廣，後勤交給我們"],
+        desc: ["客服、行銷與 SEO 皆由 Jeko 協助"],
       },
     ],
     banner: {
@@ -47,7 +47,7 @@ const MODE_COPY = {
       bonus: "5",
       maxLabel: "最高可達",
       max: "30",
-      note: "※以上為範例。客服／行銷／SEO 由我們支援；達標門檻詳見專屬合約。",
+      note: "※基本為產品成本 25%；當月有效訂單達 40 筆，該月調為成本 30%，次月重算。客服／行銷／SEO 由我們支援。",
     },
     ctaTitle: {
       before: "歡迎成為我們",
