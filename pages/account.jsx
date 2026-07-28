@@ -291,7 +291,7 @@ export default function AccountPage() {
     try {
       const { data: partner, error } = await supabase
         .from("partners")
-        .select("id, name, slug")
+        .select("id, name, slug, cooperation_model, status")
         .eq("email", email)
         .single();
       if (partner && !error) {
@@ -527,7 +527,7 @@ export default function AccountPage() {
       <Layout hideNavbar>
         <div className="min-h-screen flex items-center justify-center bg-[#e8ecf1] text-slate-500">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-4 border-[#2b579a] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#1E4AD1] border-t-transparent rounded-full animate-spin" />
             <p className="text-sm font-medium">驗證身分中…</p>
           </div>
         </div>
@@ -541,7 +541,7 @@ export default function AccountPage() {
       <Layout hideNavbar>
         <div className="min-h-screen flex items-center justify-center bg-[#e8ecf1] text-slate-500">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-4 border-[#2b579a] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#1E4AD1] border-t-transparent rounded-full animate-spin" />
             <p className="text-sm font-medium">導向登入頁…</p>
           </div>
         </div>
@@ -552,6 +552,7 @@ export default function AccountPage() {
   const completedOrders = orders.filter((o) => o.status === "completed");
 
   const navItems = [
+    { id: "home", label: "回到首頁", icon: "home", href: "/" },
     { id: "dashboard", label: "首頁總覽", icon: "dashboard" },
     { id: "orders", label: "我的 eSIM 訂單", icon: "qr_code_2" },
     { id: "traffic", label: "查詢流量", icon: "speed" },
@@ -588,6 +589,7 @@ export default function AccountPage() {
         title={pageTitles[activeTab] || "會員中心"}
         user={user}
         userRole={userRole}
+        partnerData={partnerData}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         navItems={navItems}
@@ -883,6 +885,7 @@ export default function AccountPage() {
             <AccountSettingsView
               user={user}
               userRole={userRole}
+              partnerData={partnerData}
               editingName={editingName}
               setEditingName={setEditingName}
               editingPhone={editingPhone}

@@ -8,7 +8,7 @@ import MaterialIcon from "@/components/MaterialIcon";
 export default function ContactPageShell({ activeTab, onTabChange, children }) {
   return (
     <div
-      className="min-h-screen font-sans pt-28 mt-12 md:pt-32 pb-16"
+      className="min-h-screen font-sans pt-6 mt-4 md:pt-8 pb-16"
       style={{ backgroundColor: CONTACT_UI.bg }}
     >
       <div className={`${CONTACT_UI.contentMax} mx-auto px-4 sm:px-6`}>

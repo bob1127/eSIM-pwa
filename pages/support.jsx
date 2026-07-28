@@ -7,8 +7,97 @@ import {
   DevicePhoneMobileIcon,
   ComputerDesktopIcon,
   SquaresPlusIcon,
+  BoltIcon,
+  PhoneIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { FaApple, FaGoogle, FaAndroid, FaWindows } from "react-icons/fa"; // 如果沒有安裝 react-icons，可以用 heroicons 替代，或需安裝 npm install react-icons
+
+// --- 0. 三星常見機身代碼 → 行銷名稱（Android UA 常回報代碼而非行銷名） ---
+const SAMSUNG_MODEL_MAP = [
+  { prefix: "SM-S928", label: "Galaxy S24 Ultra" },
+  { prefix: "SM-S926", label: "Galaxy S24+" },
+  { prefix: "SM-S921", label: "Galaxy S24" },
+  { prefix: "SM-S918", label: "Galaxy S23 Ultra" },
+  { prefix: "SM-S916", label: "Galaxy S23+" },
+  { prefix: "SM-S911", label: "Galaxy S23" },
+  { prefix: "SM-S711", label: "Galaxy S23 FE" },
+  { prefix: "SM-S908", label: "Galaxy S22 Ultra" },
+  { prefix: "SM-S906", label: "Galaxy S22+" },
+  { prefix: "SM-S901", label: "Galaxy S22" },
+  { prefix: "SM-G998", label: "Galaxy S21 Ultra" },
+  { prefix: "SM-G996", label: "Galaxy S21+" },
+  { prefix: "SM-G991", label: "Galaxy S21" },
+  { prefix: "SM-G988", label: "Galaxy S20 Ultra" },
+  { prefix: "SM-G986", label: "Galaxy S20+" },
+  { prefix: "SM-G981", label: "Galaxy S20" },
+  { prefix: "SM-F956", label: "Galaxy Z Fold6" },
+  { prefix: "SM-F741", label: "Galaxy Z Flip6" },
+  { prefix: "SM-F946", label: "Galaxy Z Fold5" },
+  { prefix: "SM-F731", label: "Galaxy Z Flip5" },
+  { prefix: "SM-F936", label: "Galaxy Z Fold4" },
+  { prefix: "SM-F721", label: "Galaxy Z Flip4" },
+  { prefix: "SM-F926", label: "Galaxy Z Fold3" },
+  { prefix: "SM-F711", label: "Galaxy Z Flip3" },
+  { prefix: "SM-N986", label: "Galaxy Note20 Ultra" },
+  { prefix: "SM-N981", label: "Galaxy Note20" },
+];
+
+function resolveFriendlyModelName(rawModel) {
+  if (!rawModel) return "";
+  const upper = rawModel.toUpperCase();
+  const hit = SAMSUNG_MODEL_MAP.find((m) => upper.startsWith(m.prefix));
+  return hit ? hit.label : rawModel;
+}
+
+/**
+ * 依 User-Agent 猜測裝置。
+ * ⚠️ 瀏覽器基於隱私考量不會、也不能提供 SIM/eSIM 硬體狀態，
+ * 這裡只能「猜」機型並比對已知支援清單，不是讀取手機硬體。
+ * iOS 13+ 之後 Safari 一律回報「iPhone」，無法取得確切型號。
+ */
+function detectDeviceInfo() {
+  if (typeof navigator === "undefined") return null;
+  const ua = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  const maxTouchPoints = navigator.maxTouchPoints || 0;
+  const isIPadOS13Plus = platform === "MacIntel" && maxTouchPoints > 1;
+
+  if (/iPhone/i.test(ua)) {
+    return { os: "iOS", deviceFamily: "iPhone", friendly: "", raw: "" };
+  }
+  if (/iPad/i.test(ua) || isIPadOS13Plus) {
+    return { os: "iPadOS", deviceFamily: "iPad", friendly: "", raw: "" };
+  }
+  if (/Android/i.test(ua)) {
+    const m = ua.match(/Android [\d.]+;\s*([^;)]+?)(?:\s+Build|\))/i);
+    const raw = m ? m[1].trim() : "";
+    const friendly = resolveFriendlyModelName(raw);
+    return { os: "Android", deviceFamily: "Android 手機", friendly, raw };
+  }
+  if (/Windows NT/i.test(ua) && !/Windows Phone/i.test(ua)) {
+    return { os: "Windows", deviceFamily: "Windows 電腦", friendly: "", raw: "" };
+  }
+  if (/Macintosh/i.test(ua)) {
+    return { os: "Mac", deviceFamily: "Mac 電腦", friendly: "", raw: "" };
+  }
+  return { os: "Unknown", deviceFamily: "未知裝置", friendly: "", raw: "" };
+}
+
+function findDeviceMatches(term) {
+  if (!term) return [];
+  const t = term.toLowerCase();
+  const results = [];
+  DEVICE_DATA.forEach((brand) => {
+    const matches = brand.devices.filter(
+      (d) => !d.includes("注意") && d.toLowerCase().includes(t),
+    );
+    if (matches.length) {
+      results.push({ brandTitle: brand.title, matches });
+    }
+  });
+  return results;
+}
 
 // --- 1. 資料庫：支援 eSIM 的裝置列表 ---
 const DEVICE_DATA = [
@@ -116,6 +205,27 @@ const DEVICE_DATA = [
 export default function CompatibilityPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBrand, setSelectedBrand] = useState(null);
+  const [detecting, setDetecting] = useState(false);
+  const [detectResult, setDetectResult] = useState(null);
+  const [detectMatches, setDetectMatches] = useState(null);
+
+  const handleDetect = () => {
+    setDetecting(true);
+    setDetectResult(null);
+    setDetectMatches(null);
+    // 短暫延遲純粹是 UX（讓「偵測中」有感），偵測本身是即時的。
+    window.setTimeout(() => {
+      const info = detectDeviceInfo();
+      setDetectResult(info);
+      if (info?.os === "Android" && info.friendly) {
+        setDetectMatches(findDeviceMatches(info.friendly));
+        setSearchTerm(info.friendly);
+      } else {
+        setDetectMatches(null);
+      }
+      setDetecting(false);
+    }, 600);
+  };
 
   // 搜尋邏輯：如果使用者輸入關鍵字，即時過濾出包含該關鍵字的「品牌卡片」或「裝置」
   // 這裡我們做簡單處理：如果輸入文字，會顯示一個搜尋結果區塊
@@ -140,7 +250,7 @@ export default function CompatibilityPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-slate-50 pb-20 pt-[120px]">
+      <div className="min-h-screen bg-slate-50 pb-20">
         {/* 1. Header & Search Section */}
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-4">
@@ -191,6 +301,137 @@ export default function CompatibilityPage() {
               )}
             </div>
           )}
+        </div>
+
+        {/* 1.5 一鍵自動偵測 */}
+        <div className="max-w-4xl mx-auto px-6 mt-10">
+          <div className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-white p-6 md:p-8">
+            <div className="flex flex-col md:flex-row md:items-center gap-5">
+              <div className="flex-1">
+                <div className="inline-flex items-center gap-1.5 text-[12px] font-bold text-blue-600 mb-2">
+                  <BoltIcon className="w-4 h-4" />
+                  一鍵自動偵測（Beta）
+                </div>
+                <h3 className="text-lg md:text-xl font-bold text-slate-800 mb-1">
+                  用瀏覽器資訊幫您快速猜一下裝置
+                </h3>
+                <p className="text-slate-500 text-sm leading-relaxed">
+                  點一下即可依瀏覽器回報的裝置資訊自動比對；iOS
+                  基於隱私設計不會透露確切機型，最終仍建議以撥打{" "}
+                  <span className="font-mono font-bold">*#06#</span>{" "}
+                  是否出現 EID 為準。
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleDetect}
+                disabled={detecting}
+                className="shrink-0 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-70 text-white font-bold px-6 py-3.5 rounded-full transition-colors"
+              >
+                {detecting ? (
+                  <>
+                    <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                    偵測中…
+                  </>
+                ) : (
+                  <>
+                    <BoltIcon className="w-5 h-5" />
+                    一鍵偵測我的裝置
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* 偵測結果 */}
+            {detectResult && !detecting && (
+              <div className="mt-6 pt-6 border-t border-blue-100">
+                {detectResult.os === "Android" && (
+                  <div>
+                    <p className="text-sm text-slate-600 mb-3">
+                      偵測到裝置：
+                      <span className="font-bold text-slate-900 ml-1">
+                        {detectResult.friendly || "Android 手機"}
+                      </span>
+                      {detectResult.raw &&
+                        detectResult.raw !== detectResult.friendly && (
+                          <span className="text-slate-400 ml-2 text-xs">
+                            （機身代碼：{detectResult.raw}）
+                          </span>
+                        )}
+                    </p>
+                    {detectMatches && detectMatches.length > 0 ? (
+                      <div className="rounded-2xl bg-emerald-50 border border-emerald-100 px-5 py-4">
+                        <p className="font-bold text-emerald-700 mb-1">
+                          ✅ 極可能支援 eSIM
+                        </p>
+                        <p className="text-sm text-emerald-700/80">
+                          符合「{detectMatches[0].brandTitle}」清單中的{" "}
+                          {detectMatches[0].matches[0]}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl bg-amber-50 border border-amber-100 px-5 py-4">
+                        <p className="font-bold text-amber-700 mb-1">
+                          ⚠️ 無法自動確認
+                        </p>
+                        <p className="text-sm text-amber-700/80">
+                          您的機型不在自動比對清單中（可能是較舊機型或資料庫尚未收錄），請至下方分類或搜尋框手動確認，或直接撥打{" "}
+                          <span className="font-mono font-bold">*#06#</span>
+                          查看是否顯示 EID。
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {(detectResult.os === "iOS" ||
+                  detectResult.os === "iPadOS") && (
+                  <div className="rounded-2xl bg-blue-50 border border-blue-100 px-5 py-4">
+                    <p className="font-bold text-blue-700 mb-1">
+                      偵測到裝置：{detectResult.deviceFamily}
+                    </p>
+                    <p className="text-sm text-blue-700/80 leading-relaxed">
+                      iOS／iPadOS 基於隱私設計，網頁無法讀取確切機型（例如
+                      15 或 SE），因此無法自動判定。多數 iPhone XS／XR
+                      之後的機型都支援 eSIM，請點下方「
+                      {DEVICE_DATA[0].title}」卡片核對您的確切型號，或撥打{" "}
+                      <span className="font-mono font-bold">*#06#</span>
+                      查看是否顯示 EID 最準確。
+                    </p>
+                  </div>
+                )}
+
+                {(detectResult.os === "Windows" ||
+                  detectResult.os === "Mac" ||
+                  detectResult.os === "Unknown") && (
+                  <div className="rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4">
+                    <p className="font-bold text-slate-700 mb-1">
+                      偵測到裝置：{detectResult.deviceFamily}
+                    </p>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      您目前似乎是用電腦瀏覽本頁，請改用您實際要安裝
+                      eSIM 的手機／平板打開本頁再次偵測，或直接於該裝置撥打{" "}
+                      <span className="font-mono font-bold">*#06#</span>
+                      確認。
+                    </p>
+                  </div>
+                )}
+
+                <a
+                  href="tel:*#06#"
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-blue-600 transition-colors"
+                >
+                  <PhoneIcon className="w-4 h-4" />
+                  改用手機直接撥打 *#06#（100% 準確）
+                </a>
+
+                <p className="mt-4 text-[11px] text-slate-400 leading-relaxed">
+                  ※ 偵測依據瀏覽器回報的裝置資訊（User-Agent）比對已知型號清單，並非讀取
+                  SIM／eSIM 硬體狀態，僅供參考。
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 2. Brand Cards Grid */}

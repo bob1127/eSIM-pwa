@@ -315,7 +315,7 @@ const CartPage = () => {
         transition={{ duration: 0.5 }}
         className="bg-[#f9f9f9] min-h-screen pb-20"
       >
-        <div className="pt-[120px] max-w-[1400px] mx-auto px-4 md:px-8">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8">
           {/* Stepper 區塊 */}
           <Box sx={{ width: "100%", marginBottom: "3rem" }}>
             <Stepper activeStep={activeStep} alternativeLabel>

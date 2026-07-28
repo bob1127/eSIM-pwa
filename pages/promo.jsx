@@ -37,7 +37,7 @@ export default function PromoPage() {
       }}
     >
       <div
-        className="min-h-screen pt-24 md:pt-28 pb-20 font-sans"
+        className="min-h-screen pb-20 font-sans"
         style={{
           background:
             "linear-gradient(180deg, #F7F8FA 0%, #EEF1F6 45%, #F7F8FA 100%)",

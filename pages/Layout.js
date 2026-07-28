@@ -15,7 +15,13 @@ import { UserProvider } from "../components/context/UserContext";
 import AiChatWidget from "../components/AiChatWidget";
 import EsimBottomSheet from "../components/EsimBottomSheet";
 
-export default function RootLayout({ children, seo: seoOverride = {}, hideNavbar = false }) {
+export default function RootLayout({
+  children,
+  seo: seoOverride = {},
+  hideNavbar = false,
+  /** 全幅 hero 等需貼頂時關閉預設頂部留白 */
+  flushTop = false,
+}) {
   const router = useRouter();
   const seo = useMemo(
     () => resolvePageSeo(router.pathname, router.asPath, seoOverride),
@@ -62,9 +68,12 @@ export default function RootLayout({ children, seo: seoOverride = {}, hideNavbar
               {/* ✅ 提早包住所有元件 */}
               {!hideNavbar && <Navbar />}
               <Sidebar sidebarProduct={sidebarProduct} onAddToCart={handleAddToCart} />
-              
-              {children}
-              
+
+              {/* 浮動 Navbar 預設頂部留白；hideNavbar／flushTop 時不加 */}
+              <div className={!hideNavbar && !flushTop ? "pt-[100px]" : undefined}>
+                {children}
+              </div>
+
               <SmartWizardFloat />
               <AiChatWidget />
               {/* 手機版全域上拉選單：我的 eSIM（/shop 路徑內不顯示） */}

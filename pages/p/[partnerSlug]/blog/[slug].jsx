@@ -9,10 +9,12 @@ import {
   fetchPartnerBlogPostBySlug,
   fetchPartnerBlogPosts,
 } from "@/lib/partnerBlog";
+import { SITE_URL } from "@/lib/seo.config";
 
 /**
  * 夥伴專屬 Blog 文章內頁
  * /p/{partnerSlug}/blog/{slug}/
+ * SEO：全文可在店內閱讀，canonical 強制指向主站 /blog/{slug}
  */
 export default function PartnerBlogArticlePage({
   store,
@@ -22,11 +24,14 @@ export default function PartnerBlogArticlePage({
   pickupProduct,
   navCountries,
 }) {
+  const mainCanonical = `${SITE_URL}/blog/${post.slug}`;
+
   return (
     <PartnerShopLayout
       store={store}
       title={post.title}
       description={post.excerpt || post.title}
+      canonicalUrl={mainCanonical}
       navCountries={navCountries}
     >
       <PartnerBlogArticleView

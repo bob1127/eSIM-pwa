@@ -10,7 +10,7 @@ import { fmt } from "@/components/partner/DobermanWidgets";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const PALETTE = ["#1a56db", "#4ade80", "#fbbf24", "#f87171", "#a78bfa", "#94a3b8"];
+const PALETTE = ["#1E4AD1", "#4ade80", "#fbbf24", "#f87171", "#a78bfa", "#94a3b8"];
 
 export default function PartnerDashboardDonut({ share = [], totalProfit = 0, loading }) {
   if (loading) {
@@ -68,7 +68,7 @@ export default function PartnerDashboardDonut({ share = [], totalProfit = 0, loa
                 style={{ backgroundColor: PALETTE[i % PALETTE.length] }}
               />
               <span className="text-slate-500 truncate flex-1">{name}</span>
-              <span className="font-bold text-[#1a56db] tabular-nums shrink-0">
+              <span className="font-bold text-[#1E4AD1] tabular-nums shrink-0">
                 {totalProfit > 0 ? `${Math.round((val / totalProfit) * 100)}%` : "0%"}
               </span>
             </li>

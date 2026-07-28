@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useState } from "react";
 import MaterialIcon from "@/components/MaterialIcon";
 import { getPartnerCountryPageMeta } from "@/lib/partnerCountryPageMeta";
+import { partnerProductPath } from "@/lib/partnerStorefront";
 
 function CountryIcon({ countryKey }) {
   // 簡單線框圖示，對齊截圖側欄風格
@@ -46,7 +47,7 @@ function CountryIcon({ countryKey }) {
 }
 
 function CategoryProductCard({ product, domain }) {
-  const href = `/p/${domain}/${product.id}/`;
+  const href = partnerProductPath(domain, product);
   const price = Number(product.displayPrice) || 0;
   const countryBadge = product.countryLabel || null;
 

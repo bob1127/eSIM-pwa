@@ -7,6 +7,7 @@ import ConfettiButton from "@/components/ConfettiButton/ConfettiButton";
 import MaterialIcon from "@/components/MaterialIcon";
 import { fireCelebrationConfettiFromElement } from "@/lib/fireCelebrationConfetti";
 import { supabase } from "../lib/supabaseClient";
+import CooperationAgreementModal from "@/components/cooperation/CooperationAgreementModal";
 
 const FIELD_INPUT_CLASS =
   "w-full bg-transparent text-sm text-slate-800 outline-none border-0 ring-0 shadow-none py-1 placeholder:text-slate-300 focus:ring-0 focus:outline-none";
@@ -876,6 +877,8 @@ export default function RegisterDistributor() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitted, setSubmitted] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [agreedMeta, setAgreedMeta] = useState(null);
+  const [showAgreementModal, setShowAgreementModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [animKey, setAnimKey] = useState(0);
 
@@ -1090,7 +1093,7 @@ export default function RegisterDistributor() {
         if (!/^[a-z0-9-_]+$/.test(form.slug))
           return "代碼僅限小寫英文、數字、連字號";
       }
-      if (!agreed) return "請先閱讀並同意合作條款";
+      if (!agreed || !agreedMeta) return "請先閱讀並同意合作須知";
     }
     return null;
   };
@@ -1193,6 +1196,8 @@ export default function RegisterDistributor() {
       cooperation_model: isReferral ? "referral" : "store",
       referral_code: referralCode,
       referral_rate: 25,
+      agreed_terms_version: agreedMeta?.version || null,
+      agreed_terms_at: agreedMeta?.agreedAt || null,
     };
     if (authData.authUserId) partnerRow.auth_user_id = authData.authUserId;
     if (authData.lineUserId) partnerRow.line_user_id = authData.lineUserId;
@@ -1221,7 +1226,7 @@ export default function RegisterDistributor() {
   if (submitted) {
     return (
       <Layout seo={{ title: "申請已送出 | JEKO eSIM 合作夥伴" }}>
-        <div className="min-h-[60vh] flex items-center justify-center bg-white px-6 font-sans pt-28 pb-16">
+        <div className="min-h-[60vh] flex items-center justify-center bg-white px-6 font-sans pb-16">
           <div className="text-center max-w-md animate-in fade-in duration-500">
             <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#FADE2B] border-4 border-[#1a56db]/20 flex items-center justify-center shadow-lg">
               <svg
@@ -1346,7 +1351,7 @@ export default function RegisterDistributor() {
         title: `合作夥伴申請 (${step}/${STEPS.length}) | JEKO eSIM`,
       }}
     >
-      <div className="min-h-screen bg-white font-sans pt-28 md:pt-32 pb-12">
+      <div className="min-h-screen bg-white font-sans pb-12">
         <div className="max-w-lg mx-auto px-6 py-6 md:py-10">
           <BrandHeader />
 
@@ -1812,38 +1817,67 @@ export default function RegisterDistributor() {
                   ))}
                 </div>
 
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={agreed}
-                    onChange={(e) => setAgreed(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 accent-[#1a56db] cursor-pointer shrink-0"
-                  />
-                  <span className="text-[11px] text-slate-500 leading-relaxed">
-                    本人已閱讀並同意{" "}
-                    <Link
-                      href="/terms"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#1a56db] underline"
+                {agreed && agreedMeta ? (
+                  <div className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3.5">
+                    <div className="flex items-start gap-2.5">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      <span className="text-[12px] text-emerald-800 leading-relaxed">
+                        已於{" "}
+                        {new Date(agreedMeta.agreedAt).toLocaleString(
+                          "zh-TW",
+                          { hour12: false },
+                        )}{" "}
+                        同意合作須知，並確認以上填寫資料正確無誤。
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAgreementModal(true)}
+                      className="shrink-0 text-[11px] font-bold text-[#1a56db] underline"
                     >
-                      服務條款
-                    </Link>{" "}
-                    及{" "}
-                    <Link
-                      href="/privacy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#1a56db] underline"
-                    >
-                      隱私權政策
-                    </Link>
-                    ，並確認以上填寫資料正確無誤。
-                  </span>
-                </label>
+                      重新查看
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowAgreementModal(true)}
+                    className="w-full flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3.5 text-left hover:bg-amber-50 transition-colors"
+                  >
+                    <span className="text-[12px] font-bold text-amber-800">
+                      請先閱讀並同意合作須知，才能送出申請
+                    </span>
+                    <span className="shrink-0 text-[11px] font-bold text-[#1a56db]">
+                      查看合作須知 →
+                    </span>
+                  </button>
+                )}
               </div>
             )}
           </div>
+
+          <CooperationAgreementModal
+            open={showAgreementModal}
+            mode={form.cooperationModel === "store" ? "store" : "referral"}
+            onClose={() => setShowAgreementModal(false)}
+            onAgree={(meta) => {
+              setAgreedMeta(meta);
+              setAgreed(true);
+              setShowAgreementModal(false);
+            }}
+          />
 
           {errorMsg && (
             <p className="mt-5 text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl px-4 py-3 animate-in fade-in duration-200">

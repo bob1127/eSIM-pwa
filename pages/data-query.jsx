@@ -138,7 +138,7 @@ export default function DataQueryPage() {
   return (
     <Layout>
       <div
-        className="min-h-screen pt-24 pb-20 font-sans"
+        className="min-h-screen pb-20 font-sans"
         style={{ backgroundColor: C.page, color: C.text }}
       >
         <motion.div

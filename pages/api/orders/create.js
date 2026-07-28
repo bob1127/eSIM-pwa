@@ -10,7 +10,7 @@ import {
   linkCartToReferral,
   resolveActiveReferralPartner,
 } from "../../../lib/resolveReferralPartner";
-import { normalizeReferralCode } from "../../../lib/partnerReferral";
+import { getVerifiedReferralCodeFromRequest } from "../../../lib/referralSignature";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ success: false, message: "Method Not Allowed" });
@@ -70,10 +70,11 @@ export default async function handler(req, res) {
       phone: orderInfo.phone,
     };
 
-    // 專屬推薦連結：綁定 Medusa cart ↔ 夥伴（Cookie / 前端帶入）
-    const referralCode = normalizeReferralCode(
-      orderInfo?.referral_code || orderInfo?.referralCode || "",
-    );
+    // 專屬推薦連結：綁定 Medusa cart ↔ 夥伴。
+    // 只信任伺服器簽章過的 Cookie（見 lib/referralSignature.js），
+    // 不再信任前端傳來的 orderInfo.referral_code —— 那個值來自可被竄改的
+    // 純文字 Cookie，使用者能在瀏覽器端偽造代碼或延長效期。
+    const referralCode = getVerifiedReferralCodeFromRequest(req);
     if (referralCode) {
       const refPartner = await resolveActiveReferralPartner(referralCode);
       if (refPartner) {

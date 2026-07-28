@@ -26,9 +26,9 @@ ChartJS.register(
   Filler,
 );
 
-const BLUE = "#2563eb";
+const BLUE = "#0071EB";
 const GREEN = "#10b981";
-const PALETTE = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#64748b"];
+const PALETTE = ["#0071EB", "#10b981", "#FADE2B", "#ef4444", "#5EEAD4", "#64748b"];
 
 export function RevenueLineChart({ labels, revenueSeries, orderSeries, metric = "revenue" }) {
   const data =
@@ -102,7 +102,7 @@ export function StoreDonutChart({ storeShare, totalRevenue }) {
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <p className="text-[10px] text-slate-400">總營收</p>
-          <p className="text-xs font-black text-[#1e3a5f]">
+          <p className="text-xs font-black text-[#1E4AD1]">
             {Math.round(totalRevenue).toLocaleString("zh-TW")}
           </p>
         </div>
@@ -112,7 +112,7 @@ export function StoreDonutChart({ storeShare, totalRevenue }) {
           <li key={s.name} className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: PALETTE[i] }} />
             <span className="text-slate-600 truncate flex-1">{s.name}</span>
-            <span className="font-bold text-[#2563eb] tabular-nums">
+            <span className="font-bold text-[#0071EB] tabular-nums">
               {totalRevenue > 0 ? `${Math.round((s.revenue / totalRevenue) * 100)}%` : "0%"}
             </span>
           </li>

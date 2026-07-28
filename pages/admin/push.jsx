@@ -60,7 +60,7 @@ export default function AdminPushPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-stone-50 pt-28 pb-20">
+      <div className="min-h-screen bg-stone-50 pb-20">
         <div className="max-w-2xl mx-auto w-[92%]">
           <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-8">
             <div className="flex items-center gap-3 mb-2">

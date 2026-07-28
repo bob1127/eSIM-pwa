@@ -100,6 +100,38 @@ export async function getServerSideProps({ res }) {
     // 略過
   }
 
+  // 夥伴供稿（正本在主站 /blog/{slug}；已存在於 WP 的 slug 不重複）
+  try {
+    const existingBlogLocs = new Set(
+      urls
+        .map((u) => {
+          const m = String(u).match(/<loc>([^<]+)<\/loc>/);
+          return m?.[1];
+        })
+        .filter(Boolean),
+    );
+    const {
+      fetchAllPublishedPartnerPostsForMain,
+    } = await import("../lib/partnerBlogMain");
+    const partnerPosts = await fetchAllPublishedPartnerPostsForMain({
+      limit: 100,
+    });
+    for (const post of partnerPosts) {
+      if (!post?.slug) continue;
+      const loc = `${SITE_URL}/blog/${post.slug}`;
+      if (existingBlogLocs.has(loc)) continue;
+      urls.push(
+        urlEntry(loc, {
+          changefreq: "monthly",
+          priority: "0.72",
+          lastmod: post.modified || post.date,
+        }),
+      );
+    }
+  } catch {
+    // 略過
+  }
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.join("\n")}

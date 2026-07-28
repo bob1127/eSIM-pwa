@@ -237,7 +237,7 @@ const LoginRegisterPage = () => {
 
   return (
     <Layout>
-      <div className="flex bg-[#1C82E0] flex-col items-center justify-center px-4 min-h-screen pt-[140px] pb-12 relative overflow-hidden">
+      <div className="flex bg-[#1C82E0] flex-col items-center justify-center px-4 min-h-screen pt-10 pb-12 relative overflow-hidden">
         <div className="w-full max-w-md mx-auto text-white relative z-10">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-semibold tracking-wide">會員登入</h1>

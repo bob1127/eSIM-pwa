@@ -20,11 +20,7 @@ function formatWhen(d) {
   });
 }
 
-export default function OrderRefundDetailModal({
-  order,
-  onClose,
-  onReapply,
-}) {
+export default function OrderRefundDetailModal({ order, onClose, onReapply }) {
   const { latest, badge, eligibility, canReapply } = getRefundUiState(order);
   const orderStatus = String(order?.status || "").toLowerCase();
 
@@ -53,15 +49,18 @@ export default function OrderRefundDetailModal({
       <div className="bg-white rounded-sm shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
-            <p className="text-xs font-bold text-[#2563eb] uppercase tracking-wide">
-              退款狀態
-            </p>
             <h3 className="font-black text-[#1e3a5f]">
               訂單 #{order.id} · {title}
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5 truncate">{orderItemSummary(order)}</p>
+            <p className="text-xs text-slate-500 mt-0.5 truncate">
+              {orderItemSummary(order)}
+            </p>
           </div>
-          <button type="button" onClick={onClose} className="text-2xl text-slate-400 px-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-2xl text-slate-400 px-2"
+          >
             ×
           </button>
         </div>
@@ -78,7 +77,9 @@ export default function OrderRefundDetailModal({
           {!latest ? (
             <p className="text-sm text-slate-500">尚無退款申請紀錄。</p>
           ) : (
-            <div className={`rounded-sm border p-4 space-y-3 text-sm ${toneBox}`}>
+            <div
+              className={`rounded-sm border p-4 space-y-3 text-sm ${toneBox}`}
+            >
               <div className="flex items-start gap-2">
                 <MaterialIcon
                   name={
@@ -95,8 +96,8 @@ export default function OrderRefundDetailModal({
                   <p className="font-bold">{title}</p>
                   {latest.status === "pending" && (
                     <p className="text-xs mt-1 opacity-90 leading-relaxed">
-                      我們已收到您的申請，約 1～3 個工作天內以 Email 回覆。審核通過後約 7～14
-                      個工作天退至原付款方式。
+                      我們已收到您的申請，約 1～3 個工作天內以 Email
+                      回覆。審核通過後約 7～14 個工作天退至原付款方式。
                     </p>
                   )}
                   {latest.status === "approved" && (
@@ -116,7 +117,9 @@ export default function OrderRefundDetailModal({
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-500 shrink-0">申請類型</dt>
                   <dd className="font-medium text-right">
-                    {latest.request_type === "full_refund" ? "未開通全額退款" : "售後爭議"}
+                    {latest.request_type === "full_refund"
+                      ? "未開通全額退款"
+                      : "售後爭議"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
@@ -128,24 +131,32 @@ export default function OrderRefundDetailModal({
                 {latest.reason_note && (
                   <div>
                     <dt className="text-slate-500 mb-0.5">說明</dt>
-                    <dd className="font-medium whitespace-pre-wrap">{latest.reason_note}</dd>
+                    <dd className="font-medium whitespace-pre-wrap">
+                      {latest.reason_note}
+                    </dd>
                   </div>
                 )}
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-500 shrink-0">申請時間</dt>
-                  <dd className="font-medium">{formatWhen(latest.created_at)}</dd>
+                  <dd className="font-medium">
+                    {formatWhen(latest.created_at)}
+                  </dd>
                 </div>
                 {latest.reviewed_at && (
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500 shrink-0">審核時間</dt>
-                    <dd className="font-medium">{formatWhen(latest.reviewed_at)}</dd>
+                    <dd className="font-medium">
+                      {formatWhen(latest.reviewed_at)}
+                    </dd>
                   </div>
                 )}
               </dl>
 
               {latest.admin_note && (
                 <div className="bg-white/70 rounded-sm p-3 border border-black/5">
-                  <p className="text-[11px] font-bold text-slate-500 mb-1">客服回覆</p>
+                  <p className="text-[11px] font-bold text-slate-500 mb-1">
+                    客服回覆
+                  </p>
                   <p className="text-sm leading-relaxed">{latest.admin_note}</p>
                 </div>
               )}

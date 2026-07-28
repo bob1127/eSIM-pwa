@@ -9,7 +9,12 @@ import {
 } from "@/lib/partnerReferral";
 
 /**
- * 捕捉官網 ?ref= / ?partner= ，寫入 Cookie，並記錄點擊。
+ * 捕捉官網 ?ref= / ?partner=，記錄點擊，並請伺服器簽發歸因用 Cookie。
+ *
+ * 這裡仍會順手寫一顆非 HttpOnly 的 `jeko_ref`（見 lib/partnerReferral.js），
+ * 但那只是即時、非權威的顯示用途；真正計算分潤時，後端只信任
+ * /api/referral/hit 簽發、含時間戳與 HMAC 簽章的 HttpOnly Cookie
+ * （見 lib/referralSignature.js），使用者無法在瀏覽器端竄改代碼或延長效期。
  */
 export default function ReferralCapture() {
   const router = useRouter();

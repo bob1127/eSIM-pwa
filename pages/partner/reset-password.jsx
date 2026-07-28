@@ -158,7 +158,7 @@ export default function PartnerResetPassword() {
         <title>重設夥伴後台密碼 | JEKO eSIM</title>
       </Head>
 
-      <div className="w-full lg:w-1/2 bg-[#1a56db] flex flex-col justify-center px-10 md:px-16 py-12 relative overflow-hidden">
+      <div className="w-full lg:w-1/2 bg-[#1E4AD1] flex flex-col justify-center px-10 md:px-16 py-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />

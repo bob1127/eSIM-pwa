@@ -468,7 +468,7 @@ export default function ArticleBlogPostLayout({
 
   return (
     <div className="bg-white min-h-screen pt-10 pb-20 font-sans text-[#333]">
-      <div className="max-w-[1120px] w-[92%] mx-auto pt-28 md:pt-36">
+      <div className="max-w-[1120px] w-[92%] mx-auto pt-6 md:pt-10">
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-12 items-start">
           {/* ── 主欄 ── */}
           <main className="w-full lg:flex-1 min-w-0">
@@ -506,6 +506,13 @@ export default function ArticleBlogPostLayout({
                 <span>（更新 {formatDateMeta(post.modified)}）</span>
               )}
             </div>
+
+            {post.partnerContribution ? (
+              <p className="mb-3 text-[13px] font-semibold text-[#1E4AD1]">
+                合作夥伴供稿
+                {post.partnerStoreName ? ` · ${post.partnerStoreName}` : ""}
+              </p>
+            ) : null}
 
             {post.excerpt?.rendered && (
               <p className="seo-speakable-summary text-[15px] text-[#555] leading-[1.9] mb-4">

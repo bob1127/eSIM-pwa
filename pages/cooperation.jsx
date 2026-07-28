@@ -14,6 +14,8 @@ import {
   ChartBarIcon,
 } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
+import EsimFutureTrendsSection from "../components/EsimFutureTrendsSection";
+import CooperationInfoModal from "../components/cooperation/CooperationInfoModal";
 
 /** 下方區塊文案：隨專屬連結 / 專屬商店切換（版型不變） */
 const MODE_COPY = {
@@ -118,36 +120,34 @@ const MODE_COPY = {
 
 export default function Home() {
   const [coopMode, setCoopMode] = useState("referral");
+  const [infoModalId, setInfoModalId] = useState(null);
   const copy = MODE_COPY[coopMode] || MODE_COPY.referral;
   const registerHref = `/register-distributor?mode=${coopMode}`;
   const registerStoreHref = "/register-distributor?mode=store";
 
   const subNews = [
     {
-      id: 1,
+      id: "terms",
       title: "相關合作條款",
-      date: "2023.12.20",
+      date: "2026.07.28",
       category: "合作須知",
     },
     {
-      id: 2,
+      id: "commission",
       title: "專屬分潤機制",
-      date: "2023.11.02",
+      date: "2026.07.28",
       category: "每筆訂單皆可獲得合作收益。",
     },
     {
-      id: 2,
+      id: "support",
       title: "專人協助",
-      date: "2023.11.02",
+      date: "2026.07.28",
       category: "提供客服與合作支援。",
     },
   ];
 
   return (
-    <Layout>
-      {/* =========================================
-          🎯 全新設計：TSUNORU 風格 Hero Section 
-      ========================================= */}
+    <Layout flushTop>
       <section className="relative w-full h-[600px] md:h-[750px] bg-[#F7F9FB] flex flex-col items-center justify-center overflow-hidden font-sans">
         {/* ================= 背景動態幾何圖形 (多樣化形狀) ================= */}
         {/* 左上角：黃色 C 型圓弧 */}
@@ -622,6 +622,11 @@ export default function Home() {
       </section>
 
       {/* =========================================
+          eSIM 未來趨勢（PikFun 風格趨勢圖）
+      ========================================= */}
+      <EsimFutureTrendsSection />
+
+      {/* =========================================
           CTA Section（藍黃設計）
       ========================================= */}
       <section className="relative w-full bg-white pb-16 pt-10 z-20 border-t border-slate-100">
@@ -888,10 +893,11 @@ export default function Home() {
           ========================================= */}
             <div className="flex flex-col gap-4 md:gap-5 justify-between">
               {subNews.map((news) => (
-                <Link
+                <button
                   key={news.id}
-                  href={registerHref}
-                  className="group flex h-[120px] md:h-auto md:flex-1 bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300"
+                  type="button"
+                  onClick={() => setInfoModalId(news.id)}
+                  className="group flex h-[120px] md:h-auto md:flex-1 bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 text-left w-full cursor-pointer"
                 >
                   {/* 縮圖區域 (模擬黃色 TSUNORU 圖案) */}
                   <div className="w-[35%] md:w-[40%] bg-[#F2CC40] flex flex-col items-center justify-center shrink-0 relative overflow-hidden">
@@ -920,10 +926,10 @@ export default function Home() {
                     <div className="flex items-center text-[12px] md:text-[13px] font-medium text-[#111]">
                       <span>{news.date}</span>
                       <span className="text-[#FADE2B] mx-2 font-black">#</span>
-                      <span>{news.category}</span>
+                      <span className="line-clamp-1">{news.category}</span>
                     </div>
                   </div>
-                </Link>
+                </button>
               ))}
             </div>
           </div>
@@ -984,6 +990,12 @@ export default function Home() {
           clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
         }
       `}</style>
+
+      <CooperationInfoModal
+        openId={infoModalId}
+        onClose={() => setInfoModalId(null)}
+        initialMode={coopMode}
+      />
     </Layout>
   );
 }

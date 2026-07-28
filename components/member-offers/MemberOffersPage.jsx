@@ -32,7 +32,7 @@ function StatusPill({ children }) {
 export default function MemberOffersPage() {
   return (
     <div
-      className="min-h-screen font-sans pt-28 mt-10 md:pt-32 pb-20"
+      className="min-h-screen font-sans pt-6 mt-4 md:pt-8 pb-20"
       style={{
         background:
           "radial-gradient(1200px 480px at 10% -10%, #d9e8fb 0%, transparent 55%), radial-gradient(900px 420px at 90% 0%, #e8f3ff 0%, transparent 50%), linear-gradient(180deg, #f5f8fc 0%, #eef2f7 100%)",

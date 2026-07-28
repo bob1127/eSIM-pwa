@@ -61,7 +61,7 @@ export default async function handler(req, res) {
     const hasExtendedCols = !colCheckErr;
 
     for (const raw of products) {
-      const f = formatMedusaProductForPartner(raw);
+      const f = await formatMedusaProductForPartner(raw);
 
       // ── upsert products ──────────────────────────────────────────────
       const productPayload = {
@@ -132,7 +132,10 @@ export default async function handler(req, res) {
         const varPayload = {
           product_id: productId,
           sku: v.sku || v.medusa_variant_id || `${productId}-${varCount.upserted}`,
-          b2b_price: v.b2b_price || 0,
+          // DB 一律存「API 原始底價」（與 lib/medusaProductSync.js 同慣例）；
+          // 夥伴可見底價在讀取時才 × PARTNER_B2B_COST_RATE，不可把已含平台
+          // 抽成的 v.b2b_price 寫進這欄，否則底價會被灌水、後續計算全錯。
+          b2b_price: v.api_b2b_price ?? v.b2b_price ?? 0,
           attributes: v.attributes || {},
         };
 

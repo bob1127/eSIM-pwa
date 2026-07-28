@@ -395,7 +395,7 @@ export default function WizardPage() {
                               {h.desc}
                             </div>
                             <div className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                              AI 建議：{h.rec}
+                              自動 建議：{h.rec}
                             </div>
                           </div>
                         </button>

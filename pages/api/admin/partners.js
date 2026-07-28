@@ -14,6 +14,74 @@ import {
 import { getSupabaseAdmin } from "../../../lib/partnerServer";
 import { findAuthUserIdByEmail } from "../../../lib/partnerBind";
 
+async function resolvePartnerStoreDomain(partner) {
+  const raw = String(partner.slug || partner.referral_code || "").trim();
+  if (!raw) return null;
+  // 店鋪 domain 可能含既有格式；推薦碼再做正規化
+  const normalized = normalizeReferralCode(raw);
+  return normalized || raw.toLowerCase();
+}
+
+/**
+ * 確保夥伴有 stores 列，並設定 blog_custom_enabled
+ * （連結夥伴也可開通文章；會建立／綁定輕量店鋪供 Blog 使用）
+ */
+async function setPartnerBlogEnabled(supabaseAdmin, partner, enabled) {
+  const domain = await resolvePartnerStoreDomain(partner);
+  if (!domain) {
+    return { ok: false, error: "夥伴缺少 slug／推薦碼，無法開通文章" };
+  }
+
+  let authUserId = partner.auth_user_id || null;
+  if (!authUserId && partner.email) {
+    authUserId = await findAuthUserIdByEmail(supabaseAdmin, partner.email);
+  }
+
+  const { data: existing } = await supabaseAdmin
+    .from("stores")
+    .select("id, domain, blog_custom_enabled, user_id, status")
+    .eq("domain", domain)
+    .maybeSingle();
+
+  if (!existing) {
+    const { data: created, error: createErr } = await supabaseAdmin
+      .from("stores")
+      .insert([
+        {
+          domain,
+          store_name: partner.name,
+          status: "active",
+          markup_rate: 20,
+          user_id: authUserId,
+          blog_custom_enabled: !!enabled,
+        },
+      ])
+      .select("id, domain, blog_custom_enabled")
+      .single();
+
+    if (createErr) {
+      return { ok: false, error: createErr.message };
+    }
+    return { ok: true, store: created, created: true };
+  }
+
+  const patch = { blog_custom_enabled: !!enabled };
+  if (existing.status !== "active") patch.status = "active";
+  if (authUserId && !existing.user_id) patch.user_id = authUserId;
+
+  const { data: updated, error: updErr } = await supabaseAdmin
+    .from("stores")
+    .update(patch)
+    .eq("id", existing.id)
+    .select("id, domain, blog_custom_enabled")
+    .single();
+
+  if (updErr) {
+    return { ok: false, error: updErr.message };
+  }
+  return { ok: true, store: updated, created: false };
+}
+
 export default async function handler(req, res) {
   const admin = await requireMedusaAdminFromRequest(req);
   if (!admin) {
@@ -36,13 +104,46 @@ export default async function handler(req, res) {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
-    return res.status(200).json({ partners: data || [] });
+
+    const partners = data || [];
+    const domains = [
+      ...new Set(
+        partners
+          .map((p) => p.slug || p.referral_code)
+          .filter(Boolean)
+          .map(String),
+      ),
+    ];
+
+    let storeByDomain = {};
+    if (domains.length) {
+      const { data: stores } = await supabaseAdmin
+        .from("stores")
+        .select("id, domain, blog_custom_enabled, status")
+        .in("domain", domains);
+      storeByDomain = Object.fromEntries(
+        (stores || []).map((s) => [s.domain, s]),
+      );
+    }
+
+    const enriched = partners.map((p) => {
+      const key = p.slug || p.referral_code;
+      const store = key ? storeByDomain[key] : null;
+      return {
+        ...p,
+        blog_custom_enabled: !!store?.blog_custom_enabled,
+        store_id: store?.id || null,
+        store_domain: store?.domain || null,
+      };
+    });
+
+    return res.status(200).json({ partners: enriched });
   }
 
   if (req.method === "PATCH") {
-    const { id, status } = req.body || {};
-    if (!id || !status) {
-      return res.status(400).json({ error: "缺少 id 或 status" });
+    const { id, status, blog_custom_enabled } = req.body || {};
+    if (!id) {
+      return res.status(400).json({ error: "缺少 id" });
     }
 
     const siteUrl = getSiteUrl(req);
@@ -55,6 +156,37 @@ export default async function handler(req, res) {
 
     if (fetchErr || !partner) {
       return res.status(404).json({ error: "找不到夥伴資料" });
+    }
+
+    // ── 一鍵開通／關閉自訂文章 ──
+    if (typeof blog_custom_enabled === "boolean" && status == null) {
+      if (partner.status !== "active") {
+        return res.status(400).json({
+          error: "僅已開通夥伴可設定文章加值，請先批准該夥伴",
+        });
+      }
+      const result = await setPartnerBlogEnabled(
+        supabaseAdmin,
+        partner,
+        blog_custom_enabled,
+      );
+      if (!result.ok) {
+        return res.status(500).json({ error: result.error });
+      }
+      return res.status(200).json({
+        ok: true,
+        blog_custom_enabled: !!result.store?.blog_custom_enabled,
+        store: result.store,
+        storeCreated: !!result.created,
+        blogUrl: result.store?.domain
+          ? `${siteUrl}/p/${result.store.domain}/blog/`
+          : null,
+        partner,
+      });
+    }
+
+    if (!status) {
+      return res.status(400).json({ error: "缺少 id 或 status" });
     }
 
     const wasPending = partner.status === "pending";

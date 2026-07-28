@@ -33,7 +33,7 @@ function OrderBadge({ status, order }) {
   const s = String(status || "").toLowerCase();
   const refundBadge = order ? refundStatusLabel(order) : null;
   const map = {
-    completed: "bg-[#2563eb]/10 text-[#2563eb] border-[#2563eb]/20",
+    completed: "bg-[#0071EB]/10 text-[#0071EB] border-[#0071EB]/20",
     pending: "bg-slate-100 text-slate-600 border-slate-200",
     refund_pending: "bg-amber-50 text-amber-800 border-amber-200",
     refunded: "bg-slate-100 text-slate-500 border-slate-200",
@@ -139,6 +139,7 @@ export default function AccountDashboardView({
       <MemberProfileHeader
         user={user}
         userRole={userRole}
+        partnerData={partnerData}
         joinDate={joinDate}
         stats={{
           activeEsims: completedOrders.length,
@@ -154,7 +155,7 @@ export default function AccountDashboardView({
             <button
               type="button"
               onClick={() => onTabChange("admin_dashboard")}
-              className="px-4 py-2 bg-[#2563eb] text-white text-xs font-bold rounded-sm"
+              className="px-4 py-2 bg-[#0071EB] text-white text-xs font-bold rounded-sm"
             >
               系統總控制台
             </button>
@@ -214,7 +215,7 @@ export default function AccountDashboardView({
               action={
                 <Link
                   href="/promo"
-                  className="text-[11px] font-bold text-[#2563eb] hover:underline"
+                  className="text-[11px] font-bold text-[#0071EB] hover:underline"
                 >
                   去拉霸
                 </Link>
@@ -257,7 +258,7 @@ export default function AccountDashboardView({
                 <button
                   type="button"
                   onClick={() => onTabChange("orders")}
-                  className="text-[11px] font-bold text-[#2563eb] hover:underline"
+                  className="text-[11px] font-bold text-[#0071EB] hover:underline"
                 >
                   查看全部
                 </button>
@@ -294,16 +295,16 @@ export default function AccountDashboardView({
                         <MaterialIcon
                           name={row.icon}
                           size={18}
-                          className="text-[#2b579a] opacity-70"
+                          className="text-[#1E4AD1] opacity-70"
                         />
                         {row.label}
                       </span>
-                      <span className="flex items-center gap-1 font-black text-[#2b579a]">
+                      <span className="flex items-center gap-1 font-black text-[#1E4AD1]">
                         {row.val}
                         <MaterialIcon
                           name="chevron_right"
                           size={18}
-                          className="text-slate-300 group-hover:text-[#2563eb]"
+                          className="text-slate-300 group-hover:text-[#0071EB]"
                         />
                       </span>
                     </button>
@@ -314,8 +315,8 @@ export default function AccountDashboardView({
 
             <NavyPanel title="系統公告" icon="campaign">
               <div className="space-y-4 text-sm">
-                <div className="flex gap-3 p-3 rounded-sm bg-[#2563eb]/5 border border-[#2563eb]/10">
-                  <span className="text-[10px] font-bold bg-[#2563eb] text-white px-2 py-0.5 rounded h-fit shrink-0">
+                <div className="flex gap-3 p-3 rounded-sm bg-[#0071EB]/5 border border-[#0071EB]/10">
+                  <span className="text-[10px] font-bold bg-[#0071EB] text-white px-2 py-0.5 rounded h-fit shrink-0">
                     新功能
                   </span>
                   <p className="text-slate-700">
@@ -328,7 +329,7 @@ export default function AccountDashboardView({
                   </span>
                   <p className="text-slate-700">
                     退換貨可線上申請，詳見{" "}
-                    <Link href="/refund-policy" className="text-[#2563eb] font-bold hover:underline">
+                    <Link href="/refund-policy" className="text-[#0071EB] font-bold hover:underline">
                       退換貨政策
                     </Link>
                     。
@@ -345,7 +346,7 @@ export default function AccountDashboardView({
                 <button
                   type="button"
                   onClick={() => onTabChange("orders")}
-                  className="text-[11px] font-bold text-[#2563eb] hover:underline"
+                  className="text-[11px] font-bold text-[#0071EB] hover:underline"
                 >
                   全部
                 </button>
@@ -362,11 +363,11 @@ export default function AccountDashboardView({
                         onClick={() => onTabChange("orders", o)}
                         className="w-full flex items-center gap-3 py-2.5 hover:bg-slate-50 px-1 rounded-sm transition text-left group"
                       >
-                        <div className="w-8 h-8 rounded-sm bg-[#2b579a]/10 flex items-center justify-center shrink-0">
-                          <MaterialIcon name="receipt" size={16} className="text-[#2b579a]" />
+                        <div className="w-8 h-8 rounded-sm bg-[#1E4AD1]/10 flex items-center justify-center shrink-0">
+                          <MaterialIcon name="receipt" size={16} className="text-[#1E4AD1]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-[#1e3a5f] truncate">
+                          <p className="text-xs font-bold text-[#1E4AD1] truncate">
                             #{o.id} · {orderItemSummary(o)}
                           </p>
                           <p className="text-[10px] text-slate-400">
@@ -397,10 +398,10 @@ export default function AccountDashboardView({
                     key={item.tab}
                     type="button"
                     onClick={() => onTabChange(item.tab)}
-                    className="flex items-center gap-2.5 p-3 bg-slate-50 border border-slate-100 rounded-sm hover:border-[#2563eb] hover:bg-white hover:shadow-sm transition text-left w-full"
+                    className="flex items-center gap-2.5 p-3 bg-slate-50 border border-slate-100 rounded-sm hover:border-[#0071EB] hover:bg-white hover:shadow-sm transition text-left w-full"
                   >
-                    <MaterialIcon name={item.icon} size={20} className="text-[#2b579a] shrink-0" />
-                    <span className="text-sm font-bold text-[#1e3a5f]">{item.label}</span>
+                    <MaterialIcon name={item.icon} size={20} className="text-[#1E4AD1] shrink-0" />
+                    <span className="text-sm font-bold text-[#1E4AD1]">{item.label}</span>
                   </button>
                 ))}
               </div>
@@ -412,33 +413,33 @@ export default function AccountDashboardView({
                   href="/faq"
                   className="flex items-center gap-2 p-2.5 rounded-sm hover:bg-slate-50 text-slate-700 font-medium"
                 >
-                  <MaterialIcon name="menu_book" size={18} className="text-[#2563eb]" />
+                  <MaterialIcon name="menu_book" size={18} className="text-[#0071EB]" />
                   eSIM 安裝指南
                 </Link>
                 <Link
                   href="/contact"
                   className="flex items-center gap-2 p-2.5 rounded-sm hover:bg-slate-50 text-slate-700 font-medium"
                 >
-                  <MaterialIcon name="mail" size={18} className="text-[#2563eb]" />
+                  <MaterialIcon name="mail" size={18} className="text-[#0071EB]" />
                   聯絡客服
                 </Link>
                 <Link
                   href="/refund-policy"
                   className="flex items-center gap-2 p-2.5 rounded-sm hover:bg-slate-50 text-slate-700 font-medium"
                 >
-                  <MaterialIcon name="policy" size={18} className="text-[#2563eb]" />
+                  <MaterialIcon name="policy" size={18} className="text-[#0071EB]" />
                   退換貨政策
                 </Link>
               </div>
             </NavyPanel>
 
             {userRole === "admin" && (
-              <div className="p-4 rounded-sm border border-[#2563eb]/20 bg-[#2563eb]/5">
-                <p className="text-xs font-bold text-[#2563eb] mb-1">管理員捷徑</p>
+              <div className="p-4 rounded-sm border border-[#0071EB]/20 bg-[#0071EB]/5">
+                <p className="text-xs font-bold text-[#0071EB] mb-1">管理員捷徑</p>
                 <button
                   type="button"
                   onClick={() => onTabChange("admin_dashboard")}
-                  className="text-sm font-bold text-[#1e3a5f] hover:text-[#2563eb] flex items-center gap-1"
+                  className="text-sm font-bold text-[#1E4AD1] hover:text-[#0071EB] flex items-center gap-1"
                 >
                   開啟系統總控
                   <MaterialIcon name="arrow_forward" size={16} />
@@ -473,11 +474,11 @@ export default function AccountDashboardView({
                   key={o.id}
                   className="flex items-center gap-4 py-3.5 px-3 hover:bg-slate-50/80 bg-white transition group border-b border-slate-100 xl:border-0"
                 >
-                  <div className="w-10 h-10 rounded-sm bg-[#2b579a]/10 flex items-center justify-center shrink-0">
-                    <MaterialIcon name="sim_card" size={22} className="text-[#2b579a]" />
+                  <div className="w-10 h-10 rounded-sm bg-[#1E4AD1]/10 flex items-center justify-center shrink-0">
+                    <MaterialIcon name="sim_card" size={22} className="text-[#1E4AD1]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[#1e3a5f] text-sm truncate">
+                    <p className="font-bold text-[#1E4AD1] text-sm truncate">
                       {orderItemSummary(o)}
                     </p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
@@ -488,7 +489,7 @@ export default function AccountDashboardView({
                   <button
                     type="button"
                     onClick={() => onTabChange("orders")}
-                    className="text-slate-300 group-hover:text-[#2563eb]"
+                    className="text-slate-300 group-hover:text-[#0071EB]"
                   >
                     <MaterialIcon name="chevron_right" size={22} />
                   </button>
@@ -529,7 +530,7 @@ export default function AccountDashboardView({
                     <button
                       type="button"
                       onClick={() => onTabChange("orders")}
-                      className="text-xs font-bold text-[#2563eb] shrink-0"
+                      className="text-xs font-bold text-[#0071EB] shrink-0"
                     >
                       處理 →
                     </button>

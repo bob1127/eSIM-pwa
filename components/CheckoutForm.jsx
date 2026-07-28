@@ -204,14 +204,9 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
       await persistProfileIfNeeded();
       console.log("🚀 1. 開始呼叫 Next.js 中間層 API...");
 
-      let referralCode = "";
-      try {
-        const { readReferralCookie } = await import("../lib/partnerReferral");
-        referralCode = readReferralCookie() || "";
-      } catch {
-        /* ignore */
-      }
-
+      // 推薦歸因改由後端直接讀取伺服器簽章的 HttpOnly Cookie
+      // （見 lib/referralSignature.js），瀏覽器端不再讀取／傳遞代碼，
+      // 避免使用者於 DevTools 竄改代碼或延長 Cookie 效期。
       const orderRes = await fetch("/api/orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -220,7 +215,6 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
           orderInfo: {
             ...formData,
             customerId: memberInfo?.id || supabaseUser?.id || null,
-            referral_code: referralCode || undefined,
           },
         }),
       });

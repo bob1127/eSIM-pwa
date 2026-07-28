@@ -88,7 +88,7 @@ export default function CheckoutPaymentPage() {
 
   return (
     <Layout>
-      <div className="min-h-[60vh] flex items-center justify-center px-4 pt-[120px] pb-20">
+      <div className="min-h-[60vh] flex items-center justify-center px-4 pb-20">
         <div className="max-w-md w-full bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
           {status === "loading" && (
             <>

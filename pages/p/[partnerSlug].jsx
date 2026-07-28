@@ -5,6 +5,7 @@ import PartnerShopLayout from "@/components/Shop/PartnerShopLayout";
 import {
   fetchActiveStoreByDomain,
   fetchStoreProductsForStorefront,
+  partnerProductPath,
 } from "@/lib/partnerStorefront";
 import {
   buildPartnerCountryNavItems,
@@ -15,13 +16,13 @@ import {
 const CONTAINER = "max-w-[1680px] mx-auto px-6 lg:px-10";
 
 function ProductCard({ product, domain }) {
-  const href = `/p/${domain}/${product.id}/`;
+  const href = partnerProductPath(domain, product);
   const price = Number(product.displayPrice) || 0;
 
   return (
     <Link
       href={href}
-      className="flex flex-col bg-white border border-slate-100"
+      className="group flex flex-col bg-white border border-slate-100 hover:border-slate-200 transition-colors"
     >
       <div className="relative aspect-square bg-[#f5f5f5] overflow-hidden">
         {product.image ? (
@@ -29,7 +30,7 @@ function ProductCard({ product, domain }) {
             src={product.image}
             alt={product.name}
             fill
-            className="object-contain p-4"
+            className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width:640px) 50vw, 25vw"
           />
         ) : (
@@ -39,7 +40,7 @@ function ProductCard({ product, domain }) {
         )}
       </div>
       <div className="p-4 flex flex-col gap-1.5 flex-1">
-        <h3 className="text-[14px] font-bold text-slate-900 leading-snug line-clamp-2">
+        <h3 className="text-[14px] font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#3B9EFF] transition-colors">
           {product.name}
         </h3>
         {product.description ? (

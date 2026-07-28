@@ -14,8 +14,7 @@ const PLAN_ID = "b1a926e1-d770-4e03-804e-c527b9397eb9";
 const SKU = "Global 66-Total1GB-7-A0";
 const COST_HKD = 13.88;
 const HKD_TO_TWD = Number(process.env.HKD_TO_TWD || 4.1);
-const RETAIL_TWD =
-  Math.ceil((Math.ceil(COST_HKD * HKD_TO_TWD) * 1.4) / 10) * 10 - 1; // ≈ 79
+const RETAIL_TWD = Number(process.env.ESIM_TEST_RETAIL_TWD || 5); // 小額真金流測試用，正式再改回公式價
 
 const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
 /** 掛在日本分類（首頁主要入口）；全球方案也會出現在商品列表 */

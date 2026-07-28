@@ -6,17 +6,29 @@ import MaterialIcon from "@/components/MaterialIcon";
 import { ACCOUNT_UI } from "@/lib/accountUi";
 import { formatMemberEmailDisplay } from "@/lib/lineAuth";
 
-/** HR Spanner 風格色票 */
+/** 對齊 /cooperation 品牌色票 */
 export const ACCENT = {
-  sidebar: "#2b579a",
-  sidebarHover: "#3369b0",
+  sidebar: "#1E4AD1",
+  sidebarHover: "#2550D6",
   sidebarActive: "#ffffff",
-  primary: "#2563eb",
-  primaryDark: "#1d4ed8",
-  content: "#eef1f6",
-  navy: "#1e3a5f",
+  primary: "#0071EB",
+  primaryDark: "#1E4AD1",
+  content: "#F7F9FB",
+  navy: "#1E4AD1",
+  yellow: "#FADE2B",
   border: "#e2e8f0",
 };
+
+/** 依合作模式顯示認證標籤 */
+export function getMemberRoleLabel(userRole, partnerData) {
+  if (userRole === "admin") return "系統管理員";
+  if (userRole === "partner") {
+    return partnerData?.cooperation_model === "referral"
+      ? "認證分潤連結"
+      : "認證商店";
+  }
+  return "一般會員";
+}
 
 const breadcrumbMap = {
   dashboard: ["會員中心", "首頁總覽"],
@@ -28,11 +40,12 @@ const breadcrumbMap = {
   partner_dashboard: ["會員中心", "店鋪管理"],
 };
 
-/** HR Spanner 深藍側欄 + 主內容區 */
+/** 對齊 /cooperation：深藍側欄 + 淺灰內容區 */
 export default function AccountShell({
   title = "會員中心",
   user,
   userRole,
+  partnerData = null,
   activeTab,
   onTabChange,
   navItems,
@@ -43,12 +56,7 @@ export default function AccountShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const roleLabel =
-    userRole === "admin"
-      ? "系統管理員"
-      : userRole === "partner"
-        ? "認證夥伴"
-        : "一般會員";
+  const roleLabel = getMemberRoleLabel(userRole, partnerData);
 
   const crumbs = breadcrumbMap[activeTab] || ["會員中心", title];
 
@@ -81,27 +89,32 @@ export default function AccountShell({
             </div>
             <div>
               <p className="text-sm font-black text-white leading-tight">JEKO 會員</p>
-              <p className="text-[10px] text-blue-100/70">Member Portal</p>
+              <div className="mt-1 h-[3px] w-10 rounded-full bg-[#FADE2B]" />
+              <p className="text-[10px] text-blue-100/70 mt-1">Member Portal</p>
             </div>
           </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
           {navItems.map((item) => {
-            const active = activeTab === item.id && !item.external;
+            const active = activeTab === item.id && !item.external && !item.href;
             const badge =
               item.id === "orders" && orderBadge > 0 ? orderBadge : item.badge;
+            const linkHref = item.href || item.external;
 
-            if (item.external) {
+            if (linkHref) {
+              const isExternal = Boolean(item.external) && !item.href;
               return (
                 <Link
                   key={item.id}
-                  href={item.external}
+                  href={linkHref}
                   className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium text-blue-100 hover:bg-white/10 transition"
                 >
                   <MaterialIcon name={item.icon} size={20} className="opacity-90" />
                   <span className="flex-1 truncate">{item.label}</span>
-                  <MaterialIcon name="open_in_new" size={14} className="opacity-60" />
+                  {isExternal && (
+                    <MaterialIcon name="open_in_new" size={14} className="opacity-60" />
+                  )}
                 </Link>
               );
             }
@@ -116,17 +129,20 @@ export default function AccountShell({
                 }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium transition relative group ${
                   active
-                    ? "bg-white text-[#2b579a] shadow-sm font-bold"
+                    ? "bg-white text-[#1E4AD1] shadow-sm font-bold"
                     : "text-blue-50 hover:bg-white/10"
                 }`}
               >
                 {active && (
-                  <span className="absolute -right-2 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-transparent border-l-white hidden lg:block" />
+                  <>
+                    <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-[#FADE2B]" />
+                    <span className="absolute -right-2 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-transparent border-l-white hidden lg:block" />
+                  </>
                 )}
                 <MaterialIcon
                   name={item.icon}
                   size={20}
-                  className={active ? "text-[#2b579a]" : "text-blue-100"}
+                  className={active ? "text-[#1E4AD1]" : "text-blue-100"}
                 />
                 <span className="flex-1 text-left truncate">{item.label}</span>
                 {badge > 0 && (
@@ -142,7 +158,7 @@ export default function AccountShell({
         <div className="p-3 border-t border-white/10 space-y-2">
           <Link
             href="/"
-            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full text-sm font-bold text-white border border-white/30 hover:bg-white/10 transition"
+            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full text-sm font-bold text-[#111] bg-[#FADE2B] hover:brightness-95 transition shadow-sm"
           >
             <MaterialIcon name="storefront" size={18} />
             返回商城
@@ -171,7 +187,7 @@ export default function AccountShell({
                     <span
                       className={
                         i === crumbs.length - 1
-                          ? "text-[#2b579a] font-bold truncate"
+                          ? "text-[#1E4AD1] font-bold truncate"
                           : "truncate"
                       }
                     >
@@ -180,7 +196,7 @@ export default function AccountShell({
                   </span>
                 ))}
               </nav>
-              <h1 className="sm:hidden text-base font-black text-[#2b579a] truncate">
+              <h1 className="sm:hidden text-base font-black text-[#1E4AD1] truncate">
                 {title}
               </h1>
             </div>
@@ -188,14 +204,14 @@ export default function AccountShell({
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               <Link
                 href="/contact"
-                className="hidden md:flex items-center gap-1 text-xs text-slate-500 hover:text-[#2563eb] font-medium"
+                className="hidden md:flex items-center gap-1 text-xs text-slate-500 hover:text-[#0071EB] font-medium"
               >
                 <MaterialIcon name="mail_outline" size={16} />
                 聯絡客服
               </Link>
               <Link
                 href="/faq"
-                className="hidden md:flex items-center gap-1 text-xs text-slate-500 hover:text-[#2563eb] font-medium"
+                className="hidden md:flex items-center gap-1 text-xs text-slate-500 hover:text-[#0071EB] font-medium"
               >
                 <MaterialIcon name="help_outline" size={16} />
                 使用指南
@@ -239,7 +255,7 @@ export default function AccountShell({
                         <p className="text-[11px] text-slate-400 truncate">
                           {formatMemberEmailDisplay(user?.email)}
                         </p>
-                        <p className="text-[10px] text-[#2563eb] font-bold mt-0.5">
+                        <p className="text-[10px] text-[#0071EB] font-bold mt-0.5">
                           {roleLabel}
                         </p>
                       </div>
@@ -276,7 +292,7 @@ export default function AccountShell({
         <main className="flex-1 min-w-0 w-full p-4 sm:p-6 lg:px-8 lg:py-6 overflow-x-hidden">
           <div className={ACCOUNT_UI.contentMax}>
             <div className="hidden sm:block mb-4">
-              <h1 className="text-xl font-black text-[#1e3a5f]">{title}</h1>
+              <h1 className="text-xl font-black text-[#1E4AD1]">{title}</h1>
             </div>
             <div className="w-full">{children}</div>
           </div>
@@ -291,16 +307,12 @@ export default function AccountShell({
 export function MemberProfileHeader({
   user,
   userRole,
+  partnerData = null,
   stats = {},
   onEdit,
   joinDate,
 }) {
-  const roleLabel =
-    userRole === "admin"
-      ? "系統管理員"
-      : userRole === "partner"
-        ? "認證夥伴"
-        : "一般會員";
+  const roleLabel = getMemberRoleLabel(userRole, partnerData);
 
   const fields = [
     { label: "會員 Email", value: formatMemberEmailDisplay(user?.email) },
@@ -333,14 +345,14 @@ export function MemberProfileHeader({
           <div className="flex-1 min-w-0 w-full">
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3">
               <div>
-                <h2 className="text-xl sm:text-2xl font-black text-[#1e3a5f]">
+                <h2 className="text-xl sm:text-2xl font-black text-[#1E4AD1]">
                   {user?.name || "會員"}
                 </h2>
                 <div className="flex flex-wrap gap-2 mt-2">
                   <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     使用中
                   </span>
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-[#2563eb]/10 text-[#2563eb] border border-[#2563eb]/20">
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-[#0071EB]/10 text-[#0071EB] border border-[#0071EB]/20">
                     {roleLabel}
                   </span>
                   {stats.pendingCount > 0 && (
@@ -397,7 +409,7 @@ export function InnerTabs({ tabs, active, onChange }) {
           onClick={() => onChange(tab.id)}
           className={`pb-3 text-sm font-bold whitespace-nowrap border-b-2 transition -mb-px ${
             active === tab.id
-              ? "border-[#2563eb] text-[#2563eb]"
+              ? "border-[#0071EB] text-[#0071EB]"
               : "border-transparent text-slate-500 hover:text-slate-700"
           }`}
         >
@@ -429,10 +441,10 @@ export function NavyPanel({ title, icon, action, children, className = "" }) {
         <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             {icon && (
-              <MaterialIcon name={icon} size={20} className="text-[#2b579a] shrink-0" />
+              <MaterialIcon name={icon} size={20} className="text-[#1E4AD1] shrink-0" />
             )}
             {title && (
-              <h3 className="text-sm font-black text-[#1e3a5f] truncate">{title}</h3>
+              <h3 className="text-sm font-black text-[#1E4AD1] truncate">{title}</h3>
             )}
           </div>
           {action}
@@ -473,19 +485,19 @@ export function MetricTile({ icon, label, value, sub, variant = "navy", trend })
       ? "bg-emerald-50 text-emerald-700"
       : variant === "sky"
         ? "bg-sky-50 text-sky-700"
-        : "bg-[#2b579a]/10 text-[#2b579a]";
+        : "bg-[#1E4AD1]/10 text-[#1E4AD1]";
   return (
     <div className={`bg-white border border-slate-200 ${ACCOUNT_UI.radiusCard} p-4 flex items-start gap-3 shadow-sm`}>
       <div className={`w-10 h-10 rounded-sm flex items-center justify-center shrink-0 ${iconBg}`}>
         <MaterialIcon name={icon} size={22} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xl font-black text-[#1e3a5f] leading-tight">{value}</p>
+        <p className="text-xl font-black text-[#1E4AD1] leading-tight">{value}</p>
         <p className="text-xs font-bold text-slate-500 mt-0.5">{label}</p>
         {sub && <p className="text-[10px] text-slate-400 mt-1">{sub}</p>}
         {trend && (
           <p
-            className={`text-[10px] font-bold mt-1 ${trend > 0 ? "text-[#2563eb]" : "text-red-500"}`}
+            className={`text-[10px] font-bold mt-1 ${trend > 0 ? "text-[#0071EB]" : "text-red-500"}`}
           >
             {trend > 0 ? "▲" : "▼"} {Math.abs(trend)}%
           </p>
@@ -499,7 +511,7 @@ export function HrTableShell({ title, filters, actions, children }) {
   return (
     <div className={`bg-white border border-slate-200 ${ACCOUNT_UI.radiusCard} shadow-sm overflow-hidden`}>
       <div className="px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h2 className="text-base font-black text-[#1e3a5f]">{title}</h2>
+        <h2 className="text-base font-black text-[#1E4AD1]">{title}</h2>
         <div className="flex flex-wrap items-center gap-2">{actions}</div>
       </div>
       {filters && (
@@ -514,17 +526,17 @@ export function HrTableShell({ title, filters, actions, children }) {
 
 export function QuickActionCard({ icon, title, desc, onClick, href }) {
   const cls =
-    "block text-left p-5 bg-white border border-slate-200 rounded-sm hover:border-[#2563eb] hover:shadow-md transition group h-full";
+    "block text-left p-5 bg-white border border-slate-200 rounded-sm hover:border-[#0071EB] hover:shadow-md transition group h-full";
   const inner = (
     <>
-      <div className="w-12 h-12 rounded-full bg-[#2b579a]/10 flex items-center justify-center mb-3 group-hover:bg-[#2b579a] transition">
+      <div className="w-12 h-12 rounded-full bg-[#1E4AD1]/10 flex items-center justify-center mb-3 group-hover:bg-[#1E4AD1] transition">
         <MaterialIcon
           name={icon}
           size={26}
-          className="text-[#2b579a] group-hover:text-white transition"
+          className="text-[#1E4AD1] group-hover:text-white transition"
         />
       </div>
-      <p className="font-black text-[#1e3a5f] text-sm">{title}</p>
+      <p className="font-black text-[#1E4AD1] text-sm">{title}</p>
       <p className="text-xs text-slate-500 mt-1 leading-relaxed">{desc}</p>
     </>
   );
@@ -549,8 +561,8 @@ export function FilterPill({ active, children, onClick }) {
       onClick={onClick}
       className={`px-3 py-1.5 text-xs font-bold rounded-full border transition ${
         active
-          ? "bg-[#2b579a] text-white border-[#2b579a]"
-          : "bg-white text-slate-600 border-slate-200 hover:border-[#2563eb]"
+          ? "bg-[#1E4AD1] text-white border-[#1E4AD1]"
+          : "bg-white text-slate-600 border-slate-200 hover:border-[#0071EB]"
       }`}
     >
       {children}

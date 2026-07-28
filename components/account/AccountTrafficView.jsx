@@ -182,7 +182,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
         <div className="bg-white border border-slate-200 rounded-sm shadow-sm">
           <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
             <div>
-              <h3 className="font-black text-[#2b579a] text-base">eSIM 流量一覽</h3>
+              <h3 className="font-black text-[#1E4AD1] text-base">eSIM 流量一覽</h3>
               <p className="text-xs text-slate-400 mt-0.5">
                 共 {ordersLoading ? "…" : esims.length} 筆可監控 · 資料約 30 分鐘延遲
               </p>
@@ -191,7 +191,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
               type="button"
               disabled={!!loadingId || !esims.length}
               onClick={() => esims[0] && handleOneClick(esims[0])}
-              className="text-xs font-bold text-white bg-[#2563eb] px-4 py-2 rounded hover:bg-[#174da8] disabled:opacity-50 flex items-center gap-1 shrink-0"
+              className="text-xs font-bold text-white bg-[#0071EB] px-4 py-2 rounded hover:bg-[#1E4AD1] disabled:opacity-50 flex items-center gap-1 shrink-0"
             >
               <MaterialIcon name="speed" size={16} />
               查最新一筆
@@ -221,13 +221,13 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                     role="button"
                     tabIndex={0}
                     className={`px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-4 transition cursor-pointer ${
-                      isSelected ? "bg-blue-50/40 border-l-4 border-l-[#2563eb]" : "hover:bg-slate-50/60"
+                      isSelected ? "bg-blue-50/40 border-l-4 border-l-[#0071EB]" : "hover:bg-slate-50/60"
                     }`}
                   >
                     <div className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                       <div>
                         <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">方案</p>
-                        <p className="font-black text-[#2b579a] truncate">{esim.productName}</p>
+                        <p className="font-black text-[#1E4AD1] truncate">{esim.productName}</p>
                       </div>
                       <div>
                         <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">訂單</p>
@@ -240,7 +240,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                       <div>
                         <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">剩餘流量</p>
                         {r ? (
-                          <p className="font-bold text-[#2b579a] tabular-nums">
+                          <p className="font-bold text-[#1E4AD1] tabular-nums">
                             {formatMb(r.remainingMb)}
                             <span className="text-slate-400 font-normal text-xs">
                               {" "}
@@ -262,7 +262,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                       {pct != null && (
                         <div className="w-20 h-1.5 bg-slate-100 rounded overflow-hidden hidden sm:block">
                           <div
-                            className="h-full bg-[#2563eb] rounded"
+                            className="h-full bg-[#0071EB] rounded"
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -271,7 +271,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                         type="button"
                         disabled={loadingId === esim.topupId}
                         onClick={() => handleOneClick(esim)}
-                        className="text-xs font-bold text-[#2563eb] border border-[#2563eb] px-3 py-1.5 rounded hover:bg-blue-50 disabled:opacity-50"
+                        className="text-xs font-bold text-[#0071EB] border border-[#0071EB] px-3 py-1.5 rounded hover:bg-blue-50 disabled:opacity-50"
                       >
                         {loadingId === esim.topupId ? "查詢中…" : "查詢流量"}
                       </button>
@@ -308,7 +308,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
 
           <div className="bg-white border border-slate-200 p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-black text-[#2b579a]">手動 ICCID</h4>
+              <h4 className="text-sm font-black text-[#1E4AD1]">手動 ICCID</h4>
               <MaterialIcon name="dialpad" size={18} className="text-slate-400" />
             </div>
             <form onSubmit={handleManual} className="space-y-2">
@@ -317,12 +317,12 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                 value={manualIccid}
                 onChange={(e) => setManualIccid(e.target.value)}
                 placeholder="19～20 碼 ICCID"
-                className="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30"
+                className="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#0071EB]/30"
               />
               <button
                 type="submit"
                 disabled={!!loadingId}
-                className="w-full py-2 bg-[#2b579a] text-white text-xs font-bold rounded disabled:opacity-50"
+                className="w-full py-2 bg-[#1E4AD1] text-white text-xs font-bold rounded disabled:opacity-50"
               >
                 查詢
               </button>
@@ -343,7 +343,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
             <button
               type="button"
               onClick={() => setShowPush((v) => !v)}
-              className="text-xs font-bold text-[#2563eb]"
+              className="text-xs font-bold text-[#0071EB]"
             >
               {showPush ? "收合" : "展開設定"}
             </button>

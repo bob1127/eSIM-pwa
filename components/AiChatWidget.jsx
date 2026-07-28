@@ -33,6 +33,14 @@ import ShopChatOffers from "./Shop/ShopChatOffers";
 /** LINE OA Basic ID（含 @），用於 oaMessage 預填文字 */
 const LINE_OA_ID = process.env.NEXT_PUBLIC_LINE_OA_ID || "@593gvyzn";
 
+/**
+ * MicroeSIM WhatsApp（選填國際號碼，無 + 號，例：8615999587946）。
+ * 未設定時開啟 WhatsApp 僅帶預填文字，由客服自行選群組貼上。
+ */
+const MICROESIM_WA =
+  (process.env.NEXT_PUBLIC_MICROESIM_WHATSAPP || "").replace(/\D/g, "");
+
+
 const WELCOME_TEXT =
   "🌼 嗨！我是 J寶，Jeko 的旅行小幫手～\n" +
   "不論 eSIM 上網、住宿、包車，還是景點行程推薦，都可以問我；" +
@@ -97,6 +105,49 @@ function buildLineOaMessageUrl(text) {
   const id = encodeURIComponent(LINE_OA_ID);
   return `https://line.me/R/oaMessage/${id}/?${encodeURIComponent(body)}`;
 }
+
+/** WhatsApp 分享（預填文字；有號碼則開該對話，否則讓使用者選聯絡人／群組） */
+function buildWhatsAppShareUrl(text) {
+  const body = encodeURIComponent(String(text || "").slice(0, 1500));
+  if (MICROESIM_WA) {
+    return `https://wa.me/${MICROESIM_WA}?text=${body}`;
+  }
+  return `https://wa.me/?text=${body}`;
+}
+
+function buildHandoffSummary(messages, { userLabel = "訪客" } = {}) {
+  const recent = messages.slice(-10);
+  const hasMedia = recent.some(
+    (m) => m.mediaPreview || m.mediaKind === "video" || m.hadMedia,
+  );
+  const lines = recent
+    .filter((m) => m.role === "user" || m.role === "ai")
+    .map((m) => {
+      const label = m.role === "user" ? "【客人】" : "【J寶】";
+      const max = m.role === "user" ? 280 : 160;
+      const text =
+        String(m.content || "").length > max
+          ? String(m.content).slice(0, max) + "…"
+          : String(m.content || "");
+      return `${label} ${text}`;
+    });
+
+  const when = new Date().toLocaleString("zh-TW", {
+    timeZone: "Asia/Taipei",
+    hour12: false,
+  });
+
+  return (
+    `【Jeko→MicroeSIM 客服轉介】\n` +
+    `時間：${when}\n` +
+    `來賓：${userLabel}\n` +
+    `來源：J寶 AI 聊天室\n` +
+    `────────\n` +
+    lines.join("\n") +
+    (hasMedia ? "\n────────\n（對話含截圖／影片，請一併確認）" : "")
+  );
+}
+
 
 /** 取得或建立本次瀏覽器 guest fingerprint（localStorage） */
 function getOrCreateGuestId() {
@@ -683,47 +734,11 @@ export default function AiChatWidget() {
   const messagesContainerRef = useRef(null);
   const stickToBottomRef = useRef(true);
   const scrollRef = useRef(null);
-  const [handoffToast, setHandoffToast] = useState(null); // { hasMedia: bool }
+  const [handoffOpen, setHandoffOpen] = useState(false);
+  const [handoffSummary, setHandoffSummary] = useState("");
+  const [handoffCopied, setHandoffCopied] = useState(false);
+  const [handoffToast, setHandoffToast] = useState(null); // { kind: 'line'|'wa'|'copy', hasMedia?: bool }
 
-  /**
-   * 點「聯繫真人客服」：用 LINE oaMessage 直接開對話並預填摘要。
-   * 不做剪貼簿／系統分享（Android 會多出「完成 → 選對象」兩步）。
-   */
-  const handleContactAgent = useCallback(
-    (e) => {
-      e.preventDefault();
-
-      const recent = messages.slice(-8);
-      const hasMedia = recent.some(
-        (m) => m.mediaPreview || m.mediaKind === "video",
-      );
-
-      // 優先放使用者問題；AI 回覆縮短，避免 URL 過長
-      const lines = recent
-        .filter((m) => m.role === "user" || m.role === "ai")
-        .map((m) => {
-          const label = m.role === "user" ? "【我】" : "【J寶】";
-          const max = m.role === "user" ? 200 : 120;
-          const text =
-            m.content.length > max ? m.content.slice(0, max) + "…" : m.content;
-          return `${label} ${text}`;
-        });
-
-      const summary =
-        `【J寶轉真人客服】\n` +
-        lines.join("\n") +
-        (hasMedia ? "\n（有截圖，請再上傳）" : "");
-
-      const url = buildLineOaMessageUrl(summary);
-
-      // 同頁導向最穩（避免 window.open 被擋或落到 Chrome 分享中間頁）
-      window.location.href = url;
-
-      setHandoffToast({ hasMedia });
-      setTimeout(() => setHandoffToast(null), 3500);
-    },
-    [messages],
-  );
   const fileInputRef = useRef(null);
 
   const userAvatarUrl = useMemo(() => {
@@ -747,6 +762,73 @@ export default function AiChatWidget() {
       "會員"
     );
   }, [isLoggedIn, user, session]);
+
+  /**
+   * 點「聯繫真人客服」：開啟半自動交接面板
+   * - 產生對話摘要
+   * - 一鍵複製 / 開 WhatsApp（貼 MicroeSIM 群）
+   * - 可同時開 LINE 官方客服給客人
+   */
+  const handleContactAgent = useCallback(
+    (e) => {
+      e.preventDefault();
+      const summary = buildHandoffSummary(messages, {
+        userLabel: userDisplayName || "訪客",
+      });
+      setHandoffSummary(summary);
+      setHandoffCopied(false);
+      setHandoffOpen(true);
+    },
+    [messages, userDisplayName],
+  );
+
+  const copyHandoffSummary = useCallback(async () => {
+    const text = handoffSummary || "";
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setHandoffCopied(true);
+      setHandoffToast({ kind: "copy" });
+      setTimeout(() => setHandoffToast(null), 2500);
+    } catch {
+      setHandoffToast({ kind: "copy-fail" });
+      setTimeout(() => setHandoffToast(null), 2500);
+    }
+  }, [handoffSummary]);
+
+  const openHandoffWhatsApp = useCallback(async () => {
+    try {
+      if (navigator.clipboard?.writeText && handoffSummary) {
+        await navigator.clipboard.writeText(handoffSummary);
+        setHandoffCopied(true);
+      }
+    } catch {
+      /* ignore */
+    }
+    const url = buildWhatsAppShareUrl(handoffSummary);
+    window.open(url, "_blank", "noopener,noreferrer");
+    setHandoffToast({ kind: "wa" });
+    setTimeout(() => setHandoffToast(null), 4000);
+  }, [handoffSummary]);
+
+  const openHandoffLine = useCallback(() => {
+    const url = buildLineOaMessageUrl(handoffSummary);
+    window.location.href = url;
+    const hasMedia = /截圖|影片/.test(handoffSummary);
+    setHandoffToast({ kind: "line", hasMedia });
+    setTimeout(() => setHandoffToast(null), 3500);
+  }, [handoffSummary]);
 
   const userInitial = (userDisplayName || "會").trim().charAt(0).toUpperCase();
 
@@ -1047,25 +1129,119 @@ export default function AiChatWidget() {
               </button>
             </div>
 
-            {/* 交接 LINE 客服 Toast */}
+            {/* 交接提示 Toast */}
             {handoffToast && (
-              <div className="mx-3 mt-2 flex items-start gap-2 rounded-xl bg-green-50 border border-green-200 px-3 py-2.5 text-[12px] text-green-800 shadow-sm">
+              <div className="mx-3 mt-2 flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2.5 text-[12px] text-emerald-900 shadow-sm">
                 <svg
                   viewBox="0 0 24 24"
-                  className="w-4 h-4 fill-green-600 shrink-0 mt-0.5"
+                  className="w-4 h-4 fill-emerald-600 shrink-0 mt-0.5"
                   aria-hidden="true"
                 >
                   <path d="M12 2C6.477 2 2 6.062 2 11.063c0 2.742 1.313 5.194 3.381 6.853-.148.548-.96 3.302-.99 3.538-.038.283.103.56.372.68.083.037.172.056.26.056.195 0 .378-.078.51-.217.175-.183 3.028-2.018 3.685-2.456.566.08 1.141.12 1.72.12 5.523 0 10-4.06 10-9.063S17.523 2 12 2z" />
                 </svg>
                 <div>
-                  <p className="font-bold">已開啟 LINE 客服</p>
-                  <p className="mt-0.5 leading-snug">
-                    對話摘要已預填在輸入框，直接按送出即可。
-                    {handoffToast.hasMedia && (
-                      <span className="block mt-0.5 text-green-700">
-                        截圖請在 LINE 中另行上傳。
-                      </span>
-                    )}
+                  {handoffToast.kind === "copy" && (
+                    <>
+                      <p className="font-bold">摘要已複製</p>
+                      <p className="mt-0.5 leading-snug">
+                        可到 WhatsApp MicroeSIM 客服群直接貼上。
+                      </p>
+                    </>
+                  )}
+                  {handoffToast.kind === "copy-fail" && (
+                    <>
+                      <p className="font-bold">複製失敗</p>
+                      <p className="mt-0.5 leading-snug">
+                        請手動選取下方摘要文字再複製。
+                      </p>
+                    </>
+                  )}
+                  {handoffToast.kind === "wa" && (
+                    <>
+                      <p className="font-bold">已開啟 WhatsApp</p>
+                      <p className="mt-0.5 leading-snug">
+                        請選擇 MicroeSIM 客服群後送出；摘要也已複製到剪貼簿備援。
+                      </p>
+                    </>
+                  )}
+                  {handoffToast.kind === "line" && (
+                    <>
+                      <p className="font-bold">已開啟 LINE 客服</p>
+                      <p className="mt-0.5 leading-snug">
+                        對話摘要已預填在輸入框，直接按送出即可。
+                        {handoffToast.hasMedia && (
+                          <span className="block mt-0.5 text-emerald-800">
+                            截圖請在 LINE 中另行上傳。
+                          </span>
+                        )}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 半自動交接面板 */}
+            {handoffOpen && (
+              <div className="mx-3 mt-2 rounded-2xl border border-slate-200 bg-white shadow-md overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2.5 bg-slate-50 border-b border-slate-100">
+                  <div>
+                    <p className="text-[13px] font-bold text-slate-800">
+                      轉真人客服（半自動）
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      產生摘要 → 複製／開 WhatsApp 貼群，或開 LINE 給客人
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHandoffOpen(false)}
+                    className="p-1 rounded-full hover:bg-slate-200 text-slate-500"
+                    aria-label="關閉"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="p-3 space-y-2.5">
+                  <textarea
+                    readOnly
+                    value={handoffSummary}
+                    rows={7}
+                    className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={copyHandoffSummary}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-800 text-white text-[12px] font-semibold py-2.5 hover:bg-slate-700 transition-colors"
+                    >
+                      {handoffCopied ? "已複製 ✓" : "複製摘要"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openHandoffWhatsApp}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366] text-white text-[12px] font-semibold py-2.5 hover:bg-[#1ebe57] transition-colors"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="w-3.5 h-3.5 fill-current"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 2C6.477 2 2 6.062 2 11.063c0 2.742 1.313 5.194 3.381 6.853-.148.548-.96 3.302-.99 3.538-.038.283.103.56.372.68.083.037.172.056.26.056.195 0 .378-.078.51-.217.175-.183 3.028-2.018 3.685-2.456.566.08 1.141.12 1.72.12 5.523 0 10-4.06 10-9.063S17.523 2 12 2z" />
+                      </svg>
+                      開 WhatsApp
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openHandoffLine}
+                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#06C755] text-[#06C755] text-[12px] font-semibold py-2.5 hover:bg-[#06C755]/5 transition-colors"
+                  >
+                    開啟 LINE 官方客服（給客人）
+                  </button>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    WhatsApp
+                    無法自動進群，請開啟後選「MicroeSIM 客服群」再送出。摘要會一併複製。
                   </p>
                 </div>
               </div>
@@ -1159,7 +1335,7 @@ export default function AiChatWidget() {
                           >
                             <path d="M12 2C6.477 2 2 6.062 2 11.063c0 2.742 1.313 5.194 3.381 6.853-.148.548-.96 3.302-.99 3.538-.038.283.103.56.372.68.083.037.172.056.26.056.195 0 .378-.078.51-.217.175-.183 3.028-2.018 3.685-2.456.566.08 1.141.12 1.72.12 5.523 0 10-4.06 10-9.063S17.523 2 12 2z" />
                           </svg>
-                          J寶答不出來？聯繫真人客服
+                          J寶答不出來？轉真人客服
                         </button>
                       )}
                     </div>

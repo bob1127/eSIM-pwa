@@ -77,6 +77,39 @@ export default function AccountBossPartnersPanel() {
     }
   };
 
+  const toggleBlog = async (partner, enable) => {
+    const label = enable ? "開通自訂文章" : "關閉自訂文章";
+    if (
+      !window.confirm(
+        enable
+          ? `確定為「${partner.name}」一鍵開通文章加值？\n（對方需已透過 LINE 提出申請）`
+          : `確定關閉「${partner.name}」的自訂文章功能？`,
+      )
+    ) {
+      return;
+    }
+    setActionId(`blog-${partner.id}`);
+    try {
+      const data = await bossFetch("/api/admin/partners", {
+        method: "PATCH",
+        body: JSON.stringify({
+          id: partner.id,
+          blog_custom_enabled: enable,
+        }),
+      });
+      setToast(
+        enable
+          ? `已開通文章加值${data.blogUrl ? ` · ${data.blogUrl}` : ""}`
+          : "已關閉文章加值",
+      );
+      fetchPartners();
+    } catch (err) {
+      setToast(err.message);
+    } finally {
+      setActionId(null);
+    }
+  };
+
   const pending = partners.filter((p) => p.status === "pending").length;
   const active = partners.filter((p) => p.status === "active").length;
 
@@ -91,20 +124,20 @@ export default function AccountBossPartnersPanel() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-black text-[#1e3a5f]">合作夥伴審核</h3>
+          <h3 className="text-base font-black text-[#1E4AD1]">合作夥伴審核</h3>
           <p className="text-xs text-slate-500 mt-0.5">
             批准後夥伴可至{" "}
-            <Link href="/partner/login" className="text-[#2563eb] font-bold hover:underline">
+            <Link href="/partner/login" className="text-[#0071EB] font-bold hover:underline">
               /partner/login
-            </Link>{" "}
-            選品開店
+            </Link>
+            。若夥伴透過官方 LINE 申請「自訂文章」，於此表一鍵「開通文章」。
           </p>
         </div>
         <button
           type="button"
           onClick={fetchPartners}
           disabled={loading}
-          className="text-xs font-bold text-[#2563eb] border border-[#2563eb] px-3 py-1.5 rounded-sm hover:bg-blue-50 disabled:opacity-50"
+          className="text-xs font-bold text-[#0071EB] border border-[#0071EB] px-3 py-1.5 rounded-sm hover:bg-blue-50 disabled:opacity-50"
         >
           {loading ? "更新中…" : "重新整理"}
         </button>
@@ -138,8 +171,8 @@ export default function AccountBossPartnersPanel() {
             onClick={() => setFilter(f.id)}
             className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition ${
               filter === f.id
-                ? "bg-[#2b579a] text-white border-[#2b579a]"
-                : "bg-white text-slate-600 border-slate-200 hover:border-[#2563eb]"
+                ? "bg-[#1E4AD1] text-white border-[#1E4AD1]"
+                : "bg-white text-slate-600 border-slate-200 hover:border-[#0071EB]"
             }`}
           >
             {f.label}
@@ -154,13 +187,14 @@ export default function AccountBossPartnersPanel() {
           <div className="py-16 text-center text-slate-400 text-sm">尚無符合條件的申請</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[760px] text-sm">
+            <table className="w-full text-left min-w-[900px] text-sm">
               <thead>
                 <tr className="bg-slate-50 text-slate-500 text-[11px] border-b border-slate-200">
                   <th className="px-4 py-3 font-bold">夥伴 / Email</th>
                   <th className="px-4 py-3 font-bold">合作類型</th>
                   <th className="px-4 py-3 font-bold">Slug</th>
                   <th className="px-4 py-3 font-bold">狀態</th>
+                  <th className="px-4 py-3 font-bold">文章加值</th>
                   <th className="px-4 py-3 font-bold text-right">操作</th>
                 </tr>
               </thead>
@@ -173,7 +207,7 @@ export default function AccountBossPartnersPanel() {
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex flex-col gap-1">
-                        <span className="bg-blue-50 text-[#2563eb] px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap w-fit">
+                        <span className="bg-blue-50 text-[#0071EB] px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap w-fit">
                           {parsePartnerType(p.description)}
                         </span>
                         <span className="text-[10px] text-slate-500 font-bold">
@@ -187,7 +221,7 @@ export default function AccountBossPartnersPanel() {
                           href={buildReferralShareUrl(SITE_URL, p.referral_code || p.slug)}
                           target="_blank"
                           rel="noreferrer"
-                          className="font-mono text-xs text-[#2563eb] bg-slate-50 px-2 py-1 rounded-sm hover:underline break-all"
+                          className="font-mono text-xs text-[#0071EB] bg-slate-50 px-2 py-1 rounded-sm hover:underline break-all"
                         >
                           /r/{p.referral_code || p.slug}
                         </a>
@@ -195,7 +229,7 @@ export default function AccountBossPartnersPanel() {
                         <Link
                           href={`/p/${p.slug}`}
                           target="_blank"
-                          className="font-mono text-xs text-[#2563eb] bg-slate-50 px-2 py-1 rounded-sm hover:underline"
+                          className="font-mono text-xs text-[#0071EB] bg-slate-50 px-2 py-1 rounded-sm hover:underline"
                         >
                           /p/{p.slug}
                         </Link>
@@ -219,20 +253,60 @@ export default function AccountBossPartnersPanel() {
                       )}
                     </td>
                     <td className="px-4 py-3.5">
+                      {p.status === "active" ? (
+                        p.blog_custom_enabled ? (
+                          <span className="bg-[#FADE2B]/40 text-[#5c4a00] px-2 py-0.5 rounded-full text-[11px] font-bold">
+                            文章已開
+                          </span>
+                        ) : (
+                          <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[11px] font-bold">
+                            未開通
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-[11px] text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3.5">
                       <div className="flex justify-end gap-1.5 flex-wrap">
                         <button
                           type="button"
                           onClick={() => setDetailPartner(p)}
-                          className="text-xs font-bold text-slate-500 hover:text-[#2563eb] px-2.5 py-1.5 rounded-sm hover:bg-slate-50"
+                          className="text-xs font-bold text-slate-500 hover:text-[#0071EB] px-2.5 py-1.5 rounded-sm hover:bg-slate-50"
                         >
                           詳情
                         </button>
+                        {p.status === "active" && (
+                          <button
+                            type="button"
+                            disabled={actionId === `blog-${p.id}`}
+                            onClick={() =>
+                              toggleBlog(p, !p.blog_custom_enabled)
+                            }
+                            className={`text-xs font-bold px-2.5 py-1.5 rounded-sm disabled:opacity-50 ${
+                              p.blog_custom_enabled
+                                ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                : "text-[#111] hover:brightness-95"
+                            }`}
+                            style={
+                              p.blog_custom_enabled
+                                ? undefined
+                                : { backgroundColor: "#FADE2B" }
+                            }
+                          >
+                            {actionId === `blog-${p.id}`
+                              ? "處理中…"
+                              : p.blog_custom_enabled
+                                ? "關閉文章"
+                                : "開通文章"}
+                          </button>
+                        )}
                         {p.status !== "active" && (
                           <button
                             type="button"
                             disabled={actionId === p.id}
                             onClick={() => updateStatus(p, "active")}
-                            className="text-xs font-bold bg-[#2563eb] text-white px-2.5 py-1.5 rounded-sm hover:bg-[#1d4ed8] disabled:opacity-50"
+                            className="text-xs font-bold bg-[#0071EB] text-white px-2.5 py-1.5 rounded-sm hover:bg-[#1E4AD1] disabled:opacity-50"
                           >
                             {actionId === p.id ? "處理中…" : "批准"}
                           </button>

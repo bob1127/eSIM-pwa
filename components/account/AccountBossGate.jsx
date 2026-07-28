@@ -66,7 +66,7 @@ export default function AccountBossGate({ children, onAuthChange }) {
   if (checking) {
     return (
       <div className="py-16 flex flex-col items-center gap-3 text-slate-400">
-        <div className="w-8 h-8 border-4 border-[#2b579a] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-[#1E4AD1] border-t-transparent rounded-full animate-spin" />
         <p className="text-sm">驗證總部權限…</p>
       </div>
     );
@@ -83,7 +83,7 @@ export default function AccountBossGate({ children, onAuthChange }) {
           <MaterialIcon name="verified_user" size={20} className="text-emerald-600" />
           <span className="text-slate-600">
             已登入：
-            <strong className="text-[#1e3a5f] ml-1">
+            <strong className="text-[#1E4AD1] ml-1">
               {adminUser?.first_name || getBossEmail() || "管理員"}
             </strong>
           </span>

@@ -27,6 +27,7 @@ function stripHtml(html) {
 
 export default function InfoPage() {
   const [posts, setPosts] = useState([]);
+  const [partnerCards, setPartnerCards] = useState([]);
   const [categoryMaps, setCategoryMaps] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState(null);
@@ -40,12 +41,34 @@ export default function InfoPage() {
   useEffect(() => {
     const loadBlogData = async () => {
       try {
-        const [postsData, categoriesData] = await Promise.all([
-          fetchWpPostsFromApi({ per_page: 100 }),
-          fetchWpCategoriesFromApi(),
-        ]);
-        setPosts(postsData);
-        setCategoryMaps(buildBlogCategoryMaps(categoriesData));
+        const [postsResult, categoriesResult, partnerResult] =
+          await Promise.allSettled([
+            fetchWpPostsFromApi({ per_page: 100 }),
+            fetchWpCategoriesFromApi(),
+            fetch("/api/blog/partner-contributions?limit=100", {
+              cache: "no-store",
+            }).then(async (r) => {
+              if (!r.ok) return [];
+              const data = await r.json();
+              return Array.isArray(data) ? data : [];
+            }),
+          ]);
+
+        if (postsResult.status === "fulfilled") {
+          setPosts(postsResult.value);
+        } else {
+          setApiError(postsResult.reason?.message || "無法載入 WordPress 文章");
+        }
+
+        if (categoriesResult.status === "fulfilled") {
+          setCategoryMaps(buildBlogCategoryMaps(categoriesResult.value));
+        } else {
+          setCategoryMaps(buildBlogCategoryMaps([]));
+        }
+
+        if (partnerResult.status === "fulfilled") {
+          setPartnerCards(partnerResult.value);
+        }
       } catch (err) {
         setApiError(err.message);
       } finally {
@@ -53,87 +76,110 @@ export default function InfoPage() {
       }
     };
     loadBlogData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
   }, []);
 
   // 🌟 2. 核心分流邏輯 (修復 Tab 消失的 Bug)
   const { articlePosts, knowledgePosts, articleTabs, knowledgeTabs } =
     useMemo(() => {
-      const empty = {
-        articlePosts: [],
-        knowledgePosts: [],
-        articleTabs: ["全部"],
-        knowledgeTabs: ["全部"],
+      const emptyMaps = {
+        articleTabs: [],
+        knowledgeTabs: [],
+        articleSubTabsByParent: {},
+        knowledgeSubTabsByParent: {},
       };
-
-      if (!posts?.length || !categoryMaps) {
-        return empty;
-      }
+      const maps = categoryMaps || emptyMaps;
 
       const tempArticlePosts = [];
       const tempKnowledgePosts = [];
-      const articleCatSet = new Set(categoryMaps.articleTabs);
-      const knowledgeCatSet = new Set(categoryMaps.knowledgeTabs);
+      const articleCatSet = new Set(maps.articleTabs || []);
+      const knowledgeCatSet = new Set(maps.knowledgeTabs || []);
+      const wpSlugs = new Set();
 
-      posts.forEach((post) => {
-        const {
-          isArticle,
-          isKnowledge,
-          articleSubCats,
-          knowledgeSubCats,
-          articleCountry,
-          knowledgeCountry,
-        } = classifyBlogPost(post, categoryMaps);
+      if (posts?.length && categoryMaps) {
+        posts.forEach((post) => {
+          const {
+            isArticle,
+            isKnowledge,
+            articleSubCats,
+            knowledgeSubCats,
+            articleCountry,
+            knowledgeCountry,
+          } = classifyBlogPost(post, categoryMaps);
 
-        articleSubCats.forEach((name) => {
-          if (name !== "綜合文章") articleCatSet.add(name);
-        });
-        knowledgeSubCats.forEach((name) => {
-          if (name !== "綜合知識") knowledgeCatSet.add(name);
-        });
-
-        const dateObj = new Date(post.date);
-        const postDate = `${dateObj.getFullYear()}.${String(dateObj.getMonth() + 1).padStart(2, "0")}.${String(dateObj.getDate()).padStart(2, "0")}`;
-
-        let featureImageUrl = null;
-        if (
-          post._embedded &&
-          post._embedded["wp:featuredmedia"] &&
-          post._embedded["wp:featuredmedia"].length > 0
-        ) {
-          featureImageUrl = post._embedded["wp:featuredmedia"][0].source_url;
-        }
-        const inlineImage = extractFirstImageFromContent(post.content.rendered);
-        const finalImage =
-          featureImageUrl ||
-          inlineImage ||
-          "/images/blog/TAIWAN__thumb-_20250304.webp";
-
-        const formattedPost = {
-          id: String(post.id),
-          date: postDate,
-          title: post.title.rendered,
-          excerptHTML: post.excerpt.rendered,
-          plainExcerpt: stripHtml(post.excerpt.rendered),
-          rawContent: post.content.rendered,
-          image: finalImage,
-          slug: post.slug,
-        };
-
-        if (isArticle)
-          tempArticlePosts.push({
-            ...formattedPost,
-            tags: articleSubCats.slice(0, 3),
-            subCategories: articleSubCats,
-            country: articleCountry,
+          articleSubCats.forEach((name) => {
+            if (name !== "綜合文章") articleCatSet.add(name);
           });
-        if (isKnowledge)
-          tempKnowledgePosts.push({
-            ...formattedPost,
-            tags: knowledgeSubCats.slice(0, 3),
-            subCategories: knowledgeSubCats,
-            country: knowledgeCountry,
+          knowledgeSubCats.forEach((name) => {
+            if (name !== "綜合知識") knowledgeCatSet.add(name);
           });
-      });
+
+          const dateObj = new Date(post.date);
+          const postDate = `${dateObj.getFullYear()}.${String(dateObj.getMonth() + 1).padStart(2, "0")}.${String(dateObj.getDate()).padStart(2, "0")}`;
+
+          let featureImageUrl = null;
+          if (
+            post._embedded &&
+            post._embedded["wp:featuredmedia"] &&
+            post._embedded["wp:featuredmedia"].length > 0
+          ) {
+            featureImageUrl = post._embedded["wp:featuredmedia"][0].source_url;
+          }
+          const inlineImage = extractFirstImageFromContent(post.content.rendered);
+          const finalImage =
+            featureImageUrl ||
+            inlineImage ||
+            "/images/blog/TAIWAN__thumb-_20250304.webp";
+
+          const formattedPost = {
+            id: String(post.id),
+            date: postDate,
+            title: post.title.rendered,
+            excerptHTML: post.excerpt.rendered,
+            plainExcerpt: stripHtml(post.excerpt.rendered),
+            rawContent: post.content.rendered,
+            image: finalImage,
+            slug: post.slug,
+          };
+
+          if (post.slug) wpSlugs.add(post.slug);
+
+          if (isArticle)
+            tempArticlePosts.push({
+              ...formattedPost,
+              tags: articleSubCats.slice(0, 3),
+              subCategories: articleSubCats,
+              country: articleCountry,
+            });
+          if (isKnowledge)
+            tempKnowledgePosts.push({
+              ...formattedPost,
+              tags: knowledgeSubCats.slice(0, 3),
+              subCategories: knowledgeSubCats,
+              country: knowledgeCountry,
+            });
+        });
+      }
+
+      // 夥伴供稿：僅在主站尚無同 slug WP 文時併入文章精選
+      let hasPartnerContribution = false;
+      for (const card of partnerCards || []) {
+        if (!card?.slug || wpSlugs.has(card.slug)) continue;
+        hasPartnerContribution = true;
+        tempArticlePosts.push({
+          ...card,
+          tags: ["合作夥伴供稿"],
+          subCategories: ["合作夥伴供稿"],
+          country: null,
+          partnerContribution: true,
+        });
+      }
+      if (hasPartnerContribution) {
+        articleCatSet.add("合作夥伴供稿");
+      }
+
+      // 依日期新到舊（partnerCards 已是新到舊；合併後再排一次）
+      tempArticlePosts.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
       return {
         articlePosts: tempArticlePosts,
@@ -141,7 +187,7 @@ export default function InfoPage() {
         articleTabs: ["全部", ...Array.from(articleCatSet)],
         knowledgeTabs: ["全部", ...Array.from(knowledgeCatSet)],
       };
-    }, [posts, categoryMaps]);
+    }, [posts, categoryMaps, partnerCards]);
 
   const articleSubTabs = useMemo(() => {
     if (!categoryMaps || activeArticleTab === "全部") return [];
@@ -177,6 +223,7 @@ export default function InfoPage() {
       title: item.title,
       description: item.plainExcerpt,
       link: `/blog/${item.slug}`,
+      badge: item.partnerContribution ? "合作夥伴供稿" : null,
     }));
   }, [displayArticleItems]);
 

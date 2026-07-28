@@ -116,13 +116,13 @@ function ProductMediaSlide({ item, fill = false, className = "", priority = fals
   );
 }
 
-/** 流量試算 CTA：參考圖深藍 + 金黃配色 */
+/** 流量試算 CTA：參考圖深藍 + 金黃配色（手機版只顯示主標） */
 function DataEstimatorCta({ onClick, className = "" }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`mt-4 w-full text-left rounded-full border border-[#2556b8] bg-[#2d62cc] px-5 py-3.5 sm:px-6 sm:py-4 shadow-sm hover:bg-[#2556b8] transition-colors group ${className}`}
+      className={`mt-4 w-full text-left rounded-full border border-[#2556b8] bg-[#2d62cc] px-5 py-3 sm:px-6 sm:py-4 shadow-sm hover:bg-[#2556b8] transition-colors group ${className}`}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -130,15 +130,15 @@ function DataEstimatorCta({ onClick, className = "" }) {
             <MaterialIcon
               name="calculate"
               size={18}
-              className="text-[#f1d13d] shrink-0"
+              className="text-[#f1d13d] shrink-0 hidden sm:inline-flex"
             />
             還不確定流量嗎？
           </p>
-          <p className="text-[11px] sm:text-xs text-white/85 mt-1 leading-relaxed">
+          <p className="hidden sm:block text-xs text-white/85 mt-1 leading-relaxed">
             依每日使用習慣估算建議方案，一鍵套用或比較同地區 eSIM。
           </p>
         </div>
-        <span className="shrink-0 inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-[#f1d13d] group-hover:brightness-110">
+        <span className="hidden sm:inline-flex shrink-0 items-center gap-1 text-sm font-bold text-[#f1d13d] group-hover:brightness-110">
           開啟試算
           <MaterialIcon
             name="arrow_forward"
@@ -1452,6 +1452,12 @@ export async function getStaticProps({ params }) {
       subtitle: product.subtitle || "",
       slug: product.handle,
       description: product.description || "",
+      metadata: product.metadata || {},
+      subtitle_by_carrier:
+        product.metadata?.subtitle_by_carrier &&
+        typeof product.metadata.subtitle_by_carrier === "object"
+          ? product.metadata.subtitle_by_carrier
+          : {},
       detailed_content: product.metadata?.detailed_content || "",
       detailed_content_by_carrier:
         parseDetailedContentByCarrier(rawDetailedByCarrier),
@@ -1879,10 +1885,35 @@ export default function ProductPage({
     carrierName !== "default" &&
     carrierSpecItems.length > 0;
 
-  /** 「支援 TikTok 與 ChatGPT」僅在 GPT／TikTok 線路顯示，一般中國移動不顯示 */
+  /** 副標題：優先依電信商顯示（原生／漫遊分開）；中國 GPT 線路維持舊邏輯 */
   const displaySubtitle = useMemo(() => {
-    const telecom = String(selectedAttributes.telecom || "");
+    const telecom = String(selectedAttributes.telecom || "").trim();
     if (!telecom) return null;
+
+    const byCarrier = {
+      ...(product?.metadata?.subtitle_by_carrier || {}),
+      ...(product?.subtitle_by_carrier || {}),
+    };
+
+    if (byCarrier[telecom]) return byCarrier[telecom];
+
+    // URL／選項括號全半形差異時模糊比對
+    const hit = Object.entries(byCarrier).find(([key]) => {
+      const norm = (s) =>
+        String(s)
+          .replace(/[（）]/g, (c) => (c === "（" ? "(" : ")"))
+          .replace(/\s+/g, "");
+      return norm(key) === norm(telecom) || key.includes(telecom) || telecom.includes(key);
+    });
+    if (hit) return hit[1];
+
+    if (/LG\s*U\+|Promo/i.test(telecom) && byCarrier["LG U+ / SK電信"]) {
+      return byCarrier["LG U+ / SK電信"];
+    }
+    if (/韓國\s*IP|SK電信/i.test(telecom) && byCarrier["SK電信（韓國IP）"]) {
+      return byCarrier["SK電信（韓國IP）"];
+    }
+
     if (/GPT|TikTok|ChatGPT/i.test(telecom)) {
       return product?.subtitle || "支援 TikTok 與 ChatGPT";
     }
@@ -1894,7 +1925,13 @@ export default function ProductPage({
       return product?.subtitle || "支援 TikTok 與 ChatGPT";
     }
     return null;
-  }, [selectedAttributes.telecom, currentVariation, product?.subtitle]);
+  }, [
+    selectedAttributes.telecom,
+    currentVariation,
+    product?.subtitle,
+    product?.subtitle_by_carrier,
+    product?.metadata?.subtitle_by_carrier,
+  ]);
 
   const priceSavings = useMemo(() => {
     if (
@@ -2024,15 +2061,17 @@ export default function ProductPage({
     router.query.category,
   );
 
-  const documentTitle = [
-    product?.name,
-    displaySubtitle,
-    currentVariation?.title && currentVariation.title !== product?.name
-      ? currentVariation.title
-      : null,
-  ]
-    .filter(Boolean)
-    .join("｜");
+  const documentTitle =
+    pageSeo?.title ||
+    [
+      product?.name,
+      displaySubtitle,
+      currentVariation?.title && currentVariation.title !== product?.name
+        ? currentVariation.title
+        : null,
+    ]
+      .filter(Boolean)
+      .join("｜");
 
   const PageShell = isPartnerShell ? PartnerShopLayout : Layout;
   const shellProps = isPartnerShell
@@ -2197,40 +2236,35 @@ export default function ProductPage({
                 >
                   {images.map((item, idx) => (
                     <SwiperSlide key={idx}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          item.type === "image" && openGalleryLightbox(idx)
-                        }
-                        className={`relative block w-full h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                          isPartnerShell
-                            ? "focus-visible:ring-[#0A6CD0]"
-                            : "focus-visible:ring-[#00befa]"
-                        } ${
-                          item.type === "image" ? "cursor-zoom-in" : "cursor-default"
-                        }`}
-                        aria-label={
-                          item.type === "video"
-                            ? `播放第 ${idx + 1} 部影片`
-                            : `放大檢視第 ${idx + 1} 張圖片`
-                        }
-                      >
-                        {item.type === "video" ? (
-                          <div className="relative w-full h-full bg-black flex items-center justify-center">
-                            <ProductMediaSlide
-                              item={item}
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                        ) : (
+                      {item.type === "video" ? (
+                        <div
+                          className="relative block w-full h-full bg-black flex items-center justify-center"
+                          aria-label={`播放第 ${idx + 1} 部影片`}
+                        >
+                          <ProductMediaSlide
+                            item={item}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openGalleryLightbox(idx)}
+                          className={`relative block w-full h-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                            isPartnerShell
+                              ? "focus-visible:ring-[#0A6CD0]"
+                              : "focus-visible:ring-[#00befa]"
+                          }`}
+                          aria-label={`放大檢視第 ${idx + 1} 張圖片`}
+                        >
                           <ProductMediaSlide
                             item={item}
                             fill
                             className="object-contain pointer-events-none"
                             priority={idx === 0}
                           />
-                        )}
-                      </button>
+                        </button>
+                      )}
                     </SwiperSlide>
                   ))}
                 </Swiper>

@@ -10,9 +10,12 @@ import {
   shouldBypassImageOptimization,
 } from "../../../lib/resolveMedusaImageUrl";
 import { sortCategoriesByRank } from "../../../lib/sortCategoriesByRank";
-import CountryFilter from "../../../components/NavbarTestSideBarToggle.jsx";
-import FilterSideBar, { filterProductsByTags } from "../../../components/FilterSideBar";
-import { SlidersHorizontal, X } from "lucide-react";
+import FilterSideBar, {
+  filterProductsByTags,
+  buildFilterTagsFromProduct,
+  buildDisplayTagsFromProduct,
+} from "../../../components/FilterSideBar";
+import { SlidersHorizontal, X, ChevronRight, MapPin } from "lucide-react";
 // SwiperCarousel / Slider 已從分類頁移除（進入分類後不再顯示首頁上方 Hero）
 // ==========================================
 // 🚀 Medusa API 輔助設定
@@ -61,7 +64,7 @@ export async function getStaticProps({ params }) {
       return { notFound: true };
     }
 
-    const prodUrl = `${backendUrl}/store/products?category_id[]=${currentCategory.id}&fields=+metadata,*variants,*variants.prices,*variants.calculated_price&limit=100`;
+    const prodUrl = `${backendUrl}/store/products?category_id[]=${currentCategory.id}&fields=+metadata,*tags,*options,*variants,*variants.options,*variants.prices,*variants.calculated_price&limit=100`;
     const prodRes = await fetch(prodUrl, { headers });
     const prodData = await prodRes.json();
 
@@ -119,6 +122,7 @@ export async function getStaticProps({ params }) {
         String(p.title || "").includes("測試購買")
       );
 
+      const filterTags = buildFilterTagsFromProduct(p);
       return {
         id: p.id,
         name: p.title,
@@ -126,7 +130,8 @@ export async function getStaticProps({ params }) {
         price,
         original_price: originalPrice,
         image_url: resolveMedusaImageUrl(p.thumbnail),
-        tags: p.tags?.map((t) => t.value) || [],
+        tags: filterTags,
+        displayTags: buildDisplayTagsFromProduct(p, filterTags),
         isTestPlan,
       };
     });
@@ -229,9 +234,9 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
                 transition={{ type: "spring", damping: 28, stiffness: 260 }}
-                className="fixed left-0 top-0 bottom-0 w-[85vw] max-w-[340px] bg-[#f9f9fa] z-[9001] overflow-y-auto pb-10 lg:hidden"
+                className="fixed left-0 top-0 bottom-0 w-[85vw] max-w-[340px] bg-[#F7F9FB] z-[9001] overflow-y-auto pb-24 lg:hidden"
               >
-                <div className="flex items-center justify-between px-4 pt-16 pb-3 border-b border-slate-200 bg-white sticky top-0">
+                <div className="flex items-center justify-between px-4 pt-16 pb-3 border-b border-slate-200 bg-white sticky top-0 z-10">
                   <p className="font-black text-slate-800">篩選方案</p>
                   <button
                     type="button"
@@ -250,28 +255,23 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                     }}
                   />
                 </div>
-                {activeTags.length > 0 && (
-                  <div className="px-4 pb-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleSetActiveTags([]);
-                        setMobileFilterOpen(false);
-                      }}
-                      className="w-full py-3 bg-[#0A6CD0] text-white rounded-xl font-bold text-sm"
-                    >
-                      套用篩選（{filteredProducts.length} 件）
-                    </button>
-                  </div>
-                )}
+                <div className="fixed bottom-0 left-0 w-[85vw] max-w-[340px] p-3 bg-white border-t border-slate-100 z-[9002]">
+                  <button
+                    type="button"
+                    onClick={() => setMobileFilterOpen(false)}
+                    className="w-full py-3.5 bg-[#1E4AD1] text-white rounded-full font-bold text-sm shadow-md"
+                  >
+                    看結果（{filteredProducts.length} 件）
+                  </button>
+                </div>
               </motion.div>
             </>
           )}
         </AnimatePresence>
 
-        <div className="filter-wrap flex lg:flex-row flex-col sm:px-5 px-4 md:px-10 min-h-screen pt-28 md:pt-36">
+        <div className="filter-wrap flex lg:flex-row flex-col px-4 sm:px-6 md:px-10 min-h-screen pt-6 md:pt-10 pb-16 bg-[#F7F9FB]">
           {/* ── 桌面版左側篩選欄 ── */}
-          <div className="filter_bar hidden lg:block w-[260px] shrink-0 mt-[30px] mr-5 self-start sticky top-32">
+          <div className="filter_bar hidden lg:block w-[260px] shrink-0 mt-6 mr-6 self-start sticky top-32">
             <FilterSideBar
               products={initialProducts}
               activeTags={activeTags}
@@ -279,89 +279,187 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
             />
           </div>
 
-          <div className="bottom-content mt-[30px] rounded-xl overflow-hidden w-full flex flex-col">
-            {/* ── 麵包屑列（含手機篩選入口） ── */}
-            <div className="top-navgation bg-white max-w-[1920px] border-b border-gray-200 py-4 flex items-center gap-3 px-4 sm:px-6">
-              {/* 手機篩選按鈕 */}
-              <button
-                type="button"
-                onClick={() => setMobileFilterOpen(true)}
-                className="lg:hidden inline-flex items-center gap-1.5 text-[13px] font-bold text-slate-700 border border-slate-200 rounded-lg px-3 py-1.5 bg-white hover:border-blue-400 hover:text-blue-600 transition-colors shrink-0"
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-                篩選
-                {activeTags.length > 0 && (
-                  <span className="ml-0.5 inline-flex items-center justify-center w-5 h-5 text-[10px] font-black bg-[#0A6CD0] text-white rounded-full">
-                    {activeTags.length}
-                  </span>
+          <div className="bottom-content mt-4 lg:mt-6 w-full min-w-0 flex flex-col gap-3">
+            {/* 麵包屑 — 橫向不換行 */}
+            <nav
+              aria-label="麵包屑"
+              className="flex items-center gap-1 text-[12px] sm:text-[13px] text-slate-500 overflow-x-auto whitespace-nowrap scrollbar-none pb-0.5"
+            >
+              <Link href="/" className="hover:text-[#0071EB] shrink-0">
+                首頁
+              </Link>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+              <Link href="/product" className="hover:text-[#0071EB] shrink-0">
+                所有商品
+              </Link>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+              <span className="font-bold text-[#1E4AD1] shrink-0">
+                {currentCategory?.name}
+              </span>
+            </nav>
+
+            {/* 分類標題區 */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-4 sm:px-6 py-4 sm:py-5">
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold tracking-[0.16em] text-[#0071EB] mb-1">
+                    eSIM 方案
+                  </p>
+                  <h1 className="text-[22px] sm:text-[28px] font-black text-slate-900 tracking-tight leading-tight">
+                    {currentCategory?.name}
+                  </h1>
+                  {currentCategory?.description ? (
+                    <p className="mt-1.5 text-[13px] text-slate-500 leading-relaxed line-clamp-2 max-w-2xl">
+                      {currentCategory.description}
+                    </p>
+                  ) : (
+                    <p className="mt-1.5 text-[13px] text-slate-500 leading-relaxed">
+                      選擇適合的天數與流量方案，下單後即可收到 QR Code 開通。
+                    </p>
+                  )}
+                </div>
+
+                {/* 切換國家（Medusa 分類） */}
+                {categories?.length > 0 && (
+                  <label className="flex items-center gap-2 shrink-0 text-[13px] text-slate-600">
+                    <MapPin className="w-4 h-4 text-[#0071EB]" />
+                    <select
+                      className="appearance-none bg-slate-50 border border-slate-200 rounded-full pl-3 pr-8 py-2 text-[13px] font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0071EB]/30 cursor-pointer"
+                      value={currentCategory?.slug || ""}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          router.push(`/product/${e.target.value}`);
+                        }
+                      }}
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.slug}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 )}
-              </button>
-
-              <div className="bread_crumb text-gray-500 text-sm flex-1 min-w-0">
-                <Link href="/" className="hover:text-blue-600 transition-colors">Home</Link>
-                <span className="mx-1.5">/</span>
-                <Link href="/product" className="hover:text-blue-600 transition-colors">所有商品</Link>
-                <span className="mx-1.5">/</span>
-                <span className="font-bold text-slate-800">{currentCategory?.name}</span>
               </div>
-
-              <CountryFilter />
             </div>
 
-            {/* ── 已篩選標籤（桌面版 + 手機顯示在商品上方） ── */}
+            {/* 手機：固定篩選工具列 */}
+            <div className="lg:hidden sticky top-[72px] z-30 -mx-4 px-4 sm:-mx-6 sm:px-6">
+              <div className="flex items-center gap-2 bg-white/95 backdrop-blur border border-slate-200 rounded-2xl shadow-sm px-3 py-2.5">
+                <button
+                  type="button"
+                  onClick={() => setMobileFilterOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-[13px] font-bold text-white bg-[#1E4AD1] rounded-full px-3.5 py-2 shrink-0"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  篩選
+                  {activeTags.length > 0 && (
+                    <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-black bg-[#FADE2B] text-[#111] rounded-full">
+                      {activeTags.length}
+                    </span>
+                  )}
+                </button>
+                <p className="text-[12px] text-slate-500 truncate flex-1">
+                  共{" "}
+                  <span className="font-bold text-slate-800">
+                    {filteredProducts.length}
+                  </span>{" "}
+                  件
+                  {activeTags.length > 0 && (
+                    <span className="text-[#0071EB]">
+                      {" "}
+                      · 已篩 {activeTags.length} 項
+                    </span>
+                  )}
+                </p>
+                {activeTags.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleSetActiveTags([])}
+                    className="text-[12px] font-bold text-slate-400 hover:text-red-500 shrink-0"
+                  >
+                    清除
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 已篩選 chips */}
             {activeTags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 bg-blue-50 border-b border-blue-100">
-                <span className="text-[12px] text-slate-500 shrink-0">已篩選：</span>
+              <div className="flex flex-wrap items-center gap-2 px-1">
+                <span className="text-[12px] text-slate-400 shrink-0 hidden sm:inline">
+                  已篩選
+                </span>
                 {activeTags.map((tag) => (
-                  <span
+                  <button
                     key={tag}
-                    className="inline-flex items-center gap-1 text-[12px] bg-[#0A6CD0] text-white rounded-full px-2.5 py-0.5 font-medium"
+                    type="button"
+                    onClick={() =>
+                      handleSetActiveTags(activeTags.filter((t) => t !== tag))
+                    }
+                    className="inline-flex items-center gap-1 text-[12px] bg-[#1E4AD1] text-white rounded-full px-2.5 py-1 font-medium"
                   >
                     {tag}
-                    <button
-                      type="button"
-                      onClick={() => handleSetActiveTags(activeTags.filter((t) => t !== tag))}
-                      className="hover:bg-white/20 rounded-full leading-none"
-                    >
-                      ×
-                    </button>
-                  </span>
+                    <span aria-hidden>×</span>
+                  </button>
                 ))}
                 <button
                   type="button"
                   onClick={() => handleSetActiveTags([])}
-                  className="ml-auto text-[12px] text-slate-400 hover:text-red-500 transition-colors"
+                  className="text-[12px] text-slate-400 hover:text-red-500 ml-auto sm:ml-0"
                 >
                   清除全部
                 </button>
               </div>
             )}
 
-            {/* ── 結果數量提示 ── */}
-            <div className="px-4 sm:px-6 py-2 bg-white border-b border-gray-100 text-[12px] text-slate-400">
-              共 {filteredProducts.length} 件商品
-              {activeTags.length > 0 && `（已套用 ${activeTags.length} 個篩選）`}
+            {/* 桌面結果數 */}
+            <div className="hidden lg:flex items-center justify-between px-1">
+              <p className="text-[13px] text-slate-500">
+                共{" "}
+                <span className="font-bold text-slate-800">
+                  {filteredProducts.length}
+                </span>{" "}
+                件商品
+                {activeTags.length > 0 && (
+                  <span className="text-slate-400">
+                    （已套用 {activeTags.length} 個篩選）
+                  </span>
+                )}
+              </p>
             </div>
 
-            {/* ── 商品格 ── */}
+            {/* 商品格 */}
             {currentProducts.length > 0 ? (
-              <div className="grid grid-cols-2 bg-white rounded-bl-xl rounded-br-xl sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 p-3 sm:p-6">
+              <div
+                className={`grid gap-3 sm:gap-4 ${
+                  filteredProducts.length === 1
+                    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                    : "grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4"
+                }`}
+              >
                 {currentProducts.map((product, index) => {
                   const productImage = product.image_url || "/default-image.jpg";
                   const price = product.price;
                   const regularPrice = product.original_price;
                   const productLink = `/product/${currentCategory.slug}/${product.slug}`;
+                  const cardTags = product.displayTags || [];
 
                   return (
                     <motion.div
                       key={product.id}
-                      initial={{ opacity: 0, y: 30 }}
+                      initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.04 }}
+                      transition={{ duration: 0.35, delay: index * 0.04 }}
+                      className={
+                        filteredProducts.length === 1
+                          ? "sm:col-span-1 max-w-md"
+                          : ""
+                      }
                     >
-                      <Link href={productLink} className="block">
-                        <div className="card overflow-hidden p-3 bg-white border border-slate-100">
-                          <div className="relative w-full aspect-[3/4] mb-3 overflow-hidden">
+                      <Link href={productLink} className="block h-full group">
+                        <div className="h-full flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-[#0071EB]/25 transition-all">
+                          <div className="relative w-full aspect-[3/4] overflow-hidden bg-slate-50">
                             <SafeImage
                               src={productImage}
                               alt={product.name}
@@ -370,37 +468,38 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                               unoptimized={shouldBypassImageOptimization(
                                 productImage,
                               )}
-                              className="object-cover"
+                              className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
                             />
                           </div>
-                          <span className="font-bold text-sm text-slate-800 block mb-1 line-clamp-2 min-h-[40px]">
-                            {product.name}
-                          </span>
-                          {/* 商品 tags 標籤 */}
-                          {product.tags?.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {product.tags.slice(0, 3).map((t) => (
-                                <span
-                                  key={t}
-                                  className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-full leading-tight"
-                                >
-                                  {t}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          <div className="flex items-end gap-2 mt-1">
-                            <span className="text-[#0A6CD0] font-black text-base">
-                              NT${price}
-                              <span className="text-[12px] font-bold ml-0.5">
-                                起
-                              </span>
-                            </span>
-                            {regularPrice && regularPrice !== price && (
-                              <del className="text-gray-400 text-xs mb-0.5">
-                                NT${regularPrice}
-                              </del>
+                          <div className="flex flex-col flex-1 p-3 sm:p-4">
+                            <h2 className="font-bold text-[13px] sm:text-[14px] text-slate-800 leading-snug line-clamp-2 min-h-[2.6em]">
+                              {product.name}
+                            </h2>
+                            {cardTags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {cardTags.map((t) => (
+                                  <span
+                                    key={t}
+                                    className="text-[10px] px-1.5 py-0.5 bg-[#EFF6FC] text-[#1E4AD1] rounded-full font-medium leading-tight"
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </div>
                             )}
+                            <div className="flex items-end gap-2 mt-auto pt-3">
+                              <span className="text-[#0071EB] font-black text-base sm:text-lg tabular-nums">
+                                NT${price}
+                                <span className="text-[11px] font-bold ml-0.5">
+                                  起
+                                </span>
+                              </span>
+                              {regularPrice && regularPrice !== price && (
+                                <del className="text-slate-400 text-xs mb-0.5">
+                                  NT${regularPrice}
+                                </del>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </Link>
@@ -409,13 +508,17 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                 })}
               </div>
             ) : (
-              <div className="text-center text-gray-400 p-14 bg-white rounded-b-xl flex flex-col items-center justify-center min-h-[300px]">
-                <p className="font-bold text-slate-600 mb-1">找不到符合篩選條件的商品</p>
-                <p className="text-sm">試試調整篩選條件，或</p>
+              <div className="text-center text-slate-400 py-16 px-6 bg-white rounded-2xl border border-slate-100 flex flex-col items-center justify-center min-h-[280px]">
+                <p className="font-bold text-slate-700 mb-1 text-base">
+                  找不到符合條件的商品
+                </p>
+                <p className="text-sm text-slate-500">
+                  試試放寬天數或流量條件
+                </p>
                 <button
                   type="button"
                   onClick={() => handleSetActiveTags([])}
-                  className="mt-3 text-[#0A6CD0] text-sm font-bold underline underline-offset-2"
+                  className="mt-4 px-5 py-2.5 rounded-full bg-[#1E4AD1] text-white text-sm font-bold"
                 >
                   清除所有篩選
                 </button>
@@ -423,15 +526,19 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
             )}
 
             {totalPages > 1 && (
-              <div className="flex justify-center mt-8 mb-8 gap-1.5">
+              <div className="flex justify-center mt-4 gap-1.5">
                 {Array.from({ length: totalPages }, (_, i) => (
                   <button
                     key={i}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`w-8 h-8 rounded-lg border text-sm font-bold transition-colors ${
+                    type="button"
+                    onClick={() => {
+                      setCurrentPage(i + 1);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className={`w-9 h-9 rounded-full border text-sm font-bold transition-colors ${
                       currentPage === i + 1
-                        ? "bg-[#0A6CD0] text-white border-[#0A6CD0]"
-                        : "bg-white text-slate-600 border-gray-200 hover:bg-gray-50"
+                        ? "bg-[#1E4AD1] text-white border-[#1E4AD1]"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                     }`}
                   >
                     {i + 1}

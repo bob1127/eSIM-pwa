@@ -77,12 +77,21 @@ function JobCard({
   link = "#",
   delay = 0,
   noAnimation = false,
+  hotSale = false,
 }) {
   const card = (
     <Link
       href={link}
       className="group relative block overflow-hidden rounded-[24px] bg-white border border-[#E6EFF6] shadow-sm h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#0BAFD7]/10 hover:border-[#0BAFD7]/30"
     >
+      {hotSale ? (
+        <img
+          src="/images/hot-sale-tag.png"
+          alt="熱門推薦 Hot Sale"
+          className="pointer-events-none absolute top-1 right-1 z-20 w-[68px] md:w-[76px] h-auto select-none drop-shadow-md transition-transform duration-300 group-hover:scale-105 origin-top-right"
+        />
+      ) : null}
+
       <div className="pointer-events-none absolute -bottom-8 -right-8 h-28 w-28 rounded-tl-full bg-[#0BAFD7]/85 transition-transform duration-500 group-hover:scale-110" />
 
       <div className="relative z-10 p-6 md:p-7 flex flex-col h-full">
@@ -123,15 +132,63 @@ function JobCard({
 /* ========== 主元件 ========== */
 export default function PickUpJobsSection() {
   const TABS = [
-    { key: "japan", label: "日本 Japan", dot: true },
+    { key: "native", label: "原生卡專區-本地IP" },
+    { key: "japan", label: "日本 Japan" },
     { key: "korea", label: "韓國 Korea" },
     { key: "sea", label: "東南亞 SE Asia" },
   ];
-  const [active, setActive] = useState("japan");
+  const [active, setActive] = useState("native");
 
   /* 🌟 eSIM 產品資料 (已全數加上 link 屬性) */
   const DATA = useMemo(
     () => ({
+      // 來源：/esim-selection 原生 IP 規則（日／韓／泰／越）；產品尚未上架，先放國家入口卡
+      native: [
+        {
+          hotSale: true,
+          pills: [
+            { text: "Native", color: "#2E4457" },
+            { text: "日本本地IP", color: "#3BC7A8" },
+          ],
+          title: "日本原生卡",
+          desc: "採用 Docomo／KDDI／IIJ 等當地電信線路，日本本地 IP、低延遲，適合訂餐廳、電子支付與多數日本限定服務。",
+          tags: ["日本IP", "低延遲", "原生線路"],
+          link: "/product/japan/japan-unlimited-esim?telecom=AU%28KDDI%29&days=5&data_amount=無限流量",
+        },
+        {
+          hotSale: true,
+          pills: [
+            { text: "Native", color: "#2E4457" },
+            { text: "韓國本地IP", color: "#3BC7A8" },
+          ],
+          title: "韓國原生卡",
+          desc: "走 SKT／KT／LGU+ 當地網路，韓國本地 IP，追星搶票、直播視訊與本地 App 體驗更接近在地用戶。",
+          tags: ["韓國IP", "極速飆網", "原生線路"],
+          link: "/product/korea/korea-unlimited-esim?telecom=SK電信（韓國IP）&days=5&data_amount=無限流量",
+        },
+        {
+          hotSale: true,
+          pills: [
+            { text: "Native", color: "#2E4457" },
+            { text: "泰國本地IP", color: "#3BC7A8" },
+          ],
+          title: "泰國原生卡",
+          desc: "對應 AIS／DTAC／True 等本地線路，泰國本地 IP，曼谷、清邁、普吉等熱門旅遊地訊號覆蓋更穩定。",
+          tags: ["泰國IP", "本地電信", "原生線路"],
+          link: "/product/tailand",
+        },
+        {
+          hotSale: true,
+          pills: [
+            { text: "Native", color: "#2E4457" },
+            { text: "越南本地IP", color: "#3BC7A8" },
+          ],
+          title: "越南原生卡",
+          desc: "採用 Viettel／Vinaphone／Mobifone 當地網路，越南本地 IP，下龍灣、富國島等觀光區連線更穩。",
+          tags: ["越南IP", "全境覆蓋", "原生線路"],
+          link: "/product/vietnam",
+        },
+      ],
       japan: [
         {
           pills: [
@@ -173,17 +230,17 @@ export default function PickUpJobsSection() {
           title: "韓國 SKT 原生線路",
           desc: "與韓國當地人使用相同網路，享受超低延遲與極速飆網體驗。追星搶票、直播視訊完全不卡頓。",
           tags: ["韓國第一", "低延遲", "原生IP"],
-          link: "/product/korea-skt", // 🔗 請替換成真實的產品網址
+          link: "/product/korea/korea-unlimited-esim?telecom=SK電信（韓國IP）&days=5&data_amount=無限流量",
         },
         {
           pills: [
-            { text: "Daily", color: "#2E4457" },
-            { text: "每日制", color: "#3BC7A8" },
+            { text: "Value", color: "#2E4457" },
+            { text: "LG U+ / SK", color: "#3BC7A8" },
           ],
-          title: "每日 1GB/2GB/3GB 自由選",
-          desc: "依據您的使用習慣選擇每日高速流量，隔日自動重置。彈性天數 3~30 天任您搭配。",
-          tags: ["彈性天數", "流量重置", "首爾必備"],
-          link: "/product/korea-daily", // 🔗 請替換成真實的產品網址
+          title: "LG U+ / SK 流量吃到飽",
+          desc: "新加坡IP漫遊：每日1GB高速，用完後維持約10Mbps吃到飽；LG U+／SK雙電信覆蓋，適合一般旅遊上網。",
+          tags: ["新加坡IP", "每日1GB", "10Mbps吃到飽"],
+          link: "/product/korea/korea-unlimited-esim?telecom=LG%20U%2B%20%2F%20SK電信&days=5&data_amount=無限流量",
         },
         {
           pills: [
@@ -193,7 +250,7 @@ export default function PickUpJobsSection() {
           title: "含通話 / 簡訊收發功能",
           desc: "附帶韓國 +82 手機號碼，可註冊外送 App、預約餐廳排隊或接收認證碼。",
           tags: ["可通話", "外送預約", "實名認證"],
-          link: "/product/korea-voice", // 🔗 請替換成真實的產品網址
+          link: "/product/korea/korea-unlimited-esim?telecom=SK電信（韓國IP）&days=5&data_amount=無限流量",
         },
       ],
       sea: [
@@ -232,7 +289,11 @@ export default function PickUpJobsSection() {
     [],
   );
 
-  const cards = DATA[active];
+  const cards = DATA[active] || [];
+  const desktopGridClass =
+    active === "native"
+      ? "hidden md:grid gap-6 md:grid-cols-2 xl:grid-cols-4"
+      : "hidden md:grid gap-6 md:grid-cols-3";
 
   return (
     <section className="pt-5">
@@ -261,7 +322,7 @@ export default function PickUpJobsSection() {
 
             {/* Tabs */}
             <nav
-              className="mt-8 flex flex-wrap items-center justify-center gap-4 md:gap-7 text-[15px] md:text-[16px] font-semibold text-[#5B7382]"
+              className="mt-8 flex flex-wrap items-center justify-center gap-3 md:gap-5 text-[14px] md:text-[16px] font-semibold text-[#5B7382]"
               aria-label="方案地區切換"
             >
               {TABS.map((t) => {
@@ -302,6 +363,7 @@ export default function PickUpJobsSection() {
                     pills={c.pills}
                     tags={c.tags}
                     link={c.link}
+                    hotSale={!!c.hotSale}
                     noAnimation
                   />
                 ))}
@@ -311,7 +373,7 @@ export default function PickUpJobsSection() {
 
           {/* 桌面版網格 */}
           <AnimatePresence mode="wait">
-            <div key={`desktop-${active}`} className="hidden md:grid gap-6 md:grid-cols-3">
+            <div key={`desktop-${active}`} className={desktopGridClass}>
               {cards.map((c, i) => (
                 <JobCard
                   key={`${active}-d-${i}`}
@@ -320,6 +382,7 @@ export default function PickUpJobsSection() {
                   pills={c.pills}
                   tags={c.tags}
                   link={c.link}
+                  hotSale={!!c.hotSale}
                   delay={i * 0.06}
                 />
               ))}

@@ -20,6 +20,20 @@ function normalizeEmail(e) {
   return String(e || "").trim().toLowerCase();
 }
 
+/**
+ * 重設連結網域：本機開發時用目前 request host（localhost），
+ * 避免 NEXT_PUBLIC_SITE_URL 指向正式站導致本機測試點到官網。
+ * 正式／預覽環境仍走 getSiteUrl。
+ */
+function resolveResetSiteUrl(req) {
+  const host = String(req?.headers?.host || "");
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host)) {
+    const proto = req.headers["x-forwarded-proto"] || "http";
+    return `${proto}://${host}`.replace(/\/$/, "");
+  }
+  return getSiteUrl(req);
+}
+
 /** 直接導向本站重設頁（略過 Supabase verify 中轉，避免被導回首頁） */
 function buildPartnerResetLink(redirectTo, linkProperties) {
   const hashedToken = linkProperties?.hashed_token;
@@ -107,7 +121,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const siteUrl = getSiteUrl(req);
+  const siteUrl = resolveResetSiteUrl(req);
   const redirectTo = `${siteUrl}/partner/reset-password/`;
 
   const { data: linkData, error: linkErr } =

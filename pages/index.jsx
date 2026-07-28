@@ -363,7 +363,7 @@ export default function Home() {
   }, [activeTab]);
 
   return (
-    <Layout>
+    <Layout flushTop>
       {/* ══ 手機版：LINE Pay 風格首頁（< md）══ */}
       <div className="block md:hidden">
         <MobileHomePage />

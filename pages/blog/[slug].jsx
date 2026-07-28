@@ -18,6 +18,7 @@ import {
   slimWpPostCard,
   slimWpPostForPage,
 } from "../../lib/wordpress";
+import { fetchPublishedPartnerPostBySlugForMain } from "../../lib/partnerBlogMain";
 import { useUser } from "../../components/context/UserContext";
 import {
   MAX_IMAGE_MB,
@@ -1161,9 +1162,30 @@ export async function getStaticProps({ params }) {
 
   try {
     let post = await fetchWpPostBySlug(slug);
+    let fromPartner = false;
+
+    if (!post) {
+      post = await fetchPublishedPartnerPostBySlugForMain(slug);
+      fromPartner = !!post;
+    }
     if (!post) {
       return { notFound: true };
     }
+
+    if (fromPartner) {
+      return {
+        props: {
+          post: slimWpPostForPage(post),
+          relatedPosts: [],
+          isArticle: true,
+          articleCountry: null,
+          articleSubCats: ["合作夥伴供稿"],
+          popularTags: ["#合作夥伴供稿", "#旅遊", "#eSIM"],
+        },
+        revalidate: 60,
+      };
+    }
+
     post = await ensureWpPostFeaturedMedia(post);
 
     const categories = await fetchWpCategories();

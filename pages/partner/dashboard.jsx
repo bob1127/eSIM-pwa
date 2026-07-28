@@ -178,9 +178,9 @@ export default function PartnerDashboard() {
     >
       {referralUrl && (
         <div className="mx-5 mt-4 mb-2 space-y-3">
-          <div className="rounded-xl border border-[#1a56db]/25 bg-white px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="rounded-xl border border-[#1E4AD1]/25 bg-white px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-bold text-[#1a56db] uppercase tracking-wide mb-1">
+              <p className="text-[11px] font-bold text-[#1E4AD1] uppercase tracking-wide mb-1">
                 您的專屬推薦連結（貼社群會顯示行銷圖）
               </p>
               <p className="text-sm font-mono font-bold text-slate-800 break-all">
@@ -193,7 +193,7 @@ export default function PartnerDashboard() {
             <button
               type="button"
               onClick={copyReferral}
-              className="shrink-0 h-10 px-4 rounded-full bg-[#1a56db] text-white text-sm font-bold hover:bg-[#1344b5]"
+              className="shrink-0 h-10 px-4 rounded-full bg-[#1E4AD1] text-white text-sm font-bold hover:bg-[#1344b5]"
             >
               複製連結
             </button>
@@ -204,22 +204,22 @@ export default function PartnerDashboard() {
             <p className="text-[12px] font-black text-slate-900 mb-2 tracking-wide">
               分潤說明
             </p>
-            <div className="mb-3 rounded-lg border border-[#1a56db]/20 bg-white px-3 py-2.5">
+            <div className="mb-3 rounded-lg border border-[#1E4AD1]/20 bg-white px-3 py-2.5">
               <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1.5">
                 <p className="text-[12px] font-bold text-slate-800">
                   本月進度
-                  <span className="ml-2 text-[#1a56db]">
+                  <span className="ml-2 text-[#1E4AD1]">
                     {loading ? "…" : `${monthTier.count} / ${monthTier.threshold}`}
                   </span>
                   <span className="ml-1 font-medium text-slate-500">有效訂單</span>
                 </p>
-                <p className="text-[12px] font-black text-[#1a56db]">
+                <p className="text-[12px] font-black text-[#1E4AD1]">
                   本月分潤 {loading ? "…" : `${monthTier.effectiveRate}%`}
                 </p>
               </div>
               <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-[#1a56db] transition-all"
+                  className="h-full rounded-full bg-[#1E4AD1] transition-all"
                   style={{
                     width: `${Math.min(
                       100,
@@ -239,13 +239,13 @@ export default function PartnerDashboard() {
             <ul className="list-disc pl-5 space-y-1.5 mb-3">
               <li>
                 分潤依
-                <strong className="text-[#1a56db]">產品成本價</strong>
+                <strong className="text-[#1E4AD1]">產品成本價</strong>
                 計算：基本{" "}
-                <strong className="text-[#1a56db]">
+                <strong className="text-[#1E4AD1]">
                   {monthTier.baseRate}%
                 </strong>
                 ；當月有效訂單達 {monthTier.threshold} 筆 →{" "}
-                <strong className="text-[#1a56db]">
+                <strong className="text-[#1E4AD1]">
                   {monthTier.bonusRate}%
                 </strong>
                 ；次月重算，未達標回到基本。
@@ -264,11 +264,11 @@ export default function PartnerDashboard() {
               <p className="font-bold text-slate-800 mb-1">舉例</p>
               <p>
                 方案成本 NT$300 → 基本約拿{" "}
-                <strong className="text-[#1a56db]">
+                <strong className="text-[#1E4AD1]">
                   NT${Math.round((300 * monthTier.baseRate) / 100)}
                 </strong>
                 ；達標月約拿{" "}
-                <strong className="text-[#1a56db]">
+                <strong className="text-[#1E4AD1]">
                   NT${Math.round((300 * monthTier.bonusRate) / 100)}
                 </strong>
               </p>
@@ -281,7 +281,7 @@ export default function PartnerDashboard() {
       )}
 
       {/* 與下方區塊同寬：報表期間 + 橫幅 + 指標 + 訂單 */}
-      <div className="px-5 pb-5">
+      <div className="px-4 sm:px-5 pb-24 md:pb-5">
         {/* ── レポート期間バー ── */}
         <ReportPeriodBar
           rangeStart={rangeStart}
@@ -444,9 +444,9 @@ export default function PartnerDashboard() {
                 key={item.label}
                 type="button"
                 onClick={item.onClick}
-                className="bg-white border border-slate-200 rounded-sm p-4 flex flex-col items-center gap-2 hover:border-[#1a56db] hover:shadow-md transition group text-center"
+                className="bg-white border border-slate-200 rounded-sm p-4 flex flex-col items-center gap-2 hover:border-[#1E4AD1] hover:shadow-md transition group text-center"
               >
-                <div className="w-11 h-11 rounded-full bg-[#1a3a6b] group-hover:bg-[#1a56db] text-white flex items-center justify-center transition">
+                <div className="w-11 h-11 rounded-full bg-[#1E4AD1] group-hover:bg-[#1E4AD1] text-white flex items-center justify-center transition">
                   <MaterialIcon name={item.icon} size={22} />
                 </div>
                 <p className="text-sm font-black text-slate-800">{item.label}</p>
@@ -456,9 +456,9 @@ export default function PartnerDashboard() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="bg-white border border-slate-200 rounded-sm p-4 flex flex-col items-center gap-2 hover:border-[#1a56db] hover:shadow-md transition group text-center"
+                className="bg-white border border-slate-200 rounded-sm p-4 flex flex-col items-center gap-2 hover:border-[#1E4AD1] hover:shadow-md transition group text-center"
               >
-                <div className="w-11 h-11 rounded-full bg-[#1a3a6b] group-hover:bg-[#1a56db] text-white flex items-center justify-center transition">
+                <div className="w-11 h-11 rounded-full bg-[#1E4AD1] group-hover:bg-[#1E4AD1] text-white flex items-center justify-center transition">
                   <MaterialIcon name={item.icon} size={22} />
                 </div>
                 <p className="text-sm font-black text-slate-800">{item.label}</p>
@@ -472,12 +472,12 @@ export default function PartnerDashboard() {
         <div className="bg-white border border-slate-200 rounded-sm overflow-hidden shadow-sm">
           <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-[#f8fafc]">
             <div className="flex items-center gap-2">
-              <MaterialIcon name="history" size={20} className="text-[#1a56db]" />
+              <MaterialIcon name="history" size={20} className="text-[#1E4AD1]" />
               <h2 className="text-sm font-black text-slate-800">最近訂單</h2>
             </div>
             <Link
               href="/partner/orders"
-              className="text-xs text-[#1a56db] font-bold hover:underline flex items-center gap-1"
+              className="text-xs text-[#1E4AD1] font-bold hover:underline flex items-center gap-1"
             >
               查看全部
               <MaterialIcon name="chevron_right" size={16} />
@@ -535,7 +535,7 @@ export default function PartnerDashboard() {
                       <td className="px-5 py-3 font-bold text-slate-800">
                         {fmt(order.total_amount)}
                       </td>
-                      <td className="px-5 py-3 font-black text-[#1a56db]">
+                      <td className="px-5 py-3 font-black text-[#1E4AD1]">
                         +{fmt(order.partner_profit)}
                       </td>
                       <td className="px-5 py-3">
@@ -567,10 +567,10 @@ export default function PartnerDashboard() {
         {storeUrl && (
           <div className="bg-white border border-slate-200 rounded-sm p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <MaterialIcon name="link" size={22} className="text-[#1a56db] shrink-0" />
+              <MaterialIcon name="link" size={22} className="text-[#1E4AD1] shrink-0" />
               <div className="min-w-0">
                 <p className="text-[10px] font-bold text-slate-400 uppercase">專屬賣場連結</p>
-                <p className="font-mono text-sm text-[#1a56db] font-bold truncate">{storeUrl}</p>
+                <p className="font-mono text-sm text-[#1E4AD1] font-bold truncate">{storeUrl}</p>
               </div>
             </div>
             <button
@@ -579,7 +579,7 @@ export default function PartnerDashboard() {
                 navigator.clipboard.writeText(storeUrl);
                 alert("連結已複製！");
               }}
-              className="inline-flex items-center gap-2 bg-[#1a3a6b] text-white text-sm font-bold px-4 py-2 rounded-sm hover:bg-[#1a56db] transition shrink-0"
+              className="inline-flex items-center gap-2 bg-[#1E4AD1] text-white text-sm font-bold px-4 py-2 rounded-sm hover:bg-[#1E4AD1] transition shrink-0"
             >
               <MaterialIcon name="content_copy" size={16} />
               複製

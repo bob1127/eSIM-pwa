@@ -18,8 +18,8 @@ export default function LegalPageLayout({
 }) {
   return (
     <Layout seo={seo}>
-      <div className="min-h-screen bg-white font-sans pt-28 md:pt-32 pb-16">
-        <div className="max-w-2xl mx-auto pt-20 px-6">
+      <div className="min-h-screen bg-white font-sans pb-16">
+        <div className="max-w-2xl mx-auto pt-10 px-6">
           {/* 品牌標頭 */}
           <div className="text-center mb-10">
             <Link

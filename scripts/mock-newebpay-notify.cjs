@@ -2,18 +2,40 @@
 //
 // 用來測試 esim-backend 的 /newebpay/notify（藍新背景通知），驗證驗簽、
 // authorize+capture、觸發發貨的冪等性。金鑰改讀環境變數，跟 esim-backend
-// 的 NEWEBPAY_HASH_KEY / NEWEBPAY_HASH_IV 保持一致（sandbox 測試用）。
+// 的 NEWEBPAY_HASH_KEY / NEWEBPAY_HASH_IV 保持一致。
 //
 // 用法：
-//   NEWEBPAY_HASH_KEY=xxx NEWEBPAY_HASH_IV=xxx \
-//     node scripts/mock-newebpay-notify.cjs <MERCHANT_ORDER_NO> [BACKEND_URL] [PAYMENT_TYPE]
+//   node scripts/mock-newebpay-notify.cjs <MERCHANT_ORDER_NO> [BACKEND_URL] [PAYMENT_TYPE]
 //
 // 例：
 //   node scripts/mock-newebpay-notify.cjs 01J8X7ZQK3YV2E9T3RCEXAMPLE http://localhost:9000 CREDIT
-//   node scripts/mock-newebpay-notify.cjs 01J8X7ZQK3YV2E9T3RCEXAMPLE http://localhost:9000 VACC
+const fs = require("fs");
+const path = require("path");
 const axios = require("axios");
 const crypto = require("crypto");
 const qs = require("qs");
+
+function loadEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  for (const line of fs.readFileSync(filePath, "utf8").split("\n")) {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) continue;
+    const eq = t.indexOf("=");
+    if (eq === -1) continue;
+    const key = t.slice(0, eq).trim();
+    let val = t.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1);
+    }
+    if (!process.env[key]) process.env[key] = val;
+  }
+}
+
+loadEnvFile(path.resolve(__dirname, "../../esim-backend/.env"));
+loadEnvFile(path.resolve(__dirname, "../.env.local"));
 
 const HASH_KEY = process.env.NEWEBPAY_HASH_KEY;
 const HASH_IV = process.env.NEWEBPAY_HASH_IV;

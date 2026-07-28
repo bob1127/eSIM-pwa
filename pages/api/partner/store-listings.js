@@ -4,6 +4,28 @@ import {
   verifyPartnerAccessForUser,
 } from "../../../lib/partnerServer";
 import { upsertMedusaProductToSupabase } from "../../../lib/medusaProductSync";
+import { applyPartnerB2BMarkup } from "../../../lib/medusaPartnerPricing";
+import { validateCustomPricesInput } from "../../../lib/partnerPricing";
+import { logPricingAudit } from "../../../lib/partnerPricingAudit";
+
+/**
+ * 與前台商品頁「確認您的選擇」一致：
+ *   AU(KDDI) | 5天
+ * （吃到飽／無限流量不重複寫，因為商品名已含）
+ */
+function formatPartnerVariantLabel(attrs = {}, title, sku, id) {
+  const telecom = attrs.telecom || attrs.電信商 || null;
+  const daysRaw = attrs.days ?? attrs.天數;
+  const days =
+    daysRaw != null && String(daysRaw).trim() !== ""
+      ? `${String(daysRaw).replace(/\s*天\s*$/, "")}天`
+      : null;
+  let data = attrs.data_amount || attrs.data || attrs.數據量 || null;
+  if (data && /無限|unlimited|吃到飽/i.test(String(data))) data = null;
+  const parts = [telecom, days, data].filter(Boolean);
+  if (parts.length) return parts.join(" | ");
+  return title || sku || `方案 #${id}`;
+}
 
 export default async function handler(req, res) {
   const supabase = getSupabaseAdmin();
@@ -24,14 +46,174 @@ export default async function handler(req, res) {
   const storeId = access.store.id;
 
   if (req.method === "GET") {
-    const { data, error } = await supabase
-      .from("store_products")
-      .select("id, product_id, medusa_product_id, custom_prices, created_at")
-      .eq("store_id", storeId);
+    const selectAttempts = [
+      "id, product_id, medusa_product_id, custom_prices, status, created_at",
+      "id, product_id, medusa_product_id, custom_prices, created_at",
+      "id, product_id, custom_prices, created_at",
+    ];
 
-    if (error) return res.status(500).json({ error: error.message });
+    let listings = null;
+    let lastError = null;
+    for (const cols of selectAttempts) {
+      const { data, error } = await supabase
+        .from("store_products")
+        .select(cols)
+        .eq("store_id", storeId);
+      if (!error) {
+        listings = data || [];
+        break;
+      }
+      lastError = error;
+      if (!/column|does not exist|schema cache/i.test(error.message || "")) {
+        return res.status(500).json({ error: error.message });
+      }
+    }
+    if (!listings) {
+      return res.status(500).json({ error: lastError?.message || "讀取失敗" });
+    }
 
-    return res.status(200).json({ listings: data || [] });
+    const productIds = [
+      ...new Set(listings.map((r) => r.product_id).filter(Boolean)),
+    ];
+    const productMeta = {};
+    const variantsByProduct = {};
+    if (productIds.length) {
+      const nameTries = [
+        "id, name, image_url, handle",
+        "id, name, image_url",
+        "id, name",
+      ];
+      let products = null;
+      for (const cols of nameTries) {
+        const { data, error } = await supabase
+          .from("products")
+          .select(cols)
+          .in("id", productIds);
+        if (!error) {
+          products = data || [];
+          break;
+        }
+      }
+      for (const p of products || []) {
+        productMeta[p.id] = {
+          name: p.name,
+          image_url: p.image_url || null,
+          handle: p.handle || null,
+          minB2B: 0,
+          planCount: 0,
+        };
+      }
+
+      const pushVariant = (v, includeMedusaId, includeExtra) => {
+        const meta = productMeta[v.product_id];
+        if (!meta) return;
+        meta.planCount += 1;
+        const apiCost = Number(v.b2b_price) || 0;
+        if (apiCost > 0 && (meta.minB2B === 0 || apiCost < meta.minB2B)) {
+          meta.minB2B = apiCost;
+        }
+        if (!variantsByProduct[v.product_id]) {
+          variantsByProduct[v.product_id] = [];
+        }
+        const partnerCost = applyPartnerB2BMarkup(apiCost);
+        const attrs = includeExtra ? v.attributes || {} : {};
+        // 欄位可能為空，但舊資料常把 medusa_variant_id 塞在 attributes 裡
+        const medusaVariantId = includeMedusaId
+          ? v.medusa_variant_id || attrs.medusa_variant_id || null
+          : attrs.medusa_variant_id || null;
+        const title = includeExtra ? v.title || null : null;
+        // 優先用 Medusa variant id 當 price_key，與前台商品頁一致
+        const priceKey = String(medusaVariantId || v.id);
+        variantsByProduct[v.product_id].push({
+          id: v.id,
+          medusa_variant_id: medusaVariantId,
+          price_key: priceKey,
+          sku: v.sku || null,
+          title,
+          attributes: attrs,
+          label: formatPartnerVariantLabel(attrs, title, v.sku, v.id),
+          api_b2b: apiCost,
+          cost: partnerCost,
+        });
+      };
+
+      // 依欄位齊全度由多到少嘗試，逐步降級，避免任一選填欄位缺失就整批查無方案
+      const varsTries = [
+        {
+          cols: "id, product_id, sku, title, attributes, b2b_price, medusa_variant_id",
+          includeMedusaId: true,
+          includeExtra: true,
+        },
+        {
+          cols: "id, product_id, sku, attributes, b2b_price, medusa_variant_id",
+          includeMedusaId: true,
+          includeExtra: true,
+        },
+        {
+          cols: "id, product_id, sku, b2b_price, medusa_variant_id",
+          includeMedusaId: true,
+          includeExtra: false,
+        },
+        {
+          cols: "id, product_id, sku, title, attributes, b2b_price",
+          includeMedusaId: false,
+          includeExtra: true,
+        },
+        {
+          cols: "id, product_id, sku, attributes, b2b_price",
+          includeMedusaId: false,
+          includeExtra: true,
+        },
+        {
+          cols: "id, product_id, sku, b2b_price",
+          includeMedusaId: false,
+          includeExtra: false,
+        },
+      ];
+
+      for (const attempt of varsTries) {
+        const { data, error } = await supabase
+          .from("product_variations")
+          .select(attempt.cols)
+          .in("product_id", productIds);
+        if (!error) {
+          for (const v of data || []) {
+            pushVariant(v, attempt.includeMedusaId, attempt.includeExtra);
+          }
+          break;
+        }
+      }
+
+      for (const list of Object.values(variantsByProduct)) {
+        list.sort((a, b) => (a.cost || 0) - (b.cost || 0));
+      }
+    }
+
+    const enriched = listings.map((row) => {
+      const local = row.product_id ? productMeta[row.product_id] : null;
+      const apiMin = local?.minB2B || 0;
+      return {
+        ...row,
+        product_name: local?.name || null,
+        product_image: local?.image_url || null,
+        product_handle: local?.handle || null,
+        /** 夥伴可見底價（已含平台 PARTNER_B2B_COST_RATE） */
+        min_b2b: applyPartnerB2BMarkup(apiMin),
+        /** API 原始最低底價 */
+        api_min_b2b: apiMin,
+        plan_count: local?.planCount || 0,
+        variants: row.product_id
+          ? variantsByProduct[row.product_id] || []
+          : [],
+      };
+    });
+
+    return res.status(200).json({
+      listings: enriched,
+      markup_rate: Number(access.store.markup_rate) || 20,
+      markup_mode: access.store.markup_mode || "percent",
+      markup_fixed: Number(access.store.markup_fixed) || 50,
+    });
   }
 
   if (req.method === "POST") {
@@ -92,6 +274,129 @@ export default async function handler(req, res) {
     }
   }
 
+  if (req.method === "PATCH") {
+    const {
+      medusa_product_id: medusaProductId,
+      product_id: productId,
+      custom_prices: customPrices,
+      status,
+    } = req.body || {};
+
+    if (!medusaProductId && !productId) {
+      return res.status(400).json({ error: "缺少 medusa_product_id 或 product_id" });
+    }
+
+    // 先找出這筆上架紀錄（同時確認確實屬於這間店，並取得舊值供稽核／取得 product_id 供成本驗證）
+    let lookupQuery = supabase
+      .from("store_products")
+      .select("id, product_id, custom_prices")
+      .eq("store_id", storeId);
+    lookupQuery = productId
+      ? lookupQuery.eq("product_id", productId)
+      : lookupQuery.eq("medusa_product_id", medusaProductId);
+    const { data: existingListing, error: lookupError } =
+      await lookupQuery.maybeSingle();
+
+    if (lookupError) {
+      return res.status(500).json({ error: lookupError.message });
+    }
+    if (!existingListing) {
+      return res.status(404).json({ error: "找不到此上架商品" });
+    }
+
+    const patch = {};
+
+    if (customPrices && typeof customPrices === "object") {
+      // 邊界驗證：售價／加價率需在合理範圍，且不可低於底價，避免竄改或誤填
+      // 逐步降級查詢，並從 attributes.medusa_variant_id 補別名
+      const varSelectTries = [
+        "id, sku, b2b_price, medusa_variant_id, attributes",
+        "id, sku, b2b_price, medusa_variant_id",
+        "id, sku, b2b_price, attributes",
+        "id, sku, b2b_price",
+        "id, b2b_price",
+      ];
+      let variations = [];
+      for (const cols of varSelectTries) {
+        const { data, error } = await supabase
+          .from("product_variations")
+          .select(cols)
+          .eq("product_id", existingListing.product_id);
+        if (!error) {
+          variations = data || [];
+          break;
+        }
+      }
+
+      const variantCosts = variations.map((v) => ({
+        id: v.id,
+        medusa_variant_id:
+          v.medusa_variant_id || v.attributes?.medusa_variant_id || null,
+        sku: v.sku || null,
+        cost: applyPartnerB2BMarkup(v.b2b_price),
+      }));
+
+      const check = validateCustomPricesInput(customPrices, variantCosts);
+      if (!check.ok) {
+        return res.status(400).json({ error: check.error });
+      }
+      patch.custom_prices = check.value;
+    }
+    if (status === "active" || status === "paused") {
+      patch.status = status;
+    }
+    if (Object.keys(patch).length === 0) {
+      return res.status(400).json({ error: "沒有可更新的欄位" });
+    }
+
+    const buildQuery = (cols) => {
+      let q = supabase.from("store_products").update(patch).eq("store_id", storeId);
+      q = productId ? q.eq("product_id", productId) : q.eq("medusa_product_id", medusaProductId);
+      return q.select(cols).maybeSingle();
+    };
+
+    // 只有實際要更新 status 時才在 select 帶上該欄位，
+    // 這樣舊資料庫（沒有 status 欄）在只改 custom_prices 時也能正常保存。
+    const initialCols =
+      patch.status !== undefined ? "id, custom_prices, status" : "id, custom_prices";
+    let { data, error } = await buildQuery(initialCols);
+
+    let statusLocalOnly = false;
+    if (error && /status|schema cache|does not exist/i.test(error.message || "")) {
+      // status 欄不存在：從 patch 與 select 都拿掉，只更新 custom_prices 後重試
+      if (patch.status !== undefined) {
+        delete patch.status;
+        statusLocalOnly = true;
+      }
+      const retry = await buildQuery("id, custom_prices");
+      data = retry.data;
+      error = retry.error;
+    }
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (patch.custom_prices) {
+      await logPricingAudit(supabase, {
+        storeId,
+        actorUserId: user.id,
+        actorEmail: user.email,
+        action: "update_custom_prices",
+        field: "custom_prices",
+        oldValue: existingListing.custom_prices,
+        newValue: patch.custom_prices,
+        req,
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      listing: data,
+      ...(statusLocalOnly ? { statusLocalOnly: true } : {}),
+    });
+  }
+
   if (req.method === "DELETE") {
     const medusaProductId = req.body?.medusa_product_id || req.query?.medusa_product_id;
     const productId = req.body?.product_id || req.query?.product_id;
@@ -121,6 +426,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
-  res.setHeader("Allow", ["GET", "POST", "DELETE"]);
+  res.setHeader("Allow", ["GET", "POST", "PATCH", "DELETE"]);
   return res.status(405).end("Method Not Allowed");
 }

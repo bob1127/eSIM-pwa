@@ -15,6 +15,8 @@ export default function PartnerShopLayout({
   store,
   title,
   description,
+  /** 覆寫 canonical／og:url（夥伴文章應指向主站 /blog/{slug}） */
+  canonicalUrl = null,
   /** SSR 可預先帶入國家 nav，避免閃爍 */
   navCountries = null,
   children,
@@ -29,7 +31,8 @@ export default function PartnerShopLayout({
     description ||
     store?.description ||
     `${storeName} — Jeko eSIM 官方授權經銷商店`;
-  const canonical = domain ? `${SITE_URL}/p/${domain}/` : SITE_URL;
+  const canonical =
+    canonicalUrl || (domain ? `${SITE_URL}/p/${domain}/` : SITE_URL);
 
   const [primaryNav, setPrimaryNav] = useState(navCountries || []);
 

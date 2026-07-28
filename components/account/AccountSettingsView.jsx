@@ -8,6 +8,7 @@ import { formatMemberEmailDisplay, isLineSyntheticEmail } from "@/lib/lineAuth";
 export default function AccountSettingsView({
   user,
   userRole,
+  partnerData = null,
   editingName,
   setEditingName,
   editingPhone,
@@ -24,7 +25,11 @@ export default function AccountSettingsView({
 
   return (
     <AccountPageWrap>
-      <MemberProfileHeader user={user} userRole={userRole} />
+      <MemberProfileHeader
+        user={user}
+        userRole={userRole}
+        partnerData={partnerData}
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-[240px_minmax(0,1fr)] gap-6 xl:gap-8">
         <aside className="xl:pt-1">
@@ -67,7 +72,7 @@ export default function AccountSettingsView({
                     value={editingName}
                     onChange={(e) => setEditingName(e.target.value)}
                     disabled={!supabaseUser}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-sm text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30"
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-sm text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0071EB]/30"
                   />
                 </div>
                 <div>
@@ -96,7 +101,7 @@ export default function AccountSettingsView({
                     onChange={(e) => setEditingPhone(e.target.value)}
                     disabled={!supabaseUser}
                     placeholder="選填"
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-sm text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30"
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-sm text-sm disabled:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#0071EB]/30"
                   />
                 </div>
                 {!supabaseUser && (
@@ -123,7 +128,7 @@ export default function AccountSettingsView({
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="至少 6 字"
-                        className="w-full px-3 py-2.5 border border-slate-200 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30"
+                        className="w-full px-3 py-2.5 border border-slate-200 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-[#0071EB]/30"
                       />
                     </div>
                     <button

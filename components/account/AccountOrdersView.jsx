@@ -172,7 +172,7 @@ function PendingPaymentModal({ order, onClose }) {
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
             <p className="text-xs font-bold text-amber-700 uppercase">待付款</p>
-            <h3 className="font-black text-[#1e3a5f]">訂單 #{order.id}</h3>
+            <h3 className="font-black text-[#1E4AD1]">訂單 #{order.id}</h3>
           </div>
           <button type="button" onClick={onClose} className="text-2xl text-slate-400 px-2">
             ×
@@ -200,13 +200,13 @@ function PendingPaymentModal({ order, onClose }) {
                   <div>
                     <p className="text-xs text-slate-500 mb-1">繳費代碼</p>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 text-lg font-black tracking-wider bg-white border border-amber-200 rounded-sm px-3 py-2 text-[#1e3a5f]">
+                      <code className="flex-1 text-lg font-black tracking-wider bg-white border border-amber-200 rounded-sm px-3 py-2 text-[#1E4AD1]">
                         {code}
                       </code>
                       <button
                         type="button"
                         onClick={copyCode}
-                        className="shrink-0 px-3 py-2 text-xs font-bold border border-[#2563eb] text-[#2563eb] rounded-sm hover:bg-blue-50"
+                        className="shrink-0 px-3 py-2 text-xs font-bold border border-[#0071EB] text-[#0071EB] rounded-sm hover:bg-blue-50"
                       >
                         複製
                       </button>
@@ -243,7 +243,7 @@ function QrModal({ order, onClose }) {
     <div className={ACCOUNT_UI.modalOverlay}>
       <div className="bg-white rounded-sm shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h3 className="font-black text-[#1e3a5f]">訂單 #{order.id} · QR Code</h3>
+          <h3 className="font-black text-[#1E4AD1]">訂單 #{order.id} · QR Code</h3>
           <button type="button" onClick={onClose} className="text-2xl text-slate-400 px-2">
             ×
           </button>
@@ -266,7 +266,7 @@ function QrModal({ order, onClose }) {
             <p className="text-sm text-slate-500 text-center py-6">QR Code 處理中，稍後請重新整理</p>
           )}
           <div className="bg-blue-50 border border-blue-100 rounded-sm p-3 text-xs text-slate-600 leading-relaxed space-y-1.5">
-            <p className="font-bold text-[#2563eb]">安裝方式</p>
+            <p className="font-bold text-[#0071EB]">安裝方式</p>
             <p>iPhone / iPad：長按上方 QR Code 圖片 → 選擇「加入 eSIM」或「加入行動方案」即可安裝。</p>
             <p>或使用相機 App 對準此 QR Code 掃描。</p>
             <p>Android：截圖後至「設定 → SIM 卡 → 下載 SIM 卡」掃描截圖中的 QR Code。</p>
@@ -302,7 +302,7 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
       <button
         type="button"
         onClick={onBack}
-        className="flex items-center gap-1 text-sm font-bold text-[#2563eb] mb-4 hover:underline"
+        className="flex items-center gap-1 text-sm font-bold text-[#0071EB] mb-4 hover:underline"
       >
         <MaterialIcon name="arrow_back" size={18} />
         返回訂單列表
@@ -314,7 +314,7 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
           <div className="flex items-center gap-3">
             <MaterialIcon name={meta.icon} size={24} className={meta.iconColor} />
             <div>
-              <h2 className="text-lg font-black text-[#1e3a5f]">訂單 #{order.id}</h2>
+              <h2 className="text-lg font-black text-[#1E4AD1]">訂單 #{order.id}</h2>
               <p className="text-xs text-slate-500 mt-0.5">{formatDateFull(order.created_at)}</p>
             </div>
           </div>
@@ -330,16 +330,16 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
             <div className="space-y-3">
               {items.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-4 p-3 bg-slate-50 rounded-sm border border-slate-100">
-                  <div className="w-10 h-10 rounded-sm bg-[#2b579a]/10 flex items-center justify-center shrink-0">
-                    <MaterialIcon name="sim_card" size={22} className="text-[#2b579a]" />
+                  <div className="w-10 h-10 rounded-sm bg-[#1E4AD1]/10 flex items-center justify-center shrink-0">
+                    <MaterialIcon name="sim_card" size={22} className="text-[#1E4AD1]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-[#1e3a5f]">{item.name || item.productName || "eSIM 方案"}</p>
+                    <p className="font-bold text-sm text-[#1E4AD1]">{item.name || item.productName || "eSIM 方案"}</p>
                     {item.quantity && item.quantity > 1 && (
                       <p className="text-xs text-slate-500">x{item.quantity}</p>
                     )}
                   </div>
-                  <p className="font-black text-sm text-[#1e3a5f]">
+                  <p className="font-black text-sm text-[#1E4AD1]">
                     NT$ {formatNTD(item.unit_price || item.price || order.total_amount)}
                   </p>
                 </div>
@@ -347,8 +347,8 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
             </div>
           ) : (
             <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-sm border border-slate-100">
-              <MaterialIcon name="sim_card" size={22} className="text-[#2b579a]" />
-              <p className="font-bold text-sm text-[#1e3a5f]">{orderItemSummary(order)}</p>
+              <MaterialIcon name="sim_card" size={22} className="text-[#1E4AD1]" />
+              <p className="font-bold text-sm text-[#1E4AD1]">{orderItemSummary(order)}</p>
             </div>
           )}
         </div>
@@ -357,7 +357,7 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
         <div className="px-5 py-4 border-b border-slate-100">
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-600">訂單總額</span>
-            <span className="text-lg font-black text-[#1e3a5f]">NT$ {formatNTD(order.total_amount)}</span>
+            <span className="text-lg font-black text-[#1E4AD1]">NT$ {formatNTD(order.total_amount)}</span>
           </div>
           {payInfo && (
             <div className="flex items-center justify-between mt-2">
@@ -379,13 +379,13 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
             <h3 className="text-xs font-bold text-amber-700 uppercase mb-2">繳費資訊</h3>
             {(payInfo.code_no || payInfo.payment_no) && (
               <div className="flex items-center gap-3">
-                <code className="flex-1 text-base font-black tracking-wider bg-white border border-amber-200 rounded-sm px-3 py-2 text-[#1e3a5f]">
+                <code className="flex-1 text-base font-black tracking-wider bg-white border border-amber-200 rounded-sm px-3 py-2 text-[#1E4AD1]">
                   {payInfo.code_no || payInfo.payment_no}
                 </code>
                 <button
                   type="button"
                   onClick={() => navigator.clipboard?.writeText(payInfo.code_no || payInfo.payment_no)}
-                  className="px-3 py-2 text-xs font-bold border border-[#2563eb] text-[#2563eb] rounded-sm hover:bg-blue-50"
+                  className="px-3 py-2 text-xs font-bold border border-[#0071EB] text-[#0071EB] rounded-sm hover:bg-blue-50"
                 >
                   複製
                 </button>
@@ -416,7 +416,7 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
               ))}
             </div>
             <div className="mt-4 bg-blue-50 border border-blue-100 rounded-sm p-3 text-xs text-slate-600 leading-relaxed space-y-1.5">
-              <p className="font-bold text-[#2563eb]">安裝方式</p>
+              <p className="font-bold text-[#0071EB]">安裝方式</p>
               <p>iPhone / iPad：長按上方 QR Code 圖片 → 選擇「加入 eSIM」或「加入行動方案」即可安裝。</p>
               <p>或使用相機 App 對準此 QR Code 掃描。</p>
               <p>Android：截圖後至「設定 → SIM 卡 → 下載 SIM 卡」掃描截圖中的 QR Code。</p>
@@ -431,17 +431,17 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* ICCID 卡片 */}
               <div className="flex flex-col items-center text-center p-4 bg-slate-50 border border-slate-100 rounded-sm">
-                <div className="w-12 h-12 rounded-full bg-[#2563eb]/10 flex items-center justify-center mb-3">
-                  <MaterialIcon name="sim_card" size={24} className="text-[#2563eb]" />
+                <div className="w-12 h-12 rounded-full bg-[#0071EB]/10 flex items-center justify-center mb-3">
+                  <MaterialIcon name="sim_card" size={24} className="text-[#0071EB]" />
                 </div>
-                <p className="text-sm font-bold text-[#1e3a5f] mb-1">ICCID</p>
+                <p className="text-sm font-bold text-[#1E4AD1] mb-1">ICCID</p>
                 <p className="text-xs text-slate-500 mb-3">eSIM 唯一識別碼，用於綁定流量監控</p>
                 {iccidList.length > 0 ? (
                   <div className="w-full space-y-1.5">
                     {iccidList.map((item, idx) => (
                       <div key={idx} className="bg-white border border-slate-200 rounded px-2.5 py-1.5">
                         <p className="text-[10px] text-slate-400 truncate">{item.name}</p>
-                        <p className="text-xs font-mono font-bold text-[#1e3a5f] break-all">
+                        <p className="text-xs font-mono font-bold text-[#1E4AD1] break-all">
                           {item.iccid || `Topup: ${item.topupId}`}
                         </p>
                       </div>
@@ -457,12 +457,12 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
                 <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
                   <MaterialIcon name="notifications_active" size={24} className="text-emerald-700" />
                 </div>
-                <p className="text-sm font-bold text-[#1e3a5f] mb-1">流量提醒</p>
+                <p className="text-sm font-bold text-[#1E4AD1] mb-1">流量提醒</p>
                 <p className="text-xs text-slate-500 mb-3">綁定 ICCID 後，流量偏低時自動推播通知您</p>
                 <button
                   type="button"
                   onClick={() => onTabChange?.("traffic")}
-                  className="mt-auto inline-flex items-center gap-1.5 px-4 py-2 bg-[#2563eb] text-white text-xs font-bold rounded-sm hover:bg-[#1d4ed8] transition"
+                  className="mt-auto inline-flex items-center gap-1.5 px-4 py-2 bg-[#0071EB] text-white text-xs font-bold rounded-sm hover:bg-[#1E4AD1] transition"
                 >
                   開啟流量通知
                   <MaterialIcon name="arrow_forward" size={14} />
@@ -474,12 +474,12 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
                 <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-3">
                   <MaterialIcon name="speed" size={24} className="text-amber-700" />
                 </div>
-                <p className="text-sm font-bold text-[#1e3a5f] mb-1">查詢流量</p>
+                <p className="text-sm font-bold text-[#1E4AD1] mb-1">查詢流量</p>
                 <p className="text-xs text-slate-500 mb-3">隨時查看剩餘流量及使用狀態</p>
                 <button
                   type="button"
                   onClick={() => onTabChange?.("traffic")}
-                  className="mt-auto inline-flex items-center gap-1.5 px-4 py-2 border border-[#2563eb] text-[#2563eb] text-xs font-bold rounded-sm hover:bg-blue-50 transition"
+                  className="mt-auto inline-flex items-center gap-1.5 px-4 py-2 border border-[#0071EB] text-[#0071EB] text-xs font-bold rounded-sm hover:bg-blue-50 transition"
                 >
                   前往查詢
                   <MaterialIcon name="arrow_forward" size={14} />
@@ -500,7 +500,7 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
               <button
                 type="button"
                 onClick={() => setRefundDetailOrder(order)}
-                className="text-xs font-bold text-[#2563eb] hover:underline"
+                className="text-xs font-bold text-[#0071EB] hover:underline"
               >
                 查看退款詳情
               </button>
@@ -522,7 +522,7 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
           )}
           <Link
             href="/"
-            className="flex items-center gap-1 px-4 py-2.5 bg-[#2563eb] text-white text-sm font-bold rounded-sm hover:bg-[#1d4ed8]"
+            className="flex items-center gap-1 px-4 py-2.5 bg-[#0071EB] text-white text-sm font-bold rounded-sm hover:bg-[#1E4AD1]"
           >
             <MaterialIcon name="add" size={16} />
             再次購買
@@ -677,13 +677,12 @@ export default function AccountOrdersView({
 
   return (
     <AccountPageWrap>
-      {/* 圖 2 標題列 */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
-        <h2 className="text-2xl font-black text-[#1e3a5f]">我的 eSIM 訂單</h2>
+      {/* 工具列 */}
+      <div className="flex justify-end mb-4">
         <button
           type="button"
           onClick={exportCsv}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#2563eb] text-white text-sm font-bold rounded-sm hover:bg-[#1d4ed8] shrink-0"
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#0071EB] text-white text-sm font-bold rounded-sm hover:bg-[#1E4AD1] shrink-0"
         >
           <MaterialIcon name="download" size={18} />
           匯出訂單 (.csv)
@@ -697,7 +696,7 @@ export default function AccountOrdersView({
           需處理
         </span>
         <span className="flex items-center gap-1">
-          <MaterialIcon name="flag" size={16} className="text-[#2563eb]" />
+          <MaterialIcon name="flag" size={16} className="text-[#0071EB]" />
           追蹤中
         </span>
         <span className="flex items-center gap-1">
@@ -722,13 +721,13 @@ export default function AccountOrdersView({
               setPage(1);
             }}
             placeholder="關鍵字搜尋（訂單編號、方案、Email）"
-            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-sm text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30"
+            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-sm text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0071EB]/30"
           />
         </div>
         <button
           type="button"
           onClick={() => setShowAdvanced((v) => !v)}
-          className="flex items-center gap-1 text-sm font-bold text-[#2563eb] px-3 py-2 whitespace-nowrap"
+          className="flex items-center gap-1 text-sm font-bold text-[#0071EB] px-3 py-2 whitespace-nowrap"
         >
           <MaterialIcon name={showAdvanced ? "remove" : "add"} size={18} />
           條件指定搜尋
@@ -752,7 +751,7 @@ export default function AccountOrdersView({
             }}
             className={`pb-3 text-sm font-bold whitespace-nowrap border-b-2 -mb-px transition ${
               tab === t.id
-                ? "border-[#2563eb] text-[#2563eb]"
+                ? "border-[#0071EB] text-[#0071EB]"
                 : "border-transparent text-slate-500 hover:text-slate-700"
             }`}
           >
@@ -796,7 +795,7 @@ export default function AccountOrdersView({
             <button
               type="button"
               onClick={clearFilters}
-              className="text-xs text-slate-500 hover:text-[#2563eb] font-bold ml-auto"
+              className="text-xs text-slate-500 hover:text-[#0071EB] font-bold ml-auto"
             >
               清除搜尋條件
             </button>
@@ -819,8 +818,8 @@ export default function AccountOrdersView({
                   }}
                   className={`px-3 py-1.5 text-xs font-bold rounded border transition ${
                     monthFilter === m.id
-                      ? "bg-[#2b579a] text-white border-[#2b579a]"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-[#2563eb]"
+                      ? "bg-[#1E4AD1] text-white border-[#1E4AD1]"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-[#0071EB]"
                   }`}
                 >
                   {m.label}
@@ -840,7 +839,7 @@ export default function AccountOrdersView({
               <button
                 type="button"
                 onClick={() => setSelected(new Set(paged.map((o) => o.id)))}
-                className="text-[#2563eb] font-bold ml-1 hover:underline"
+                className="text-[#0071EB] font-bold ml-1 hover:underline"
               >
                 全選本頁 {paged.length} 筆
               </button>
@@ -854,7 +853,7 @@ export default function AccountOrdersView({
             <button
               type="button"
               onClick={() => onTabChange?.("traffic")}
-              className="flex items-center gap-1 px-4 py-2 bg-[#2b579a] text-white text-xs font-bold rounded-sm"
+              className="flex items-center gap-1 px-4 py-2 bg-[#1E4AD1] text-white text-xs font-bold rounded-sm"
             >
               <MaterialIcon name="speed" size={16} />
               查詢所選流量
@@ -869,7 +868,7 @@ export default function AccountOrdersView({
           </button>
           <Link
             href="/"
-            className="px-3 py-2 bg-[#2563eb] text-white text-xs font-bold rounded-sm"
+            className="px-3 py-2 bg-[#0071EB] text-white text-xs font-bold rounded-sm"
           >
             + 選購 eSIM
           </Link>
@@ -886,7 +885,7 @@ export default function AccountOrdersView({
                   type="checkbox"
                   checked={paged.length > 0 && selected.size === paged.length}
                   onChange={toggleAll}
-                  className="accent-[#2563eb]"
+                  className="accent-[#0071EB]"
                 />
               </th>
               <th className="px-3 py-3 font-bold text-left w-12">狀態</th>
@@ -908,7 +907,7 @@ export default function AccountOrdersView({
               <tr>
                 <td colSpan={7} className="py-16 text-center text-slate-400">
                   尚無符合條件的訂單
-                  <Link href="/" className="block mt-2 text-[#2563eb] font-bold">
+                  <Link href="/" className="block mt-2 text-[#0071EB] font-bold">
                     前往選購 →
                   </Link>
                 </td>
@@ -929,7 +928,7 @@ export default function AccountOrdersView({
                         type="checkbox"
                         checked={selected.has(order.id)}
                         onChange={() => toggleSelect(order.id)}
-                        className="accent-[#2563eb]"
+                        className="accent-[#0071EB]"
                       />
                     </td>
                     <td className="px-3 py-4">
@@ -940,7 +939,7 @@ export default function AccountOrdersView({
                       <button
                         type="button"
                         onClick={() => setDetailOrder(order)}
-                        className="font-bold text-[#2563eb] hover:underline text-left mt-0.5"
+                        className="font-bold text-[#0071EB] hover:underline text-left mt-0.5"
                       >
                         {orderItemSummary(order)}
                       </button>
@@ -974,7 +973,7 @@ export default function AccountOrdersView({
                         ].map((box) => (
                           <div
                             key={box.label}
-                            className={`w-16 text-center border border-slate-200 rounded py-1.5 bg-slate-50/50 ${box.clickable ? "cursor-pointer hover:border-[#2563eb] hover:bg-blue-50/50 transition-colors" : ""}`}
+                            className={`w-16 text-center border border-slate-200 rounded py-1.5 bg-slate-50/50 ${box.clickable ? "cursor-pointer hover:border-[#0071EB] hover:bg-blue-50/50 transition-colors" : ""}`}
                             onClick={box.clickable ? () => setQrOrder(order) : undefined}
                             role={box.clickable ? "button" : undefined}
                             tabIndex={box.clickable ? 0 : undefined}
@@ -982,9 +981,9 @@ export default function AccountOrdersView({
                           >
                             <p className="text-[9px] text-slate-400">{box.label}</p>
                             {box.isQr && hasQr ? (
-                              <MaterialIcon name="qr_code_2" size={18} className="text-[#2563eb] mx-auto mt-0.5" />
+                              <MaterialIcon name="qr_code_2" size={18} className="text-[#0071EB] mx-auto mt-0.5" />
                             ) : (
-                              <p className="text-xs font-black text-[#1e3a5f] mt-0.5">{box.val}</p>
+                              <p className="text-xs font-black text-[#1E4AD1] mt-0.5">{box.val}</p>
                             )}
                           </div>
                         ))}
@@ -1039,7 +1038,7 @@ export default function AccountOrdersView({
                         <button
                           type="button"
                           onClick={() => setDetailOrder(order)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 bg-[#2b579a] text-white text-[11px] font-bold rounded hover:bg-[#234a82]"
+                          className="flex items-center gap-1 px-2.5 py-1.5 bg-[#1E4AD1] text-white text-[11px] font-bold rounded hover:bg-[#163aab]"
                         >
                           <MaterialIcon name="visibility" size={14} />
                           明細
@@ -1064,7 +1063,7 @@ export default function AccountOrdersView({
             >
               <MaterialIcon name="chevron_left" size={20} />
             </button>
-            <span className="text-sm font-bold text-[#2563eb] px-2">{page}</span>
+            <span className="text-sm font-bold text-[#0071EB] px-2">{page}</span>
             <button
               type="button"
               disabled={page >= totalPages}
@@ -1082,7 +1081,7 @@ export default function AccountOrdersView({
 
       <p className="text-xs text-slate-400 mt-3 px-1">
         未開通方案可於 7 日內申請全額退款。{" "}
-        <Link href="/refund-policy" className="text-[#2563eb] font-bold hover:underline">
+        <Link href="/refund-policy" className="text-[#0071EB] font-bold hover:underline">
           退換貨政策
         </Link>
       </p>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import MaterialIcon from "@/components/MaterialIcon";
+import { PARTNER_UI } from "@/lib/partnerUi";
 
 export const fmt = (n) => `NT$${Math.round(Number(n) || 0).toLocaleString()}`;
 
@@ -130,7 +131,7 @@ export function MetricHelpPopup({ open, onClose, title, body, bullets = [] }) {
             <MaterialIcon
               name="info"
               size={22}
-              className="text-[#1a56db] shrink-0"
+              className="text-[#1E4AD1] shrink-0"
             />
             <h2
               id="metric-help-title"
@@ -162,7 +163,7 @@ export function MetricHelpPopup({ open, onClose, title, body, bullets = [] }) {
                   <MaterialIcon
                     name="arrow_right"
                     size={14}
-                    className="text-[#1a56db] shrink-0 mt-0.5"
+                    className="text-[#1E4AD1] shrink-0 mt-0.5"
                   />
                   <span>{item}</span>
                 </li>
@@ -174,7 +175,11 @@ export function MetricHelpPopup({ open, onClose, title, body, bullets = [] }) {
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 text-sm font-bold text-white bg-[#1a56db] hover:bg-[#1e40af] border border-[#1a56db] transition"
+            className="px-5 py-2 text-sm font-bold text-white hover:brightness-110 border transition"
+            style={{
+              backgroundColor: PARTNER_UI.navy,
+              borderColor: PARTNER_UI.navy,
+            }}
           >
             我知道了
           </button>
@@ -195,7 +200,7 @@ export function MetricPanelHeader({ icon, title, help, href }) {
         <MaterialIcon
           name={icon}
           size={20}
-          className="text-[#1a56db] shrink-0"
+          className="text-[#1E4AD1] shrink-0"
         />
         <span
           className={`text-sm font-bold text-slate-800 truncate ${
@@ -217,30 +222,42 @@ export function MetricPanelHeader({ icon, title, help, href }) {
       <MaterialIcon
         name={clickable ? "chevron_right" : "chevron_right"}
         size={20}
-        className={`shrink-0 ${clickable ? "text-[#1a56db]" : "text-slate-400"}`}
+        className={`shrink-0 ${clickable ? "text-[#1E4AD1]" : "text-slate-400"}`}
       />
     </>
   );
 
+  const headerClass =
+    "relative flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-[#F7F9FB]";
+
   return (
     <>
       {href ? (
-        <a
-          href={href}
-          className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-[#f8fafc]"
-        >
+        <a href={href} className={headerClass}>
+          <span
+            className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
+            style={{ backgroundColor: PARTNER_UI.yellow }}
+          />
           {inner}
         </a>
       ) : clickable ? (
         <button
           type="button"
           onClick={() => setShowHelp(true)}
-          className="w-full flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-[#f8fafc] text-left cursor-pointer hover:bg-[#eef2f7] transition"
+          className={`${headerClass} w-full text-left cursor-pointer hover:bg-[#eef2f7] transition`}
         >
+          <span
+            className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
+            style={{ backgroundColor: PARTNER_UI.yellow }}
+          />
           {inner}
         </button>
       ) : (
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-[#f8fafc]">
+        <div className={headerClass}>
+          <span
+            className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
+            style={{ backgroundColor: PARTNER_UI.yellow }}
+          />
           {inner}
         </div>
       )}
@@ -286,45 +303,49 @@ export function ReportPeriodBar({
   onExport,
 }) {
   return (
-    <div className="bg-white border-b border-slate-200 px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-      <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm font-black text-slate-800 border border-slate-300 px-4 py-1.5 bg-white">
+    <div className="bg-white border-b border-slate-200 px-4 py-3 sm:px-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 sm:flex-wrap min-w-0">
+        <span className="text-xs sm:text-sm font-black text-slate-800 border border-slate-300 px-3 py-2 sm:px-4 sm:py-1.5 bg-white rounded-lg sm:rounded-none w-fit">
           報表期間
         </span>
-        <input
-          type="date"
-          value={rangeStart}
-          onChange={(e) => onRangeStartChange(e.target.value)}
-          className="text-sm border border-slate-300 px-3 py-1.5 focus:border-[#1a56db] outline-none"
-        />
-        <span className="text-slate-400">→</span>
-        <input
-          type="date"
-          value={rangeEnd}
-          onChange={(e) => onRangeEndChange(e.target.value)}
-          className="text-sm border border-slate-300 px-3 py-1.5 focus:border-[#1a56db] outline-none"
-        />
-        <span className="text-slate-400 text-sm">｜</span>
-        <button
-          type="button"
-          onClick={() => onQuickRange("prevMonth")}
-          className="text-sm text-slate-700 font-bold hover:underline"
-        >
-          前月
-        </button>
-        <span className="text-slate-400 text-sm">｜</span>
-        <button
-          type="button"
-          onClick={() => onQuickRange("thisMonth")}
-          className="text-sm text-slate-700 font-bold hover:underline"
-        >
-          當月
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <input
+            type="date"
+            value={rangeStart}
+            onChange={(e) => onRangeStartChange(e.target.value)}
+            className="flex-1 sm:flex-none text-sm border border-slate-300 rounded-lg sm:rounded-none px-3 py-2.5 sm:py-1.5 focus:border-[#1E4AD1] outline-none min-w-0"
+          />
+          <span className="text-slate-400 shrink-0">→</span>
+          <input
+            type="date"
+            value={rangeEnd}
+            onChange={(e) => onRangeEndChange(e.target.value)}
+            className="flex-1 sm:flex-none text-sm border border-slate-300 rounded-lg sm:rounded-none px-3 py-2.5 sm:py-1.5 focus:border-[#1E4AD1] outline-none min-w-0"
+          />
+        </div>
+        <div className="flex items-center gap-3 text-sm">
+          <button
+            type="button"
+            onClick={() => onQuickRange("prevMonth")}
+            className="font-bold text-slate-700 hover:text-[#1E4AD1] py-1"
+          >
+            前月
+          </button>
+          <span className="text-slate-300">｜</span>
+          <button
+            type="button"
+            onClick={() => onQuickRange("thisMonth")}
+            className="font-bold text-slate-700 hover:text-[#1E4AD1] py-1"
+          >
+            當月
+          </button>
+        </div>
       </div>
       <button
         type="button"
         onClick={onExport || (() => window.print())}
-        className="inline-flex items-center gap-2 bg-[#8bc34a] hover:bg-[#7cb342] text-[#1a1a1a] font-black text-sm px-5 py-2 shadow-sm transition shrink-0"
+        className="inline-flex items-center justify-center gap-2 font-black text-sm px-4 py-2.5 sm:px-5 sm:py-2 shadow-sm transition shrink-0 text-[#111] hover:brightness-95 rounded-lg sm:rounded-none w-full sm:w-auto"
+        style={{ backgroundColor: PARTNER_UI.yellow }}
       >
         <MaterialIcon name="download" size={18} />
         匯出 PDF
@@ -335,20 +356,35 @@ export function ReportPeriodBar({
 
 export function DobermanStatusBanner({ title, message, loading }) {
   return (
-    <div className="bg-[#1a56db] px-6 py-4 flex items-center gap-5">
-      <div className="w-16 h-16 bg-white/15 flex items-center justify-center shrink-0 border-2 border-white/30">
+    <div
+      className="px-4 py-3.5 sm:px-6 sm:py-4 flex items-center gap-3 sm:gap-5 relative overflow-hidden"
+      style={{ backgroundColor: PARTNER_UI.navy }}
+    >
+      <div
+        className="absolute bottom-0 left-0 right-0 h-[3px]"
+        style={{ backgroundColor: PARTNER_UI.yellow }}
+      />
+      <div className="w-11 h-11 sm:w-16 sm:h-16 bg-white/15 flex items-center justify-center shrink-0 border-2 border-white/30 rounded-lg sm:rounded-none">
+        <MaterialIcon
+          name="verified_user"
+          size={28}
+          className="text-white sm:hidden"
+          filled
+        />
         <MaterialIcon
           name="verified_user"
           size={36}
-          className="text-white"
+          className="text-white hidden sm:block"
           filled
         />
       </div>
-      <div>
-        <p className="text-2xl font-black text-white tracking-wide">
+      <div className="min-w-0">
+        <p className="text-lg sm:text-2xl font-black text-white tracking-wide leading-snug">
           {loading ? "載入中..." : title}
         </p>
-        <p className="text-sm text-blue-100 mt-1">{message}</p>
+        <p className="text-xs sm:text-sm text-blue-100 mt-1 leading-relaxed">
+          {message}
+        </p>
       </div>
     </div>
   );
@@ -358,25 +394,25 @@ export function DobermanPanel({ icon, title, rows, children, href, help }) {
   return (
     <div className="bg-white border border-slate-200 overflow-hidden h-full">
       <MetricPanelHeader icon={icon} title={title} help={help} href={href} />
-      <div className="px-4 py-4">
+      <div className="px-4 py-3 sm:py-4">
         {rows?.map((row) => (
           <div
             key={row.label}
-            className="flex justify-between items-center py-1.5"
+            className="flex justify-between items-center gap-3 py-2"
           >
-            <span className="text-xs text-slate-500 flex items-center gap-1.5">
+            <span className="text-xs text-slate-500 flex items-center gap-1.5 min-w-0">
               {row.arrow && (
                 <MaterialIcon
                   name={row.arrow === "up" ? "arrow_upward" : "arrow_downward"}
                   size={16}
                   className={
-                    row.arrow === "up" ? "text-[#1a56db]" : "text-red-400"
+                    row.arrow === "up" ? "text-[#1E4AD1]" : "text-red-400"
                   }
                 />
               )}
-              {row.label}
+              <span className="truncate">{row.label}</span>
             </span>
-            <span className="text-2xl font-black text-[#1a56db] tabular-nums">
+            <span className="text-xl sm:text-2xl font-black text-[#1E4AD1] tabular-nums shrink-0">
               {row.value}
               {row.unit && (
                 <span className="text-xs font-bold text-slate-500 ml-1">
@@ -403,16 +439,14 @@ export function DobermanTopCard({
   return (
     <div className="bg-white border border-slate-200 overflow-hidden">
       <MetricPanelHeader icon={icon} title={title} help={help} />
-      <div className="px-4 py-4 flex items-center justify-between gap-4">
+      <div className="px-4 py-3 sm:py-4 flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">
-            Top
-          </p>
-          <p className="text-sm font-bold text-slate-700 truncate">
+          <p className="text-xs text-slate-400 font-bold uppercase mb-1">Top</p>
+          <p className="text-sm font-bold text-slate-700 truncate leading-snug">
             {topLabel}
           </p>
         </div>
-        <p className="text-2xl font-black text-[#1a56db] tabular-nums shrink-0">
+        <p className="text-xl sm:text-2xl font-black text-[#1E4AD1] tabular-nums shrink-0">
           {count}
           <span className="text-xs font-bold text-slate-500 ml-0.5">
             {countUnit}
@@ -431,9 +465,16 @@ export function DobermanFooter({ notice }) {
   });
 
   return (
-    <footer className="bg-[#2d3748] text-white h-10 flex items-center px-4 gap-4 shrink-0 text-xs">
-      <span className="font-mono text-slate-300 shrink-0">{today}</span>
-      <div className="flex-1 border border-slate-500/60 px-3 py-1 text-slate-300 truncate">
+    <footer
+      className="text-white min-h-10 flex items-center px-4 gap-3 shrink-0 text-xs relative py-2"
+      style={{ backgroundColor: PARTNER_UI.navy }}
+    >
+      <div
+        className="absolute top-0 left-0 right-0 h-[2px]"
+        style={{ backgroundColor: PARTNER_UI.yellow }}
+      />
+      <span className="font-mono text-blue-100 shrink-0">{today}</span>
+      <div className="flex-1 border border-white/20 px-3 py-1.5 text-blue-50 truncate rounded-sm">
         {notice || "系統運作正常，分潤資料即時更新中。"}
       </div>
     </footer>

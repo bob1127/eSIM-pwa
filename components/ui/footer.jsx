@@ -65,6 +65,12 @@ export default function Footer({
               >
                 退換貨政策
               </Link>
+              <Link
+                href="/partner/login"
+                className="hover:text-[#0A6CD0] transition-colors font-bold text-gray-700"
+              >
+                合作夥伴後台
+              </Link>
             </nav>
           </div>
 
@@ -190,6 +196,22 @@ export default function Footer({
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >
                     會員優惠
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/cooperation"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    成為合作夥伴
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/partner/login"
+                    className="text-[13px] font-bold text-[#0A6CD0] hover:text-[#0859ad] transition-colors"
+                  >
+                    合作夥伴後台
                   </Link>
                 </li>
               </ul>

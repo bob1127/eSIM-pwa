@@ -163,6 +163,11 @@ const EmblaCarousel = ({ slides = [], options }) => {
                       </div>
                     </div>
                     <div className="flex flex-col items-start justify-start p-5 md:p-6 flex-grow text-left">
+                      {slide.badge ? (
+                        <span className="mb-2 inline-flex items-center rounded-md bg-[#1E4AD1]/10 px-2.5 py-1 text-[11px] font-semibold text-[#1E4AD1]">
+                          {slide.badge}
+                        </span>
+                      ) : null}
                       <h3
                         className="text-[17px] md:text-lg font-bold mb-3 line-clamp-2 text-slate-800 group-hover/card:text-[#1f57b8] transition-colors leading-snug"
                         dangerouslySetInnerHTML={{ __html: slide.title }}

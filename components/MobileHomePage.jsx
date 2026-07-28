@@ -8,6 +8,7 @@ import AccommodationRecommendSection from "./AccommodationRecommendSection";
 import KKdayTicketSection from "./KKdayTicketSection";
 import KlookTicketSection from "./KlookTicketSection";
 import JekoRecommendSection from "./JekoRecommendSection";
+import ServiceSection from "./ServiceSection";
 
 const LINE_OA_URL =
   process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn";
@@ -369,7 +370,12 @@ export default function MobileHomePage() {
         </div>
       </div>
 
-      {/* ═══ 5. 精選 eSIM 方案 ═══ */}
+      {/* ═══ 5. 連線方案（原生卡／日韓東南亞）═══ */}
+      <div className="mt-3">
+        <ServiceSection />
+      </div>
+
+      {/* ═══ 6. 精選 eSIM 方案 ═══ */}
       <div className="mt-3">
         <SectionHeader title="精選 eSIM 方案" link="/product" />
         <div className="[&>section]:!bg-transparent [&>section]:!pt-0">
@@ -377,7 +383,7 @@ export default function MobileHomePage() {
         </div>
       </div>
 
-      {/* ═══ 6. 租車包車 ═══ */}
+      {/* ═══ 7. 租車包車 ═══ */}
       <div className="mt-3" id="car-rental-charter">
         <SectionHeader title="租車包車" />
         <div className="[&>section]:!bg-transparent [&>section]:!pt-0 [&>section_.flex.flex-wrap.items-baseline]:!hidden">
@@ -385,25 +391,25 @@ export default function MobileHomePage() {
         </div>
       </div>
 
-      {/* ═══ 7. 住宿推薦 ═══ */}
+      {/* ═══ 8. 住宿推薦 ═══ */}
       <div className="mt-3" id="accommodation-section">
         <SectionHeader title="住宿推薦" />
         <AccommodationRecommendSection />
       </div>
 
-      {/* ═══ 8. 景點門票 KKday ═══ */}
+      {/* ═══ 9. 景點門票 KKday ═══ */}
       <div className="mt-3" id="kkday-section">
         <SectionHeader title="景點門票 · KKday" />
         <KKdayTicketSection />
       </div>
 
-      {/* ═══ 9. 景點體驗 Klook ═══ */}
+      {/* ═══ 10. 景點體驗 Klook ═══ */}
       <div className="mt-3">
         <SectionHeader title="景點體驗 · Klook" />
         <KlookTicketSection />
       </div>
 
-      {/* ═══ 10. 快速導覽 — 藍底資訊卡風格 ═══ */}
+      {/* ═══ 11. 快速導覽 — 藍底資訊卡風格 ═══ */}
       <div className="mt-4 mx-4 mb-2 rounded-[20px] bg-[#2F5CFF] px-5 pt-5 pb-4 text-white shadow-[0_10px_28px_rgba(47,92,255,0.28)]">
         <div className="flex items-center gap-2 mb-4">
           <svg

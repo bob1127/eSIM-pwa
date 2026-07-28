@@ -71,7 +71,7 @@ export default function AccountSupportView({
         {/* 左欄 — Shopify 主區 */}
         <div className="space-y-5">
           <div>
-            <h2 className="text-2xl font-bold text-[#1e3a5f]">
+            <h2 className="text-2xl font-bold text-[#1E4AD1]">
               {greeting()}，{user?.name?.split(" ")[0] || "會員"}
             </h2>
             <p className="text-sm text-slate-500 mt-1">一起確認您的 eSIM 使用狀況</p>
@@ -91,7 +91,7 @@ export default function AccountSupportView({
                 <MaterialIcon name={m.icon} size={22} className="text-slate-400 mt-0.5" />
                 <div>
                   <p className="text-xs text-slate-500">{m.label}</p>
-                  <p className="text-xl font-bold text-[#1e3a5f] mt-0.5">{m.val}</p>
+                  <p className="text-xl font-bold text-[#1E4AD1] mt-0.5">{m.val}</p>
                 </div>
               </div>
             ))}
@@ -102,7 +102,7 @@ export default function AccountSupportView({
             <div className="flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <div>
-                <p className="text-sm font-bold text-[#1e3a5f]">
+                <p className="text-sm font-bold text-[#1E4AD1]">
                   {completedCount} 張 eSIM 可使用
                 </p>
                 <p className="text-xs text-slate-400">掃描 QR Code 即可安裝</p>
@@ -116,7 +116,7 @@ export default function AccountSupportView({
           {/* 待辦清單 */}
           <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100">
-              <h3 className="text-sm font-black text-[#1e3a5f]">建議事項</h3>
+              <h3 className="text-sm font-black text-[#1E4AD1]">建議事項</h3>
             </div>
             <ul className="divide-y divide-slate-100">
               {todos.length === 0 ? (
@@ -136,7 +136,7 @@ export default function AccountSupportView({
                       <MaterialIcon
                         name="chevron_right"
                         size={20}
-                        className="text-slate-300 group-hover:text-[#2563eb]"
+                        className="text-slate-300 group-hover:text-[#0071EB]"
                       />
                     </button>
                   </li>
@@ -148,8 +148,8 @@ export default function AccountSupportView({
           {/* 智能裝置 */}
           <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
-              <MaterialIcon name="devices" size={20} className="text-[#2563eb]" />
-              <h3 className="text-sm font-black text-[#1e3a5f]">智能裝置偵測</h3>
+              <MaterialIcon name="devices" size={20} className="text-[#0071EB]" />
+              <h3 className="text-sm font-black text-[#1E4AD1]">智能裝置偵測</h3>
             </div>
             <p className="text-sm text-slate-600 mb-3">
               依您目前使用的裝置，自動開啟對應的 eSIM 安裝圖文教學。
@@ -157,7 +157,7 @@ export default function AccountSupportView({
             <button
               type="button"
               onClick={onGuideClick}
-              className="px-4 py-2 bg-[#2563eb] text-white text-sm font-bold rounded-sm hover:bg-[#1d4ed8]"
+              className="px-4 py-2 bg-[#0071EB] text-white text-sm font-bold rounded-sm hover:bg-[#1E4AD1]"
             >
               開啟適合我的教學
             </button>
@@ -205,7 +205,7 @@ export default function AccountSupportView({
                 { label: "退換貨政策", href: "/refund-policy" },
               ].map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="text-[#2563eb] font-medium hover:underline">
+                  <Link href={l.href} className="text-[#0071EB] font-medium hover:underline">
                     {l.label}
                   </Link>
                 </li>
@@ -215,11 +215,11 @@ export default function AccountSupportView({
 
           <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-sm">
             <p className="text-xs font-bold text-slate-500 mb-2">客服摘要</p>
-            <p className="text-2xl font-black text-[#1e3a5f]">24h</p>
+            <p className="text-2xl font-black text-[#1E4AD1]">24h</p>
             <p className="text-xs text-slate-400">Email 回覆時間</p>
             <Link
               href="/contact"
-              className="mt-3 inline-block text-xs font-bold text-[#2563eb] hover:underline"
+              className="mt-3 inline-block text-xs font-bold text-[#0071EB] hover:underline"
             >
               聯絡客服 →
             </Link>
@@ -227,7 +227,7 @@ export default function AccountSupportView({
 
           <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-black text-[#1e3a5f]">動態</h3>
+              <h3 className="text-sm font-black text-[#1E4AD1]">動態</h3>
               <span className="text-[10px] text-slate-400">Activity</span>
             </div>
             <ul className="space-y-3">

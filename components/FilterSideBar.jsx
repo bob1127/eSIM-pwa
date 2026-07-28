@@ -4,18 +4,44 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, RotateCcw } from "lucide-react";
 
-/** eSIM 篩選維度定義 */
+/**
+ * 篩選維度：只保留商品規格裡真的有的欄位
+ * （對齊 Medusa options：使用天數／數據量／電信商）
+ */
 const FILTER_GROUPS = [
   {
     key: "days",
     label: "使用天數",
     multi: true,
     options: [
-      { label: "1-3 天", value: "1-3天", match: (t) => /^[1-3]天$|1-3天/.test(t) },
-      { label: "4-7 天", value: "4-7天", match: (t) => /^[4-7]天$|4-7天/.test(t) },
-      { label: "8-15 天", value: "8-15天", match: (t) => /^([89]|1[0-5])天$|8-15天/.test(t) },
-      { label: "16-30 天", value: "16-30天", match: (t) => /^(1[6-9]|2\d|30)天$|16-30天/.test(t) },
-      { label: "30 天以上", value: "30天以上", match: (t) => /^([3-9]\d|[1-9]\d{2,})天$|30天以上/.test(t) },
+      {
+        label: "1-3 天",
+        value: "1-3天",
+        match: (t) => matchDayRange(t, 1, 3),
+      },
+      {
+        label: "4-7 天",
+        value: "4-7天",
+        match: (t) => matchDayRange(t, 4, 7),
+      },
+      {
+        label: "8-15 天",
+        value: "8-15天",
+        match: (t) => matchDayRange(t, 8, 15),
+      },
+      {
+        label: "16-30 天",
+        value: "16-30天",
+        match: (t) => matchDayRange(t, 16, 30),
+      },
+      {
+        label: "30 天以上",
+        value: "30天以上",
+        match: (t) => {
+          const n = parseDayNumber(t);
+          return n != null && n > 30;
+        },
+      },
     ],
   },
   {
@@ -23,80 +49,192 @@ const FILTER_GROUPS = [
     label: "流量類型",
     multi: false,
     options: [
-      { label: "吃到飽（無限流量）", value: "吃到飽", match: (t) => /吃到飽|無限|unlimited/i.test(t) },
-      { label: "固定流量", value: "固定流量", match: (t) => /固定流量|GB|gb/.test(t) },
+      {
+        label: "吃到飽",
+        value: "吃到飽",
+        match: (t) => /吃到飽|無限流量|無限|unlimited/i.test(t),
+      },
+      {
+        label: "每日型",
+        value: "每日型",
+        match: (t) => /每日|每天|daily/i.test(t),
+      },
+      {
+        label: "總量型",
+        value: "總量型",
+        match: (t) => /總量|固定流量|^\d+(\.\d+)?\s*GB$/i.test(t),
+      },
     ],
   },
   {
-    key: "speed",
-    label: "網路速度",
+    key: "carrier",
+    label: "電信商",
     multi: true,
     options: [
-      { label: "5G", value: "5G", match: (t) => /5G/i.test(t) },
-      { label: "4G / LTE", value: "4G", match: (t) => /4G|LTE/i.test(t) },
-    ],
-  },
-  {
-    key: "hotspot",
-    label: "熱點分享",
-    multi: false,
-    options: [
-      { label: "支援熱點", value: "支援熱點", match: (t) => /熱點|hotspot|tethering/i.test(t) },
-    ],
-  },
-  {
-    key: "activation",
-    label: "啟用方式",
-    multi: false,
-    options: [
-      { label: "QR Code 掃描", value: "QR Code", match: (t) => /QR|qr code/i.test(t) },
-      { label: "App 下載", value: "App下載", match: (t) => /app|應用程式/i.test(t) },
-      { label: "實體設定", value: "實體設定", match: (t) => /實體|manual/i.test(t) },
-    ],
-  },
-  {
-    key: "device",
-    label: "裝置支援",
-    multi: true,
-    options: [
-      { label: "iPhone / iOS", value: "iPhone", match: (t) => /iphone|ios/i.test(t) },
-      { label: "Android", value: "Android", match: (t) => /android/i.test(t) },
-    ],
-  },
-  {
-    key: "usage",
-    label: "使用情境",
-    multi: true,
-    options: [
-      { label: "旅遊短期", value: "旅遊", match: (t) => /旅遊|觀光|短期/.test(t) },
-      { label: "商務出差", value: "商務", match: (t) => /商務|出差/.test(t) },
-      { label: "長期居留", value: "長期", match: (t) => /長期|居留|留學/.test(t) },
+      {
+        label: "AU (KDDI)",
+        value: "AU(KDDI)",
+        match: (t) => /AU\s*\(?\s*KDDI\s*\)?/i.test(t) || /^au$/i.test(t),
+      },
+      {
+        label: "SoftBank / KDDI",
+        value: "SoftBank / KDDI",
+        match: (t) => /SoftBank/i.test(t),
+      },
+      {
+        label: "IIJ Docomo",
+        value: "IIJ Docomo",
+        match: (t) => /IIJ|Docomo|NTT/i.test(t),
+      },
+      {
+        label: "其他／全球",
+        value: "全球",
+        match: (t) => /Global|全球|自動切換|其他/i.test(t),
+      },
     ],
   },
 ];
 
-/** 供分類頁使用：依 activeTags 過濾商品（每個 activeTag 對應一個 opt.match 函式） */
+function parseDayNumber(tag) {
+  const m = String(tag || "").match(/(\d+)\s*天/);
+  if (!m) return null;
+  return Number(m[1]);
+}
+
+function matchDayRange(tag, min, max) {
+  const n = parseDayNumber(tag);
+  return n != null && n >= min && n <= max;
+}
+
+/**
+ * 從 Medusa 商品（含 options / variants / metadata）抽出可篩選 tags。
+ * 分類頁 getStaticProps 應呼叫此函式，避免只靠空的 product.tags。
+ */
+export function buildFilterTagsFromProduct(product) {
+  const tags = new Set();
+  const title = String(product?.title || product?.name || "");
+  if (title) tags.add(title);
+
+  for (const t of product?.tags || []) {
+    const val = typeof t === "string" ? t : t?.value;
+    if (val) tags.add(String(val));
+  }
+
+  const optMap = {};
+  for (const o of product?.options || []) {
+    if (o?.id) optMap[o.id] = String(o.title || "");
+  }
+
+  for (const v of product?.variants || []) {
+    if (v?.title) tags.add(String(v.title));
+    for (const o of v?.options || []) {
+      const optTitle = optMap[o.option_id] || "";
+      const val = String(o.value || "").trim();
+      if (!val) continue;
+      tags.add(val);
+      if (/天數|Days/i.test(optTitle) || /^\d+天$/.test(val)) {
+        tags.add(val.includes("天") ? val : `${val}天`);
+      }
+      if (/數據|流量|Data/i.test(optTitle)) {
+        tags.add(val);
+        if (/無限/i.test(val)) tags.add("吃到飽");
+        if (/每日|每天/i.test(val)) tags.add("每日型");
+        if (/總量|\d+\s*GB/i.test(val) && !/每日|每天/i.test(val)) {
+          tags.add("總量型");
+        }
+      }
+      if (/電信/i.test(optTitle)) tags.add(val);
+    }
+  }
+
+  // 從電信商規格補網路制式（有才加入，不另外開篩選區塊除非有資料）
+  const specsRaw = product?.metadata?.carrier_specs_by_carrier;
+  let specs = specsRaw;
+  if (typeof specsRaw === "string") {
+    try {
+      specs = JSON.parse(specsRaw);
+    } catch {
+      specs = null;
+    }
+  }
+  if (specs && typeof specs === "object") {
+    for (const entry of Object.values(specs)) {
+      const network = String(entry?.network || "");
+      if (/5G/i.test(network)) tags.add("5G");
+      if (/4G|LTE/i.test(network)) tags.add("4G");
+      const apps = String(entry?.apps || "");
+      if (/熱點/i.test(apps)) tags.add("支援熱點");
+      // 電信商 key 本身
+    }
+    for (const key of Object.keys(specs)) {
+      if (key && key !== "default") tags.add(key);
+    }
+  }
+
+  // 標題語意補強
+  if (/吃到飽|無限/i.test(title)) tags.add("吃到飽");
+  if (/每日型|每日/i.test(title)) tags.add("每日型");
+
+  return Array.from(tags).filter(Boolean);
+}
+
+/** 商品卡顯示用短標籤（不要把所有天數都攤出來） */
+export function buildDisplayTagsFromProduct(product, filterTags = []) {
+  const tags = [];
+  const title = String(product?.title || product?.name || "");
+  const pool = (filterTags.length ? filterTags : []).map(String);
+
+  const pushUnique = (label) => {
+    if (!label || tags.includes(label)) return;
+    tags.push(label);
+  };
+
+  if (/吃到飽|無限/i.test(title) || pool.some((t) => /吃到飽|無限流量/i.test(t))) {
+    pushUnique("吃到飽");
+  }
+  if (/每日型|每日/i.test(title) || pool.some((t) => /每日/i.test(t))) {
+    pushUnique("每日型");
+  }
+  if (/總量/i.test(title) || pool.some((t) => /總量型|總量\d/i.test(t))) {
+    pushUnique("總量型");
+  }
+
+  for (const t of pool) {
+    if (/AU\s*\(?\s*KDDI\s*\)?/i.test(t)) pushUnique("AU(KDDI)");
+    else if (/SoftBank/i.test(t)) pushUnique("SoftBank");
+    else if (/IIJ|Docomo/i.test(t)) pushUnique("IIJ Docomo");
+    else if (/LG\s*U\+/i.test(t)) pushUnique("LG U+");
+    else if (/SKT|SK電信/i.test(t)) pushUnique("SK電信");
+    else if (/Global|全球/i.test(t)) pushUnique("全球");
+  }
+
+  if (pool.some((t) => /5G/i.test(t))) pushUnique("5G");
+  if (pool.some((t) => /支援熱點|熱點/i.test(t))) pushUnique("熱點");
+
+  return tags.slice(0, 4);
+}
+
+/** 供分類頁使用：依 activeTags 過濾商品 */
 export function filterProductsByTags(products, activeTags) {
   if (!activeTags || activeTags.length === 0) return products;
   return products.filter((p) =>
     activeTags.every((activeVal) => {
       for (const group of FILTER_GROUPS) {
         const opt = group.options.find((o) => o.value === activeVal);
-        if (opt) return (p.tags || []).some((t) => opt.match(t));
+        if (opt) return (p.tags || []).some((t) => opt.match(String(t)));
       }
       return (p.tags || []).includes(activeVal);
     }),
   );
 }
 
-/** 依產品 tags 計算各 option 的商品數（有資料才顯示 badge） */
 function buildCounts(products) {
   const counts = {};
   for (const group of FILTER_GROUPS) {
     for (const opt of group.options) {
       const key = `${group.key}:${opt.value}`;
       counts[key] = products.filter((p) =>
-        (p.tags || []).some((tag) => opt.match(tag))
+        (p.tags || []).some((tag) => opt.match(String(tag))),
       ).length;
     }
   }
@@ -105,6 +243,11 @@ function buildCounts(products) {
 
 function AccordionSection({ group, selected, onToggle, counts, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
+  const visibleOptions = group.options.filter(
+    (opt) => (counts[`${group.key}:${opt.value}`] ?? 0) > 0,
+  );
+
+  if (visibleOptions.length === 0) return null;
 
   return (
     <div className="border-b border-slate-100 last:border-0">
@@ -131,7 +274,7 @@ function AccordionSection({ group, selected, onToggle, counts, defaultOpen = tru
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 flex flex-wrap gap-2">
-              {group.options.map((opt) => {
+              {visibleOptions.map((opt) => {
                 const countKey = `${group.key}:${opt.value}`;
                 const cnt = counts[countKey] ?? 0;
                 const active = selected.includes(opt.value);
@@ -148,15 +291,15 @@ function AccordionSection({ group, selected, onToggle, counts, defaultOpen = tru
                     }`}
                   >
                     {opt.label}
-                    {cnt > 0 && (
-                      <span
-                        className={`text-[10px] rounded-full px-1 leading-none ${
-                          active ? "bg-white/25 text-white" : "bg-slate-100 text-slate-500"
-                        }`}
-                      >
-                        {cnt}
-                      </span>
-                    )}
+                    <span
+                      className={`text-[10px] rounded-full px-1 leading-none ${
+                        active
+                          ? "bg-white/25 text-white"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {cnt}
+                    </span>
                   </button>
                 );
               })}
@@ -169,14 +312,24 @@ function AccordionSection({ group, selected, onToggle, counts, defaultOpen = tru
 }
 
 /**
- * eSIM 專屬篩選側欄
- * Props：
- *   products     - 原始商品陣列（含 tags: string[]）
- *   activeTags   - 目前勾選的 tag value 陣列
- *   setActiveTags - 更新回 parent
+ * eSIM 專屬篩選側欄（僅顯示目前商品真的有的規格）
  */
-export default function FilterSideBar({ products = [], activeTags = [], setActiveTags }) {
+export default function FilterSideBar({
+  products = [],
+  activeTags = [],
+  setActiveTags,
+}) {
   const counts = useMemo(() => buildCounts(products), [products]);
+
+  const visibleGroups = useMemo(
+    () =>
+      FILTER_GROUPS.filter((group) =>
+        group.options.some(
+          (opt) => (counts[`${group.key}:${opt.value}`] ?? 0) > 0,
+        ),
+      ),
+    [counts],
+  );
 
   const handleToggle = (group, value) => {
     let next;
@@ -185,7 +338,6 @@ export default function FilterSideBar({ products = [], activeTags = [], setActiv
         ? activeTags.filter((t) => t !== value)
         : [...activeTags, value];
     } else {
-      // 單選 group — 同 group 其他 option 先清掉，若已選則取消
       const groupValues = group.options.map((o) => o.value);
       const without = activeTags.filter((t) => !groupValues.includes(t));
       next = activeTags.includes(value) ? without : [...without, value];
@@ -195,11 +347,27 @@ export default function FilterSideBar({ products = [], activeTags = [], setActiv
 
   const hasAny = activeTags.length > 0;
 
+  if (visibleGroups.length === 0) {
+    return (
+      <aside className="w-full rounded-xl overflow-hidden bg-white border border-slate-100 shadow-sm">
+        <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50">
+          <p className="text-[13px] font-black text-slate-800 tracking-wide">
+            篩選方案
+          </p>
+        </div>
+        <p className="px-4 py-5 text-[12px] text-slate-400 leading-relaxed">
+          此分類商品規格一致，暫無額外篩選條件。
+        </p>
+      </aside>
+    );
+  }
+
   return (
     <aside className="w-full rounded-xl overflow-hidden bg-white border border-slate-100 shadow-sm">
-      {/* 標題列 */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 bg-slate-50">
-        <p className="text-[13px] font-black text-slate-800 tracking-wide">篩選方案</p>
+        <p className="text-[13px] font-black text-slate-800 tracking-wide">
+          篩選方案
+        </p>
         {hasAny && (
           <button
             type="button"
@@ -212,7 +380,6 @@ export default function FilterSideBar({ products = [], activeTags = [], setActiv
         )}
       </div>
 
-      {/* 已選標籤預覽 */}
       {hasAny && (
         <div className="flex flex-wrap gap-1.5 px-4 py-2.5 border-b border-slate-100 bg-blue-50/60">
           {activeTags.map((tag) => (
@@ -223,7 +390,9 @@ export default function FilterSideBar({ products = [], activeTags = [], setActiv
               {tag}
               <button
                 type="button"
-                onClick={() => setActiveTags?.(activeTags.filter((t) => t !== tag))}
+                onClick={() =>
+                  setActiveTags?.(activeTags.filter((t) => t !== tag))
+                }
                 className="ml-0.5 hover:bg-white/20 rounded-full"
                 aria-label={`移除 ${tag}`}
               >
@@ -234,8 +403,7 @@ export default function FilterSideBar({ products = [], activeTags = [], setActiv
         </div>
       )}
 
-      {/* 各篩選群組 */}
-      {FILTER_GROUPS.map((group, i) => (
+      {visibleGroups.map((group, i) => (
         <AccordionSection
           key={group.key}
           group={group}

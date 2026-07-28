@@ -202,7 +202,7 @@ function ForgotPasswordPanel({ initialEmail, onClose }) {
           <button
             type="submit"
             disabled={status === "sending" || cooldown > 0}
-            className="w-full bg-white hover:bg-blue-50 disabled:opacity-60 text-[#1a56db] font-black py-3.5 rounded-full text-sm transition shadow-lg"
+            className="w-full bg-white hover:bg-blue-50 disabled:opacity-60 text-[#1E4AD1] font-black py-3.5 rounded-full text-sm transition shadow-lg"
           >
             {status === "sending"
               ? "驗證並寄送中..."
@@ -225,39 +225,112 @@ function ForgotPasswordPanel({ initialEmail, onClose }) {
 
 function PartnerHeroPanel() {
   return (
-    <div
-      className="hidden lg:flex lg:w-1/2 relative bg-cover bg-center items-end"
-      style={{
-        backgroundImage:
-          "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 60%), url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80')",
-      }}
-    >
-      <div className="p-12 text-white">
-        <p className="text-sm font-bold text-white/70 uppercase tracking-widest mb-2">
-          JEKO eSIM Partner
-        </p>
-        <h2 className="text-3xl font-black leading-snug mb-3">
-          零成本開店
-          <br />
-          即時分潤
-        </h2>
-        <p className="text-white/80 text-sm leading-relaxed max-w-sm">
-          加入 Jeko eSIM 合作夥伴計畫，取得專屬賣場連結，推廣日本、韓國、泰國等多國
-          eSIM 方案，每筆成交自動計算分潤。
-        </p>
-        <div className="mt-6 flex gap-6">
+    <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#F7F9FB] items-center justify-center isolate">
+      {/* 漂浮幾何圓（圖二風格） */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        {/* 主藍圓：手機後方 */}
+        <div className="partner-float-a absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 w-[min(58vw,420px)] h-[min(58vw,420px)] rounded-full bg-[#3A6DFF]" />
+        {/* 薄荷圓 */}
+        <div className="partner-float-b absolute left-[18%] top-[22%] w-20 h-20 md:w-28 md:h-28 rounded-full bg-[#5EEAD4]" />
+        {/* 右側半出畫面藍圓 */}
+        <div className="partner-float-c absolute -right-10 top-[38%] w-36 h-36 rounded-full bg-[#3A6DFF]/90" />
+        {/* 小粒子 */}
+        <div className="partner-float-d absolute left-[12%] top-[58%] w-3 h-3 rounded-full bg-[#3A6DFF]" />
+        <div className="partner-float-e absolute left-[28%] top-[18%] w-2 h-2 rounded-full bg-[#5EEAD4]" />
+        <div className="partner-float-d absolute right-[22%] top-[20%] w-2.5 h-2.5 rounded-full bg-[#3A6DFF]" />
+        <div className="partner-float-e absolute right-[18%] bottom-[28%] w-3 h-3 rounded-full bg-[#5EEAD4]" />
+        <div className="partner-float-b absolute left-[40%] bottom-[16%] w-2 h-2 rounded-full bg-[#3A6DFF]/70" />
+        <div className="partner-float-c absolute right-[36%] top-[12%] w-4 h-4 rounded-full bg-[#5EEAD4]/80" />
+      </div>
+
+      {/* 文案（保留原內容）＋手機圖 */}
+      <div className="relative z-10 flex flex-col items-center w-full h-full px-10 pt-14 pb-10">
+        <div className="text-center max-w-md mx-auto shrink-0">
+          <p className="text-xs font-bold text-[#3A6DFF] uppercase tracking-[0.2em] mb-3">
+            JEKO eSIM Partner
+          </p>
+          <h2 className="text-[32px] font-black text-slate-900 leading-[1.25] tracking-tight mb-3">
+            零成本開店
+            <br />
+            <span className="relative inline-block">
+              即時分潤
+              <span className="partner-underline absolute left-0 right-0 -bottom-1 h-[6px] rounded-full bg-[#3A6DFF]/85" />
+            </span>
+          </h2>
+          <p className="text-slate-500 text-sm leading-relaxed">
+            加入 Jeko eSIM 合作夥伴計畫，取得專屬賣場連結，推廣日本、韓國、泰國等多國
+            eSIM 方案，每筆成交自動計算分潤。
+          </p>
+        </div>
+
+        {/* 手機：黑底圖用 lighten 混色讓黑底融入淺色場景 */}
+        <div className="relative flex-1 w-full max-w-[420px] mt-2 flex items-end justify-center min-h-0">
+          <div className="partner-phone-float relative w-full max-h-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/partner/login-phone-hand.png"
+              alt="Jeko eSIM 合作夥伴手機預覽"
+              className="relative z-10 w-full h-auto max-h-[min(58vh,520px)] object-contain object-bottom mx-auto select-none pointer-events-none drop-shadow-[0_24px_48px_rgba(26,86,219,0.22)]"
+              draggable={false}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 flex gap-8 shrink-0">
           {[
             { num: "0", label: "開店費用" },
             { num: "20%", label: "預設加價" },
             { num: "∞", label: "分潤上限" },
           ].map((item) => (
-            <div key={item.label}>
-              <p className="text-3xl font-black">{item.num}</p>
-              <p className="text-xs text-white/70 mt-0.5">{item.label}</p>
+            <div key={item.label} className="text-center">
+              <p className="text-3xl font-black text-slate-900 tracking-tight">
+                {item.num}
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                {item.label}
+              </p>
             </div>
           ))}
         </div>
       </div>
+
+      <style>{`
+        @keyframes partnerFloatA {
+          0%, 100% { transform: translate(-50%, -50%) translateY(0) scale(1); }
+          50% { transform: translate(-50%, -50%) translateY(-14px) scale(1.03); }
+        }
+        @keyframes partnerFloatB {
+          0%, 100% { transform: translateY(0) translateX(0); }
+          50% { transform: translateY(-18px) translateX(8px); }
+        }
+        @keyframes partnerFloatC {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(16px); }
+        }
+        @keyframes partnerFloatD {
+          0%, 100% { transform: translateY(0) scale(1); opacity: 0.85; }
+          50% { transform: translateY(-10px) scale(1.2); opacity: 1; }
+        }
+        @keyframes partnerFloatE {
+          0%, 100% { transform: translateY(0); opacity: 0.7; }
+          50% { transform: translateY(12px); opacity: 1; }
+        }
+        @keyframes partnerPhoneFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-12px); }
+        }
+        @keyframes partnerUnderline {
+          0%, 100% { transform: scaleX(1); }
+          50% { transform: scaleX(1.06); }
+        }
+        .partner-float-a { animation: partnerFloatA 7s ease-in-out infinite; }
+        .partner-float-b { animation: partnerFloatB 5.5s ease-in-out infinite; }
+        .partner-float-c { animation: partnerFloatC 6.5s ease-in-out infinite; }
+        .partner-float-d { animation: partnerFloatD 4.2s ease-in-out infinite; }
+        .partner-float-e { animation: partnerFloatE 4.8s ease-in-out infinite 0.4s; }
+        .partner-phone-float { animation: partnerPhoneFloat 5.5s ease-in-out infinite; }
+        .partner-underline { transform-origin: left center; animation: partnerUnderline 3.5s ease-in-out infinite; }
+      `}</style>
     </div>
   );
 }
@@ -421,7 +494,7 @@ export default function PartnerLogin() {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a56db]">
+      <div className="min-h-screen flex items-center justify-center bg-[#1E4AD1]">
         <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -433,7 +506,7 @@ export default function PartnerLogin() {
         <title>合作夥伴登入 | JEKO eSIM</title>
       </Head>
 
-      <div className="w-full lg:w-1/2 bg-[#1a56db] flex flex-col justify-center px-10 md:px-16 py-12 relative overflow-hidden">
+      <div className="w-full lg:w-1/2 bg-[#1E4AD1] flex flex-col justify-center px-10 md:px-16 py-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />

@@ -10,6 +10,7 @@ import {
   buyerDisplayName,
   buyerEmail,
 } from "@/lib/orderDisplay";
+import { PARTNER_UI } from "@/lib/partnerUi";
 
 function formatDate(d) {
   return new Date(d).toLocaleDateString("zh-TW", {
@@ -66,6 +67,7 @@ export default function PartnerOrdersPage() {
 
   return (
     <PartnerAdminLayout title="訂單分潤">
+      <div className={`${PARTNER_UI.pageFlush} flex flex-col flex-1 min-h-0`}>
       <div className="grid grid-cols-1 md:grid-cols-3 border-x border-b border-slate-200">
         <div className="border-b md:border-b-0 md:border-r border-slate-200">
           <DobermanPanel
@@ -107,16 +109,25 @@ export default function PartnerOrdersPage() {
         />
       </div>
 
-      <div className="p-5 space-y-4">
-        <div className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-900 leading-relaxed">
-          <p className="font-bold mb-0.5">關於買家聯絡資訊</p>
+      <div className="p-4 sm:p-5 space-y-4">
+        <div
+          className="rounded-xl border px-3.5 py-3 sm:px-4 text-xs leading-relaxed"
+          style={{
+            borderColor: "rgba(250, 222, 43, 0.65)",
+            backgroundColor: "rgba(250, 222, 43, 0.18)",
+            color: "#5c4a00",
+          }}
+        >
+          <p className="font-bold mb-0.5 text-[#1E4AD1]">關於買家聯絡資訊</p>
           <p>
             僅顯示姓名與 Email，方便您針對「待付款」訂單禮貌提醒。請勿濫發訊息或用於分潤以外用途；繳費代碼等敏感資料不會提供給夥伴。
           </p>
         </div>
 
         <div className="flex gap-2 flex-wrap items-center">
-          <span className="text-xs font-bold text-slate-500 mr-1">篩選狀態</span>
+          <span className="text-xs font-bold text-slate-500 w-full sm:w-auto mr-0 sm:mr-1">
+            篩選狀態
+          </span>
           {[
             { id: "all", label: "全部有效", count: statusCounts.valid },
             { id: "completed", label: "已付款", count: statusCounts.paid },
@@ -126,9 +137,9 @@ export default function PartnerOrdersPage() {
               key={f.id}
               type="button"
               onClick={() => setFilter(f.id)}
-              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-sm text-xs font-bold transition ${
+              className={`inline-flex items-center gap-1.5 min-h-10 px-3.5 sm:px-4 py-2 rounded-lg text-xs font-bold transition ${
                 filter === f.id
-                  ? "bg-[#1a56db] text-white"
+                  ? "bg-[#1E4AD1] text-white"
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}
             >
@@ -144,22 +155,101 @@ export default function PartnerOrdersPage() {
           ))}
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-sm overflow-hidden shadow-sm">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-[#f8fafc]">
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-100 bg-[#f8fafc]">
             <div className="flex items-center gap-2 min-w-0">
-              <MaterialIcon name="receipt" size={20} className="text-[#1a56db]" />
+              <MaterialIcon name="receipt" size={20} className="text-[#1E4AD1]" />
               <h2 className="text-sm font-black text-slate-800">訂單列表</h2>
             </div>
             <Link
-              href="/partner/products"
-              className="text-xs text-[#1a56db] font-bold hover:underline flex items-center gap-1 shrink-0"
+              href="/partner/products?tab=products"
+              className="text-xs text-[#1E4AD1] font-bold hover:underline flex items-center gap-1 shrink-0 min-h-9"
             >
               商品管理
               <MaterialIcon name="chevron_right" size={16} />
             </Link>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+
+          {/* 手機卡片 */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {loading ? (
+              <div className="py-10 text-center text-slate-400 text-sm">載入中...</div>
+            ) : filtered.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 text-sm">
+                目前沒有符合條件的訂單
+              </div>
+            ) : (
+              filtered.map((order) => {
+                const st = STATUS_MAP[order.status] || {
+                  label: order.status,
+                  cls: "bg-slate-100 text-slate-500",
+                };
+                const email = buyerEmail(order);
+                const isPending = order.status === "pending";
+                return (
+                  <div key={order.id} className="p-4 space-y-2.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-mono font-bold text-slate-700 text-xs">
+                          {String(order.id).substring(0, 8).toUpperCase()}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {formatDate(order.created_at)}
+                        </p>
+                      </div>
+                      <span
+                        className={`text-[11px] font-bold px-2 py-1 rounded-md shrink-0 ${st.cls}`}
+                      >
+                        {st.label}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">
+                        {buyerDisplayName(order)}
+                      </p>
+                      {email ? (
+                        <a
+                          href={`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(
+                            isPending
+                              ? `【Jeko】訂單付款提醒`
+                              : `【Jeko】訂單諮詢`,
+                          )}`}
+                          className="text-xs text-[#1E4AD1] font-bold break-all"
+                        >
+                          {email}
+                        </a>
+                      ) : (
+                        <p className="text-xs text-slate-400">無 Email</p>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                      <div className="rounded-lg bg-slate-50 px-3 py-2">
+                        <p className="text-slate-400 font-bold">金額</p>
+                        <p className="font-bold text-slate-800 mt-0.5">
+                          {fmt(order.total_amount)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-blue-50 px-3 py-2">
+                        <p className="text-slate-400 font-bold">分潤</p>
+                        <p className="font-black text-[#1E4AD1] mt-0.5">
+                          {fmt(order.partner_profit)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-slate-50 px-3 py-2 col-span-2">
+                        <p className="text-slate-400 font-bold">付款方式</p>
+                        <p className="font-medium text-slate-700 mt-0.5">
+                          {paymentMethodLabel(order) || "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm min-w-[720px]">
               <thead className="bg-white text-slate-500 text-xs border-b border-slate-100">
                 <tr>
                   <th className="px-5 py-3 text-left font-bold">訂單 / 日期</th>
@@ -213,7 +303,7 @@ export default function PartnerOrdersPage() {
                                   ? `【Jeko eSIM】訂單付款提醒 #${String(order.id).slice(0, 8)}`
                                   : `【Jeko eSIM】關於您的訂單 #${String(order.id).slice(0, 8)}`,
                               )}`}
-                              className="text-xs text-[#1a56db] hover:underline break-all"
+                              className="text-xs text-[#1E4AD1] hover:underline break-all"
                             >
                               {email}
                             </a>
@@ -230,7 +320,7 @@ export default function PartnerOrdersPage() {
                         <td className="px-5 py-4 text-slate-500">
                           {fmt(order.b2b_cost)}
                         </td>
-                        <td className="px-5 py-4 font-black text-[#1a56db]">
+                        <td className="px-5 py-4 font-black text-[#1E4AD1]">
                           +{fmt(order.partner_profit)}
                         </td>
                         <td className="px-5 py-4">
@@ -246,6 +336,7 @@ export default function PartnerOrdersPage() {
             </table>
           </div>
         </div>
+      </div>
       </div>
     </PartnerAdminLayout>
   );

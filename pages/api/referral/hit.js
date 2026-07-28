@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { normalizeReferralCode } from "../../../lib/partnerReferral";
+import { buildSetSignedReferralCookieHeader } from "../../../lib/referralSignature";
 
 const supabaseAdmin =
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -43,6 +44,14 @@ export default async function handler(req, res) {
       user_agent: String(req.headers["user-agent"] || "").slice(0, 300) || null,
     },
   ]);
+
+  // 由伺服器簽發 HttpOnly Cookie（含首次點擊時間 + HMAC 簽章）。
+  // 前端 JS 無法讀寫此 Cookie，也無法偽造時間戳延長 30 天效期；
+  // 下單時後端只信任這顆 Cookie 驗證後的結果，見 lib/referralSignature.js。
+  const setCookie = buildSetSignedReferralCookieHeader(code);
+  if (setCookie) {
+    res.setHeader("Set-Cookie", setCookie);
+  }
 
   return res.status(200).json({ ok: true, partner_id: partner.id });
 }

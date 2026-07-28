@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import PartnerAdminLayout from "@/components/partner/PartnerAdminLayout";
+import SmartStoreSetupWizard from "@/components/partner/SmartStoreSetupWizard";
 import { usePartnerSession, SITE_URL } from "@/lib/partnerAuth";
 import { supabase } from "@/lib/supabaseClient";
+import { PARTNER_UI } from "@/lib/partnerUi";
 import {
   ArrowTopRightOnSquareIcon,
   DocumentDuplicateIcon,
@@ -32,6 +34,8 @@ export default function PartnerSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const setupCheckedRef = useRef(false);
   const fileInputRef = useRef(null);
 
   const avatarUrl =
@@ -39,6 +43,54 @@ export default function PartnerSettingsPage() {
     user?.user_metadata?.picture ||
     logoUrl ||
     null;
+
+  const smartStoreKey = store?.domain
+    ? `jeko_smart_store_${store.domain}`
+    : null;
+
+  // 僅「尚未上架任何商品」且未完成／未略過開立時，自動開一次智慧選品；
+  // 開立完成後不會再出現（補上架請走選品管理）。
+  useEffect(() => {
+    if (!store?.id || !smartStoreKey || setupCheckedRef.current) return;
+    setupCheckedRef.current = true;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        try {
+          if (localStorage.getItem(smartStoreKey)) return;
+        } catch {
+          /* ignore */
+        }
+
+        const { count, error } = await supabase
+          .from("store_products")
+          .select("*", { count: "exact", head: true })
+          .eq("store_id", store.id);
+        if (error || cancelled) return;
+        if ((count || 0) === 0) setSetupOpen(true);
+      } catch {
+        /* ignore */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [store?.id, smartStoreKey]);
+
+  const dismissSetupWizard = () => {
+    setSetupOpen(false);
+    if (!smartStoreKey) return;
+    try {
+      localStorage.setItem(
+        smartStoreKey,
+        JSON.stringify({ at: Date.now(), skipped: true }),
+      );
+    } catch {
+      /* ignore */
+    }
+  };
 
   useEffect(() => {
     if (store) {
@@ -115,6 +167,34 @@ export default function PartnerSettingsPage() {
     setSaving(true);
     setSaved(false);
 
+    // 財務欄位（markup_rate）獨立走伺服器驗證＋稽核紀錄的專用 API，
+    // 不與品牌/展示欄位一起直接寫表，避免分潤相關數值繞過邊界檢查。
+    const nextMarkupRate = parseInt(markupRate, 10);
+    if (Number.isFinite(nextMarkupRate) && nextMarkupRate !== Number(store.markup_rate)) {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const res = await fetch("/api/partner/store-settings", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token || ""}`,
+          },
+          body: JSON.stringify({ markup_rate: nextMarkupRate }),
+        });
+        const markupResult = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setSaving(false);
+          return alert("加價率儲存失敗：" + (markupResult.error || "未知錯誤"));
+        }
+        if (markupResult.store) setStore(markupResult.store);
+      } catch (err) {
+        setSaving(false);
+        return alert("加價率儲存失敗：" + (err.message || "未知錯誤"));
+      }
+    }
+
     const footerPayload = Object.fromEntries(
       Object.entries(footer).map(([k, v]) => [k, String(v || "").trim() || null]),
     );
@@ -123,7 +203,6 @@ export default function PartnerSettingsPage() {
       store_name: storeName.trim(),
       description: description.trim() || null,
       logo_url: logoUrl.trim() || null,
-      markup_rate: parseInt(markupRate, 10) || 20,
       ...footerPayload,
     };
 
@@ -141,7 +220,6 @@ export default function PartnerSettingsPage() {
     ) {
       const legacy = {
         store_name: payload.store_name,
-        markup_rate: payload.markup_rate,
       };
       ({ data, error } = await supabase
         .from("stores")
@@ -176,16 +254,17 @@ export default function PartnerSettingsPage() {
 
   return (
     <PartnerAdminLayout title="商店設定">
-      <div className="mb-6">
-        <h1 className="text-xl font-black text-slate-800">商店設定</h1>
-        <p className="text-sm text-slate-500 mt-0.5">
+      <div className={PARTNER_UI.page}>
+      <div className="mb-5 sm:mb-6">
+        <h1 className={PARTNER_UI.title}>商店設定</h1>
+        <p className={PARTNER_UI.subtitle}>
           自訂您的專屬賣場品牌資訊，儲存後立即同步至前台
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* 左側：設定表單 */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-6">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6 flex flex-col gap-5 sm:gap-6">
           <div>
             <label className="block text-xs font-bold text-slate-600 uppercase mb-2">
               賣場大頭貼 / Logo
@@ -245,7 +324,7 @@ export default function PartnerSettingsPage() {
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
               placeholder="例如：東京旅遊小幫手"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
             />
             <p className="text-xs text-slate-400 mt-1.5">
               顯示於賣場首頁、導覽列、頁面標題（Title）及 Footer
@@ -261,7 +340,7 @@ export default function PartnerSettingsPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="例如：專業日本旅遊 eSIM 推薦，出發前必備！"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition resize-none"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition resize-none"
             />
             <p className="text-xs text-slate-400 mt-1.5">用於 SEO 描述及賣場 About 區塊</p>
           </div>
@@ -270,21 +349,24 @@ export default function PartnerSettingsPage() {
             <label className="block text-xs font-bold text-slate-600 uppercase mb-2">
               全局加價比例 (%)
             </label>
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="0"
-                max="200"
-                value={markupRate}
-                onChange={(e) => setMarkupRate(e.target.value)}
-                className="w-32 px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
-              />
-              <span className="text-sm text-slate-500">
-                底價 × (1 + {markupRate}%) = 預設售價
-              </span>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  max="500"
+                  value={markupRate}
+                  onChange={(e) => setMarkupRate(e.target.value)}
+                  className="w-24 sm:w-32 px-3 sm:px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
+                />
+                <span className="text-sm font-bold text-slate-600">%</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                公式：底價 × (1 + {markupRate || 0}%) = 預設售價
+              </p>
             </div>
-            <p className="text-xs text-slate-400 mt-1.5">
-              例：底價 NT$100，加價 20% → 售價 NT$120，您的分潤 NT$20
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+              若要用「固定加價金額」或逐方案改價，請到「商品管理 → 定價管理」。
             </p>
           </div>
 
@@ -305,7 +387,7 @@ export default function PartnerSettingsPage() {
                     updateFooter("footer_company_name", e.target.value)
                   }
                   placeholder={storeName || "未填則用分店顯示名稱"}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -317,7 +399,7 @@ export default function PartnerSettingsPage() {
                   value={footer.footer_address}
                   onChange={(e) => updateFooter("footer_address", e.target.value)}
                   placeholder="例：臺中市北屯區…"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -331,7 +413,7 @@ export default function PartnerSettingsPage() {
                     updateFooter("footer_address_note", e.target.value)
                   }
                   placeholder="例：(僅提供收取信件及包裹服務)"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
                 />
               </div>
               <div>
@@ -343,7 +425,7 @@ export default function PartnerSettingsPage() {
                   value={footer.footer_tax_id}
                   onChange={(e) => updateFooter("footer_tax_id", e.target.value)}
                   placeholder="8 碼統編"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
                 />
               </div>
               <div>
@@ -355,7 +437,7 @@ export default function PartnerSettingsPage() {
                   value={footer.footer_phone}
                   onChange={(e) => updateFooter("footer_phone", e.target.value)}
                   placeholder="09xx-xxx-xxx"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -367,7 +449,7 @@ export default function PartnerSettingsPage() {
                   value={footer.footer_email}
                   onChange={(e) => updateFooter("footer_email", e.target.value)}
                   placeholder="service@example.com"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -381,7 +463,7 @@ export default function PartnerSettingsPage() {
                     updateFooter("footer_copyright", e.target.value)
                   }
                   placeholder="未填則自動產生 © 年份＋店名"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
                 />
               </div>
             </div>
@@ -401,7 +483,7 @@ export default function PartnerSettingsPage() {
                     updateFooter("social_instagram", e.target.value)
                   }
                   placeholder="https://www.instagram.com/…"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
                 />
               </div>
               <div>
@@ -415,7 +497,7 @@ export default function PartnerSettingsPage() {
                     updateFooter("social_facebook", e.target.value)
                   }
                   placeholder="https://www.facebook.com/…"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
                 />
               </div>
               <div>
@@ -427,7 +509,7 @@ export default function PartnerSettingsPage() {
                   value={footer.social_line}
                   onChange={(e) => updateFooter("social_line", e.target.value)}
                   placeholder="https://line.me/…"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db] transition"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E4AD1]/30 focus:border-[#1E4AD1] transition"
                 />
               </div>
             </div>
@@ -447,7 +529,7 @@ export default function PartnerSettingsPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="bg-[#1a3a6b] text-white font-bold px-8 py-3 rounded-xl hover:bg-[#1344b5] disabled:opacity-50 transition shadow-sm"
+              className="bg-[#1E4AD1] text-white font-bold px-8 py-3 rounded-xl hover:bg-[#1344b5] disabled:opacity-50 transition shadow-sm"
             >
               {saving ? "儲存中..." : "儲存設定"}
             </button>
@@ -493,13 +575,14 @@ export default function PartnerSettingsPage() {
           </div>
 
           {storeUrl && (
-            <div className="bg-[#1a3a6b] rounded-xl p-5 text-white">
+            <div className="bg-[#1E4AD1] rounded-xl p-5 text-white">
               <p className="text-xs text-blue-200 font-bold uppercase mb-2">我的賣場連結</p>
               <p className="text-xs font-mono text-blue-100 break-all leading-relaxed mb-4">
                 {storeUrl}
               </p>
               <div className="flex gap-2 flex-wrap">
                 <button
+                  type="button"
                   onClick={() => {
                     navigator.clipboard.writeText(storeUrl);
                     alert("已複製！");
@@ -511,14 +594,14 @@ export default function PartnerSettingsPage() {
                 <a
                   href={relativeStoreUrl}
                   target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 bg-[#4ade80] text-slate-900 text-xs font-bold px-3 py-2 rounded-lg transition"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 bg-[#FADE2B] text-slate-900 text-xs font-bold px-3 py-2 rounded-lg transition hover:brightness-95"
                 >
-                  <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" /> 開啟
+                  <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" /> 開啟賣場
                 </a>
               </div>
               <p className="text-[10px] text-blue-200/80 mt-3 leading-relaxed">
-                「開啟」會先開本機／目前網站的賣場頁。正式網址需部署後且商店狀態為 active 才會生效。
+                點「開啟賣場」進入你的專屬賣場。若要補上架商品，請至「選品管理」。
               </p>
             </div>
           )}
@@ -556,6 +639,14 @@ export default function PartnerSettingsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <SmartStoreSetupWizard
+        open={setupOpen}
+        onClose={dismissSetupWizard}
+        store={store}
+        storePath={relativeStoreUrl}
+      />
       </div>
     </PartnerAdminLayout>
   );

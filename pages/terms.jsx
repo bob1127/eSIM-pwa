@@ -5,18 +5,18 @@ export default function TermsPage() {
     <LegalPageLayout
       title="服務條款"
       subtitle="使用 Jeko eSIM 購買 eSIM、會員服務及合作夥伴方案前，請詳閱以下條款。"
-      lastUpdated="2026 年 6 月 20 日"
+      lastUpdated="2026 年 7 月 28 日"
       seo={{
         title: "服務條款｜Jeko eSIM",
         description:
-          "Jeko eSIM 服務條款：說明 eSIM 購買、使用、退款、合作夥伴分潤及相關權利義務。",
+          "Jeko eSIM 服務條款：說明 eSIM 購買、使用、退款、合作夥伴（專屬連結／專屬商店）分潤及相關權利義務。",
       }}
       siblingLink={{ href: "/privacy", label: "查看隱私權政策" }}
     >
       <LegalSection title="一、服務說明與適用範圍">
         <p>
           歡迎使用 <strong>Jeko eSIM</strong>（以下簡稱「本平台」）所提供之
-          eSIM 數位商品販售、會員帳戶、合作夥伴分潤賣場及相關旅遊加值服務。
+          eSIM 數位商品販售、會員帳戶、合作夥伴方案（專屬連結／專屬商店）及相關旅遊加值服務。
           當您完成註冊、下單、申請成為合作夥伴或使用本平台任何功能，即表示您已閱讀、理解並同意受本條款約束。
         </p>
         <p>
@@ -47,8 +47,10 @@ export default function TermsPage() {
             或會員中心提供 QR Code / 啟用資訊，恕無實體 SIM 卡寄送。
           </li>
           <li>
-            請於購買前確認您的手機支援 eSIM
-            功能且已解除電信鎖；因裝置不相容導致無法使用，依各方案退款政策辦理。
+            下單前請自行確認裝置符合 eSIM
+            使用條件（含是否支援 eSIM、是否已解除電信鎖）。您可至{" "}
+            <a href="/support">客服支援・相容機型列表</a>{" "}
+            查詢型號是否支援 eSIM。
           </li>
           <li>
             各國 eSIM 方案之有效天數、流量、覆蓋範圍及啟用方式，以商品頁面說明為準。
@@ -85,19 +87,17 @@ export default function TermsPage() {
         </ul>
       </LegalSection>
 
-      <LegalSection title="五、合作夥伴方案（分潤賣場）">
-        <p>若您申請成為 Jeko eSIM 合作夥伴，另須遵守以下約定：</p>
+      <LegalSection title="五、合作夥伴方案（專屬連結／專屬商店）">
+        <p>
+          若您申請成為 Jeko eSIM 合作夥伴，請於申請時選擇合作模式，並遵守下列共通約定及所選模式之特別約定。
+          合作模式原則上於申請時選定；如需變更，須經本平台書面同意並重新審核。
+        </p>
+
+        <p className="font-semibold text-gray-900 mt-4 mb-2">（一）共通約定</p>
         <ul>
           <li>
-            <strong>專屬賣場網址</strong>：審核通過後，您將獲得專屬網址（格式：
-            <code className="text-[#1a56db] bg-white/80 px-1 rounded">
-              www.jeko-esim.com.tw/p/您的代碼
-            </code>
-            ）。此代碼於申請時設定，原則上不可更改，請謹慎填寫。
-          </li>
-          <li>
-            您可自平台商品目錄選品、設定加價比例，透過專屬賣場向旅客銷售
-            eSIM，並依核准之分潤比例獲得收益。
+            合作申請須經本平台審核，審核結果將以 Email
+            通知，本平台保留准駁最終決定權。
           </li>
           <li>
             合作夥伴應以合法、真實方式推廣，不得虛偽宣傳、誤導消費者，或冒用
@@ -109,7 +109,52 @@ export default function TermsPage() {
           <li>
             若發現違規推廣、惡意刷單或損害品牌形象，本平台得暫停或終止合作資格，並保留追回不當分潤之權利。
           </li>
-          <li>合作申請須經本平台審核，審核結果將以 Email 通知，本平台保留准駁最終決定權。</li>
+        </ul>
+
+        <p className="font-semibold text-gray-900 mt-6 mb-2">
+          （二）專屬連結模式
+        </p>
+        <ul>
+          <li>
+            審核通過後，您將獲得專屬推薦連結（格式：
+            <code className="text-[#1a56db] bg-white/80 px-1 rounded">
+              www.jeko-esim.com.tw/r/您的代碼
+            </code>
+            ）。連結代碼由系統發放或依平台規則配置，原則上不可自行更改。
+          </li>
+          <li>
+            旅客經由您的專屬連結進入本平台官網後，於歸因有效期間內（目前為 Cookie
+            追蹤約 30 天，實際以平台當時技術與公告為準）完成購買，該筆訂單始計入您的分潤。
+          </li>
+          <li>
+            本模式不開通獨立賣場；商品價格、方案內容與結帳流程以官網為準，您不得向旅客收取額外費用或宣稱可更改官網售價。
+          </li>
+          <li>
+            分潤比例依平台公告或個別核准為準（例如基本依產品成本計算之比例，以及達標加碼條件）；未達歸因條件或非經專屬連結產生之訂單，不計入分潤。
+          </li>
+        </ul>
+
+        <p className="font-semibold text-gray-900 mt-6 mb-2">
+          （三）專屬商店模式
+        </p>
+        <ul>
+          <li>
+            審核通過後，您將獲得專屬商店網址（格式：
+            <code className="text-[#1a56db] bg-white/80 px-1 rounded">
+              www.jeko-esim.com.tw/p/您的代碼
+            </code>
+            ）。商店代碼於申請時設定，原則上不可更改，請謹慎填寫。
+          </li>
+          <li>
+            您可自平台商品目錄選品、設定商店風格與加價比例，透過專屬商店向旅客銷售
+            eSIM；原則上僅旅客於您的專屬商店完成結帳之訂單，始計入您的分潤。
+          </li>
+          <li>
+            加價、選品及商店呈現不得誤導消費者（含價格、流量、覆蓋範圍或品牌歸屬）；本平台得要求修正或下架違規內容。
+          </li>
+          <li>
+            分潤或利潤計算方式依平台公告或個別核准為準；商店暫停、下架或終止合作時，未結算權益依平台規則處理。
+          </li>
         </ul>
       </LegalSection>
 

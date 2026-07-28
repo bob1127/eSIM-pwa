@@ -687,7 +687,7 @@ export default function GlobalPlanScanner() {
   };
   const fetchPlans = async () => {
     try {
-      const res = await fetch("/api/esim/test-list");
+      const res = await fetch("/api/esim/list");
       if (!res.ok) throw new Error(`API Error: ${res.status}`);
       const data = await res.json();
       setRawPlans(data.result || []);

@@ -15,8 +15,8 @@ import { formatMb } from "@/lib/esimUsageFormat";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
-const NAVY = "#2b579a";
-const BLUE = "#2563eb";
+const NAVY = "#1E4AD1";
+const BLUE = "#0071EB";
 const GREEN = "#22c55e";
 const AMBER = "#f59e0b";
 
@@ -81,7 +81,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
     <div className="space-y-5">
       <div className="bg-white border border-slate-200 p-4">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-black text-[#1e3a5f] flex items-center gap-1.5">
+          <h4 className="text-sm font-black text-[#1E4AD1] flex items-center gap-1.5">
             <MaterialIcon name="donut_large" size={18} />
             用量比例
           </h4>
@@ -105,7 +105,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
                 />
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <p className="text-[10px] text-slate-400 font-bold">剩餘</p>
-                  <p className="text-sm font-black text-[#1e3a5f]">
+                  <p className="text-sm font-black text-[#1E4AD1]">
                     {formatMb(remaining)}
                   </p>
                 </div>
@@ -129,7 +129,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
             {selected && (
               <div className="mt-3 pt-3 border-t border-slate-100">
                 <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">ICCID</p>
-                <p className="text-xs font-mono text-[#2b579a] break-all">
+                <p className="text-xs font-mono text-[#1E4AD1] break-all">
                   {r?.iccid || selected.iccid || "—"}
                 </p>
                 {r?.expiresAt && (
@@ -149,7 +149,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
       </div>
 
       <div className="bg-white border border-slate-200 p-4">
-        <h4 className="text-sm font-black text-[#1e3a5f] flex items-center gap-1.5 mb-3">
+        <h4 className="text-sm font-black text-[#1E4AD1] flex items-center gap-1.5 mb-3">
           <MaterialIcon name="bar_chart" size={18} />
           各方案剩餘比較
         </h4>
