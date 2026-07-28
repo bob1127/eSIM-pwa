@@ -1,4 +1,6 @@
-import LegalPageLayout, { LegalSection } from "@/components/legal/LegalPageLayout";
+import LegalPageLayout, {
+  LegalSection,
+} from "@/components/legal/LegalPageLayout";
 
 export default function TermsPage() {
   return (
@@ -15,8 +17,8 @@ export default function TermsPage() {
     >
       <LegalSection title="一、服務說明與適用範圍">
         <p>
-          歡迎使用 <strong>Jeko eSIM</strong>（以下簡稱「本平台」）所提供之
-          eSIM 數位商品販售、會員帳戶、合作夥伴方案（專屬連結／專屬商店）及相關旅遊加值服務。
+          歡迎使用 <strong>Jeko eSIM</strong>（以下簡稱「本平台」）所提供之 eSIM
+          數位商品販售、會員帳戶、合作夥伴方案（專屬連結／專屬商店）及相關旅遊加值服務。
           當您完成註冊、下單、申請成為合作夥伴或使用本平台任何功能，即表示您已閱讀、理解並同意受本條款約束。
         </p>
         <p>
@@ -47,13 +49,14 @@ export default function TermsPage() {
             或會員中心提供 QR Code / 啟用資訊，恕無實體 SIM 卡寄送。
           </li>
           <li>
-            下單前請自行確認裝置符合 eSIM
-            使用條件（含是否支援 eSIM、是否已解除電信鎖）。您可至{" "}
-            <a href="/support">客服支援・相容機型列表</a>{" "}
-            查詢型號是否支援 eSIM。
+            下單前請自行確認裝置符合 eSIM 使用條件（含是否支援
+            eSIM、是否已解除電信鎖）。您可至{" "}
+            <a href="/support">客服支援・相容機型列表</a> 查詢型號是否支援
+            eSIM。
           </li>
           <li>
-            各國 eSIM 方案之有效天數、流量、覆蓋範圍及啟用方式，以商品頁面說明為準。
+            各國 eSIM
+            方案之有效天數、流量、覆蓋範圍及啟用方式，以商品頁面說明為準。
           </li>
           <li>
             流量計算、漫遊設定及 APN
@@ -89,7 +92,8 @@ export default function TermsPage() {
 
       <LegalSection title="五、合作夥伴方案（專屬連結／專屬商店）">
         <p>
-          若您申請成為 Jeko eSIM 合作夥伴，請於申請時選擇合作模式，並遵守下列共通約定及所選模式之特別約定。
+          若您申請成為 Jeko eSIM
+          合作夥伴，請於申請時選擇合作模式，並遵守下列共通約定及所選模式之特別約定。
           合作模式原則上於申請時選定；如需變更，須經本平台書面同意並重新審核。
         </p>
 
@@ -123,8 +127,9 @@ export default function TermsPage() {
             ）。連結代碼由系統發放或依平台規則配置，原則上不可自行更改。
           </li>
           <li>
-            旅客經由您的專屬連結進入本平台官網後，於歸因有效期間內（目前為 Cookie
-            追蹤約 30 天，實際以平台當時技術與公告為準）完成購買，該筆訂單始計入您的分潤。
+            旅客經由您的專屬連結進入本平台官網後，於歸因有效期間內（目前為
+            Cookie 追蹤約 30
+            天，實際以平台當時技術與公告為準）完成購買，該筆訂單始計入您的分潤。
           </li>
           <li>
             本模式不開通獨立賣場；商品價格、方案內容與結帳流程以官網為準，您不得向旅客收取額外費用或宣稱可更改官網售價。
@@ -161,7 +166,8 @@ export default function TermsPage() {
       <LegalSection title="六、智慧財產權">
         <p>
           本平台之商標、Logo、網站設計、文案及商品資料，均受智慧財產權法保護。未經書面授權，不得複製、改作或作商業利用。
-          合作夥伴於推廣時可使用平台提供之行銷素材，但不得修改 Jeko eSIM 品牌標識或造成消費者混淆。
+          合作夥伴於推廣時可使用平台提供之行銷素材，但不得修改 Jeko eSIM
+          品牌標識或造成消費者混淆。
         </p>
       </LegalSection>
 
@@ -195,7 +201,9 @@ export default function TermsPage() {
         <ul>
           <li>
             Jeko 客服：
-            <a href="mailto:support@jeko-esim.com.tw">support@jeko-esim.com.tw</a>
+            <a href="mailto:support@jeko-esim.com.tw">
+              support@jeko-esim.com.tw
+            </a>
           </li>
           <li>
             藍鏈數位企業社：
@@ -203,7 +211,11 @@ export default function TermsPage() {
           </li>
           <li>
             LINE 官方帳號：
-            <a href="https://lin.ee/y6tdx5q" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://lin.ee/y6tdx5q"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               加入好友
             </a>
           </li>

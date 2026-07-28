@@ -17,7 +17,11 @@ import {
   getOAuthRedirectUrl,
   startLineLoginWithFormPost,
 } from "../lib/authDebug";
-import { sanitizeRedirect, peekAuthRedirect, rememberAuthRedirect } from "../lib/authRedirect";
+import {
+  sanitizeRedirect,
+  peekAuthRedirect,
+  rememberAuthRedirect,
+} from "../lib/authRedirect";
 
 const LoginRegisterPage = () => {
   const router = useRouter();
@@ -25,8 +29,7 @@ const LoginRegisterPage = () => {
   const { status: nextAuthStatus } = useSession();
 
   const redirectTo = useMemo(() => {
-    const fromQuery =
-      router.query.redirect || router.query.callbackUrl || null;
+    const fromQuery = router.query.redirect || router.query.callbackUrl || null;
     if (fromQuery) {
       const raw = Array.isArray(fromQuery) ? fromQuery[0] : fromQuery;
       const safe = sanitizeRedirect(raw, "/account");
@@ -50,8 +53,7 @@ const LoginRegisterPage = () => {
   };
 
   const isLoggedIn =
-    isHydrated &&
-    (!!supaUser || nextAuthStatus === "authenticated");
+    isHydrated && (!!supaUser || nextAuthStatus === "authenticated");
 
   // 🛠️ 監聽所有底層狀態與網址參數
   useEffect(() => {
@@ -72,7 +74,9 @@ const LoginRegisterPage = () => {
 
     if (hash.includes("access_token")) {
       addLog("✅ Google OAuth 回傳 access_token（hash）");
-      authLog("Supabase OAuth callback hash", { hash: hash.slice(0, 80) + "..." });
+      authLog("Supabase OAuth callback hash", {
+        hash: hash.slice(0, 80) + "...",
+      });
       // Supabase client 會自動解析 hash；稍後 onAuthStateChange 會觸發 SIGNED_IN
     }
 
@@ -89,7 +93,7 @@ const LoginRegisterPage = () => {
       if (nextAuthErr) {
         authLog("NextAuth error query", nextAuthErr);
         addLog(`❌ NextAuth [${nextAuthErr.code}]: ${nextAuthErr.hint}`);
-        // URL 若是 error=undefined，代表打到了錯誤的 callback（常見：LINE Console 填成 /api/auth/error）
+        // URL 若是 error=undefined，代表打到了錯誤的 callback（常見：LINE Console 填成 /api/auth/）
         const isUndefinedError =
           searchParams.get("error") === "undefined" ||
           !searchParams.get("callbackUrl");
@@ -177,12 +181,18 @@ const LoginRegisterPage = () => {
         },
       });
 
-      authLog("signInWithOAuth 回傳", { provider, url: data?.url, error: error?.message });
+      authLog("signInWithOAuth 回傳", {
+        provider,
+        url: data?.url,
+        error: error?.message,
+      });
       if (error) throw error;
       if (data?.url) {
         window.location.assign(data.url);
       } else {
-        throw new Error("未取得 Google 授權網址，請確認 Supabase anon key 是否正確");
+        throw new Error(
+          "未取得 Google 授權網址，請確認 Supabase anon key 是否正確",
+        );
       }
     } catch (err) {
       addLog(`❌ 跳轉前發生錯誤: ${err.message}`);
@@ -214,7 +224,9 @@ const LoginRegisterPage = () => {
       );
       addLog(`callbackUrl: ${callbackUrl}`);
       if (serverConfig?.expectedLineCallback) {
-        addLog(`伺服器推算 LINE callback: ${serverConfig.expectedLineCallback}`);
+        addLog(
+          `伺服器推算 LINE callback: ${serverConfig.expectedLineCallback}`,
+        );
       }
 
       await startLineLoginWithFormPost(callbackUrl);
