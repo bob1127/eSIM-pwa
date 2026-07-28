@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/unpaid-reminders",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 1 * * *"
     },
     {
       "path": "/api/admin/refresh-b2b-costs",
