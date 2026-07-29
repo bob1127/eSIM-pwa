@@ -18,6 +18,7 @@ import FeaturedCountryCard, {
   type FeaturedCountry,
 } from "./FeaturedCountryCard";
 import SocialIconLinks, { SocialIconLinksMobile } from "./SocialIconLinks";
+import NavbarSiteSearch from "./NavbarSiteSearch";
 
 import {
   UserIcon,
@@ -369,6 +370,9 @@ export default function Navbar({ className }: NavbarProps) {
                 <SocialIconLinks size="sm" />
               </div>
 
+              {/* 全站即時搜尋 */}
+              <NavbarSiteSearch className="hidden sm:block" />
+
               {/* 🌟 橫向展開的會員狀態區塊 (電腦版) */}
               <div className="hidden lg:flex items-center pr-4 mr-2 border-r border-slate-100 gap-5">
                 {isLoggedIn ? (
@@ -423,6 +427,9 @@ export default function Navbar({ className }: NavbarProps) {
                 <span className="hidden lg:inline">進入購物車</span>
                 <ChevronRightIcon className="w-4 h-4 hidden lg:block" />
               </Link>
+
+              {/* 全站即時搜尋：手機漢堡旁也放一顆 */}
+              <NavbarSiteSearch className="sm:hidden" />
 
               {/* 手機版：動畫漢堡選單 */}
               <button
@@ -576,6 +583,13 @@ export default function Navbar({ className }: NavbarProps) {
             className="fixed top-[80px] left-0 right-0 w-[94%] mx-auto z-[10001] lg:hidden rounded-2xl bg-white shadow-2xl border border-black/5 p-5 overflow-y-auto max-h-[80vh]"
           >
             <div className="flex flex-col gap-6">
+              {/* 全站即時搜尋（手機） */}
+              <NavbarSiteSearch
+                variant="inline"
+                onNavigate={() => setMobileOpen(false)}
+                className="w-full"
+              />
+
               {/* 會員頭像顯示區塊 */}
               <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
                 <div className="w-11 h-11 rounded-full bg-white shadow-sm flex items-center justify-center overflow-hidden border-2 border-white shrink-0">

@@ -10,17 +10,22 @@ import Link from "next/link";
 import Image from "next/image.js";
 import Carousel from "../components/ThreeHorizontalSlider.jsx";
 export default function Home() {
-  const images = {
-    a: "/images/blog/e0a188c1f87c88f8aaba875ce0b577c9.jpg", // 左上小張]
-    b: "/images/blog/c3c58b610f86264d909aac5d64caece0.jpg", // 左上小張
-    c: "/images/blog/03c1c69e60c055c532de164f1dec9122.jpg", // 中間大張人像
-    d: "/images/blog/3c94863fda7f4c9c8ebed31e0cb0bbc4.jpg", // 右上小張
-    e: "/images/blog/4f6bb38e08ca6a6729d3c626ad9acde3.jpg", // 右下小張（可選）
-  };
+  const marqueeColA = [
+    { src: "/images/about-marquee/japan.png", alt: "日本 eSIM" },
+    { src: "/images/about-marquee/korea.png", alt: "韓國 eSIM" },
+    { src: "/images/about-marquee/hongkong.png", alt: "香港 eSIM" },
+    { src: "/images/about-marquee/howto.png", alt: "如何使用 Jeko eSIM" },
+  ];
+  const marqueeColB = [
+    { src: "/images/about-marquee/thailand.png", alt: "泰國 eSIM" },
+    { src: "/images/about-marquee/malaysia.png", alt: "馬來西亞 eSIM" },
+    { src: "/images/about-marquee/features.png", alt: "Jeko eSIM 特色" },
+    { src: "/images/about-marquee/japan.png", alt: "日本 eSIM" },
+  ];
 
   return (
-    <Layout>
-      <Carousel />
+    <Layout flushTop>
+      <ScrollHero />
       <section className="section-company-intro pt-10 lg:pt-20">
         {/* 主要容器：手機垂直排列，桌機水平排列 (min-h 取代 h 以容納內容) */}
         <div className="flex flex-col lg:flex-row lg:min-h-[400px] group border-b border-gray-200 lg:border-b-0">
@@ -155,30 +160,32 @@ export default function Home() {
         </div>
       </section>
 
+      <Carousel />
+
       {/* ================= Section 2: Blue Mosaic Area ================= */}
       <section className="w-full bg-[#1f57b8] relative z-50 overflow-hidden">
         <div className="mx-auto max-w-7xl px-6 py-16 md:py-24">
           <div className="grid items-center gap-12 lg:gap-20 md:grid-cols-2">
-            {/* Left: Mosaic Grid */}
-            {/* 手機版：padding 確保外框線不被切掉 */}
+            {/* Left: 往上無限跑馬燈 */}
             <div className="relative px-2">
-              {/* Decorative Border Frame */}
-              <div className="absolute -inset-2 md:-inset-4 rounded-[28px] border border-white/20 pointer-events-none" />
+              <div className="absolute -inset-2 md:-inset-4 rounded-[28px] border border-white/20 pointer-events-none z-10" />
 
-              <div className="relative grid grid-cols-2 gap-3 md:gap-5">
-                {/* Column 1 */}
-                <div className="grid gap-3 md:gap-5">
-                  {/* 手機高度縮小 (h-[120px])，桌機恢復原本高度 */}
-                  <Tile src={images?.a} className="h-[120px] md:h-[180px]" />
-                  <Tile src={images?.b} className="h-[240px] md:h-[380px]" />
-                  <Tile src={images?.e} className="h-[120px] md:h-[170px]" />
+              <div className="relative h-[480px] md:h-[620px] overflow-hidden rounded-[22px]">
+                <div className="grid h-full grid-cols-2 gap-3 md:gap-4">
+                  <VerticalMarquee
+                    items={marqueeColA}
+                    duration={28}
+                    className="h-full"
+                  />
+                  <VerticalMarquee
+                    items={marqueeColB}
+                    duration={36}
+                    className="h-full pt-10 md:pt-14"
+                  />
                 </div>
-
-                {/* Column 2 - With Top Offset */}
-                <div className="grid gap-3 md:gap-5 pt-8 md:pt-14">
-                  <Tile src={images?.d} className="h-[120px] md:h-[270px]" />
-                  <Tile src={images?.c} className="h-[260px] md:h-[440px]" />
-                </div>
+                {/* 上下漸層遮罩，邊緣更柔和 */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#1f57b8] to-transparent z-[5]" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#1f57b8] to-transparent z-[5]" />
               </div>
             </div>
 
@@ -197,8 +204,8 @@ export default function Home() {
               </p>
 
               <div className="mt-8 md:mt-10">
-                <a
-                  href="#"
+                <Link
+                  href="/product"
                   className="
                     group inline-flex items-center gap-3 rounded-full
                     bg-white px-6 py-3 text-sm font-semibold text-[#1f57b8]
@@ -206,11 +213,11 @@ export default function Home() {
                     transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_15px_30px_rgba(0,0,0,0.25)]
                   "
                 >
-                  More
+                  探索方案
                   <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#1f57b8]/10 group-hover:bg-[#1f57b8]/20 transition-colors">
                     &gt;
                   </span>
-                </a>
+                </Link>
               </div>
 
               {/* Decorative line */}
@@ -219,7 +226,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <ScrollHero />
       <div className="marquee mt-8">
         <Marquee>
           {[
@@ -280,21 +286,44 @@ export default function Home() {
     </Layout>
   );
 }
-function Tile({ src, className = "" }) {
+function VerticalMarquee({
+  items = [],
+  duration = 30,
+  className = "",
+}) {
+  const loop = [...items, ...items];
   return (
-    <div
-      className={[
-        "overflow-hidden rounded-[22px] bg-white/10",
-        "shadow-[0_18px_40px_rgba(0,0,0,0.22)]",
-        className,
-      ].join(" ")}
-    >
-      <img
-        src={src}
-        alt=""
-        className="h-full w-full object-cover"
-        loading="lazy"
-      />
+    <div className={["overflow-hidden", className].filter(Boolean).join(" ")}>
+      <div
+        className="flex flex-col gap-3 md:gap-4 will-change-transform"
+        style={{
+          animation: `aboutMarqueeUp ${duration}s linear infinite`,
+        }}
+      >
+        {loop.map((item, i) => (
+          <div
+            key={`${item.src}-${i}`}
+            className="overflow-hidden rounded-[18px] bg-white/10 shadow-[0_14px_32px_rgba(0,0,0,0.22)] shrink-0"
+          >
+            <img
+              src={item.src}
+              alt={item.alt || ""}
+              className="block w-full h-auto aspect-[3/4] object-cover"
+              loading="lazy"
+            />
+          </div>
+        ))}
+      </div>
+      <style jsx global>{`
+        @keyframes aboutMarqueeUp {
+          0% {
+            transform: translateY(0);
+          }
+          100% {
+            transform: translateY(-50%);
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import MaterialIcon from "./MaterialIcon";
+import { LineIconSvg, LineAppIconSvg } from "@/components/social/SocialBrandIcons";
 import { useAuth } from "../hooks/useAuth";
 import { getPushEndpoint } from "../lib/pushBind";
 
@@ -92,7 +93,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
         className={`rounded-xl border border-[#06C755]/30 bg-[#06C755]/5 p-4 ${className}`}
       >
         <div className="flex items-start gap-3">
-          <MaterialIcon name="chat" size={22} className="text-[#06C755] shrink-0 mt-0.5" />
+          <LineAppIconSvg className="w-[22px] h-[22px] shrink-0 mt-0.5" />
           <div>
             <p className="font-bold text-stone-900 text-sm">LINE 推播提醒</p>
             <p className="text-xs text-stone-600 mt-1 leading-relaxed">
@@ -113,8 +114,8 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
       className={`rounded-xl border border-[#06C755]/30 bg-[#06C755]/5 p-4 sm:p-5 ${className}`}
     >
       <div className="flex items-start gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-[#06C755]/15 flex items-center justify-center shrink-0">
-          <MaterialIcon name="chat" size={22} className="text-[#06C755]" />
+        <div className="w-10 h-10 rounded-full bg-[#06C755]/15 flex items-center justify-center shrink-0 overflow-hidden">
+          <LineAppIconSvg className="w-10 h-10" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-stone-900 text-sm">LINE 推播提醒</p>
@@ -136,7 +137,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
           rel="noopener noreferrer"
           className="mb-3 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white text-sm font-bold transition-colors"
         >
-          <MaterialIcon name="person_add" size={18} />
+          <LineIconSvg className="w-[18px] h-[18px]" />
           加入官方 LINE 好友
         </a>
       )}

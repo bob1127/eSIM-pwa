@@ -81,7 +81,7 @@ export default function SmartWizardFloat() {
       key: "line",
       label: "LINE",
       href: SOCIAL_LINKS.line || null,
-      icon: <LineIconSvg className="w-3.5 h-3.5" />,
+      icon: <LineIconSvg className="w-4 h-4" />,
       className:
         "bg-[#06C755] text-white shadow-md hover:brightness-110 active:scale-95 border-0",
       style: undefined,

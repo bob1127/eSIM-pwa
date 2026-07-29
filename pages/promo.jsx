@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Layout from "./Layout";
 import MaterialIcon from "@/components/MaterialIcon";
+import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import PromoBannerCarousel from "@/components/promo/PromoBannerCarousel";
 import PromoLotteryMachine from "@/components/promo/PromoLotteryMachine";
 
@@ -112,7 +113,7 @@ export default function PromoPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-sm px-6 py-3"
             >
-              <MaterialIcon name="chat" size={18} />
+              <LineIconSvg className="w-[18px] h-[18px]" />
               加入官方 LINE 領優惠
             </a>
             <Link

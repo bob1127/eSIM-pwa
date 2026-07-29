@@ -1,30 +1,133 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import Layout from "../Layout.js";
 import CountryFilter from "../../components/NavbarTestSideBarToggle.jsx";
-import FilterSideBar from "../../components/FilterSideBar";
-import { supabase } from "../../lib/supabaseClient";
+import FilterSideBar, {
+  filterProductsByTags,
+  buildFilterTagsFromProduct,
+  buildDisplayTagsFromProduct,
+} from "../../components/FilterSideBar";
 import SafeImage from "../../components/SafeImage";
-import { shouldBypassImageOptimization } from "../../lib/resolveMedusaImageUrl";
+import {
+  resolveMedusaImageUrl,
+  shouldBypassImageOptimization,
+} from "../../lib/resolveMedusaImageUrl";
+import {
+  getMedusaBackendUrl,
+  getMedusaPublishableKey,
+  isVisibleOnMainSite,
+} from "../../lib/medusaStoreApi";
+
+function getMedusaHeaders() {
+  const publishableKey = getMedusaPublishableKey();
+  return {
+    "Content-Type": "application/json",
+    ...(publishableKey && { "x-publishable-api-key": publishableKey }),
+  };
+}
+
+function getVariantAmount(v) {
+  if (
+    v?.calculated_price &&
+    typeof v.calculated_price.calculated_amount === "number"
+  ) {
+    return v.calculated_price.calculated_amount;
+  }
+  if (typeof v?.calculated_price === "number") {
+    return v.calculated_price;
+  }
+  if (v?.prices?.length > 0) {
+    const twd = v.prices.find(
+      (pr) =>
+        pr.currency_code?.toLowerCase() === "twd" ||
+        pr.currency_code?.toLowerCase() === "ntd",
+    );
+    return twd ? twd.amount : v.prices[0].amount;
+  }
+  return null;
+}
+
+async function fetchAllMedusaProducts() {
+  const backendUrl = getMedusaBackendUrl();
+  const headers = getMedusaHeaders();
+  const all = [];
+  let offset = 0;
+  const limit = 100;
+  const fields =
+    "+metadata,*tags,*categories,*options,*variants,*variants.options,*variants.prices,*variants.calculated_price";
+
+  while (true) {
+    const query = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+      fields,
+    });
+    const res = await fetch(`${backendUrl}/store/products?${query}`, {
+      headers,
+    });
+    if (!res.ok) {
+      throw new Error(`Medusa products ${res.status}`);
+    }
+    const data = await res.json();
+    const batch = data.products || [];
+    all.push(...batch);
+    if (batch.length < limit) break;
+    offset += limit;
+    if (offset > 500) break;
+  }
+
+  return all.filter(isVisibleOnMainSite);
+}
+
+function formatListingProduct(p) {
+  const amounts = (p.variants || [])
+    .map(getVariantAmount)
+    .filter((n) => typeof n === "number" && n > 0);
+  const price = amounts.length > 0 ? Math.min(...amounts) : 0;
+  const firstVariant = p.variants?.[0];
+  const originalPrice = firstVariant?.original_price || price;
+  const isTestPlan = !!(
+    p.metadata?.microesim_test ||
+    p.metadata?.test_plan ||
+    String(p.title || "").includes("測試購買")
+  );
+  const filterTags = buildFilterTagsFromProduct(p);
+  const categorySlug = p.categories?.[0]?.handle || "uncategorized";
+
+  return {
+    id: p.id,
+    name: p.title,
+    slug: p.handle,
+    handle: p.handle,
+    category_slug: categorySlug,
+    price,
+    original_price: originalPrice,
+    image_url: resolveMedusaImageUrl(p.thumbnail),
+    tags: filterTags,
+    displayTags: buildDisplayTagsFromProduct(p, filterTags),
+    isTestPlan,
+  };
+}
 
 export async function getStaticProps() {
   try {
-    const { data: products, error } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const products = await fetchAllMedusaProducts();
+    const formatted = products
+      .map(formatListingProduct)
+      .filter((p) => p.slug);
 
-    if (error) throw error;
+    formatted.sort((a, b) => Number(b.isTestPlan) - Number(a.isTestPlan));
 
     return {
       props: {
-        initialProducts: products || [],
+        initialProducts: formatted,
       },
       revalidate: 60,
     };
-  } catch {
+  } catch (err) {
+    console.error("[product/index] Medusa fetch failed:", err?.message || err);
     return {
       props: { initialProducts: [] },
       revalidate: 60,
@@ -34,7 +137,6 @@ export async function getStaticProps() {
 
 const AllProductsPage = ({ initialProducts }) => {
   const router = useRouter();
-  const [filteredProducts, setFilteredProducts] = useState(initialProducts);
   const [activeTags, setActiveTags] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const PRODUCTS_PER_PAGE = 15;
@@ -44,23 +146,14 @@ const AllProductsPage = ({ initialProducts }) => {
     setActiveTags(tagsFromQuery);
   }, [router.query.tags]);
 
-  useEffect(() => {
-    if (!initialProducts) return;
+  const filteredProducts = useMemo(
+    () => filterProductsByTags(initialProducts || [], activeTags),
+    [activeTags, initialProducts],
+  );
 
-    if (!activeTags || activeTags.length === 0) {
-      setFilteredProducts(initialProducts);
-    } else {
-      const filtered = initialProducts.filter((product) => {
-        const tagMatch = activeTags.every((tag) => product.tags?.includes(tag));
-        const categoryMatch = activeTags.some(
-          (tag) => product.categories?.slug === tag || product.category_slug === tag,
-        );
-        return tagMatch || categoryMatch;
-      });
-      setFilteredProducts(filtered);
-      setCurrentPage(1);
-    }
-  }, [activeTags, initialProducts]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTags]);
 
   const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
   const endIndex = startIndex + PRODUCTS_PER_PAGE;
@@ -115,10 +208,9 @@ const AllProductsPage = ({ initialProducts }) => {
                   const price = product.price;
                   const regularPrice = product.original_price;
                   const categorySlug =
-                    product.categories?.slug ||
-                    product.category_slug ||
-                    "uncategorized";
-                  const productLink = `/product/${categorySlug}/${product.slug}`;
+                    product.category_slug || "uncategorized";
+                  const productSlug = product.slug || product.handle;
+                  const productLink = `/product/${categorySlug}/${productSlug}`;
 
                   return (
                     <motion.div
@@ -129,7 +221,7 @@ const AllProductsPage = ({ initialProducts }) => {
                     >
                       <Link href={productLink} className="block">
                         <div className="card overflow-hidden p-4 bg-white">
-                          <div className="relative w-full aspect-[3/4] mb-3 overflow-hidden">
+                          <div className="relative w-full aspect-[4/3] mb-3 overflow-hidden rounded-lg bg-slate-50">
                             <SafeImage
                               src={productImage}
                               alt={product.name}
@@ -138,7 +230,7 @@ const AllProductsPage = ({ initialProducts }) => {
                               unoptimized={shouldBypassImageOptimization(
                                 productImage,
                               )}
-                              className="object-cover"
+                              className="object-contain p-5 sm:p-6"
                             />
                           </div>
                           <span className="font-bold text-sm text-slate-800 block mb-1 line-clamp-2 min-h-[40px]">
@@ -147,13 +239,15 @@ const AllProductsPage = ({ initialProducts }) => {
                           <div className="text-stone-900 mt-2">
                             <div className="flex items-end gap-2">
                               <span className="text-blue-600 font-bold text-lg">
-                                NT${price}
+                                {price > 0 ? `NT$${price}` : "查看方案"}
                               </span>
-                              {regularPrice && regularPrice !== price && (
-                                <del className="text-gray-400 text-xs mb-0.5">
-                                  NT${regularPrice}
-                                </del>
-                              )}
+                              {regularPrice &&
+                                regularPrice !== price &&
+                                regularPrice > 0 && (
+                                  <del className="text-gray-400 text-xs mb-0.5">
+                                    NT${regularPrice}
+                                  </del>
+                                )}
                             </div>
                           </div>
                         </div>

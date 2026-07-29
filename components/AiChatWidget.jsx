@@ -29,6 +29,7 @@ import { buildLoginUrl } from "../lib/authRedirect";
 import { useAuth } from "../hooks/useAuth";
 import AffiliateChatOffers from "./affiliate/AffiliateChatOffers";
 import ShopChatOffers from "./Shop/ShopChatOffers";
+import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
 /** LINE OA Basic ID（含 @），用於 oaMessage 預填文字 */
 const LINE_OA_ID = process.env.NEXT_PUBLIC_LINE_OA_ID || "@593gvyzn";
@@ -1237,6 +1238,7 @@ export default function AiChatWidget() {
                     onClick={openHandoffLine}
                     className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#06C755] text-[#06C755] text-[12px] font-semibold py-2.5 hover:bg-[#06C755]/5 transition-colors"
                   >
+                    <LineIconSvg className="w-3.5 h-3.5" />
                     開啟 LINE 官方客服（給客人）
                   </button>
                   <p className="text-[10px] text-slate-400 leading-relaxed">

@@ -22,6 +22,7 @@ import {
   peekAuthRedirect,
   rememberAuthRedirect,
 } from "../lib/authRedirect";
+import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
 const LoginRegisterPage = () => {
   const router = useRouter();
@@ -386,13 +387,7 @@ const LoginRegisterPage = () => {
                         onClick={handleLineLogin}
                         className="flex items-center justify-center gap-2.5 w-full rounded-full bg-[#06C755] border border-transparent py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:brightness-105 shadow-sm"
                       >
-                        <svg
-                          className="w-5 h-5"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.122.303.079.778.039 1.085l-.171 1.027c-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967 1.739-1.907 2.572-4.137 2.572-5.992zM7.421 11.96H5.216V7.525a.43.43 0 00-.428-.428h-.86a.43.43 0 00-.428.428v5.295c0 .235.192.428.428.428h3.493a.43.43 0 00.428-.428v-.86a.43.43 0 00-.428-.428zm3.23-4.435v4.435a.43.43 0 01-.428.428h-.86a.43.43 0 01-.428-.428V7.525a.43.43 0 01.428-.428h.86a.43.43 0 01.428.428zm6.541 2.871c0 .235-.192.428-.428.428h-1.963v1.136h1.963a.43.43 0 01.428.428v.86a.43.43 0 01-.428.428h-3.252a.43.43 0 01-.428-.428V7.525a.43.43 0 01.428-.428h3.252a.43.43 0 01.428.428v.86a.43.43 0 01-.428.428h-1.963v1.144h1.963a.43.43 0 01.428.428v.86zm3.321-2.871l-2.063 2.924V7.525a.43.43 0 00-.428-.428h-.86a.43.43 0 00-.428.428v5.295c0 .235.192.428.428.428h.86a.43.43 0 00.35-.183l2.141-3.033v3.216a.43.43 0 00.428.428h.86a.43.43 0 00.428-.428V7.525a.43.43 0 00-.428-.428h-.86a.43.43 0 00-.428.428z" />
-                        </svg>
+                        <LineIconSvg className="w-5 h-5" />
                         LINE
                       </button>
                     </div>

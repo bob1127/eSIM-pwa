@@ -5,6 +5,7 @@ import { usePartnerSession, SITE_URL } from "@/lib/partnerAuth";
 import { supabase } from "@/lib/supabaseClient";
 import { slugifyTitle } from "@/lib/partnerBlog";
 import { PARTNER_UI } from "@/lib/partnerUi";
+import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
 
 /**
  * 夥伴自訂文章後台（需 stores.blog_custom_enabled = true）
@@ -220,9 +221,7 @@ export default function PartnerBlogAdminPage() {
               className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-black text-[#111] shadow-sm hover:brightness-95 transition"
               style={{ backgroundColor: "#FADE2B" }}
             >
-              <span className="w-5 h-5 rounded-full bg-[#06C755] text-white text-[10px] font-black inline-flex items-center justify-center">
-                L
-              </span>
+              <LineAppIconSvg className="w-5 h-5" />
               透過官方 LINE 申請開通
             </a>
             <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">

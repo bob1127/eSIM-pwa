@@ -14,6 +14,7 @@ import StepLabel from "@mui/material/StepLabel";
 import Box from "@mui/material/Box";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/components/context/UserContext";
+import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
 // --- Icons ---
 const TruckIcon = () => (
@@ -672,8 +673,9 @@ const CartPage = () => {
                                       href={lineOaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center justify-center rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2"
                                     >
+                                      <LineIconSvg className="w-3.5 h-3.5" />
                                       加入官方 LINE 立即使用優惠折扣
                                     </a>
                                     <button

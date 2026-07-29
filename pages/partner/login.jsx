@@ -13,6 +13,7 @@ import {
   logLineLoginStart,
   startLineLoginWithFormPost,
 } from "@/lib/authDebug";
+import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
 const INPUT_CLASS =
   "w-full bg-white/10 border border-white/30 rounded-xl px-4 py-3 text-white placeholder:text-blue-300 text-sm outline-none focus:bg-white/20 focus:border-white/60 transition";
@@ -576,6 +577,7 @@ export default function PartnerLogin() {
                   onClick={handleLineLogin}
                   className="flex items-center justify-center gap-2 w-full bg-[#06C755] hover:brightness-105 disabled:opacity-60 py-3 rounded-xl text-sm font-bold text-white transition"
                 >
+                  <LineIconSvg className="w-5 h-5" />
                   {oauthLoading === "line" ? "LINE 登入中..." : "LINE 快速登入"}
                 </button>
               </div>

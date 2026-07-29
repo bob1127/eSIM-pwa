@@ -31,7 +31,7 @@ export const footerLinks = [
   {
     title: "LINE",
     href: "/",
-    iconSrc: "https://pikkasinternational.com/assets/img/common/sns/line.svg",
+    iconSrc: "/images/icons/line.svg",
   },
   {
     title: "Instagram",

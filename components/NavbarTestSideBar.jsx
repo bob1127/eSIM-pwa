@@ -134,9 +134,9 @@ const Navbar = () => {
           className="flex justify-center items-center mr-3 "
         >
           <Image
-            src="/images/line (2).png"
+            src="/images/icons/line.svg"
             placeholder="empty"
-            alt="icon"
+            alt="LINE"
             loading="lazy"
             className="w-[45px] h-[45px]"
             width={45}

@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { CONTACT_UI, CONTACT_TABS, CONTACT_INFO } from "@/lib/contactUi";
 import MaterialIcon from "@/components/MaterialIcon";
+import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
 
 export default function ContactPageShell({ activeTab, onTabChange, children }) {
   return (
@@ -81,14 +81,8 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
             rel="noopener noreferrer"
             className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#06C755] hover:shadow-sm transition"
           >
-            <div className="w-11 h-11 rounded-xl bg-[#06C755]/15 flex items-center justify-center shrink-0">
-              <Image
-                src="/images/payment/line.svg"
-                alt=""
-                width={22}
-                height={22}
-                className="w-[22px] h-[22px]"
-              />
+            <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0">
+              <LineAppIconSvg className="w-11 h-11" />
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">

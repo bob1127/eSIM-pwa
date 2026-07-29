@@ -281,9 +281,13 @@ export default function TestPickleballPage() {
     };
   }, [popupDate]);
 
+  const todayStr = todayDateStr(tick);
+
   const byDateCourt = useMemo(() => {
     const map = {};
     (payload?.bookings || []).forEach((b) => {
+      // 前端雙重保險：過期日資料不進日曆／彈窗
+      if (!b?.date || b.date < todayStr) return;
       if (!map[b.date]) map[b.date] = { A: [], B: [] };
       if (map[b.date][b.court]) map[b.date][b.court].push(b);
     });
@@ -293,14 +297,12 @@ export default function TestPickleballPage() {
       );
     });
     return map;
-  }, [payload]);
+  }, [payload, todayStr]);
 
   const grid = useMemo(
     () => buildMonthGrid(viewYear, viewMonth),
     [viewYear, viewMonth],
   );
-
-  const todayStr = todayDateStr(tick);
 
   const goMonth = (delta) => {
     const next = shiftMonth(viewYear, viewMonth, delta);
@@ -314,6 +316,7 @@ export default function TestPickleballPage() {
   };
 
   const openDayPopup = (date) => {
+    if (date < todayStr) return;
     const courts = byDateCourt[date] || { A: [], B: [] };
     const summary = summarizeDay(courts);
     if (!summary.dayBookable) return;
@@ -326,6 +329,13 @@ export default function TestPickleballPage() {
     ? byDateCourt[popupDate] || { A: [], B: [] }
     : { A: [], B: [] };
   const popupSummary = popupDate ? summarizeDay(popupCourts) : null;
+
+  useEffect(() => {
+    if (popupDate && popupDate < todayStr) {
+      setPopupDate(null);
+      setSelectedSlotKey(null);
+    }
+  }, [popupDate, todayStr]);
 
   const activeCourtSlots = useMemo(() => {
     if (!popupDate) return [];
@@ -514,15 +524,18 @@ export default function TestPickleballPage() {
                   const courts = byDateCourt[cell.date] || { A: [], B: [] };
                   const summary = summarizeDay(courts);
                   const isToday = cell.date === todayStr;
+                  const isPast = cell.date < todayStr;
                   const isSelected = popupDate === cell.date;
-                  const dayBookable = summary.dayBookable;
-                  const isFull = !dayBookable;
+                  const dayBookable = !isPast && summary.dayBookable;
+                  const isFull = !isPast && !dayBookable;
 
+                  // 過期日一律顯示（反白不可點）；其餘依篩選
                   const showByFilter =
                     (dayBookable && filterAvailable) || (isFull && filterFull);
-                  // 兩邊都沒勾時視為全顯示
                   const visible =
-                    (!filterAvailable && !filterFull) || showByFilter;
+                    isPast ||
+                    (!filterAvailable && !filterFull) ||
+                    showByFilter;
 
                   if (!visible) {
                     return (
@@ -541,11 +554,18 @@ export default function TestPickleballPage() {
                   let bg = AM.primarySoft;
                   let border = "#C9E2FC";
                   let color = AM.primaryText;
+                  let label = "可預約";
 
-                  if (isFull) {
+                  if (isPast) {
+                    bg = "#EEF0F3";
+                    border = "#E2E5EA";
+                    color = "#A8B0BA";
+                    label = "已過期";
+                  } else if (isFull) {
                     bg = "#F0F2F5";
                     border = "#E4E8ED";
                     color = "#B0B8C2";
+                    label = "已滿";
                   }
 
                   if (isSelected && dayBookable) {
@@ -558,15 +578,17 @@ export default function TestPickleballPage() {
                     <button
                       key={cell.date}
                       type="button"
-                      disabled={isFull}
+                      disabled={isPast || isFull}
+                      aria-disabled={isPast || isFull}
                       onClick={() => dayBookable && openDayPopup(cell.date)}
                       className="aspect-square rounded-none border text-left p-1 sm:p-2 flex flex-col transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:hover:brightness-100 hover:brightness-[0.98]"
                       style={{
                         background: bg,
                         borderColor: border,
                         color,
-                        opacity: isFull ? 0.42 : 1,
-                        filter: isFull ? "grayscale(0.9)" : undefined,
+                        opacity: isPast || isFull ? 0.4 : 1,
+                        filter:
+                          isPast || isFull ? "grayscale(0.95)" : undefined,
                         boxShadow:
                           isToday && !isSelected
                             ? `inset 0 0 0 2px ${AM.primary}`
@@ -581,7 +603,7 @@ export default function TestPickleballPage() {
                           className="block text-[8px] sm:text-[10px] font-bold leading-tight"
                           style={{ opacity: isSelected ? 0.95 : 1 }}
                         >
-                          {isFull ? "已滿" : "可預約"}
+                          {label}
                         </span>
                       </div>
                     </button>

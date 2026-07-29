@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronUp } from "lucide-react";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
 import { domToReact, attributesToProps } from "html-react-parser";
+import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
 import WpArticleBody from "@/components/Blog/WpArticleBody";
 
 const RELATED_PER_PAGE = 6;
@@ -327,11 +328,7 @@ function ShareBar({ url, title }) {
       label: "LINE 傳送",
       onClick: shareLine,
       className: "text-[#06C755]",
-      icon: (
-        <span className="w-4 h-4 rounded-full bg-[#06C755] text-white text-[9px] font-black flex items-center justify-center">
-          L
-        </span>
-      ),
+      icon: <LineAppIconSvg className="w-4 h-4" />,
     },
   ];
 
@@ -608,9 +605,7 @@ export default function ArticleBlogPostLayout({
                         aria-label="LINE"
                         className="hover:opacity-60"
                       >
-                        <span className="w-[18px] h-[18px] rounded bg-[#06C755] text-white text-[10px] font-black flex items-center justify-center">
-                          L
-                        </span>
+                        <LineAppIconSvg className="w-[18px] h-[18px]" />
                       </a>
                     </div>
                   </div>

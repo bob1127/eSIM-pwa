@@ -459,7 +459,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                     >
                       <Link href={productLink} className="block h-full group">
                         <div className="h-full flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-[#0071EB]/25 transition-all">
-                          <div className="relative w-full aspect-[3/4] overflow-hidden bg-slate-50">
+                          <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-50 rounded-t-2xl">
                             <SafeImage
                               src={productImage}
                               alt={product.name}
@@ -468,7 +468,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                               unoptimized={shouldBypassImageOptimization(
                                 productImage,
                               )}
-                              className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                              className="object-contain p-5 sm:p-6 group-hover:scale-[1.03] transition-transform duration-500"
                             />
                           </div>
                           <div className="flex flex-col flex-1 p-3 sm:p-4">

@@ -81,22 +81,27 @@ export default async function handler(req, res) {
       let productId = null;
 
       // 優先用 medusa_product_id 查詢，否則 fallback 名稱
+      // 注意：用 .limit(1) 取代 .maybeSingle()，避免歷史重複資料造成
+      // 「查到多筆 → 回傳 error → existing 被當成 null → 又插入一筆新重複」
+      // 的滾雪球式重複 bug（曾實際造成同名商品被重複同步出 2~3 筆）。
       let existing = null;
       if (hasExtendedCols && f.medusa_product_id) {
         const { data } = await supabase
           .from("products")
           .select("id")
           .eq("medusa_product_id", f.medusa_product_id)
-          .maybeSingle();
-        existing = data;
+          .order("id", { ascending: true })
+          .limit(1);
+        existing = data?.[0] || null;
       }
       if (!existing) {
         const { data } = await supabase
           .from("products")
           .select("id")
           .eq("name", f.name)
-          .maybeSingle();
-        existing = data;
+          .order("id", { ascending: true })
+          .limit(1);
+        existing = data?.[0] || null;
       }
 
       if (existing?.id) {
@@ -143,23 +148,26 @@ export default async function handler(req, res) {
         if (hasMedusaVariantId) varPayload.medusa_variant_id = v.medusa_variant_id;
         if (hasRetailPrice) varPayload.title = v.title || null; // title 也在 00002
 
-        // 查詢現有 variant
+        // 查詢現有 variant（同樣用 .limit(1) 避免重複資料造成滾雪球式重複插入）
         let existingVar = null;
         if (hasMedusaVariantId && v.medusa_variant_id) {
           const { data } = await supabase
             .from("product_variations")
             .select("id")
             .eq("medusa_variant_id", v.medusa_variant_id)
-            .maybeSingle();
-          existingVar = data;
+            .order("id", { ascending: true })
+            .limit(1);
+          existingVar = data?.[0] || null;
         }
         if (!existingVar) {
           const { data } = await supabase
             .from("product_variations")
             .select("id")
+            .eq("product_id", productId)
             .eq("sku", varPayload.sku)
-            .maybeSingle();
-          existingVar = data;
+            .order("id", { ascending: true })
+            .limit(1);
+          existingVar = data?.[0] || null;
         }
 
         if (existingVar?.id) {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { buildLoginUrl } from "@/lib/authRedirect";
 import { motion } from "framer-motion";
 import MaterialIcon from "@/components/MaterialIcon";
+import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import {
   MEMBER_OFFERS_UI as UI,
   MEMBER_OFFER_NAV,
@@ -95,7 +96,7 @@ export default function MemberOffersPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/10 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/15 transition"
               >
-                <MaterialIcon name="chat" size={16} />
+                <LineIconSvg className="w-4 h-4" />
                 加入官方 LINE
               </a>
             </div>
@@ -285,6 +286,7 @@ export default function MemberOffersPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-xl bg-[#06C755] px-5 py-2.5 text-sm font-bold text-white hover:brightness-105 transition"
               >
+                <LineIconSvg className="w-4 h-4" />
                 立即加入官方 LINE
                 <MaterialIcon name="open_in_new" size={16} />
               </a>

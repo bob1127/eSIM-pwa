@@ -14,6 +14,7 @@ import {
   saveCheckoutProfile,
 } from "@/lib/checkoutProfile";
 import { ChevronRight, Tag, Shield, Truck, RotateCcw } from "lucide-react";
+import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
 // ── 步驟指示器 ──────────────────────────────────────────────────
 const STEPS = ["購物車", "資訊", "運送", "付款"];
@@ -152,6 +153,7 @@ function OrderSummary({
             rel="noopener noreferrer"
             className="mt-2.5 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2"
           >
+            <LineIconSvg className="w-3.5 h-3.5" />
             加入官方 LINE 立即使用優惠折扣
           </a>
         </div>

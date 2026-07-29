@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Search,
   ShoppingCart,
   User,
   Menu,
@@ -15,6 +14,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useCart } from "@/components/context/CartContext";
+import NavbarSiteSearch from "@/components/Navbar/NavbarSiteSearch";
 
 const CONTAINER = "max-w-[1280px] mx-auto px-6 lg:px-10";
 
@@ -631,7 +631,6 @@ export default function ShopNavbar({
   const [headerBottom, setHeaderBottom] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(null);
-  const [searchOpen, setSearchOpen] = useState(false);
   const headerRef = useRef(null);
   const hideTimer = useRef(null);
 
@@ -794,17 +793,7 @@ export default function ShopNavbar({
               </nav>
 
               <div className="flex items-center gap-0.5 shrink-0 ml-auto lg:ml-0">
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen((v) => !v)}
-                  className="p-2 hover:bg-slate-50 rounded transition-colors"
-                  aria-label="搜尋"
-                >
-                  <Search
-                    className="w-[18px] h-[18px] text-slate-700"
-                    strokeWidth={1.75}
-                  />
-                </button>
+                <NavbarSiteSearch />
                 <button
                   type="button"
                   onClick={() => setIsCartOpen(true)}
@@ -861,17 +850,7 @@ export default function ShopNavbar({
                 </Link>
 
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setSearchOpen((v) => !v)}
-                    className="p-2 hover:bg-slate-50 rounded transition-colors"
-                    aria-label="搜尋"
-                  >
-                    <Search
-                      className="w-[18px] h-[18px] text-slate-700"
-                      strokeWidth={1.75}
-                    />
-                  </button>
+                  <NavbarSiteSearch />
                   <button
                     type="button"
                     onClick={() => setIsCartOpen(true)}
@@ -953,35 +932,6 @@ export default function ShopNavbar({
             </>
           )}
         </div>
-
-        {/* 搜尋列 */}
-        <AnimatePresence>
-          {searchOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="overflow-hidden border-b border-slate-200 bg-white"
-            >
-              <div className={`${CONTAINER} py-3 flex gap-3`}>
-                <input
-                  autoFocus
-                  type="text"
-                  placeholder="搜尋商品名稱..."
-                  className="flex-1 border border-slate-200 rounded px-4 py-2 text-[13px] focus:outline-none focus:border-slate-400"
-                />
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(false)}
-                  className="text-[13px] text-slate-500 hover:text-slate-800"
-                >
-                  取消
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
 
       {/* ── Mega Dropdown：fixed 滿版，內容對齊 CONTAINER ── */}

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Layout from "./Layout";
 import MaterialIcon from "@/components/MaterialIcon";
+import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import PushNotificationSection from "@/components/PushNotificationSection";
@@ -229,7 +230,7 @@ export default function DataQueryPage() {
                   rel="noopener noreferrer"
                   className="mt-4 inline-flex items-center gap-2 text-[12px] font-medium text-white/90 hover:text-white"
                 >
-                  <MaterialIcon name="chat" size={16} />
+                  <LineIconSvg className="w-4 h-4" />
                   加入官方 LINE，傳「查詢用量」或直接貼上 ICCID 也可查詢
                 </a>
 

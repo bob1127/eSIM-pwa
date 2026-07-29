@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { fetchActiveStoreByDomain } from "@/lib/partnerStorefront";
 import { useSession, signIn, signOut } from "next-auth/react";
 import PartnerShopLayout from "@/components/Shop/PartnerShopLayout";
+import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
 const RESEND_WAIT_SECONDS = 60;
 
@@ -245,6 +246,7 @@ const RegisterForm = ({ onSuccess, storeDomain }) => {
             }
             className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] py-3 text-[14px] font-bold text-white transition hover:brightness-105 shadow-sm"
           >
+            <LineIconSvg className="w-5 h-5" />
             LINE
           </button>
           <button
@@ -555,6 +557,7 @@ export default function PartnerLoginRegisterPage({ store }) {
                           }
                           className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] py-3 text-[14px] font-bold text-white transition hover:brightness-105 shadow-sm"
                         >
+                          <LineIconSvg className="w-5 h-5" />
                           LINE
                         </button>
                         <button
