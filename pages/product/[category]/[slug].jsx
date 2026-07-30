@@ -1582,7 +1582,7 @@ export async function getStaticProps({ params }) {
         variations: formattedVariations,
         comparablePlans,
       },
-      revalidate: 60,
+      revalidate: 3600,
     };
   } catch (e) {
     console.error("Medusa getStaticProps error:", e);
@@ -1957,7 +1957,7 @@ export default function ProductPage({
   const formatTelecomLabel = (opt) => {
     const s = String(opt || "").trim();
     if (!s) return s;
-    if (/Tiktok\+ChatGPT|常規速度|50-70/i.test(s)) return s;
+    if (/Tiktok\+ChatGPT|常規速度|50-70|GPT\s*\+\s*TikTok/i.test(s)) return s;
     if (/\(\s*CMCC\s*\)/i.test(s) || /\(\s*CUCC\s*\)/i.test(s)) return s;
     if (/中國移動|CMCC/i.test(s)) return `${s} (CMCC)`;
     if (/中國聯通|CUCC|Unicom/i.test(s)) return `${s} (CUCC)`;
@@ -2641,7 +2641,12 @@ export default function ProductPage({
                   >
                     {carrierSpecItems
                       .filter((item) =>
-                        ["ip_type", "route_type", "network"].includes(item.key),
+                        [
+                          "ip_type",
+                          "route_type",
+                          "network",
+                          "speed_rule",
+                        ].includes(item.key),
                       )
                       .map((item) => (
                       <div
@@ -2661,9 +2666,12 @@ export default function ProductPage({
                     {carrierSpecItems
                       .filter(
                         (item) =>
-                          !["ip_type", "route_type", "network"].includes(
-                            item.key,
-                          ),
+                          ![
+                            "ip_type",
+                            "route_type",
+                            "network",
+                            "speed_rule",
+                          ].includes(item.key),
                       )
                       .map((item) => (
                         <div
@@ -3177,7 +3185,12 @@ export default function ProductPage({
                   >
                     {carrierSpecItems
                       .filter((item) =>
-                        ["ip_type", "route_type", "network"].includes(item.key),
+                        [
+                          "ip_type",
+                          "route_type",
+                          "network",
+                          "speed_rule",
+                        ].includes(item.key),
                       )
                       .map((item) => (
                       <div
@@ -3197,9 +3210,12 @@ export default function ProductPage({
                     {carrierSpecItems
                       .filter(
                         (item) =>
-                          !["ip_type", "route_type", "network"].includes(
-                            item.key,
-                          ),
+                          ![
+                            "ip_type",
+                            "route_type",
+                            "network",
+                            "speed_rule",
+                          ].includes(item.key),
                       )
                       .map((item) => (
                         <div

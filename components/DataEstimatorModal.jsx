@@ -86,7 +86,7 @@ function suggestPlanGb(totalGb) {
  * 解析方案流量屬性
  * - 吃到飽
  * - 每日型（每日500MB / 每日1GB）→ 以「每日 GB」計，總量 = 每日 × 天數
- * - 總計型（3GB / 10GB）→ 行程總量
+ * - 總量型（3GB / 10GB）→ 行程總量
  */
 export function parseDataCapacity(amount) {
   const s = String(amount || "").trim();
@@ -133,7 +133,7 @@ export function parseDataCapacity(amount) {
   };
 }
 
-/** 方案用量遞增排序鍵（MB→GB、每日型、總計型；吃到飽最後） */
+/** 方案用量遞增排序鍵（MB→GB、每日型、總量型；吃到飽最後） */
 export function dataAmountSortKey(amount) {
   const cap = parseDataCapacity(amount);
   if (!cap) return Number.MAX_SAFE_INTEGER - 1;
@@ -151,7 +151,7 @@ export function compareDataAmountsAsc(a, b) {
 function formatTelecomShort(telecom) {
   const s = String(telecom || "").trim();
   if (!s) return "";
-  if (/GPT|TikTok/i.test(s)) return "中國移動 GPT+TikTok";
+  if (/GPT|TikTok/i.test(s)) return "中國聯通 GPT+TikTok";
   if (/聯通|CUCC/i.test(s)) return "中國聯通";
   if (/移動|CMCC/i.test(s)) return "中國移動";
   return s.length > 16 ? `${s.slice(0, 15)}…` : s;
@@ -159,7 +159,7 @@ function formatTelecomShort(telecom) {
 
 /**
  * 從目前商品（及同分類相關商品）變體中挑出真正夠用的方案
- * - 總計型：總流量 ≥ 建議總量
+ * - 總量型：總流量 ≥ 建議總量
  * - 每日型：每日流量 ≥ 建議每日用量（不可拿「每日500MB」去對「總量 103GB」）
  * - 吃到飽：高用量優先
  */
@@ -399,7 +399,7 @@ export function getEstimatorDestinationLabel(product, categoryHandle) {
     return "泰國";
   const stripped = name
     .replace(/\s*eSIM.*$/i, "")
-    .replace(/總計型|吃到飽|無限.*$/u, "")
+    .replace(/總量型|總計型|吃到飽|無限.*$/u, "")
     .trim();
   return stripped || "旅途";
 }
@@ -572,7 +572,7 @@ export default function DataEstimatorModal({
                   <p className="text-xs text-slate-500 mt-1">
                     用量以偏保守方式估算
                     {hasCrossProduct
-                      ? "，並比較同地區相關 eSIM（含總計型／吃到飽）後推薦。"
+                      ? "，並比較同地區相關 eSIM（含總量型／吃到飽）後推薦。"
                       : "，並依本商品方案直接推薦合適變體。"}
                   </p>
                 </div>

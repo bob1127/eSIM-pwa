@@ -731,6 +731,14 @@ export default function ProductReviewsSection({
       .order("created_at", { ascending: false });
 
     if (error) {
+      // 表尚未建立時不阻斷頁面（僅 console），避免露出 schema cache 錯誤
+      if (/schema cache|does not exist|Could not find the table/i.test(error.message)) {
+        console.warn("product_reviews:", error.message);
+        setReviews([]);
+        setReplies({});
+        setSubmitError("");
+        return;
+      }
       setSubmitError(error.message);
       return;
     }

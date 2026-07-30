@@ -145,7 +145,7 @@ export async function getStaticProps({ params }) {
         categories: formattedAllCategories,
         initialProducts: formattedProducts,
       },
-      revalidate: 60,
+      revalidate: 3600,
     };
   } catch (e) {
     console.error("❌ Medusa getStaticProps 發生致命錯誤：", e);

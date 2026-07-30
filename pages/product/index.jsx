@@ -124,13 +124,13 @@ export async function getStaticProps() {
       props: {
         initialProducts: formatted,
       },
-      revalidate: 60,
+      revalidate: 3600,
     };
   } catch (err) {
     console.error("[product/index] Medusa fetch failed:", err?.message || err);
     return {
       props: { initialProducts: [] },
-      revalidate: 60,
+      revalidate: 3600,
     };
   }
 }

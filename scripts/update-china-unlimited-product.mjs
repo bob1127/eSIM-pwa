@@ -1,7 +1,8 @@
 /**
  * 更新「中國大陸 吃到飽 eSIM」電信變體
- *   1) 中國移動 (Tiktok+ChatGPT) ← China(T+C)-unlimited-*-A0（CUCC／支援 T+C）
- *   2) 中國移動 吃到飽 常規速度 50-70Mbps ← China-unlimited-*-B0（CMCC／限速 70Mbps）
+ *   1) 中國聯通 GPT + TikTok (CUCC) ← China(T+C)-unlimited-*-A0（CUCC／約 40–100 Mbps）
+ *   2) 中國移動 吃到飽 常規速度 50-70Mbps ← China-unlimited-*-B0（CMCC）
+ *   3) 中國移動 吃到飽 常規速度 8-20Mbps ← China-unlimited-*-A0（CMCC／FUP）
  *
  * 用法：
  *   node scripts/update-china-unlimited-product.mjs --rebuild
@@ -21,8 +22,9 @@ const PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "ScriptImport2026!";
 const HANDLE = "china-unlimited-esim";
 const DATA_AMOUNT = "吃到飽";
 const LINE = "漫遊線路";
-const TELECOM_TC = "中國移動 (Tiktok+ChatGPT)";
+const TELECOM_TC = "中國聯通 GPT + TikTok (CUCC)";
 const TELECOM_70 = "中國移動 吃到飽 常規速度 50-70Mbps";
+const TELECOM_8 = "中國移動 吃到飽 常規速度 8-20Mbps";
 const MARGIN = 1.5; // 利潤 50%
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
@@ -41,28 +43,22 @@ function loadPlans() {
   const file = path.join(__dirname, "data", "china-unlimited-plans.json");
   const raw = JSON.parse(fs.readFileSync(file, "utf8"));
   const rows = [];
-  for (const p of raw.tiktok_chatgpt || []) {
-    const cost = Number(p.cost_twd) || 0;
-    rows.push({
-      ...p,
-      cost_twd: cost,
-      retail_twd: retailFromCost(cost),
-      telecom: TELECOM_TC,
-      daysLabel: `${p.day}天`,
-      kind: "tc_cucc",
-    });
-  }
-  for (const p of raw.speed70 || []) {
-    const cost = Number(p.cost_twd) || 0;
-    rows.push({
-      ...p,
-      cost_twd: cost,
-      retail_twd: retailFromCost(cost),
-      telecom: TELECOM_70,
-      daysLabel: `${p.day}天`,
-      kind: "cmcc_70",
-    });
-  }
+  const push = (list, telecom, kind) => {
+    for (const p of list || []) {
+      const cost = Number(p.cost_twd) || 0;
+      rows.push({
+        ...p,
+        cost_twd: cost,
+        retail_twd: retailFromCost(cost),
+        telecom,
+        daysLabel: `${p.day}天`,
+        kind,
+      });
+    }
+  };
+  push(raw.tiktok_chatgpt, TELECOM_TC, "tc_cucc");
+  push(raw.speed70, TELECOM_70, "cmcc_70");
+  push(raw.speed8_20, TELECOM_8, "cmcc_8_20");
   return rows.sort(
     (a, b) =>
       a.telecom.localeCompare(b.telecom, "zh") || Number(a.day) - Number(b.day),
@@ -112,6 +108,12 @@ function chunk(arr, size) {
   return out;
 }
 
+function speedRuleFor(kind) {
+  if (kind === "tc_cucc") return "約 40–100 Mbps 吃到飽";
+  if (kind === "cmcc_70") return "限速 50–70Mbps 吃到飽";
+  return "約 8–20 Mbps 吃到飽";
+}
+
 function toVariant(row) {
   const isTc = row.kind === "tc_cucc";
   return {
@@ -148,16 +150,14 @@ function toVariant(row) {
         data_amount: DATA_AMOUNT,
         telecom: row.telecom,
         line: LINE,
-        network: "5G 極速",
+        network: "4G / 5G",
         ip_type: "新加坡 IP",
         route_type: LINE,
         hotspot: true,
         gpt: isTc,
         tiktok: isTc,
         gemini: true,
-        speed_rule: isTc
-          ? "每日1GB高速，用完後10Mbps吃到飽"
-          : "限速 50–70Mbps 吃到飽",
+        speed_rule: speedRuleFor(row.kind),
       },
     },
   };
@@ -170,7 +170,7 @@ async function main() {
   const dayValues = [...new Set(rows.map((r) => r.daysLabel))].sort(
     (a, b) => parseInt(a, 10) - parseInt(b, 10),
   );
-  const telecomValues = [TELECOM_TC, TELECOM_70];
+  const telecomValues = [TELECOM_TC, TELECOM_70, TELECOM_8];
 
   console.log("🔐 登入…", EMAIL, "@", MEDUSA_URL);
   const token = await login();
@@ -189,22 +189,25 @@ async function main() {
     carrier_profit_by_carrier: {
       [TELECOM_TC]: 50,
       [TELECOM_70]: 50,
+      [TELECOM_8]: 50,
     },
-    seo_title: "中國大陸 吃到飽 eSIM｜中國移動 TikTok+ChatGPT／常規速度｜Jeko eSIM",
+    seo_title:
+      "中國大陸 吃到飽 eSIM｜聯通 GPT+TikTok／移動常規速度｜Jeko eSIM",
     seo_description:
-      "中國大陸吃到飽 eSIM：中國移動 (Tiktok+ChatGPT) 與中國移動吃到飽常規速度 50-70Mbps。漫遊線路、5G、支援熱點，依天數選購。",
+      "中國大陸吃到飽 eSIM：中國聯通 GPT + TikTok (CUCC)、常規速度 50-70Mbps、常規速度 8-20Mbps。漫遊線路、5G、支援熱點，依天數選購。",
     seo_keywords:
-      "中國大陸eSIM,中國移動eSIM,吃到飽eSIM,TikTok,ChatGPT,70Mbps,旅遊eSIM,Jeko eSIM",
+      "中國大陸eSIM,中國聯通eSIM,中國移動eSIM,吃到飽eSIM,TikTok,ChatGPT,70Mbps,8-20Mbps,旅遊eSIM,Jeko eSIM",
     subtitle_by_carrier: {
-      [TELECOM_TC]: "漫遊・支援 TikTok 與 ChatGPT",
+      [TELECOM_TC]: "漫遊・支援 TikTok 與 ChatGPT・約 40–100 Mbps",
       [TELECOM_70]: "漫遊・常規速度 50–70Mbps 吃到飽",
+      [TELECOM_8]: "漫遊・常規速度 8–20Mbps 吃到飽",
     },
     carrier_specs_by_carrier: {
       [TELECOM_TC]: {
         ip_type: "新加坡 IP",
         route_type: "漫遊線路",
         network: "CUCC 5G/4G",
-        speed_rule: "每日1GB高速，用完後10Mbps吃到飽",
+        speed_rule: "約 40–100 Mbps 吃到飽",
         apps: "熱點分享,ChatGPT,TikTok,Gemini",
       },
       [TELECOM_70]: {
@@ -214,30 +217,49 @@ async function main() {
         speed_rule: "限速 50–70Mbps 吃到飽",
         apps: "熱點分享,Gemini",
       },
+      [TELECOM_8]: {
+        ip_type: "新加坡 IP",
+        route_type: "漫遊線路",
+        network: "CMCC 5G/4G",
+        speed_rule: "約 8–20 Mbps 吃到飽",
+        apps: "熱點分享,Gemini",
+      },
     },
     overview_notices_by_carrier: {
       [TELECOM_TC]: {
         fup_notice:
-          "支援 TikTok／ChatGPT｜每日1GB高速，用完後約10Mbps吃到飽（實際速度依當地網路）",
+          "支援 TikTok／ChatGPT｜約 40–100 Mbps 吃到飽（實際速度依當地網路）",
         activation_notice: "建議抵達中國後再安裝／啟用 eSIM",
       },
       [TELECOM_70]: {
         fup_notice: "常規速度約 50–70Mbps 吃到飽（實際速度依當地網路）",
         activation_notice: "建議抵達中國後再安裝／啟用 eSIM",
       },
+      [TELECOM_8]: {
+        fup_notice: "常規速度約 8–20Mbps 吃到飽（實際速度依當地網路）",
+        activation_notice: "建議抵達中國後再安裝／啟用 eSIM",
+      },
     },
     key_features_by_carrier: {
-      [TELECOM_TC]: ["支援 TikTok", "支援 ChatGPT", "熱點分享", "5G"],
-      [TELECOM_70]: ["常規速度 50-70Mbps", "吃到飽", "熱點分享", "5G"],
+      [TELECOM_TC]: [
+        "支援 TikTok",
+        "支援 ChatGPT",
+        "約 40-100 Mbps",
+        "熱點分享",
+        "4G / 5G",
+      ],
+      [TELECOM_70]: ["常規速度 50-70Mbps", "吃到飽", "熱點分享", "4G / 5G"],
+      [TELECOM_8]: ["常規速度 8-20Mbps", "吃到飽", "熱點分享", "4G / 5G"],
     },
   };
 
   const payloadBase = {
     title: "中國大陸 吃到飽 eSIM",
-    subtitle: "中國移動兩種方案：TikTok+ChatGPT／常規速度 50-70Mbps",
+    subtitle:
+      "聯通 GPT+TikTok／移動 50-70Mbps／移動 8-20Mbps",
     handle: HANDLE,
     description:
-      "中國大陸吃到飽 eSIM，兩種電信方案：中國移動 (Tiktok+ChatGPT) 支援熱門 App；中國移動吃到飽常規速度 50-70Mbps 適合一般上網。漫遊線路、5G、支援熱點，依天數選購。",
+      "中國大陸吃到飽 eSIM，三種電信方案：中國聯通 GPT + TikTok (CUCC)；中國移動吃到飽常規速度 50-70Mbps；中國移動吃到飽常規速度 8-20Mbps。漫遊線路、5G、支援熱點，依天數選購。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,
@@ -254,9 +276,10 @@ async function main() {
   };
 
   const variants = rows.map(toVariant);
-  console.log(
-    `📦 方案 ${rows.length} 筆（${TELECOM_TC} ${rows.filter((r) => r.telecom === TELECOM_TC).length} + ${TELECOM_70} ${rows.filter((r) => r.telecom === TELECOM_70).length}）`,
-  );
+  const nTc = rows.filter((r) => r.telecom === TELECOM_TC).length;
+  const n70 = rows.filter((r) => r.telecom === TELECOM_70).length;
+  const n8 = rows.filter((r) => r.telecom === TELECOM_8).length;
+  console.log(`📦 方案 ${rows.length} 筆（T+C ${nTc} + 50-70 ${n70} + 8-20 ${n8}）`);
 
   console.log("♻️ 更新商品", product.id);
   await admin(token, `/admin/products/${product.id}`, {
@@ -320,12 +343,8 @@ async function main() {
     (telecomOpt?.values || []).map((v) => v.value).join(" | "),
   );
   console.log(
-    `範例 70Mbps 1天:`,
-    rows.find((r) => r.telecom === TELECOM_70 && r.day === 1),
-  );
-  console.log(
-    `範例 T+C 1天:`,
-    rows.find((r) => r.telecom === TELECOM_TC && r.day === 1),
+    `範例 8-20Mbps 2天:`,
+    rows.find((r) => r.telecom === TELECOM_8 && r.day === 2),
   );
 }
 

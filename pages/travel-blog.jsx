@@ -436,12 +436,12 @@ export async function getStaticProps() {
     const raw = await fetchWpPosts({ per_page: 20 });
     return {
       props: { posts: raw.map(mapWpPostToTravelCard) },
-      revalidate: 60,
+      revalidate: 3600,
     };
   } catch {
     return {
       props: { posts: [] },
-      revalidate: 60,
+      revalidate: 3600,
     };
   }
 }

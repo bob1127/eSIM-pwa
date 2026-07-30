@@ -90,7 +90,7 @@ export async function getStaticProps({ params }) {
         categories,
         initialProducts: products,
       },
-      revalidate: 60, // 每 60 秒重新驗證一次資料 (ISR)
+      revalidate: 3600, // 每小時重新驗證一次 (ISR)
     };
   } catch (e) {
     console.error("❌ getStaticProps 錯誤：", e);

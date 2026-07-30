@@ -1181,7 +1181,7 @@ export async function getStaticProps({ params }) {
           articleSubCats: ["合作夥伴供稿"],
           popularTags: ["#合作夥伴供稿", "#旅遊", "#eSIM"],
         },
-        revalidate: 60,
+        revalidate: 3600,
       };
     }
 
@@ -1216,7 +1216,7 @@ export async function getStaticProps({ params }) {
         ],
         popularTags,
       },
-      revalidate: 60,
+      revalidate: 3600,
     };
   } catch (error) {
     console.error("getStaticProps (blog):", error);
