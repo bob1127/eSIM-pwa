@@ -1915,14 +1915,24 @@ export default function ProductPage({
     }
 
     if (/GPT|TikTok|ChatGPT/i.test(telecom)) {
-      return product?.subtitle || "支援 TikTok 與 ChatGPT";
+      return (
+        byCarrier[telecom] ||
+        "漫遊・支援 TikTok 與 ChatGPT"
+      );
     }
     const attrs = currentVariation?.attributes || {};
     if (attrs.gpt === true && attrs.tiktok === true) {
-      return product?.subtitle || "支援 TikTok 與 ChatGPT";
+      return (
+        product?.subtitle_by_carrier?.[telecom] ||
+        product?.metadata?.subtitle_by_carrier?.[telecom] ||
+        "漫遊・支援 TikTok 與 ChatGPT"
+      );
+    }
+    if (/50-70|70Mbps|常規速度/i.test(telecom)) {
+      return "漫遊・常規速度 50–70Mbps 吃到飽";
     }
     if (/-B0$/i.test(String(currentVariation?.sku || ""))) {
-      return product?.subtitle || "支援 TikTok 與 ChatGPT";
+      return "漫遊・常規速度 50–70Mbps 吃到飽";
     }
     return null;
   }, [
@@ -1947,6 +1957,7 @@ export default function ProductPage({
   const formatTelecomLabel = (opt) => {
     const s = String(opt || "").trim();
     if (!s) return s;
+    if (/Tiktok\+ChatGPT|常規速度|50-70/i.test(s)) return s;
     if (/\(\s*CMCC\s*\)/i.test(s) || /\(\s*CUCC\s*\)/i.test(s)) return s;
     if (/中國移動|CMCC/i.test(s)) return `${s} (CMCC)`;
     if (/中國聯通|CUCC|Unicom/i.test(s)) return `${s} (CUCC)`;

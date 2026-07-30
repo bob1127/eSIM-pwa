@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronUp } from "lucide-react";
+import { ChevronUp, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { SOCIAL_LINKS } from "@/lib/seo.config";
 import {
@@ -11,17 +11,29 @@ import {
   LineIconSvg,
 } from "@/components/social/SocialBrandIcons";
 
+const DISMISS_KEY = "jeko_social_float_dismissed";
+
 /**
  * 右下角：社群膠囊（IG／FB／LINE 品牌色）+ Top
+ * IG 上方有 X，可關閉社群列（Top 仍保留）
  */
 export default function SmartWizardFloat() {
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [socialDismissed, setSocialDismissed] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    try {
+      if (sessionStorage.getItem(DISMISS_KEY) === "1") {
+        setSocialDismissed(true);
+      }
+    } catch {
+      /* ignore */
+    }
+
     const getScrollY = () =>
       window.scrollY ||
       document.documentElement.scrollTop ||
@@ -51,6 +63,25 @@ export default function SmartWizardFloat() {
   const goTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
     document.documentElement.scrollTo?.({ top: 0, behavior: "smooth" });
+  };
+
+  const dismissSocial = () => {
+    setSocialDismissed(true);
+    setHovered(false);
+    try {
+      sessionStorage.setItem(DISMISS_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const restoreSocial = () => {
+    setSocialDismissed(false);
+    try {
+      sessionStorage.removeItem(DISMISS_KEY);
+    } catch {
+      /* ignore */
+    }
   };
 
   if (!mounted) return null;
@@ -88,6 +119,8 @@ export default function SmartWizardFloat() {
     },
   ].filter((btn) => Boolean(btn.href));
 
+  const showSocial = !socialDismissed && socialBtns.length > 0;
+
   return createPortal(
     <AnimatePresence>
       {visible && !chatOpen && (
@@ -101,7 +134,7 @@ export default function SmartWizardFloat() {
           onMouseLeave={() => setHovered(false)}
         >
           <AnimatePresence>
-            {hovered && socialBtns.length > 0 && (
+            {hovered && showSocial && (
               <motion.div
                 initial={{ opacity: 0, y: 8, height: 0 }}
                 animate={{ opacity: 1, y: 0, height: "auto" }}
@@ -109,6 +142,19 @@ export default function SmartWizardFloat() {
                 transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                 className="flex flex-col items-end gap-2 overflow-hidden"
               >
+                <motion.button
+                  type="button"
+                  onClick={dismissSocial}
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 12 }}
+                  transition={{ duration: 0.18 }}
+                  className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/95 text-[#6B7280] border border-[#E5E7EB] shadow-md hover:bg-[#F3F4F6] hover:text-[#111827] active:scale-95"
+                  aria-label="關閉社群選單"
+                  title="關閉"
+                >
+                  <X size={14} strokeWidth={2.5} />
+                </motion.button>
                 {socialBtns.map((btn, i) => (
                   <motion.a
                     key={btn.key}
@@ -118,7 +164,7 @@ export default function SmartWizardFloat() {
                     initial={{ opacity: 0, x: 12 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 12 }}
-                    transition={{ delay: i * 0.04, duration: 0.18 }}
+                    transition={{ delay: (i + 1) * 0.04, duration: 0.18 }}
                     className={`inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[11px] font-bold transition ${btn.className}`}
                     style={btn.style}
                     aria-label={`前往 Jeko ${btn.label}`}
@@ -130,6 +176,18 @@ export default function SmartWizardFloat() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {socialDismissed && (
+            <button
+              type="button"
+              onClick={restoreSocial}
+              className="h-8 w-8 rounded-full bg-white border border-[#E5E7EB] text-[#6B7280] shadow-md text-[11px] font-bold hover:bg-[#F3F4F6]"
+              aria-label="顯示社群選單"
+              title="顯示社群"
+            >
+              +
+            </button>
+          )}
 
           <motion.button
             type="button"
