@@ -1,5 +1,9 @@
 import { fetchSheetValuesForMonth } from "@/lib/pickleballSheets";
-import { PICKLEBALL_VENUE, todayDateStrTaipei } from "@/lib/pickleballMock";
+import {
+  PICKLEBALL_VENUE,
+  todayDateStrTaipei,
+  toPublicBookings,
+} from "@/lib/pickleballMock";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -37,8 +41,14 @@ export default async function handler(req, res) {
 
   try {
     const payload = await fetchSheetValuesForMonth({ year, month });
+    // 雙重保險：API 出口再濾一次過期／清空進行中姓名
+    const safe = {
+      ...payload,
+      bookings: toPublicBookings(payload?.bookings || [], now),
+      minDate: today,
+    };
     res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=120");
-    return res.status(200).json(payload);
+    return res.status(200).json(safe);
   } catch (e) {
     console.error("[pickleball/schedule]", e);
     return res.status(502).json({

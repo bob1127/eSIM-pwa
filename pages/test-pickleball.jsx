@@ -5,7 +5,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import Head from "next/head";
 import {
   fetchPickleballSchedule,
-  todayDateStr,
+  todayDateStrTaipei,
+  isBookingFullyPast,
+  isSlotStartPast,
   PICKLEBALL_VENUE,
   parseHmToMinutes,
   minutesToHm,
@@ -18,8 +20,8 @@ import { SOCIAL_LINKS } from "@/lib/seo.config";
  */
 
 const LINE_URL = SOCIAL_LINKS.line || "https://lin.ee/y6tdx5q";
-const PHONE_DISPLAY = "0939-767-977";
-const PHONE_TEL = "tel:+886939767977";
+const PHONE_DISPLAY = "0925-018-770";
+const PHONE_TEL = "tel:+886925018770";
 
 const COURTS = ["A", "B"];
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
@@ -89,10 +91,22 @@ function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && bStart < aEnd;
 }
 
-/** 將全日時段對上該場預約：available | booked | blocked */
-function mapSlotsWithBookings(bookings) {
+/**
+ * 將全日時段對上該場預約：available | booked | blocked | past
+ * @param {string} dateStr YYYY-MM-DD
+ * @param {Date} [now]
+ */
+function mapSlotsWithBookings(bookings, dateStr, now = new Date()) {
   const active = (bookings || []).filter((b) => b.status !== "cancelled");
   return ALL_DAY_SLOTS.map((slot) => {
+    if (isSlotStartPast(dateStr, slot.startMin, now)) {
+      return {
+        ...slot,
+        state: "past",
+        booking: null,
+        overlapOnly: false,
+      };
+    }
     const hit = active.find((b) =>
       rangesOverlap(
         slot.startMin,
@@ -153,7 +167,7 @@ function buildMonthGrid(year, month) {
   return cells;
 }
 
-function summarizeDay(bookingsByCourt) {
+function summarizeDay(bookingsByCourt, dateStr, now = new Date()) {
   const bookedCourts = [];
   const freeCourts = [];
   let hasBlocked = false;
@@ -161,9 +175,11 @@ function summarizeDay(bookingsByCourt) {
 
   for (const court of COURTS) {
     const list = bookingsByCourt[court] || [];
-    const slots = mapSlotsWithBookings(list);
+    const slots = mapSlotsWithBookings(list, dateStr, now);
     const freeCount = slots.filter((s) => s.state === "available").length;
-    const active = list.filter((b) => b.status !== "cancelled");
+    const active = list.filter(
+      (b) => b.status !== "cancelled" && !isBookingFullyPast(b, now),
+    );
 
     if (freeCount > 0) {
       freeCourts.push(court);
@@ -281,13 +297,13 @@ export default function TestPickleballPage() {
     };
   }, [popupDate]);
 
-  const todayStr = todayDateStr(tick);
+  const todayStr = todayDateStrTaipei(tick);
 
   const byDateCourt = useMemo(() => {
     const map = {};
     (payload?.bookings || []).forEach((b) => {
-      // 前端雙重保險：過期日資料不進日曆／彈窗
-      if (!b?.date || b.date < todayStr) return;
+      // 前端雙重保險：過期日／當日已結束時段不進日曆／彈窗
+      if (!b?.date || isBookingFullyPast(b, tick)) return;
       if (!map[b.date]) map[b.date] = { A: [], B: [] };
       if (map[b.date][b.court]) map[b.date][b.court].push(b);
     });
@@ -297,7 +313,7 @@ export default function TestPickleballPage() {
       );
     });
     return map;
-  }, [payload, todayStr]);
+  }, [payload, tick]);
 
   const grid = useMemo(
     () => buildMonthGrid(viewYear, viewMonth),
@@ -318,7 +334,7 @@ export default function TestPickleballPage() {
   const openDayPopup = (date) => {
     if (date < todayStr) return;
     const courts = byDateCourt[date] || { A: [], B: [] };
-    const summary = summarizeDay(courts);
+    const summary = summarizeDay(courts, date, tick);
     if (!summary.dayBookable) return;
     setPopupCourt(summary.freeCourts[0] || "A");
     setSelectedSlotKey(null);
@@ -328,7 +344,9 @@ export default function TestPickleballPage() {
   const popupCourts = popupDate
     ? byDateCourt[popupDate] || { A: [], B: [] }
     : { A: [], B: [] };
-  const popupSummary = popupDate ? summarizeDay(popupCourts) : null;
+  const popupSummary = popupDate
+    ? summarizeDay(popupCourts, popupDate, tick)
+    : null;
 
   useEffect(() => {
     if (popupDate && popupDate < todayStr) {
@@ -340,8 +358,8 @@ export default function TestPickleballPage() {
   const activeCourtSlots = useMemo(() => {
     if (!popupDate) return [];
     const courts = byDateCourt[popupDate] || { A: [], B: [] };
-    return mapSlotsWithBookings(courts[popupCourt] || []);
-  }, [popupDate, popupCourt, byDateCourt]);
+    return mapSlotsWithBookings(courts[popupCourt] || [], popupDate, tick);
+  }, [popupDate, popupCourt, byDateCourt, tick]);
 
   /** 列表不顯示半點重疊衝突格（僅保留可約＋實際預約起始格） */
   const visibleCourtSlots = useMemo(
@@ -522,7 +540,7 @@ export default function TestPickleballPage() {
                     );
                   }
                   const courts = byDateCourt[cell.date] || { A: [], B: [] };
-                  const summary = summarizeDay(courts);
+                  const summary = summarizeDay(courts, cell.date, tick);
                   const isToday = cell.date === todayStr;
                   const isPast = cell.date < todayStr;
                   const isSelected = popupDate === cell.date;
@@ -706,6 +724,8 @@ export default function TestPickleballPage() {
                         const active = popupCourt === c;
                         const courtSlots = mapSlotsWithBookings(
                           popupCourts[c] || [],
+                          popupDate,
+                          tick,
                         );
                         const freeN = courtSlots.filter(
                           (s) => s.state === "available",
@@ -760,15 +780,18 @@ export default function TestPickleballPage() {
                       style={{ borderColor: AM.border }}
                     >
                       {visibleCourtSlots.map((slot) => {
+                        const isPast = slot.state === "past";
                         const isAvailable = slot.state === "available";
                         const isSelected =
                           isAvailable && selectedSlotKey === slot.key;
                         const isBlocked = slot.state === "blocked";
-                        const label = isBlocked
-                          ? "關閉"
-                          : isAvailable
-                            ? "可預約"
-                            : "已預約";
+                        const label = isPast
+                          ? "已過"
+                          : isBlocked
+                            ? "關閉"
+                            : isAvailable
+                              ? "可預約"
+                              : "已預約";
 
                         return (
                           <button
@@ -783,24 +806,32 @@ export default function TestPickleballPage() {
                               borderColor: isSelected ? AM.primary : AM.border,
                               background: isSelected
                                 ? AM.primarySoft
-                                : isAvailable
-                                  ? "#FFFFFF"
-                                  : "#F7F8FA",
-                              opacity: isAvailable ? 1 : 0.72,
+                                : isPast
+                                  ? "#EEF1F4"
+                                  : isAvailable
+                                    ? "#FFFFFF"
+                                    : "#F7F8FA",
+                              opacity: isPast ? 0.45 : isAvailable ? 1 : 0.72,
                             }}
                           >
                             <div className="min-w-0">
                               <p
                                 className="text-[15px] font-extrabold tabular-nums leading-none tracking-tight"
                                 style={{
-                                  color: isAvailable ? AM.text : "#98A2AE",
+                                  color:
+                                    isPast || !isAvailable
+                                      ? "#98A2AE"
+                                      : AM.text,
+                                  textDecoration: isPast
+                                    ? "line-through"
+                                    : "none",
                                 }}
                               >
                                 {slot.start}
                                 <span className="text-[#C0C8D2] mx-1">–</span>
                                 {slot.end}
                               </p>
-                              {!isAvailable && slot.booking && (
+                              {!isAvailable && !isPast && slot.booking && (
                                 <p className="text-[11px] text-[#8B96A5] mt-1.5 leading-none truncate">
                                   {isBlocked
                                     ? slot.booking.note || "場地關閉"
@@ -813,21 +844,25 @@ export default function TestPickleballPage() {
                               style={{
                                 background: isSelected
                                   ? AM.primary
-                                  : isAvailable
-                                    ? AM.successSoft
-                                    : isBlocked
-                                      ? "#E8ECF0"
-                                      : AM.primarySoft,
+                                  : isPast
+                                    ? "#E2E6EB"
+                                    : isAvailable
+                                      ? AM.successSoft
+                                      : isBlocked
+                                        ? "#E8ECF0"
+                                        : AM.primarySoft,
                                 color: isSelected
                                   ? "#FFFFFF"
-                                  : isAvailable
-                                    ? "#0F8A52"
-                                    : isBlocked
-                                      ? "#6B7580"
-                                      : AM.primaryText,
+                                  : isPast
+                                    ? "#8B96A5"
+                                    : isAvailable
+                                      ? "#0F8A52"
+                                      : isBlocked
+                                        ? "#6B7580"
+                                        : AM.primaryText,
                               }}
                             >
-                              {isSelected ? "已選" : label}
+                              {label}
                             </span>
                           </button>
                         );
