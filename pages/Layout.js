@@ -69,8 +69,14 @@ export default function RootLayout({
               {!hideNavbar && <Navbar />}
               <Sidebar sidebarProduct={sidebarProduct} onAddToCart={handleAddToCart} />
 
-              {/* 浮動 Navbar 預設頂部留白；hideNavbar／flushTop 時不加 */}
-              <div className={!hideNavbar && !flushTop ? "pt-[100px]" : undefined}>
+              {/* 浮動 Navbar：外層 pt + 白底工具列 + 藍底選單(~56px)；需大於實際佔高才不會擋麵包屑 */}
+              <div
+                className={
+                  !hideNavbar && !flushTop
+                    ? "pt-[96px] lg:pt-[148px]"
+                    : undefined
+                }
+              >
                 {children}
               </div>
 

@@ -15,6 +15,7 @@ import Box from "@mui/material/Box";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/components/context/UserContext";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
+import { PENDING_COUPON_KEY } from "@/lib/partnerReferralDiscount";
 
 // --- Icons ---
 const TruckIcon = () => (
@@ -105,11 +106,77 @@ const CartPage = () => {
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);
 
+  // 專屬折扣碼連結：從 sessionStorage 自動套用（優先於歡迎禮）
+  useEffect(() => {
+    if (!cartId || appliedCode || isApplyingCoupon) return undefined;
+    let pending = "";
+    try {
+      pending = sessionStorage.getItem(PENDING_COUPON_KEY) || "";
+    } catch {
+      return undefined;
+    }
+    if (!pending) return undefined;
+
+    // 先清掉，避免套用失敗時 effect 無限重試
+    try {
+      sessionStorage.removeItem(PENDING_COUPON_KEY);
+    } catch {
+      /* ignore */
+    }
+
+    let cancelled = false;
+    (async () => {
+      setIsApplyingCoupon(true);
+      setPromoOpen(true);
+      setCoupon(pending);
+      try {
+        const res = await fetch("/api/checkout/promotion", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: "include",
+          body: JSON.stringify({ cartId, code: pending, action: "apply" }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && data.success) {
+          const raw = Number(data.discount_total || 0);
+          const asYen = raw >= 1000 ? Math.round(raw / 100) : raw;
+          setDiscount(asYen);
+          setAppliedCode(data.code || pending);
+          setCouponMessage(
+            data.partner_discount_percent
+              ? `已自動套用專屬折扣碼 ${data.code || pending}（${data.partner_discount_percent}% off）`
+              : `已自動套用折扣碼 ${data.code || pending}`,
+          );
+        } else if (data.error) {
+          setCouponMessage(data.error);
+        }
+      } catch (e) {
+        if (!cancelled) setCouponMessage(e.message || "折扣碼套用失敗");
+      } finally {
+        if (!cancelled) setIsApplyingCoupon(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartId, appliedCode, token]);
+
   // 登入會員：自動領歡迎禮；未加 LINE 顯示引導；已加則自動套用
   // 注意：即使尚無 Medusa cartId，也要先顯示優惠券／加 LINE 引導
   useEffect(() => {
     if (activeStep !== 1) return undefined;
     if (!authReady || !isLoggedIn || appliedCode) return undefined;
+    try {
+      if (sessionStorage.getItem(PENDING_COUPON_KEY)) return undefined;
+    } catch {
+      /* ignore */
+    }
     let cancelled = false;
 
     (async () => {

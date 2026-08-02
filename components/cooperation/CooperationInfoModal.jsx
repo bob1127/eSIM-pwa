@@ -29,12 +29,12 @@ const MODAL_CONTENT = {
 
 const COMMISSION_BY_MODE = {
   referral: {
-    label: "專屬連結",
+    label: "專屬折扣碼連結",
     points: [
       { k: "基本分潤", v: "產品成本 × 25%" },
       { k: "達標加碼", v: "當月有效訂單達 40 筆 → 該月調為成本 × 30%" },
-      { k: "歸因方式", v: "專屬連結 + Cookie 約 30 天" },
-      { k: "售價", v: "與官網同價，不自行加價" },
+      { k: "旅客優惠", v: "專屬折扣碼（預設全單 10%，依核准）" },
+      { k: "歸因方式", v: "專屬連結／折扣碼 + Cookie 約 30 天" },
     ],
   },
   store: {
@@ -52,7 +52,7 @@ function ModeTabs({ mode, onChange }) {
   return (
     <div className="flex p-1 rounded-xl bg-slate-100/90 border border-slate-200/80">
       {[
-        { id: "referral", label: "專屬連結" },
+        { id: "referral", label: "專屬折扣碼連結" },
         { id: "store", label: "專屬商店" },
       ].map((tab) => {
         const active = mode === tab.id;

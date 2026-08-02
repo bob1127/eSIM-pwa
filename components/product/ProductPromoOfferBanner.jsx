@@ -21,6 +21,8 @@ export default function ProductPromoOfferBanner({
   adminChecked = false,
   authHeaders = {},
   onSaved,
+  /** 經專屬折扣碼連結進入時隱藏前台優惠（與夥伴碼互斥、不可疊加） */
+  suppressCustomerBanner = false,
 }) {
   const resolved = resolvePromoOffer(product, carrierName);
   const displayText = formatPromoOfferText(resolved);
@@ -106,11 +108,14 @@ export default function ProductPromoOfferBanner({
     }
   };
 
-  const showBanner = Boolean(displayText && discountCode);
+  const showBanner =
+    Boolean(displayText && discountCode) && !suppressCustomerBanner;
   const showAdminEmpty =
-    adminChecked && isAdmin && !showBanner && !isEditing;
+    adminChecked && isAdmin && !showBanner && !isEditing && !suppressCustomerBanner;
+  const showPartnerMuteHint =
+    adminChecked && isAdmin && suppressCustomerBanner && !isEditing;
 
-  if (!showBanner && !showAdminEmpty && !isEditing) {
+  if (!showBanner && !showAdminEmpty && !isEditing && !showPartnerMuteHint) {
     return null;
   }
 
@@ -166,6 +171,12 @@ export default function ProductPromoOfferBanner({
               </button>
             )}
           </div>
+
+          {showPartnerMuteHint && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-2">
+              此訪客經專屬折扣碼連結進入，前台商品優惠已隱藏（與夥伴碼互斥）。管理者仍可編輯設定。
+            </p>
+          )}
 
           {isEditing ? (
             <div className="space-y-3">

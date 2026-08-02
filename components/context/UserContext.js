@@ -31,7 +31,31 @@ export const UserProvider = ({ children }) => {
       setIsHydrated(true);
     });
 
-    return () => subscription.unsubscribe();
+    // 3. 修正瀏覽器「上一頁」造成的登入狀態不同步：
+    //    從商品頁跳去 /login 是整頁換頁，登入完成後用 router.replace()
+    //    導回會員頁，此時原本的商品頁會被瀏覽器凍結進 bfcache。
+    //    按上一頁回到該頁時，瀏覽器可能直接還原凍結當下（登入前）的畫面，
+    //    不會重新執行任何 effect，因此需要監聽 pageshow / 分頁重新可見
+    //    時主動重新讀取 session，讓畫面立即反映最新登入狀態。
+    const resyncSession = () => {
+      initSession();
+    };
+    const handlePageShow = (event) => {
+      if (event.persisted) resyncSession();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") resyncSession();
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", resyncSession);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("pageshow", handlePageShow);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", resyncSession);
+    };
   }, []);
 
   const logout = async () => {

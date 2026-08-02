@@ -28,6 +28,7 @@ import {
   parseFaqContentByCarrier,
 } from "../../../lib/productFaqContent";
 import { parsePromoOfferByCarrier } from "../../../lib/productPromoOffer";
+import { PENDING_COUPON_KEY } from "../../../lib/partnerReferralDiscount";
 import {
   normalizeCarrierHtml,
   hasBlockLevelCarrierHtml,
@@ -73,6 +74,11 @@ import DataEstimatorModal, {
   getEstimatorDestinationLabel,
   compareDataAmountsAsc,
 } from "@/components/DataEstimatorModal";
+import {
+  is5MbpsDataAmount,
+  formatDataAmountMain,
+  getVariationOptionAttrs,
+} from "@/lib/dataAmountLabel";
 import { fetchCategoryComparablePlans } from "@/lib/formatMedusaProductPage";
 import { buildLoginUrl } from "@/lib/authRedirect";
 
@@ -482,10 +488,6 @@ const PRODUCT_SUB_NAV = [
   { id: "faq", label: "常見問題", href: "#product-faq" },
   { id: "reviews", label: "評論", href: "#product-reviews" },
 ];
-
-function ProductStickyNav({ productName }) {
-  return <div className=" "></div>;
-}
 
 function ServiceBenefits() {
   const items = [
@@ -1508,47 +1510,81 @@ export async function getStaticProps({ params }) {
             attrs =
               typeof v.metadata.attributes === "string"
                 ? JSON.parse(v.metadata.attributes)
-                : v.metadata.attributes;
+                : { ...v.metadata.attributes };
           } catch (e) {}
         }
-        attrs = { ...v.metadata, ...attrs };
 
-        // 依選項標題解析（對齊無限方案：使用天數 / 電信商 / 數據量）
+        // 只取選購規格欄位，勿把整包 metadata 灌進 attributes（頁面 JSON 會爆）
+        // 依選項標題解析（使用天數／電信商／數據量）；天數勿用 includes("天") 以免誤判
         v.options?.forEach((opt) => {
           const val = String(opt.value || "").trim();
           if (!val) return;
           const title = String(opt.option?.title || opt.title || "").trim();
 
-          if (title === "使用天數" || val.includes("天") || val.includes("Days")) {
+          if (title === "使用天數" || /^\d+\s*天/.test(val)) {
             attrs.days = parseInt(val, 10);
+          } else if (title === "數據量") {
+            attrs.data_amount = val;
           } else if (
-            title === "數據量" ||
-            val.includes("流量") ||
-            val.includes("GB") ||
-            val.includes("MB") ||
-            val.includes("吃到飽") ||
-            val.includes("每日")
+            !title &&
+            (val.includes("流量") ||
+              val.includes("GB") ||
+              val.includes("MB") ||
+              val.includes("吃到飽") ||
+              val.includes("每日") ||
+              /5Mbps續航/i.test(val))
           ) {
             attrs.data_amount = val;
           } else if (title === "電信商") {
             attrs.telecom = val;
           } else if (title === "線路" || title === "方案") {
-            // 舊資料相容：不當成電信商
             attrs.line = val;
-          } else if (!attrs.telecom) {
-            attrs.telecom = val;
           }
         });
 
+        // title 後備：中國移動 · 5天 · 每日 1GB（5Mbps續航）
+        const fromTitle = getVariationOptionAttrs({ title: v.title, attributes: attrs });
+        if (!attrs.telecom && fromTitle.telecom) attrs.telecom = fromTitle.telecom;
+        if ((attrs.days == null || attrs.days === "") && fromTitle.days != null) {
+          attrs.days = parseInt(fromTitle.days, 10);
+        }
+        if (!attrs.data_amount && fromTitle.data_amount) {
+          attrs.data_amount = fromTitle.data_amount;
+        }
+
+        const n = (x) => (x === undefined ? null : x);
         return {
           id: v.id,
-          title: v.title,
-          sku: v.sku,
+          title: v.title || "",
+          sku: v.sku || "",
           price: price,
           original_price: v.original_price || price,
           plan_id: v.metadata?.plan_id || "",
-          attributes: attrs,
-          tags: v.metadata?.tags ? v.metadata.tags.split(",") : [],
+          attributes: {
+            telecom: attrs.telecom || null,
+            days: attrs.days ?? null,
+            data_amount: attrs.data_amount || null,
+            line: attrs.line || null,
+            speed_rule:
+              attrs.speed_rule || v.metadata?.speed_rule || null,
+            ip_type: attrs.ip_type || null,
+            network: attrs.network || null,
+            route_type: attrs.route_type || null,
+            hotspot: n(attrs.hotspot),
+            gpt: n(attrs.gpt),
+            tiktok: n(attrs.tiktok),
+            gemini: n(attrs.gemini),
+          },
+          tags: v.metadata?.tags ? String(v.metadata.tags).split(",") : [],
+          speed_desc: v.metadata?.speed_desc || "",
+          rule_desc: v.metadata?.rule_desc || "",
+          metadata: {
+            plan_id: v.metadata?.plan_id || "",
+            cost_price: n(v.metadata?.cost_price),
+            cost_hkd: n(v.metadata?.cost_hkd),
+            throttle_kind: n(v.metadata?.throttle_kind),
+            speed_rule: n(v.metadata?.speed_rule),
+          },
         };
       }) || [];
 
@@ -1564,6 +1600,9 @@ export async function getStaticProps({ params }) {
         currentHandle: product.handle,
       });
     } catch (err) {
+      const hotSaleTelecoms = parseHotSaleTelecoms(
+        product.metadata?.hot_sale_telecoms,
+      );
       comparablePlans = formattedVariations.map((v) => ({
         ...v,
         productId: product.id,
@@ -1573,6 +1612,11 @@ export async function getStaticProps({ params }) {
         productKind: "other",
         isCurrentProduct: true,
         categoryHandle: categoryHandle || "",
+        hotSaleTelecoms,
+        isHotSale: isHotSaleTelecom(
+          hotSaleTelecoms,
+          v.attributes?.telecom || "",
+        ),
       }));
     }
 
@@ -1622,6 +1666,31 @@ export default function ProductPage({
   const isAdmin = isPartnerShell ? false : productAdmin.isAdmin;
   const adminChecked = isPartnerShell ? true : productAdmin.adminChecked;
   const authHeaders = productAdmin.authHeaders;
+
+  // 專屬折扣碼連結進入：隱藏商品頁自訂優惠（兩者互斥、結帳也只能套一組碼）
+  const [suppressProductPromo, setSuppressProductPromo] = useState(false);
+  useEffect(() => {
+    if (isPartnerShell) {
+      setSuppressProductPromo(false);
+      return;
+    }
+    let fromStorage = false;
+    try {
+      fromStorage = Boolean(sessionStorage.getItem(PENDING_COUPON_KEY));
+    } catch {
+      /* ignore */
+    }
+    const q = router.query || {};
+    // 僅在帶 coupon（專屬折扣碼）時隱藏；純 ?ref= 歸因連結仍可顯示商品優惠
+    const fromQuery = Boolean(
+      typeof q.coupon === "string" && q.coupon.trim(),
+    );
+    setSuppressProductPromo(fromStorage || fromQuery);
+  }, [
+    isPartnerShell,
+    router.query?.coupon,
+    router.query?.ref,
+  ]);
 
   useEffect(() => {
     setProduct(initialProduct);
@@ -1704,13 +1773,14 @@ export default function ProductPage({
   // 2. 匹配變體與價格
   useEffect(() => {
     if (variations.length > 0) {
-      const match = variations.find((v) =>
-        Object.keys(selectedAttributes).every(
-          (key) =>
-            v.attributes &&
-            String(v.attributes[key]) === String(selectedAttributes[key]),
-        ),
-      );
+      const match = variations.find((v) => {
+        const opts = getVariationOptionAttrs(v);
+        return ["telecom", "days", "data_amount"].every((key) => {
+          if (selectedAttributes[key] == null || selectedAttributes[key] === "")
+            return true;
+          return String(opts[key] ?? "") === String(selectedAttributes[key]);
+        });
+      });
       setCurrentVariation(match || null);
     }
   }, [selectedAttributes, variations]);
@@ -1724,7 +1794,11 @@ export default function ProductPage({
 
   const availableCarriers = useMemo(
     () => [
-      ...new Set(variations.map((v) => v.attributes?.telecom).filter(Boolean)),
+      ...new Set(
+        variations
+          .map((v) => getVariationOptionAttrs(v).telecom)
+          .filter(Boolean),
+      ),
     ],
     [variations],
   );
@@ -1732,11 +1806,15 @@ export default function ProductPage({
   const availableDays = useMemo(() => {
     const currentTelecom = selectedAttributes["telecom"];
     const filteredVariations = currentTelecom
-      ? variations.filter((v) => v.attributes?.telecom === currentTelecom)
+      ? variations.filter(
+          (v) => getVariationOptionAttrs(v).telecom === currentTelecom,
+        )
       : variations;
     const days = [
       ...new Set(
-        filteredVariations.map((v) => v.attributes?.days).filter(Boolean),
+        filteredVariations
+          .map((v) => getVariationOptionAttrs(v).days)
+          .filter(Boolean),
       ),
     ];
     return days.sort(
@@ -1750,15 +1828,18 @@ export default function ProductPage({
     let filtered = variations;
     if (currentTelecom)
       filtered = filtered.filter(
-        (v) => v.attributes?.telecom === currentTelecom,
+        (v) => getVariationOptionAttrs(v).telecom === currentTelecom,
       );
     if (currentDays)
       filtered = filtered.filter(
-        (v) => String(v.attributes?.days) === String(currentDays),
+        (v) =>
+          String(getVariationOptionAttrs(v).days) === String(currentDays),
       );
     return [
       ...new Set(
-        filtered.map((v) => v.attributes?.data_amount).filter(Boolean),
+        filtered
+          .map((v) => getVariationOptionAttrs(v).data_amount)
+          .filter(Boolean),
       ),
     ].sort(compareDataAmountsAsc);
   }, [variations, selectedAttributes["telecom"], selectedAttributes["days"]]);
@@ -1964,6 +2045,23 @@ export default function ProductPage({
     return s;
   };
 
+  const renderDataAmountOptionLabel = (opt, { compact = false } = {}) => {
+    if (!is5MbpsDataAmount(opt)) return opt;
+    const main = formatDataAmountMain(opt) || opt;
+    if (compact) return `${main}（5Mbps續航）`;
+    return (
+      <span className="flex items-center justify-between gap-2 w-full">
+        <span>{main}</span>
+        <span className="shrink-0 rounded-md bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+          5Mbps續航
+        </span>
+      </span>
+    );
+  };
+
+  // 一律用按鈕網格（含 5Mbps續航 標籤），避免下拉選單把續航選項藏起來
+  const useDataAmountButtons = availableData.length > 0;
+
   const telecomSectionHint = (() => {
     const tags = [];
     if (availableCarriers.some((c) => /中國移動|CMCC/i.test(String(c)))) {
@@ -2122,12 +2220,12 @@ export default function ProductPage({
         <div
           className={`${
             isPartnerShell
-              ? "max-w-[1100px] mx-auto py-5 lg:py-8"
-              : "max-w-[1280px] mx-auto py-6 lg:py-10"
-          } px-4 sm:px-6`}
+              ? "max-w-[1100px] mx-auto"
+              : "max-w-[1280px] mx-auto"
+          } px-4 sm:px-6 pt-3 sm:pt-4 pb-16 lg:pb-20`}
         >
           {isPartnerShell ? (
-            <nav className="text-xs text-slate-400 mb-2 tracking-wide flex items-center gap-1.5 flex-wrap">
+            <nav className="text-xs text-slate-400 mb-3 tracking-wide flex items-center gap-1.5 flex-wrap">
               <a
                 href={`/p/${store.domain}/`}
                 className="hover:text-[#0A6CD0]"
@@ -2140,29 +2238,17 @@ export default function ProductPage({
               </span>
             </nav>
           ) : (
-            <nav className="text-xs text-gray-400 mb-6 tracking-wide">
+            <nav className="text-xs text-gray-400 mb-3 tracking-wide">
               首頁 / 商店 / {product.name}
             </nav>
           )}
-        </div>
 
-        <ProductStickyNav
-          productName={product.name}
-        />
-
-        <div
-          className={`${
-            isPartnerShell
-              ? "max-w-[1100px] mx-auto"
-              : "max-w-[1280px] sm:mt-20 mx-auto"
-          } px-4 sm:px-6 pb-16 lg:pb-20`}
-        >
           <section
             id="purchase-section"
             className={
               isPartnerShell
-                ? "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 mb-14 lg:mb-16 pt-2"
-                : "grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-8 lg:gap-12 mb-16 lg:mb-20 pt-6"
+                ? "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 mb-14 lg:mb-16"
+                : "grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-8 lg:gap-12 mb-16 lg:mb-20"
             }
           >
             {/* ========== 左：媒體畫廊 ========== */}
@@ -2472,6 +2558,7 @@ export default function ProductPage({
                 isAdmin={isAdmin}
                 adminChecked={adminChecked}
                 authHeaders={authHeaders}
+                suppressCustomerBanner={suppressProductPromo}
                 onSaved={(promoMap) =>
                   setProduct((prev) => ({
                     ...prev,
@@ -2566,7 +2653,7 @@ export default function ProductPage({
                   <span className="text-xs font-bold text-slate-500 block mb-2.5">
                     數據量
                   </span>
-                  {availableData.length > 3 ? (
+                  {!useDataAmountButtons ? (
                     <div className="relative">
                       <select
                         id="product-data-select"
@@ -2585,7 +2672,7 @@ export default function ProductPage({
                         </option>
                         {availableData.map((opt) => (
                           <option key={opt} value={opt}>
-                            {opt}
+                            {renderDataAmountOptionLabel(opt, { compact: true })}
                           </option>
                         ))}
                       </select>
@@ -2608,7 +2695,7 @@ export default function ProductPage({
                           }
                           className={`px-4 py-3.5 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["data_amount"] === opt)}`}
                         >
-                          {opt}
+                          {renderDataAmountOptionLabel(opt)}
                         </button>
                       ))}
                     </div>
@@ -2726,7 +2813,7 @@ export default function ProductPage({
               </div>
               <p className="text-sm mb-5 -mt-3">
                 <a
-                  href={buildLoginUrl(router.asPath)}
+                  href={buildLoginUrl("/account")}
                   className="inline-flex items-center gap-1 font-semibold text-[#0A6CD0] hover:underline"
                 >
                   登入會員享更多優惠
@@ -2931,7 +3018,7 @@ export default function ProductPage({
               </div>
               <p className="text-sm mb-5 -mt-2">
                 <a
-                  href={buildLoginUrl(router.asPath)}
+                  href={buildLoginUrl("/account")}
                   className="inline-flex items-center gap-1 font-semibold hover:underline"
                   style={{ color: ANKER_BLUE }}
                 >
@@ -2946,6 +3033,7 @@ export default function ProductPage({
                 isAdmin={isAdmin}
                 adminChecked={adminChecked}
                 authHeaders={authHeaders}
+                suppressCustomerBanner={suppressProductPromo}
                 onSaved={(promoMap) =>
                   setProduct((prev) => ({
                     ...prev,
@@ -3110,7 +3198,7 @@ export default function ProductPage({
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-3">
                     數據量
                   </span>
-                  {availableData.length > 3 ? (
+                  {!useDataAmountButtons ? (
                     <div className="relative">
                       <select
                         id="product-data-select-partner"
@@ -3129,7 +3217,7 @@ export default function ProductPage({
                         </option>
                         {availableData.map((opt) => (
                           <option key={opt} value={opt}>
-                            {opt}
+                            {renderDataAmountOptionLabel(opt, { compact: true })}
                           </option>
                         ))}
                       </select>
@@ -3152,7 +3240,7 @@ export default function ProductPage({
                           }
                           className={`px-4 py-3 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["data_amount"] === opt)}`}
                         >
-                          {opt}
+                          {renderDataAmountOptionLabel(opt)}
                         </button>
                       ))}
                     </div>
@@ -3475,7 +3563,7 @@ export default function ProductPage({
                     </option>
                     {availableData.map((opt) => (
                       <option key={opt} value={opt}>
-                        {opt}
+                        {renderDataAmountOptionLabel(opt, { compact: true })}
                       </option>
                     ))}
                   </select>

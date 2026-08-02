@@ -23,6 +23,10 @@ import {
   referralRateForMonthCount,
   monthBoundsIso,
 } from "@/lib/partnerReferral";
+import {
+  DEFAULT_REFERRAL_DISCOUNT_PERCENT,
+  displayReferralCouponCode,
+} from "@/lib/partnerReferralDiscount";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
 import { paymentMethodLabel, buyerDisplayName } from "@/lib/orderDisplay";
 
@@ -129,6 +133,15 @@ export default function PartnerDashboard() {
           partner.referral_code || partner.slug,
         )
       : null;
+  const referralDiscountOn =
+    isReferral && partner?.referral_discount_enabled !== false;
+  const referralDiscountPercent =
+    Number(partner?.referral_discount_percent) > 0
+      ? Math.round(Number(partner.referral_discount_percent))
+      : DEFAULT_REFERRAL_DISCOUNT_PERCENT;
+  const referralCouponCode = referralDiscountOn
+    ? displayReferralCouponCode(partner.referral_code || partner.slug)
+    : "";
   const isGood = !loading && totals.count > 0 && totals.profit > 0;
 
   /** 本月有效單量 → 決定目前分潤趴數（25% / 30%） */
@@ -159,9 +172,23 @@ export default function PartnerDashboard() {
     if (!referralUrl) return;
     try {
       await navigator.clipboard.writeText(referralUrl);
-      alert("已複製專屬推薦連結");
+      alert(
+        referralDiscountOn
+          ? "已複製專屬折扣碼連結"
+          : "已複製專屬推薦連結",
+      );
     } catch {
       prompt("請手動複製連結：", referralUrl);
+    }
+  };
+
+  const copyCoupon = async () => {
+    if (!referralCouponCode) return;
+    try {
+      await navigator.clipboard.writeText(referralCouponCode);
+      alert(`已複製折扣碼 ${referralCouponCode}`);
+    } catch {
+      prompt("請手動複製折扣碼：", referralCouponCode);
     }
   };
 
@@ -181,14 +208,34 @@ export default function PartnerDashboard() {
           <div className="rounded-xl border border-[#1E4AD1]/25 bg-white px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-bold text-[#1E4AD1] uppercase tracking-wide mb-1">
-                您的專屬推薦連結（貼社群會顯示行銷圖）
+                {referralDiscountOn
+                  ? "您的專屬折扣碼連結（貼社群會顯示行銷圖）"
+                  : "您的專屬推薦連結（貼社群會顯示行銷圖）"}
               </p>
               <p className="text-sm font-mono font-bold text-slate-800 break-all">
                 {referralUrl}
               </p>
-              <p className="text-[11px] text-slate-500 mt-1">
-                售價與官網相同 · Cookie 30 天內下單計入業績 · 分潤計算見下方說明
-              </p>
+              {referralDiscountOn && referralCouponCode ? (
+                <p className="text-[11px] text-slate-600 mt-1.5">
+                  折扣碼{" "}
+                  <button
+                    type="button"
+                    onClick={copyCoupon}
+                    className="font-mono font-black text-[#1E4AD1] underline-offset-2 hover:underline"
+                  >
+                    {referralCouponCode}
+                  </button>
+                  <span className="text-slate-500">
+                    {" "}
+                    · 全單 {referralDiscountPercent}% off · 點連結自動帶碼 · Cookie
+                    30 天內下單計入業績
+                  </span>
+                </p>
+              ) : (
+                <p className="text-[11px] text-slate-500 mt-1">
+                  售價與官網相同 · Cookie 30 天內下單計入業績 · 分潤計算見下方說明
+                </p>
+              )}
             </div>
             <button
               type="button"
@@ -301,7 +348,9 @@ export default function PartnerDashboard() {
               : totals.count > 0
                 ? `期間內 ${totals.count} 筆訂單・累計分潤 ${fmt(totals.profit)}・分潤率 ${totals.rate}%`
                 : isReferral
-                  ? "複製上方專屬推薦連結，分享給旅客即可開始累積分潤。"
+                  ? referralDiscountOn
+                    ? "複製上方專屬折扣碼連結，旅客點進會自動帶折扣碼，下單即可累積分潤。"
+                    : "複製上方專屬推薦連結，分享給旅客即可開始累積分潤。"
                   : "您的專屬賣場已開通，前往選品管理加入 eSIM 方案後即可開始推廣。"
           }
         />

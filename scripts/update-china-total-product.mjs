@@ -122,74 +122,98 @@ async function main() {
       speed_rule: "高速用完後降速至 128 kbps",
       apps: "熱點分享,Gemini",
     },
-    "中國聯通 GPT + TikTok (CUCC)": {
-      ...(meta.carrier_specs_by_carrier?.["中國聯通 GPT + TikTok (CUCC)"] ||
-        meta.carrier_specs_by_carrier?.["中國聯通 GPT + TikTok (CMCC)"] ||
+    "GPT + TikTok": {
+      ...(meta.carrier_specs_by_carrier?.["GPT + TikTok"] ||
+        meta.carrier_specs_by_carrier?.["中國聯通 GPT + TikTok (CUCC)"] ||
         meta.carrier_specs_by_carrier?.["中國移動 GPT + TikTok"] ||
         {}),
       ip_type: "新加坡IP",
       route_type: "漫遊",
       network: "CUCC 4G/5G",
-      speed_rule: "約 50–70 Mbps",
-      apps: "熱點分享,ChatGPT,TikTok,Gemini",
-    },
-    中國聯通: {
-      ...(meta.carrier_specs_by_carrier?.["中國聯通"] || {}),
-      ip_type: "新加坡IP",
-      route_type: "漫遊",
-      network: "4G/5G",
-      speed_rule: "高速用完後降速至 128 kbps",
-      apps: "熱點分享,ChatGPT,TikTok",
-    },
-  };
-  // 移除舊電信選項 key，避免前台殘留
-  for (const k of [
-    "中國移動 GPT + TikTok",
-    "中國聯通 GPT + TikTok (CMCC)",
-  ]) {
-    if (meta.carrier_specs_by_carrier?.[k]) {
-      delete meta.carrier_specs_by_carrier[k];
+        speed_rule: "流量用完即斷網（實際速度依當地網路）",
+        apps: "熱點分享,ChatGPT,TikTok",
+      },
+      中國聯通: {
+        ...(meta.carrier_specs_by_carrier?.["中國聯通"] || {}),
+        ip_type: "新加坡IP",
+        route_type: "漫遊",
+        network: "4G/5G",
+        speed_rule: "高速用完後降速至 128 kbps",
+        apps: "熱點分享,ChatGPT,TikTok",
+      },
+    };
+    // 移除舊電信選項 key，避免前台殘留
+    for (const k of [
+      "中國移動 GPT + TikTok",
+      "中國聯通 GPT + TikTok (CMCC)",
+      "中國聯通 GPT + TikTok (CUCC)",
+    ]) {
+      if (meta.carrier_specs_by_carrier?.[k]) {
+        delete meta.carrier_specs_by_carrier[k];
+      }
     }
-  }
-  meta.key_features_by_carrier = {
-    中國移動: ["總量型", "熱點分享", "4G / 5G", "高速用完後降速至 128 kbps"],
-    "中國聯通 GPT + TikTok (CUCC)": [
-      "總量型",
-      "支援 TikTok",
-      "支援 ChatGPT",
-      "約 50-70 Mbps",
-      "4G / 5G",
-    ],
-    中國聯通: [
-      "總量型",
-      "支援 TikTok",
-      "支援 ChatGPT",
-      "4G / 5G",
-      "高速用完後降速至 128 kbps",
-    ],
-  };
-  for (const k of [
-    "中國移動 GPT + TikTok",
-    "中國聯通 GPT + TikTok (CMCC)",
-  ]) {
-    if (meta.key_features_by_carrier?.[k]) {
-      delete meta.key_features_by_carrier[k];
+    meta.key_features_by_carrier = {
+      中國移動: ["總量型", "熱點分享", "4G / 5G", "高速用完後降速至 128 kbps"],
+      "GPT + TikTok": [
+        "總量型",
+        "支援 TikTok",
+        "支援 ChatGPT",
+        "用完斷網",
+        "4G / 5G",
+      ],
+      中國聯通: [
+        "總量型",
+        "支援 TikTok",
+        "支援 ChatGPT",
+        "4G / 5G",
+        "高速用完後降速至 128 kbps",
+      ],
+    };
+    for (const k of [
+      "中國移動 GPT + TikTok",
+      "中國聯通 GPT + TikTok (CMCC)",
+      "中國聯通 GPT + TikTok (CUCC)",
+    ]) {
+      if (meta.key_features_by_carrier?.[k]) {
+        delete meta.key_features_by_carrier[k];
+      }
     }
-  }
-  meta.subtitle_by_carrier = {
-    中國移動: "漫遊總量型・高速用完後降速至 128 kbps",
-    "中國聯通 GPT + TikTok (CUCC)":
-      "漫遊總量型・約 50–70 Mbps・支援 TikTok 與 ChatGPT",
-    中國聯通: "漫遊總量型・高速用完後降速至 128 kbps",
-  };
+    meta.subtitle_by_carrier = {
+      中國移動: "漫遊總量型・高速用完後降速至 128 kbps",
+      "GPT + TikTok": "漫遊總量型・流量用完即斷網・支援 TikTok 與 ChatGPT",
+      中國聯通: "漫遊總量型・高速用完後降速至 128 kbps",
+    };
   for (const k of [
     "中國移動 GPT + TikTok",
     "中國聯通 GPT + TikTok (CMCC)",
+    "中國聯通 GPT + TikTok (CUCC)",
   ]) {
     if (meta.subtitle_by_carrier?.[k]) {
       delete meta.subtitle_by_carrier[k];
     }
   }
+  meta.hot_sale_telecoms = ["GPT + TikTok", "中國聯通"];
+  meta.carrier_profit_by_carrier = {
+    ...(meta.carrier_profit_by_carrier || {}),
+    "GPT + TikTok": 50,
+  };
+  for (const k of [
+    "中國移動 GPT + TikTok",
+    "中國聯通 GPT + TikTok (CMCC)",
+    "中國聯通 GPT + TikTok (CUCC)",
+  ]) {
+    if (meta.carrier_profit_by_carrier?.[k] != null) {
+      delete meta.carrier_profit_by_carrier[k];
+    }
+  }
+  meta.overview_notices_by_carrier = {
+    ...(meta.overview_notices_by_carrier || {}),
+    中國移動: {
+      fup_notice:
+        "總量型：高速流量用完後降速至 128 kbps（可持續使用）；不支援 GPT／TikTok（香港 IP）",
+      activation_notice: "建議抵達中國後再安裝／啟用 eSIM",
+    },
+  };
 
   const upd = await fetch(`${MEDUSA_URL}/admin/products/${product.id}`, {
     method: "POST",

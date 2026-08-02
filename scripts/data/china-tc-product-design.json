@@ -1,0 +1,1592 @@
+{
+  "title": "China Unicom T+C 產品規劃",
+  "carrier": "CHINA UNICOM / CUCC",
+  "store_label": "中國聯通 GPT + TikTok (CUCC)",
+  "sku_prefix": "China(T+C)-",
+  "fetched_at": "2026-07-30T13:48:00.909Z",
+  "total_skus": 128,
+  "pricing_assumption": {
+    "HKD_TO_TWD": 4.1,
+    "margin": "50%",
+    "formula": "ceil(hkd*4.1*1.5/10)*10-1"
+  },
+  "series": {
+    "A_daily_D0": {
+      "name": "每日型・用完降速 128kbps（主力）",
+      "sku_pattern": "China(T+C)-Daily{500MB|1GB|2GB|3GB}-{days}-D0",
+      "count": 52,
+      "data": [
+        "500MB",
+        "1GB",
+        "2GB",
+        "3GB"
+      ],
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        15,
+        20,
+        30
+      ],
+      "recommend": true,
+      "notes": [
+        "對應選品神器：降速至 128kbps、支援 GPT/TikTok/Gemini",
+        "China(T+C)-Daily1GB-10/15/20/30-D0 供應商 rule 標成 unlimited 10mbps 且進價異常偏高 → 上架前先人工確認或排除"
+      ],
+      "plans": [
+        {
+          "sku": "China(T+C)-Daily1GB-1-D0",
+          "id": "ce344b00e9d74e43bdd6e471f21b8ff7",
+          "data": "1GB",
+          "days": 1,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 4.35,
+          "cost_twd": 17.83,
+          "retail_twd_50pct": 29,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-2-D0",
+          "id": "439cfa19a96e47da9e88d71dfbef6de7",
+          "data": "1GB",
+          "days": 2,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 6.96,
+          "cost_twd": 28.54,
+          "retail_twd_50pct": 49,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-3-D0",
+          "id": "4bf350468c33441f946dc6fddedada02",
+          "data": "1GB",
+          "days": 3,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 9.56,
+          "cost_twd": 39.2,
+          "retail_twd_50pct": 59,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-4-D0",
+          "id": "e247b14844b248c784ff926d6cfbdae6",
+          "data": "1GB",
+          "days": 4,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 12.45,
+          "cost_twd": 51.04,
+          "retail_twd_50pct": 79,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-5-D0",
+          "id": "800f4c8ec6234443b8a5386459f44a23",
+          "data": "1GB",
+          "days": 5,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 15.07,
+          "cost_twd": 61.79,
+          "retail_twd_50pct": 99,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-6-D0",
+          "id": "972cd0db23f64d2b9d0f3bb250cd0b09",
+          "data": "1GB",
+          "days": 6,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 17.96,
+          "cost_twd": 73.64,
+          "retail_twd_50pct": 119,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-7-D0",
+          "id": "32ac2f47dbbe41b3afb3cfa8395f955d",
+          "data": "1GB",
+          "days": 7,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 20.56,
+          "cost_twd": 84.3,
+          "retail_twd_50pct": 129,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-8-D0",
+          "id": "73fd062850f04ddd9afae8fe91671e03",
+          "data": "1GB",
+          "days": 8,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 23.17,
+          "cost_twd": 95,
+          "retail_twd_50pct": 149,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-9-D0",
+          "id": "f5271cafb27d4e068fac1fe344a2b533",
+          "data": "1GB",
+          "days": 9,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 26.07,
+          "cost_twd": 106.89,
+          "retail_twd_50pct": 169,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-10-D0",
+          "id": "de55c898abd64ebaa524bafc0c0654da",
+          "data": "1GB",
+          "days": 10,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 134.99,
+          "cost_twd": 553.46,
+          "retail_twd_50pct": 839,
+          "caution": true
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-15-D0",
+          "id": "3c88a0ed8bc24f90b98b768850794301",
+          "data": "1GB",
+          "days": 15,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 200.17,
+          "cost_twd": 820.7,
+          "retail_twd_50pct": 1239,
+          "caution": true
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-20-D0",
+          "id": "9dace4346d134a87ad545e01d4c3cdd2",
+          "data": "1GB",
+          "days": 20,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 267.08,
+          "cost_twd": 1095.03,
+          "retail_twd_50pct": 1649,
+          "caution": true
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-30-D0",
+          "id": "18096f3d544c4fec8609381b34deafed",
+          "data": "1GB",
+          "days": 30,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 399.17,
+          "cost_twd": 1636.6,
+          "retail_twd_50pct": 2459,
+          "caution": true
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-1-D0",
+          "id": "8068eb6b069a4360a22345099c5e4733",
+          "data": "2GB",
+          "days": 1,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 6.96,
+          "cost_twd": 28.54,
+          "retail_twd_50pct": 49,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-2-D0",
+          "id": "e63b7297d3a44430b98a2ce47875c4d2",
+          "data": "2GB",
+          "days": 2,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 12.45,
+          "cost_twd": 51.04,
+          "retail_twd_50pct": 79,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-3-D0",
+          "id": "dc242b29bd214aae907b4372f40be919",
+          "data": "2GB",
+          "days": 3,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 16.51,
+          "cost_twd": 67.69,
+          "retail_twd_50pct": 109,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-4-D0",
+          "id": "704ac345ae654221a3cb49c632367b14",
+          "data": "2GB",
+          "days": 4,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 22.01,
+          "cost_twd": 90.24,
+          "retail_twd_50pct": 139,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-5-D0",
+          "id": "654dfa71ced04e76ab32ddc48cf90fe3",
+          "data": "2GB",
+          "days": 5,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 26.07,
+          "cost_twd": 106.89,
+          "retail_twd_50pct": 169,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-6-D0",
+          "id": "1a7b3ae58b0940bc95787aed9a9064fc",
+          "data": "2GB",
+          "days": 6,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 31.58,
+          "cost_twd": 129.48,
+          "retail_twd_50pct": 199,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-7-D0",
+          "id": "a00513212c624a6a8823b3dfd961794a",
+          "data": "2GB",
+          "days": 7,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 35.63,
+          "cost_twd": 146.08,
+          "retail_twd_50pct": 219,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-8-D0",
+          "id": "0381b2c94e3749f8a5b00a15d1dbcafc",
+          "data": "2GB",
+          "days": 8,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 40.85,
+          "cost_twd": 167.49,
+          "retail_twd_50pct": 259,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-9-D0",
+          "id": "f274b8ff33b345b5a7c290592dbba248",
+          "data": "2GB",
+          "days": 9,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 46.35,
+          "cost_twd": 190.04,
+          "retail_twd_50pct": 289,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-10-D0",
+          "id": "d821f4ecbb8049dfa0783d351857224a",
+          "data": "2GB",
+          "days": 10,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 50.4,
+          "cost_twd": 206.64,
+          "retail_twd_50pct": 309,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-15-D0",
+          "id": "6b23deb4fdeb4a31930b59d2c6054add",
+          "data": "2GB",
+          "days": 15,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 75.03,
+          "cost_twd": 307.62,
+          "retail_twd_50pct": 469,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-20-D0",
+          "id": "dac31f633da347c990ca64cc8c97268e",
+          "data": "2GB",
+          "days": 20,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 99.65,
+          "cost_twd": 408.57,
+          "retail_twd_50pct": 619,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-30-D0",
+          "id": "aeead905fcca4b86ac0e357ec3cca3e7",
+          "data": "2GB",
+          "days": 30,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 147.15,
+          "cost_twd": 603.31,
+          "retail_twd_50pct": 909,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-1-D0",
+          "id": "01827c63e7e94166a89249a22524275c",
+          "data": "3GB",
+          "days": 1,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 8.4,
+          "cost_twd": 34.44,
+          "retail_twd_50pct": 59,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-2-D0",
+          "id": "9f4a33bc9b6c442b97b7cb1bbaaf26a6",
+          "data": "3GB",
+          "days": 2,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 15.07,
+          "cost_twd": 61.79,
+          "retail_twd_50pct": 99,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-3-D0",
+          "id": "306e2d6e51b54799bc3e870a1538c463",
+          "data": "3GB",
+          "days": 3,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 22.01,
+          "cost_twd": 90.24,
+          "retail_twd_50pct": 139,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-4-D0",
+          "id": "3fa33df594d749d1b2106b195e67279b",
+          "data": "3GB",
+          "days": 4,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 28.68,
+          "cost_twd": 117.59,
+          "retail_twd_50pct": 179,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-5-D0",
+          "id": "d1b15f7ff84146038fa67bddbecd3682",
+          "data": "3GB",
+          "days": 5,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 35.63,
+          "cost_twd": 146.08,
+          "retail_twd_50pct": 219,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-6-D0",
+          "id": "92a2e4ffe96f46429f347b3d04ecfb48",
+          "data": "3GB",
+          "days": 6,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 42.3,
+          "cost_twd": 173.43,
+          "retail_twd_50pct": 269,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-7-D0",
+          "id": "d8c44289a48d4aa386ce0b3991549dc9",
+          "data": "3GB",
+          "days": 7,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 49.24,
+          "cost_twd": 201.88,
+          "retail_twd_50pct": 309,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-8-D0",
+          "id": "d231bf78ebe744a9a7dc7ad557cdc452",
+          "data": "3GB",
+          "days": 8,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 54.46,
+          "cost_twd": 223.29,
+          "retail_twd_50pct": 339,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-9-D0",
+          "id": "36e3defce210410ba05f90a775d1460e",
+          "data": "3GB",
+          "days": 9,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 61.41,
+          "cost_twd": 251.78,
+          "retail_twd_50pct": 379,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-10-D0",
+          "id": "f7c3e17b8f314fa085eae76224d2230c",
+          "data": "3GB",
+          "days": 10,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 68.07,
+          "cost_twd": 279.09,
+          "retail_twd_50pct": 419,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-15-D0",
+          "id": "0fca5512f12f4d0988945325cce8876b",
+          "data": "3GB",
+          "days": 15,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 100.81,
+          "cost_twd": 413.32,
+          "retail_twd_50pct": 619,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-20-D0",
+          "id": "b6e7a3d0f9ae4213bea6d9648c3f29d0",
+          "data": "3GB",
+          "days": 20,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 134.99,
+          "cost_twd": 553.46,
+          "retail_twd_50pct": 839,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily3GB-30-D0",
+          "id": "84a332639eb8461fb45e1cd6867097c2",
+          "data": "3GB",
+          "days": 30,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 200.17,
+          "cost_twd": 820.7,
+          "retail_twd_50pct": 1239,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-1-D0",
+          "id": "46875705dd424463ad0ebc5967cdf011",
+          "data": "500MB",
+          "days": 1,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 4.35,
+          "cost_twd": 17.83,
+          "retail_twd_50pct": 29,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-2-D0",
+          "id": "1f0863b0a9b64b89809651c4aa48c3ff",
+          "data": "500MB",
+          "days": 2,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 5.51,
+          "cost_twd": 22.59,
+          "retail_twd_50pct": 39,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-3-D0",
+          "id": "c038285dbe694269b5cd8f35d8bf4612",
+          "data": "500MB",
+          "days": 3,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 8.4,
+          "cost_twd": 34.44,
+          "retail_twd_50pct": 59,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-4-D0",
+          "id": "f0ee03c427e548b09ad7532603bc9c7e",
+          "data": "500MB",
+          "days": 4,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 9.56,
+          "cost_twd": 39.2,
+          "retail_twd_50pct": 59,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-5-D0",
+          "id": "79d406087d894bbeb4a9515855ec49a8",
+          "data": "500MB",
+          "days": 5,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 12.45,
+          "cost_twd": 51.04,
+          "retail_twd_50pct": 79,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-6-D0",
+          "id": "322a2109bd0241cd974545314059a230",
+          "data": "500MB",
+          "days": 6,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 13.62,
+          "cost_twd": 55.84,
+          "retail_twd_50pct": 89,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-7-D0",
+          "id": "afc2c1f4216b4d9382db8fd5eaf2a413",
+          "data": "500MB",
+          "days": 7,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 16.51,
+          "cost_twd": 67.69,
+          "retail_twd_50pct": 109,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-8-D0",
+          "id": "e624c38ae45a4143851fae7a7e6eb05c",
+          "data": "500MB",
+          "days": 8,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 17.96,
+          "cost_twd": 73.64,
+          "retail_twd_50pct": 119,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-9-D0",
+          "id": "3437c688486c4408869c2921260a145e",
+          "data": "500MB",
+          "days": 9,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 20.56,
+          "cost_twd": 84.3,
+          "retail_twd_50pct": 129,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-10-D0",
+          "id": "f6e2d487229c403a9aa41c8361d826c4",
+          "data": "500MB",
+          "days": 10,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 22.01,
+          "cost_twd": 90.24,
+          "retail_twd_50pct": 139,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-15-D0",
+          "id": "8287cfe9042e468fb2d13e584a77250a",
+          "data": "500MB",
+          "days": 15,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 31.58,
+          "cost_twd": 129.48,
+          "retail_twd_50pct": 199,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-20-D0",
+          "id": "b36fbb0ac18f4aa89bded350f85dbade",
+          "data": "500MB",
+          "days": 20,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 42.3,
+          "cost_twd": 173.43,
+          "retail_twd_50pct": 269,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily500MB-30-D0",
+          "id": "46336a18d191449a95ae72b711681662",
+          "data": "500MB",
+          "days": 30,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 61.41,
+          "cost_twd": 251.78,
+          "retail_twd_50pct": 379,
+          "caution": false
+        }
+      ]
+    },
+    "B_daily_5mbps": {
+      "name": "每日型・用完續航 5Mbps",
+      "sku_pattern": "China(T+C)-Daily2GB-{days}-5mbps-D0",
+      "count": 13,
+      "data": [
+        "2GB"
+      ],
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        15,
+        20,
+        30
+      ],
+      "recommend": true,
+      "notes": [
+        "只有 Daily2GB；適合「怕斷網」客群，售價明顯高於 D0"
+      ],
+      "plans": [
+        {
+          "sku": "China(T+C)-Daily2GB-1-5mbps-D0",
+          "id": "6fe5fc7b5d1249ec913a8a9cc84e2cd3",
+          "data": "2GB",
+          "days": 1,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 13.62,
+          "cost_twd": 55.84,
+          "retail_twd_50pct": 89,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-2-5mbps-D0",
+          "id": "51ec7b47d7af4fb09b6e53bfd911dd5b",
+          "data": "2GB",
+          "days": 2,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 24.62,
+          "cost_twd": 100.94,
+          "retail_twd_50pct": 159,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-3-5mbps-D0",
+          "id": "ef2eec8731b244299d2d82ab4b11c506",
+          "data": "2GB",
+          "days": 3,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 35.63,
+          "cost_twd": 146.08,
+          "retail_twd_50pct": 219,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-4-5mbps-D0",
+          "id": "26a85f4024d8400aabfa6b36cc95a177",
+          "data": "2GB",
+          "days": 4,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 46.35,
+          "cost_twd": 190.04,
+          "retail_twd_50pct": 289,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-5-5mbps-D0",
+          "id": "4524421a01434a2190f0f57b193c73cc",
+          "data": "2GB",
+          "days": 5,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 57.35,
+          "cost_twd": 235.14,
+          "retail_twd_50pct": 359,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-6-5mbps-D0",
+          "id": "f4366132726940db9a33f666941b052c",
+          "data": "2GB",
+          "days": 6,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 68.07,
+          "cost_twd": 279.09,
+          "retail_twd_50pct": 419,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-7-5mbps-D0",
+          "id": "d015c7adddd842d2a74d3f8a6bdf617b",
+          "data": "2GB",
+          "days": 7,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 79.09,
+          "cost_twd": 324.27,
+          "retail_twd_50pct": 489,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-8-5mbps-D0",
+          "id": "4e8f60fab1094a69b6cb9e3273d0e28e",
+          "data": "2GB",
+          "days": 8,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 90.09,
+          "cost_twd": 369.37,
+          "retail_twd_50pct": 559,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-9-5mbps-D0",
+          "id": "59a4028099924a8e9e8cec242f7132f0",
+          "data": "2GB",
+          "days": 9,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 100.81,
+          "cost_twd": 413.32,
+          "retail_twd_50pct": 619,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-10-5mbps-D0",
+          "id": "0644415e487b4d8b9031dcd26c17906c",
+          "data": "2GB",
+          "days": 10,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 113.26,
+          "cost_twd": 464.37,
+          "retail_twd_50pct": 699,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-15-5mbps-D0",
+          "id": "3b28fcd401e649b4a15bb1f48e192085",
+          "data": "2GB",
+          "days": 15,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 167.72,
+          "cost_twd": 687.65,
+          "retail_twd_50pct": 1039,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-20-5mbps-D0",
+          "id": "7241b0a15ac54a669a44286a1cf1ff43",
+          "data": "2GB",
+          "days": 20,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 223.34,
+          "cost_twd": 915.69,
+          "retail_twd_50pct": 1379,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily2GB-30-5mbps-D0",
+          "id": "20667e14cd2d423ca0904badd4599009",
+          "data": "2GB",
+          "days": 30,
+          "rule_desc": "unlimited 5mbps",
+          "cost_hkd": 333.71,
+          "cost_twd": 1368.21,
+          "retail_twd_50pct": 2059,
+          "caution": false
+        }
+      ]
+    },
+    "C_daily_D1": {
+      "name": "每日型 D1・10Mbps（高單價）",
+      "sku_pattern": "China(T+C)-Daily1GB-{days}-D1",
+      "count": 13,
+      "data": [
+        "1GB"
+      ],
+      "recommend": false,
+      "notes": [
+        "同天數售價約為 D0 的 3 倍；建議當「高速版」選配或暫不上主力架"
+      ],
+      "plans": [
+        {
+          "sku": "China(T+C)-Daily1GB-1-D1",
+          "id": "0f5e2a12a05648bd82792e9f6e65a53c",
+          "data": "1GB",
+          "days": 1,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 15.07,
+          "cost_twd": 61.79,
+          "retail_twd_50pct": 99,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-2-D1",
+          "id": "85c4306f07e64195989ebd9ab42d89f5",
+          "data": "1GB",
+          "days": 2,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 28.68,
+          "cost_twd": 117.59,
+          "retail_twd_50pct": 179,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-3-D1",
+          "id": "19ba4a83af40477da1b22307e4951675",
+          "data": "1GB",
+          "days": 3,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 42.3,
+          "cost_twd": 173.43,
+          "retail_twd_50pct": 269,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-4-D1",
+          "id": "f078b0b1146a425c9f8c2b42fcd7ca46",
+          "data": "1GB",
+          "days": 4,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 54.46,
+          "cost_twd": 223.29,
+          "retail_twd_50pct": 339,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-5-D1",
+          "id": "422f7689f64e4915bfc95cae0753354f",
+          "data": "1GB",
+          "days": 5,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 68.07,
+          "cost_twd": 279.09,
+          "retail_twd_50pct": 419,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-6-D1",
+          "id": "0eabbe5e2ba74ca985f16a27d772ecae",
+          "data": "1GB",
+          "days": 6,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 81.68,
+          "cost_twd": 334.89,
+          "retail_twd_50pct": 509,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-7-D1",
+          "id": "5a1f4a1b853e46ecad8e772aeb45640f",
+          "data": "1GB",
+          "days": 7,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 95.3,
+          "cost_twd": 390.73,
+          "retail_twd_50pct": 589,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-8-D1",
+          "id": "3ddf4615a7bb4dd1bf9f40f3be77fed1",
+          "data": "1GB",
+          "days": 8,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 107.76,
+          "cost_twd": 441.82,
+          "retail_twd_50pct": 669,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-9-D1",
+          "id": "2c76acd6600b4316a82efb662b571a91",
+          "data": "1GB",
+          "days": 9,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 121.37,
+          "cost_twd": 497.62,
+          "retail_twd_50pct": 749,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-10-D1",
+          "id": "5f3587c3a52a49bd9d534a5bcda5d1a6",
+          "data": "1GB",
+          "days": 10,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 28.68,
+          "cost_twd": 117.59,
+          "retail_twd_50pct": 179,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-15-D1",
+          "id": "1bd1923344a54497a2c45eac6114a99e",
+          "data": "1GB",
+          "days": 15,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 42.3,
+          "cost_twd": 173.43,
+          "retail_twd_50pct": 269,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-20-D1",
+          "id": "b801eea9a2e84f6d8dffba9ed5399583",
+          "data": "1GB",
+          "days": 20,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 54.46,
+          "cost_twd": 223.29,
+          "retail_twd_50pct": 339,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Daily1GB-30-D1",
+          "id": "17d06b1ab39d4d57b704b33f9d026f95",
+          "data": "1GB",
+          "days": 30,
+          "rule_desc": "unlimited 128kbps",
+          "cost_hkd": 81.68,
+          "cost_twd": 334.89,
+          "retail_twd_50pct": 509,
+          "caution": false
+        }
+      ]
+    },
+    "D_total": {
+      "name": "總量型 Total（期滿 terminate）",
+      "sku_pattern": "China(T+C)-Total{3|5|10|20|30|50}GB-{days}-D0",
+      "count": 36,
+      "data": [
+        "3GB",
+        "5GB",
+        "10GB",
+        "20GB",
+        "30GB",
+        "50GB"
+      ],
+      "days": [
+        3,
+        5,
+        7,
+        10,
+        15,
+        30
+      ],
+      "recommend": true,
+      "notes": [
+        "流量用完即停（terminate），不是每日重置；適合長天數低用量"
+      ],
+      "plans": [
+        {
+          "sku": "China(T+C)-Total10GB-3-D0",
+          "id": "74557b009ee142a7b36214c5cdafd4f9",
+          "data": "10GB",
+          "days": 3,
+          "rule_desc": "terminate",
+          "cost_hkd": 26.07,
+          "cost_twd": 106.89,
+          "retail_twd_50pct": 169,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total10GB-5-D0",
+          "id": "0390e0f211604add89df792fa04dbad5",
+          "data": "10GB",
+          "days": 5,
+          "rule_desc": "terminate",
+          "cost_hkd": 27.23,
+          "cost_twd": 111.64,
+          "retail_twd_50pct": 169,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total10GB-7-D0",
+          "id": "bfc531ca5400461f91921add071f3eef",
+          "data": "10GB",
+          "days": 7,
+          "rule_desc": "terminate",
+          "cost_hkd": 30.13,
+          "cost_twd": 123.53,
+          "retail_twd_50pct": 189,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total10GB-10-D0",
+          "id": "870fc9e3e4d341b6a418541350ebda69",
+          "data": "10GB",
+          "days": 10,
+          "rule_desc": "terminate",
+          "cost_hkd": 32.73,
+          "cost_twd": 134.19,
+          "retail_twd_50pct": 209,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total10GB-15-D0",
+          "id": "bec92e534b4b465d8c623d57e616f156",
+          "data": "10GB",
+          "days": 15,
+          "rule_desc": "terminate",
+          "cost_hkd": 35.63,
+          "cost_twd": 146.08,
+          "retail_twd_50pct": 219,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total10GB-30-D0",
+          "id": "8db7e18352bb419189243899db34689a",
+          "data": "10GB",
+          "days": 30,
+          "rule_desc": "terminate",
+          "cost_hkd": 38.24,
+          "cost_twd": 156.78,
+          "retail_twd_50pct": 239,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total20GB-3-D0",
+          "id": "d266320a521a44e3849d37f00c47b5d6",
+          "data": "20GB",
+          "days": 3,
+          "rule_desc": "terminate",
+          "cost_hkd": 49.24,
+          "cost_twd": 201.88,
+          "retail_twd_50pct": 309,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total20GB-5-D0",
+          "id": "ade86b629db849f38041dfe303bb0e77",
+          "data": "20GB",
+          "days": 5,
+          "rule_desc": "terminate",
+          "cost_hkd": 51.85,
+          "cost_twd": 212.58,
+          "retail_twd_50pct": 319,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total20GB-7-D0",
+          "id": "d2b024c54cee4a45aa8e13cc1e9ca335",
+          "data": "20GB",
+          "days": 7,
+          "rule_desc": "terminate",
+          "cost_hkd": 55.9,
+          "cost_twd": 229.19,
+          "retail_twd_50pct": 349,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total20GB-10-D0",
+          "id": "a672b7060dec465c969172da6705418a",
+          "data": "20GB",
+          "days": 10,
+          "rule_desc": "terminate",
+          "cost_hkd": 59.96,
+          "cost_twd": 245.84,
+          "retail_twd_50pct": 369,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total20GB-15-D0",
+          "id": "7550b2aab10744b383aadf726cd27b0e",
+          "data": "20GB",
+          "days": 15,
+          "rule_desc": "terminate",
+          "cost_hkd": 64.02,
+          "cost_twd": 262.48,
+          "retail_twd_50pct": 399,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total20GB-30-D0",
+          "id": "2bb2c5f0ee054b61b038e710cbf1426e",
+          "data": "20GB",
+          "days": 30,
+          "rule_desc": "terminate",
+          "cost_hkd": 68.07,
+          "cost_twd": 279.09,
+          "retail_twd_50pct": 419,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total30GB-3-D0",
+          "id": "9ec9b630de824dc099fc832ddfc52848",
+          "data": "30GB",
+          "days": 3,
+          "rule_desc": "terminate",
+          "cost_hkd": 75.03,
+          "cost_twd": 307.62,
+          "retail_twd_50pct": 469,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total30GB-5-D0",
+          "id": "e86e260b607e48ab8a39dbf4c993812b",
+          "data": "30GB",
+          "days": 5,
+          "rule_desc": "terminate",
+          "cost_hkd": 79.09,
+          "cost_twd": 324.27,
+          "retail_twd_50pct": 489,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total30GB-7-D0",
+          "id": "52b417104200497fa81398cc4a932cb7",
+          "data": "30GB",
+          "days": 7,
+          "rule_desc": "terminate",
+          "cost_hkd": 83.13,
+          "cost_twd": 340.83,
+          "retail_twd_50pct": 519,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total30GB-10-D0",
+          "id": "d6893ffae30341f6b0aaad4f91106d72",
+          "data": "30GB",
+          "days": 10,
+          "rule_desc": "terminate",
+          "cost_hkd": 87.19,
+          "cost_twd": 357.48,
+          "retail_twd_50pct": 539,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total30GB-15-D0",
+          "id": "2d0902da60794a0ebb8c39a2d943bc84",
+          "data": "30GB",
+          "days": 15,
+          "rule_desc": "terminate",
+          "cost_hkd": 91.25,
+          "cost_twd": 374.12,
+          "retail_twd_50pct": 569,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total30GB-30-D0",
+          "id": "36167eed8f5a480dbc504cebd5d4d681",
+          "data": "30GB",
+          "days": 30,
+          "rule_desc": "terminate",
+          "cost_hkd": 95.3,
+          "cost_twd": 390.73,
+          "retail_twd_50pct": 589,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total3GB-3-D0",
+          "id": "8b028b169f2348b2b553066665560a89",
+          "data": "3GB",
+          "days": 3,
+          "rule_desc": "terminate",
+          "cost_hkd": 9.56,
+          "cost_twd": 39.2,
+          "retail_twd_50pct": 59,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total3GB-5-D0",
+          "id": "a20cc61f13a84be18728ccdfe3483080",
+          "data": "3GB",
+          "days": 5,
+          "rule_desc": "terminate",
+          "cost_hkd": 11.01,
+          "cost_twd": 45.14,
+          "retail_twd_50pct": 69,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total3GB-7-D0",
+          "id": "7e4308d449bc41f0a90f42dc63ee43d5",
+          "data": "3GB",
+          "days": 7,
+          "rule_desc": "terminate",
+          "cost_hkd": 12.45,
+          "cost_twd": 51.04,
+          "retail_twd_50pct": 79,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total3GB-10-D0",
+          "id": "0f872288b5124f77ad74a124c5cfa0bb",
+          "data": "3GB",
+          "days": 10,
+          "rule_desc": "terminate",
+          "cost_hkd": 13.62,
+          "cost_twd": 55.84,
+          "retail_twd_50pct": 89,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total3GB-15-D0",
+          "id": "fb87d1d4b2a745078b195666a77b6808",
+          "data": "3GB",
+          "days": 15,
+          "rule_desc": "terminate",
+          "cost_hkd": 15.07,
+          "cost_twd": 61.79,
+          "retail_twd_50pct": 99,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total3GB-30-D0",
+          "id": "db936b0bdef94c48af6d217b4d0c6bf9",
+          "data": "3GB",
+          "days": 30,
+          "rule_desc": "terminate",
+          "cost_hkd": 16.51,
+          "cost_twd": 67.69,
+          "retail_twd_50pct": 109,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total50GB-3-D0",
+          "id": "71897c2e153c4025a60d514aec9c027d",
+          "data": "50GB",
+          "days": 3,
+          "rule_desc": "terminate",
+          "cost_hkd": 114.43,
+          "cost_twd": 469.16,
+          "retail_twd_50pct": 709,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total50GB-5-D0",
+          "id": "f0f27dfad81a4a9f84c5ae007880aa79",
+          "data": "50GB",
+          "days": 5,
+          "rule_desc": "terminate",
+          "cost_hkd": 121.37,
+          "cost_twd": 497.62,
+          "retail_twd_50pct": 749,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total50GB-7-D0",
+          "id": "2bbeac6416fe4e9e929eba9016484e04",
+          "data": "50GB",
+          "days": 7,
+          "rule_desc": "terminate",
+          "cost_hkd": 128.04,
+          "cost_twd": 524.96,
+          "retail_twd_50pct": 789,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total50GB-10-D0",
+          "id": "232ec83ac7c44668b67de753b20c61aa",
+          "data": "50GB",
+          "days": 10,
+          "rule_desc": "terminate",
+          "cost_hkd": 134.99,
+          "cost_twd": 553.46,
+          "retail_twd_50pct": 839,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total50GB-15-D0",
+          "id": "99dc472dc0964d4abb6c50231881187c",
+          "data": "50GB",
+          "days": 15,
+          "rule_desc": "terminate",
+          "cost_hkd": 141.65,
+          "cost_twd": 580.77,
+          "retail_twd_50pct": 879,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total50GB-30-D0",
+          "id": "022b3b4705f74de1af6335836cbad9cf",
+          "data": "50GB",
+          "days": 30,
+          "rule_desc": "terminate",
+          "cost_hkd": 148.6,
+          "cost_twd": 609.26,
+          "retail_twd_50pct": 919,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total5GB-3-D0",
+          "id": "6807a6c4a07040a89b5a794347814ba7",
+          "data": "5GB",
+          "days": 3,
+          "rule_desc": "terminate",
+          "cost_hkd": 16.51,
+          "cost_twd": 67.69,
+          "retail_twd_50pct": 109,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total5GB-5-D0",
+          "id": "127686fca8ae458da656d91981b6acfd",
+          "data": "5GB",
+          "days": 5,
+          "rule_desc": "terminate",
+          "cost_hkd": 17.96,
+          "cost_twd": 73.64,
+          "retail_twd_50pct": 119,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total5GB-7-D0",
+          "id": "326d205ebfef478685b232b91c99cbf4",
+          "data": "5GB",
+          "days": 7,
+          "rule_desc": "terminate",
+          "cost_hkd": 19.11,
+          "cost_twd": 78.35,
+          "retail_twd_50pct": 119,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total5GB-10-D0",
+          "id": "ea25fbc64d1a449ea1fdaaee44ff8856",
+          "data": "5GB",
+          "days": 10,
+          "rule_desc": "terminate",
+          "cost_hkd": 20.56,
+          "cost_twd": 84.3,
+          "retail_twd_50pct": 129,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total5GB-15-D0",
+          "id": "6aeeb7d2c2c1430f9cef769a44f42c45",
+          "data": "5GB",
+          "days": 15,
+          "rule_desc": "terminate",
+          "cost_hkd": 22.01,
+          "cost_twd": 90.24,
+          "retail_twd_50pct": 139,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-Total5GB-30-D0",
+          "id": "7146626f505e4352b3ae64e51e22ba82",
+          "data": "5GB",
+          "days": 30,
+          "rule_desc": "terminate",
+          "cost_hkd": 23.17,
+          "cost_twd": 95,
+          "retail_twd_50pct": 149,
+          "caution": false
+        }
+      ]
+    },
+    "E_unlimited": {
+      "name": "吃到飽 unlimited",
+      "sku_pattern": "China(T+C)-unlimited-{days}-A0",
+      "count": 14,
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        15,
+        20,
+        25,
+        30
+      ],
+      "recommend": true,
+      "notes": [
+        "rule 約 10Mbps；已有 update-china-unlimited-product 可對應 tiktok_chatgpt 桶"
+      ],
+      "plans": [
+        {
+          "sku": "China(T+C)-unlimited-1-A0",
+          "id": "6f4359cb-dc66-45a0-836e-26d648c96ecb",
+          "data": "unlimited",
+          "days": 1,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 18.17,
+          "cost_twd": 74.5,
+          "retail_twd_50pct": 119,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-2-A0",
+          "id": "d1652994-942f-4aa3-8306-fc4632c62ee2",
+          "data": "unlimited",
+          "days": 2,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 33.93,
+          "cost_twd": 139.11,
+          "retail_twd_50pct": 209,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-3-A0",
+          "id": "44a04803-24d8-47a2-af85-68ac457a7bf7",
+          "data": "unlimited",
+          "days": 3,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 47.61,
+          "cost_twd": 195.2,
+          "retail_twd_50pct": 299,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-4-A0",
+          "id": "8024fd27-267f-4bf9-958e-a8f8a83434d6",
+          "data": "unlimited",
+          "days": 4,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 62.68,
+          "cost_twd": 256.99,
+          "retail_twd_50pct": 389,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-5-A0",
+          "id": "03db492c-cf58-4dac-a0fb-9a82bcbe0d95",
+          "data": "unlimited",
+          "days": 5,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 74.41,
+          "cost_twd": 305.08,
+          "retail_twd_50pct": 459,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-6-A0",
+          "id": "998b6e6a-95e6-428c-b87b-bf800de4a315",
+          "data": "unlimited",
+          "days": 6,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 88.78,
+          "cost_twd": 364,
+          "retail_twd_50pct": 549,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-7-A0",
+          "id": "ad9b30c4-2764-4c97-955e-98f52eb641d5",
+          "data": "unlimited",
+          "days": 7,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 103.16,
+          "cost_twd": 422.96,
+          "retail_twd_50pct": 639,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-8-A0",
+          "id": "e7a4336a-a5cf-436d-bb39-9a2a6a2455a1",
+          "data": "unlimited",
+          "days": 8,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 117.65,
+          "cost_twd": 482.37,
+          "retail_twd_50pct": 729,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-9-A0",
+          "id": "b0a4e22f-cb57-459a-96cd-d56ff2863614",
+          "data": "unlimited",
+          "days": 9,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 131.91,
+          "cost_twd": 540.83,
+          "retail_twd_50pct": 819,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-10-A0",
+          "id": "88acd39e-41bc-4871-8e32-f51489d6320b",
+          "data": "unlimited",
+          "days": 10,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 146.4,
+          "cost_twd": 600.24,
+          "retail_twd_50pct": 909,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-15-A0",
+          "id": "2a234463-1321-4374-ab93-005048df534c",
+          "data": "unlimited",
+          "days": 15,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 218.39,
+          "cost_twd": 895.4,
+          "retail_twd_50pct": 1349,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-20-A0",
+          "id": "ea837e5e-6e00-43c6-975a-c7eaa537bc72",
+          "data": "unlimited",
+          "days": 20,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 290.38,
+          "cost_twd": 1190.56,
+          "retail_twd_50pct": 1789,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-25-A0",
+          "id": "18d8e48c-5cc8-492a-823a-f15e614c607a",
+          "data": "unlimited",
+          "days": 25,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 362.37,
+          "cost_twd": 1485.72,
+          "retail_twd_50pct": 2229,
+          "caution": false
+        },
+        {
+          "sku": "China(T+C)-unlimited-30-A0",
+          "id": "ea509072-06ea-4f17-a847-34fb0e47ded2",
+          "data": "unlimited",
+          "days": 30,
+          "rule_desc": "unlimited 10mbps",
+          "cost_hkd": 372.6,
+          "cost_twd": 1527.66,
+          "retail_twd_50pct": 2299,
+          "caution": false
+        }
+      ]
+    }
+  },
+  "storefront_products": [
+    {
+      "handle": "china-unicom-tc-daily",
+      "title": "中國大陸 eSIM｜聯通 GPT+TikTok 每日型",
+      "options": [
+        "流量：500MB/1GB/2GB/3GB",
+        "天數：1–30",
+        "續航：標準128kbps / 5Mbps續航(僅2GB)"
+      ],
+      "include": [
+        "A_daily_D0",
+        "B_daily_5mbps"
+      ],
+      "optional": [
+        "C_daily_D1"
+      ]
+    },
+    {
+      "handle": "china-unicom-tc-total",
+      "title": "中國大陸 eSIM｜聯通 GPT+TikTok 總量型",
+      "options": [
+        "總量：3/5/10/20/30/50GB",
+        "天數：3/5/7/10/15/30"
+      ],
+      "include": [
+        "D_total"
+      ]
+    },
+    {
+      "handle": "china-unicom-tc-unlimited",
+      "title": "中國大陸 eSIM｜聯通 GPT+TikTok 吃到飽",
+      "options": [
+        "天數：1–30"
+      ],
+      "include": [
+        "E_unlimited"
+      ]
+    }
+  ]
+}

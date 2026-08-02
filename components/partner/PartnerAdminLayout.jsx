@@ -126,7 +126,7 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
               {displayName}
             </p>
             <p className="text-[10px] text-blue-100/80 font-medium">
-              {isReferral ? "專屬連結" : "專屬商店"}
+              {isReferral ? "專屬折扣碼連結" : "專屬商店"}
               {title ? ` · ${title}` : ""}
             </p>
           </div>

@@ -7,9 +7,11 @@ import {
   writeReferralCookie,
   REFERRAL_COOKIE_DAYS,
 } from "@/lib/partnerReferral";
+import { PENDING_COUPON_KEY } from "@/lib/partnerReferralDiscount";
 
 /**
  * 捕捉官網 ?ref= / ?partner=，記錄點擊，並請伺服器簽發歸因用 Cookie。
+ * 若帶 ?coupon=，寫入 sessionStorage，結帳時自動套用折扣碼。
  *
  * 這裡仍會順手寫一顆非 HttpOnly 的 `jeko_ref`（見 lib/partnerReferral.js），
  * 但那只是即時、非權威的顯示用途；真正計算分潤時，後端只信任
@@ -22,9 +24,23 @@ export default function ReferralCapture() {
   useEffect(() => {
     if (!router.isReady) return;
 
+    const couponRaw =
+      typeof router.query.coupon === "string" ? router.query.coupon : "";
+    if (couponRaw && typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(
+          PENDING_COUPON_KEY,
+          couponRaw.trim().toUpperCase(),
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+
     const raw =
       (typeof router.query.ref === "string" && router.query.ref) ||
       (typeof router.query.partner === "string" && router.query.partner) ||
+      (couponRaw ? normalizeReferralCode(couponRaw) : "") ||
       "";
     const code = normalizeReferralCode(raw);
     if (!code) return;
@@ -41,7 +57,12 @@ export default function ReferralCapture() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, landing_path: landing }),
     }).catch(() => {});
-  }, [router.isReady, router.query.ref, router.query.partner]);
+  }, [
+    router.isReady,
+    router.query.ref,
+    router.query.partner,
+    router.query.coupon,
+  ]);
 
   return null;
 }

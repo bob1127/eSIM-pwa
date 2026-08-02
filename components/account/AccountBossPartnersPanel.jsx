@@ -193,6 +193,7 @@ export default function AccountBossPartnersPanel() {
                   <th className="px-4 py-3 font-bold">夥伴 / Email</th>
                   <th className="px-4 py-3 font-bold">合作類型</th>
                   <th className="px-4 py-3 font-bold">Slug</th>
+                  <th className="px-4 py-3 font-bold">分潤／折扣</th>
                   <th className="px-4 py-3 font-bold">狀態</th>
                   <th className="px-4 py-3 font-bold">文章加值</th>
                   <th className="px-4 py-3 font-bold text-right">操作</th>
@@ -233,6 +234,25 @@ export default function AccountBossPartnersPanel() {
                         >
                           /p/{p.slug}
                         </Link>
+                      )}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      {p.cooperation_model === "referral" ? (
+                        <div className="text-[11px] leading-relaxed">
+                          <span className="font-bold text-slate-700">
+                            {Number(p.referral_rate) || 25}% 分潤
+                          </span>
+                          <br />
+                          {p.referral_discount_enabled !== false ? (
+                            <span className="text-emerald-600 font-bold">
+                              {Number(p.referral_discount_percent) || 10}% off
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">未開放折扣</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-slate-300">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3.5">
@@ -331,7 +351,17 @@ export default function AccountBossPartnersPanel() {
         )}
       </div>
 
-      <PartnerDetailPanel partner={detailPartner} onClose={() => setDetailPartner(null)} />
+      <PartnerDetailPanel
+        partner={detailPartner}
+        onClose={() => setDetailPartner(null)}
+        onUpdated={(updated) => {
+          if (!updated) return;
+          setDetailPartner(updated);
+          setPartners((prev) =>
+            prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)),
+          );
+        }}
+      />
     </div>
   );
 }

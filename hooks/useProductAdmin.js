@@ -14,10 +14,11 @@ export function useProductAdmin() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminChecked, setAdminChecked] = useState(false);
 
+  // 僅作樂觀 UI 顯示用；真正權限一律以 /api/admin/verify 的伺服器判斷為準。
+  // 不可信任 user_metadata.role（使用者可透過 auth.updateUser 自行改寫）。
   const optimisticAdmin = useMemo(() => {
     const email = user?.email || session?.user?.email;
     if (email && isAdminEmail(email)) return true;
-    if (user?.user_metadata?.role === "admin") return true;
     if (user?.app_metadata?.role === "admin") return true;
     return false;
   }, [user, session?.user?.email]);

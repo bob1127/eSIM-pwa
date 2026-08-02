@@ -133,13 +133,22 @@ export function parseDataCapacity(amount) {
   };
 }
 
-/** 方案用量遞增排序鍵（MB→GB、每日型、總量型；吃到飽最後） */
+import {
+  is5MbpsDataAmount,
+  formatDataAmountMain,
+} from "@/lib/dataAmountLabel";
+
+export { is5MbpsDataAmount, formatDataAmountMain };
+
+/** 方案用量遞增排序鍵（MB→GB、每日型、總量型；吃到飽最後；同額 5Mbps 續航緊跟標準方案） */
 export function dataAmountSortKey(amount) {
-  const cap = parseDataCapacity(amount);
+  const main = formatDataAmountMain(amount);
+  const cap = parseDataCapacity(main);
   if (!cap) return Number.MAX_SAFE_INTEGER - 1;
+  const fiveBump = is5MbpsDataAmount(amount) ? 0.0001 : 0;
   if (cap.kind === "unlimited") return Number.MAX_SAFE_INTEGER;
-  if (cap.kind === "daily") return cap.dailyGb;
-  return cap.totalGbFactor;
+  if (cap.kind === "daily") return cap.dailyGb + fiveBump;
+  return cap.totalGbFactor + fiveBump;
 }
 
 export function compareDataAmountsAsc(a, b) {
@@ -162,6 +171,7 @@ function formatTelecomShort(telecom) {
  * - 總量型：總流量 ≥ 建議總量
  * - 每日型：每日流量 ≥ 建議每日用量（不可拿「每日500MB」去對「總量 103GB」）
  * - 吃到飽：高用量優先
+ * - 先篩符合邏輯者，再優先 HOT SALE 電信商（最推薦）
  */
 export function recommendProductVariants(
   variations = [],
@@ -197,6 +207,15 @@ export function recommendProductVariants(
             ? cap.dailyGb * days
             : cap.totalGbFactor;
 
+      const isHotSale =
+        v.isHotSale === true ||
+        (Array.isArray(v.hotSaleTelecoms) &&
+          v.hotSaleTelecoms.some(
+            (t) =>
+              String(t).trim().toLowerCase() ===
+              String(telecom).trim().toLowerCase(),
+          ));
+
       return {
         variant: v,
         days,
@@ -206,6 +225,7 @@ export function recommendProductVariants(
         gb: totalGb, // 顯示／舊欄位相容：以「有效總量」為準
         dataLabel,
         telecom,
+        isHotSale,
         price: Number(v.price) || 0,
         title: v.title || `${telecom} · ${days}天 · ${dataLabel}`,
         productSlug: v.productSlug || "",
@@ -249,14 +269,23 @@ export function recommendProductVariants(
 
     if (preferredTelecom && item.telecom === preferredTelecom) score -= 40;
     if (preferCurrentProduct && item.isCurrentProduct) score -= 15;
+    // 符合邏輯後，HOT SALE 電信大幅優先（分數愈低愈前面）
+    if (item.isHotSale) score -= 200;
     score += item.price * 0.0015;
     return score;
+  };
+
+  const rankSort = (a, b) => {
+    if (a.score !== b.score) return a.score - b.score;
+    // 同分時仍優先 HOT SALE
+    if (a.isHotSale !== b.isHotSale) return a.isHotSale ? -1 : 1;
+    return a.price - b.price;
   };
 
   let ranked = candidates
     .map((item) => ({ ...item, score: scoreOne(item) }))
     .filter((item) => item.score != null)
-    .sort((a, b) => a.score - b.score);
+    .sort(rankSort);
 
   // 天數略不足但流量夠：放寬天數（例如行程 5 天、方案只有 3 天就不該進這裡；
   // 僅允許方案天數 ≥ 行程 70% 且至少差 1 天內的情況較少，這裡改為允許較長天數不足 2 天內）
@@ -267,7 +296,7 @@ export function recommendProductVariants(
         return { ...item, score: scoreOne(item, { requireDay: false }) };
       })
       .filter((item) => item.score != null)
-      .sort((a, b) => a.score - b.score);
+      .sort(rankSort);
   }
 
   // 仍沒有「夠用」方案：只從吃到飽／最大流量中挑，絕不把明顯不夠的每日 500MB 塞進來
@@ -289,9 +318,10 @@ export function recommendProductVariants(
         }
         let score = dayPenalty + gap + item.price * 0.001;
         if (preferCurrentProduct && item.isCurrentProduct) score -= 10;
+        if (item.isHotSale) score -= 200;
         return { ...item, score, undersized: true };
       })
-      .sort((a, b) => a.score - b.score)
+      .sort(rankSort)
       // 後備也只取相對最接近的 1～2 個吃到飽／大流量，避免一堆不夠用的每日型
       .filter((item, idx, arr) => {
         if (item.kind === "unlimited") return true;
@@ -765,6 +795,11 @@ export default function DataEstimatorModal({
                                   {item.isBestMatch ? (
                                     <span className="text-[10px] font-bold uppercase tracking-wide text-[#2d62cc] bg-white border border-[#2d62cc]/30 px-1.5 py-0.5 rounded">
                                       最推薦
+                                    </span>
+                                  ) : null}
+                                  {item.isHotSale ? (
+                                    <span className="text-[10px] font-bold uppercase tracking-wide text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
+                                      HOT SALE
                                     </span>
                                   ) : null}
                                   {item.productLabel ? (

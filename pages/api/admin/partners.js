@@ -13,6 +13,11 @@ import {
 } from "../../../lib/partnerReferral";
 import { getSupabaseAdmin } from "../../../lib/partnerServer";
 import { findAuthUserIdByEmail } from "../../../lib/partnerBind";
+import { clampReferralDiscountPercent } from "../../../lib/partnerReferralDiscount";
+import {
+  generateReferralMedusaCode,
+  reconcilePartnerDiscountPromotion,
+} from "../../../lib/medusaPartnerPromotions";
 
 async function resolvePartnerStoreDomain(partner) {
   const raw = String(partner.slug || partner.referral_code || "").trim();
@@ -141,7 +146,15 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "PATCH") {
-    const { id, status, blog_custom_enabled } = req.body || {};
+    const {
+      id,
+      status,
+      blog_custom_enabled,
+      referral_rate,
+      referral_discount_enabled,
+      referral_discount_percent,
+      regenerate_discount_code,
+    } = req.body || {};
     if (!id) {
       return res.status(400).json({ error: "缺少 id" });
     }
@@ -182,6 +195,110 @@ export default async function handler(req, res) {
           ? `${siteUrl}/p/${result.store.domain}/blog/`
           : null,
         partner,
+      });
+    }
+
+    // ── 調整專屬折扣碼連結：分潤趴數／折扣趴數／是否開放折扣／重新產生折扣碼
+    //    （全部由管理者自訂，隨時可改；折扣碼一律是每位夥伴獨立的高熵亂數） ──
+    const hasDiscountPatch =
+      referral_rate !== undefined ||
+      referral_discount_enabled !== undefined ||
+      referral_discount_percent !== undefined ||
+      regenerate_discount_code === true;
+
+    if (hasDiscountPatch && status == null && typeof blog_custom_enabled !== "boolean") {
+      if (partner.cooperation_model !== "referral") {
+        return res.status(400).json({
+          error: "僅『專屬折扣碼連結』夥伴可設定分潤／折扣趴數",
+        });
+      }
+
+      const patch = {};
+      if (referral_rate !== undefined) {
+        const rate = Number(referral_rate);
+        if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
+          return res.status(400).json({ error: "分潤趴數需為 0-100 的數字" });
+        }
+        patch.referral_rate = rate;
+      }
+      if (referral_discount_enabled !== undefined) {
+        patch.referral_discount_enabled = !!referral_discount_enabled;
+      }
+      if (referral_discount_percent !== undefined) {
+        const percent = clampReferralDiscountPercent(referral_discount_percent);
+        if (!percent) {
+          return res.status(400).json({ error: "折扣趴數需為 1-50 的數字" });
+        }
+        patch.referral_discount_percent = percent;
+      }
+
+      // 是否需要重新產生折扣碼（首次開啟折扣尚無碼／管理者主動要求輪替）
+      const willBeEnabled =
+        referral_discount_enabled !== undefined
+          ? !!referral_discount_enabled
+          : partner.referral_discount_enabled !== false;
+      const needsNewCode =
+        regenerate_discount_code === true ||
+        (willBeEnabled && !partner.referral_medusa_code);
+
+      let oldCodeToRetire = null;
+      if (needsNewCode) {
+        if (regenerate_discount_code === true && partner.referral_medusa_code) {
+          oldCodeToRetire = partner.referral_medusa_code;
+        }
+        patch.referral_medusa_code = generateReferralMedusaCode();
+      }
+
+      let updatedRows = null;
+      let updateErr = null;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const result = await supabaseAdmin
+          .from("partners")
+          .update(patch)
+          .eq("id", id)
+          .select("*");
+        updatedRows = result.data;
+        updateErr = result.error;
+        // 極低機率的亂數碼撞號：換一個新碼重試（unique index 衝突）
+        if (
+          updateErr &&
+          needsNewCode &&
+          /duplicate|unique/i.test(String(updateErr.message))
+        ) {
+          patch.referral_medusa_code = generateReferralMedusaCode();
+          continue;
+        }
+        break;
+      }
+
+      if (updateErr) {
+        return res.status(500).json({ error: updateErr.message });
+      }
+
+      const updatedPartner = updatedRows?.[0] || { ...partner, ...patch };
+
+      // 重新產生時先停用舊碼，再讓 Medusa 端狀態與夥伴目前設定一致；
+      // 管理者全程不需要手動進 Medusa 後台建碼／改碼。
+      let medusaWarning = null;
+      if (oldCodeToRetire) {
+        await reconcilePartnerDiscountPromotion(admin.token, {
+          ...updatedPartner,
+          referral_medusa_code: oldCodeToRetire,
+          referral_discount_enabled: false,
+        }).catch(() => {});
+      }
+      const reconciled = await reconcilePartnerDiscountPromotion(
+        admin.token,
+        updatedPartner,
+      );
+      if (!reconciled.ok) {
+        medusaWarning = `分潤／折扣設定已儲存，但 Medusa 折扣碼同步失敗：${reconciled.error}`;
+      }
+
+      return res.status(200).json({
+        ok: true,
+        partner: updatedPartner,
+        warning: medusaWarning,
       });
     }
 
@@ -235,6 +352,14 @@ export default async function handler(req, res) {
     }
 
     const updatedPartner = updatedRows?.[0] || { ...partner, ...patch };
+
+    // 夥伴狀態改變（批准／停用）時，讓其專屬折扣碼在 Medusa 的啟用狀態同步跟上：
+    // 停用／退件的夥伴，其折扣碼應立即失效，即使代碼外流也無法折抵。
+    if (isReferral && updatedPartner.referral_medusa_code) {
+      await reconcilePartnerDiscountPromotion(admin.token, updatedPartner).catch(
+        () => {},
+      );
+    }
 
     let storeCreated = false;
     if (status === "active" && !isReferral) {

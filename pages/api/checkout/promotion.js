@@ -26,6 +26,20 @@ import {
   isWelcomeRelatedCode,
 } from "../../../lib/welcomeGuard";
 import { resolveMemberEmail } from "../push/_memberAuth";
+import { resolvePartnerReferralDiscount } from "../../../lib/partnerReferralDiscount";
+import { buildSetSignedReferralCookieHeader } from "../../../lib/referralSignature";
+import {
+  getClientIp,
+  isCouponRateLimited,
+  logCouponAttempt,
+} from "../../../lib/couponRateLimit";
+
+// 夥伴專屬折扣碼在 Medusa 端的內部代碼前綴（見 lib/medusaPartnerPromotions.js）。
+// 這是高熵亂數碼，本來就不可能被猜到；但仍多一層防線：即使有人不知怎麼拿到
+// 完整內部代碼（外流、截圖等），也不允許「直接輸入」繞過必須先解析出
+// partners.referral_code 的正常路徑——只有 resolvePartnerReferralDiscount()
+// 解析出來的內部碼才可放行。
+const PARTNER_INTERNAL_CODE_PREFIX = "JEKO-REF-";
 
 const MEDUSA_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
@@ -117,6 +131,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, error: "缺少購物車 ID" });
   }
 
+  const clientIp = getClientIp(req);
+
   try {
     if (action === "remove") {
       const cart = await fetchCart(cartId);
@@ -148,12 +164,46 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: "請輸入折扣碼" });
     }
 
+    // 防暴力破解：同 IP 短時間內嘗試過多次套碼就先擋下，不再往下查
+    if (await isCouponRateLimited(clientIp)) {
+      await logCouponAttempt({
+        ip: clientIp,
+        cartId,
+        code: normalizedCode,
+        success: false,
+      });
+      return res.status(429).json({
+        success: false,
+        error: "嘗試次數過多，請稍後再試",
+      });
+    }
+
+    // 內部代碼永遠不可被「直接輸入」套用，只能經由 resolvePartnerReferralDiscount
+    // 解析夥伴的公開 referral_code 而來（見下方）
+    if (normalizedCode.startsWith(PARTNER_INTERNAL_CODE_PREFIX)) {
+      await logCouponAttempt({
+        ip: clientIp,
+        cartId,
+        code: normalizedCode,
+        success: false,
+      });
+      return res.status(400).json({ success: false, error: "折扣碼無效" });
+    }
+
     const member = await getAuthedMember(req, res);
     const email = member?.email || null;
     let memberCouponId = null;
     let memberCouponRow = null;
     let displayCode = normalizedCode;
     let isWelcomeFlow = false;
+    let partnerReferral = null;
+
+    // 專屬連結折扣碼：旅客輸入 referral_code → 映射 Medusa JEKO_PREF_{n}
+    partnerReferral = await resolvePartnerReferralDiscount(normalizedCode);
+    if (partnerReferral) {
+      displayCode = partnerReferral.displayCode;
+      normalizedCode = partnerReferral.medusaCode;
+    }
 
     if (isMemberLotteryCouponCode(normalizedCode)) {
       if (!supabaseAdmin) {
@@ -256,10 +306,8 @@ export default async function handler(req, res) {
     );
     const applyData = await applyRes.json().catch(() => ({}));
     if (!applyRes.ok) {
-      throw new Error(
-        applyData?.message ||
-          `折扣碼無效或已過期（Medusa 碼：${normalizedCode}）`,
-      );
+      // 錯誤訊息只給通用文案，避免把內部 Medusa 代碼／夥伴對應關係洩漏到前端
+      throw new Error("折扣碼無效或已過期");
     }
 
     const updatedCart = applyData.cart;
@@ -268,10 +316,15 @@ export default async function handler(req, res) {
       .filter(Boolean);
 
     if (!appliedCodes.includes(normalizedCode)) {
+      await logCouponAttempt({
+        ip: clientIp,
+        cartId,
+        code: displayCode,
+        success: false,
+      });
       return res.status(400).json({
         success: false,
-        error: `折扣碼無效或已過期（Medusa 後台需有啟用中的「${normalizedCode}」）`,
-        medusa_code: normalizedCode,
+        error: "折扣碼無效或已過期",
       });
     }
 
@@ -299,15 +352,49 @@ export default async function handler(req, res) {
       }
     }
 
+    // 專屬折扣碼成功：同步簽發推薦 Cookie（手動輸入碼也能歸因分潤）
+    if (partnerReferral?.referralCode) {
+      const setCookie = buildSetSignedReferralCookieHeader(
+        partnerReferral.referralCode,
+      );
+      if (setCookie) {
+        res.setHeader("Set-Cookie", setCookie);
+      }
+      if (supabaseAdmin) {
+        await supabaseAdmin.from("referral_clicks").insert([
+          {
+            partner_id: partnerReferral.partnerId,
+            referral_code: partnerReferral.referralCode,
+            landing_path: `/cart?coupon=${partnerReferral.displayCode}`,
+            user_agent:
+              String(req.headers["user-agent"] || "").slice(0, 300) || null,
+          },
+        ]);
+      }
+    }
+
+    await logCouponAttempt({
+      ip: clientIp,
+      cartId,
+      code: displayCode,
+      success: true,
+    });
+
     return res.status(200).json({
       success: true,
       code: displayCode,
-      medusa_code: normalizedCode,
       member_coupon_id: memberCouponId,
+      partner_discount_percent: partnerReferral?.percent || null,
       ...pickTotals(updatedCart),
     });
   } catch (error) {
     console.error("[api/checkout/promotion] 失敗:", error.message);
+    await logCouponAttempt({
+      ip: clientIp,
+      cartId,
+      code: String(code || "").trim().toUpperCase(),
+      success: false,
+    });
     return res.status(400).json({
       success: false,
       error: error.message || "折扣碼套用失敗",

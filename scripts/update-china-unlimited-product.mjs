@@ -153,10 +153,10 @@ function toVariant(row) {
         network: "4G / 5G",
         ip_type: "新加坡 IP",
         route_type: LINE,
-        hotspot: true,
+        hotspot: isTc,
         gpt: isTc,
         tiktok: isTc,
-        gemini: true,
+        gemini: false,
         speed_rule: speedRuleFor(row.kind),
       },
     },
@@ -185,7 +185,7 @@ async function main() {
   const productMeta = {
     type: "esim",
     country: "CN",
-    hot_sale_telecoms: [TELECOM_TC],
+    hot_sale_telecoms: [TELECOM_TC, TELECOM_70],
     carrier_profit_by_carrier: {
       [TELECOM_TC]: 50,
       [TELECOM_70]: 50,
@@ -194,7 +194,7 @@ async function main() {
     seo_title:
       "中國大陸 吃到飽 eSIM｜聯通 GPT+TikTok／移動常規速度｜Jeko eSIM",
     seo_description:
-      "中國大陸吃到飽 eSIM：中國聯通 GPT + TikTok (CUCC)、常規速度 50-70Mbps、常規速度 8-20Mbps。漫遊線路、5G、支援熱點，依天數選購。",
+      "中國大陸吃到飽 eSIM：中國聯通 GPT + TikTok (CUCC)、移動常規速度 50-70Mbps／8-20Mbps。漫遊線路、5G；移動方案不一定支援熱點，依天數選購。",
     seo_keywords:
       "中國大陸eSIM,中國聯通eSIM,中國移動eSIM,吃到飽eSIM,TikTok,ChatGPT,70Mbps,8-20Mbps,旅遊eSIM,Jeko eSIM",
     subtitle_by_carrier: {
@@ -215,14 +215,14 @@ async function main() {
         route_type: "漫遊線路",
         network: "CMCC 5G/4G",
         speed_rule: "限速 50–70Mbps 吃到飽",
-        apps: "熱點分享,Gemini",
+        apps: "不一定支援熱點",
       },
       [TELECOM_8]: {
         ip_type: "新加坡 IP",
         route_type: "漫遊線路",
         network: "CMCC 5G/4G",
         speed_rule: "約 8–20 Mbps 吃到飽",
-        apps: "熱點分享,Gemini",
+        apps: "不一定支援熱點",
       },
     },
     overview_notices_by_carrier: {
@@ -248,8 +248,18 @@ async function main() {
         "熱點分享",
         "4G / 5G",
       ],
-      [TELECOM_70]: ["常規速度 50-70Mbps", "吃到飽", "熱點分享", "4G / 5G"],
-      [TELECOM_8]: ["常規速度 8-20Mbps", "吃到飽", "熱點分享", "4G / 5G"],
+      [TELECOM_70]: [
+        "常規速度 50-70Mbps",
+        "吃到飽",
+        "不一定支援熱點",
+        "4G / 5G",
+      ],
+      [TELECOM_8]: [
+        "常規速度 8-20Mbps",
+        "吃到飽",
+        "不一定支援熱點",
+        "4G / 5G",
+      ],
     },
   };
 
@@ -259,7 +269,7 @@ async function main() {
       "聯通 GPT+TikTok／移動 50-70Mbps／移動 8-20Mbps",
     handle: HANDLE,
     description:
-      "中國大陸吃到飽 eSIM，三種電信方案：中國聯通 GPT + TikTok (CUCC)；中國移動吃到飽常規速度 50-70Mbps；中國移動吃到飽常規速度 8-20Mbps。漫遊線路、5G、支援熱點，依天數選購。",
+      "中國大陸吃到飽 eSIM，三種電信方案：中國聯通 GPT + TikTok (CUCC)；中國移動吃到飽常規速度 50-70Mbps；中國移動吃到飽常規速度 8-20Mbps。漫遊線路、5G；移動方案不一定支援熱點，依天數選購。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,

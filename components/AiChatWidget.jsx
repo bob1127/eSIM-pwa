@@ -425,9 +425,15 @@ function ProductCard({ card }) {
         ) : (
           <ShoppingCart className="w-8 h-8 text-blue-300" />
         )}
-        {card.badge && (
-          <span className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/95 text-slate-700 shadow-sm">
-            {card.badge}
+        {(card.badge || card.isHotSale) && (
+          <span
+            className={`absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ${
+              card.isHotSale && !card.badge
+                ? "bg-rose-500 text-white"
+                : "bg-white/95 text-slate-700"
+            }`}
+          >
+            {card.badge || "HOT SALE"}
           </span>
         )}
       </div>
