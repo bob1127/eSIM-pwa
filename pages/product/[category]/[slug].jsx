@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { useRouter } from "next/router";
 import { useCart } from "../../../components/context/CartContext";
 import Layout from "../../Layout";
@@ -84,7 +90,12 @@ import { buildLoginUrl } from "@/lib/authRedirect";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
-function ProductMediaSlide({ item, fill = false, className = "", priority = false }) {
+function ProductMediaSlide({
+  item,
+  fill = false,
+  className = "",
+  priority = false,
+}) {
   if (item.type === "video") {
     return (
       <video
@@ -230,11 +241,25 @@ const CARRIER_INFO_MAP = {
       bgColor: "bg-cyan-50",
       borderColor: "border-cyan-100",
       policyTitle: "公平使用政策 (FUP):",
-      policyDesc:
-        "每日高速數據用完後，降速至 5Mbps 吃到飽 (高速數據每24小時重置)。",
+      policyDesc: "無限流量，典型速度為8~20Mbps，實際速度可能有所變動。",
       note: "注意：我們建議您抵達當地後再安裝 eSIM。",
     },
     summaryPrefix: "SoftBank / KDDI",
+  },
+  "SoftBank / KDDI 10Mbps": {
+    badges: [
+      { text: "KDDI", type: "5G" },
+      { text: "SoftBank", type: "5G" },
+      { text: "10Mbps", type: "FUP" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "每日 1 GB 高速數據流量，用完後可享 10 Mbps 無限流量",
+      note: "注意：我們建議您抵達當地後再安裝 eSIM。",
+    },
+    summaryPrefix: "SoftBank / KDDI 10Mbps",
   },
   "AU(KDDI)": {
     badges: [{ text: "KDDI", type: "5G" }],
@@ -242,7 +267,7 @@ const CARRIER_INFO_MAP = {
       bgColor: "bg-cyan-50",
       borderColor: "border-cyan-100",
       policyTitle: "公平使用政策 (FUP):",
-      policyDesc: "無限流量，平均速度8~20Mbps。",
+      policyDesc: "無限高速數據，實際速度取決於您的位置及網路環境。",
       note: "注意：我們建議您抵達後再新增 eSIM。查看啟用政策。",
     },
     summaryPrefix: "AU(KDDI)",
@@ -252,8 +277,8 @@ const CARRIER_INFO_MAP = {
     marketingBox: {
       bgColor: "bg-red-50",
       borderColor: "border-red-100",
-      policyTitle: "流量規範:",
-      policyDesc: "本方案為原生日網，支援多數日本限定服務。",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "無限高速數據，實際速度取決於您的位置及網路環境。",
       note: "注意：此線路為日本 IP。",
     },
     summaryPrefix: "IIJ Docomo",
@@ -507,7 +532,7 @@ function ServiceBenefits() {
       title: "品質保障",
       desc: "正規電信線路，穩定連線",
     },
-    { icon: "support_agent", title: "終身客服", desc: "LINE 官方客服即時協助" },
+    { icon: "support_agent", title: "客服支援", desc: "LINE 官方客服即時協助" },
   ];
   return (
     <div className="mt-8 pt-6 border-t border-gray-200">
@@ -538,8 +563,15 @@ function ServiceBenefits() {
             </span>
             <div className="flex-1 min-w-0">
               {item.href ? (
-                <a href={item.href} target="_blank" rel="noopener noreferrer" className="block group">
-                  <p className="font-semibold text-slate-900 group-hover:text-[#00befa]">{item.title}</p>
+                <a
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block group"
+                >
+                  <p className="font-semibold text-slate-900 group-hover:text-[#00befa]">
+                    {item.title}
+                  </p>
                   <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
                 </a>
               ) : (
@@ -737,9 +769,14 @@ function CarrierHtmlDisplay({ html, className = "", accordion = false }) {
         }
         entry.classList.toggle(openClass, isEntryOpen);
         if (entryTrigger?.setAttribute) {
-          entryTrigger.setAttribute("aria-expanded", isEntryOpen ? "true" : "false");
+          entryTrigger.setAttribute(
+            "aria-expanded",
+            isEntryOpen ? "true" : "false",
+          );
         }
-        const entryIcon = iconSelector ? entry.querySelector(iconSelector) : null;
+        const entryIcon = iconSelector
+          ? entry.querySelector(iconSelector)
+          : null;
         if (entryIcon) {
           entryIcon.style.transform = `rotate(${isEntryOpen ? 180 : 0}deg)`;
         }
@@ -754,7 +791,12 @@ function CarrierHtmlDisplay({ html, className = "", accordion = false }) {
 
         // 初始化平滑模式的高度（依目前 openClass 狀態），避免第一次點擊才套用過渡
         if (smooth) {
-          setPanelState(item, panel, trigger, item.classList.contains(openClass));
+          setPanelState(
+            item,
+            panel,
+            trigger,
+            item.classList.contains(openClass),
+          );
         }
 
         const toggle = (event) => {
@@ -853,7 +895,8 @@ function CarrierHtmlEditor({
       </div>
       {preferHtmlMode ? (
         <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-xs text-blue-900">
-          含表格／多欄排版請在「HTML 原始碼」貼上，儲存後再預覽，不要切到視覺化編輯。
+          含表格／多欄排版請在「HTML
+          原始碼」貼上，儲存後再預覽，不要切到視覺化編輯。
         </div>
       ) : null}
       <div className="flex items-center gap-2 bg-slate-100 p-2 border-b border-gray-200">
@@ -1358,7 +1401,6 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
   );
 };
 
-
 // ==========================================
 // Medusa API 資料抓取
 // ==========================================
@@ -1468,8 +1510,9 @@ export async function getStaticProps({ params }) {
       promo_offer_by_carrier: parsePromoOfferByCarrier(rawPromoByCarrier),
       key_features_by_carrier: parsedKeyFeatures,
       carrier_specs_by_carrier:
-        parseCarrierSpecsByCarrier(product.metadata?.carrier_specs_by_carrier) ||
-        {},
+        parseCarrierSpecsByCarrier(
+          product.metadata?.carrier_specs_by_carrier,
+        ) || {},
       hot_sale_telecoms: parseHotSaleTelecoms(
         product.metadata?.hot_sale_telecoms,
       ),
@@ -1543,9 +1586,16 @@ export async function getStaticProps({ params }) {
         });
 
         // title 後備：中國移動 · 5天 · 每日 1GB（5Mbps續航）
-        const fromTitle = getVariationOptionAttrs({ title: v.title, attributes: attrs });
-        if (!attrs.telecom && fromTitle.telecom) attrs.telecom = fromTitle.telecom;
-        if ((attrs.days == null || attrs.days === "") && fromTitle.days != null) {
+        const fromTitle = getVariationOptionAttrs({
+          title: v.title,
+          attributes: attrs,
+        });
+        if (!attrs.telecom && fromTitle.telecom)
+          attrs.telecom = fromTitle.telecom;
+        if (
+          (attrs.days == null || attrs.days === "") &&
+          fromTitle.days != null
+        ) {
           attrs.days = parseInt(fromTitle.days, 10);
         }
         if (!attrs.data_amount && fromTitle.data_amount) {
@@ -1565,8 +1615,7 @@ export async function getStaticProps({ params }) {
             days: attrs.days ?? null,
             data_amount: attrs.data_amount || null,
             line: attrs.line || null,
-            speed_rule:
-              attrs.speed_rule || v.metadata?.speed_rule || null,
+            speed_rule: attrs.speed_rule || v.metadata?.speed_rule || null,
             ip_type: attrs.ip_type || null,
             network: attrs.network || null,
             route_type: attrs.route_type || null,
@@ -1592,9 +1641,7 @@ export async function getStaticProps({ params }) {
     let comparablePlans = [];
     try {
       const resolvedCategory =
-        categoryHandle ||
-        product.categories?.[0]?.handle ||
-        "uncategorized";
+        categoryHandle || product.categories?.[0]?.handle || "uncategorized";
       comparablePlans = await fetchCategoryComparablePlans({
         categoryHandle: resolvedCategory,
         currentHandle: product.handle,
@@ -1682,15 +1729,9 @@ export default function ProductPage({
     }
     const q = router.query || {};
     // 僅在帶 coupon（專屬折扣碼）時隱藏；純 ?ref= 歸因連結仍可顯示商品優惠
-    const fromQuery = Boolean(
-      typeof q.coupon === "string" && q.coupon.trim(),
-    );
+    const fromQuery = Boolean(typeof q.coupon === "string" && q.coupon.trim());
     setSuppressProductPromo(fromStorage || fromQuery);
-  }, [
-    isPartnerShell,
-    router.query?.coupon,
-    router.query?.ref,
-  ]);
+  }, [isPartnerShell, router.query?.coupon, router.query?.ref]);
 
   useEffect(() => {
     setProduct(initialProduct);
@@ -1832,8 +1873,7 @@ export default function ProductPage({
       );
     if (currentDays)
       filtered = filtered.filter(
-        (v) =>
-          String(getVariationOptionAttrs(v).days) === String(currentDays),
+        (v) => String(getVariationOptionAttrs(v).days) === String(currentDays),
       );
     return [
       ...new Set(
@@ -1962,9 +2002,7 @@ export default function ProductPage({
   }, [product, carrierName, currentVariation]);
 
   const showCarrierSpecsPanel =
-    !!carrierName &&
-    carrierName !== "default" &&
-    carrierSpecItems.length > 0;
+    !!carrierName && carrierName !== "default" && carrierSpecItems.length > 0;
 
   /** 副標題：優先依電信商顯示（原生／漫遊分開）；中國 GPT 線路維持舊邏輯 */
   const displaySubtitle = useMemo(() => {
@@ -1984,7 +2022,11 @@ export default function ProductPage({
         String(s)
           .replace(/[（）]/g, (c) => (c === "（" ? "(" : ")"))
           .replace(/\s+/g, "");
-      return norm(key) === norm(telecom) || key.includes(telecom) || telecom.includes(key);
+      return (
+        norm(key) === norm(telecom) ||
+        key.includes(telecom) ||
+        telecom.includes(key)
+      );
     });
     if (hit) return hit[1];
 
@@ -1996,10 +2038,7 @@ export default function ProductPage({
     }
 
     if (/GPT|TikTok|ChatGPT/i.test(telecom)) {
-      return (
-        byCarrier[telecom] ||
-        "漫遊・支援 TikTok 與 ChatGPT"
-      );
+      return byCarrier[telecom] || "漫遊・支援 TikTok 與 ChatGPT";
     }
     const attrs = currentVariation?.attributes || {};
     if (attrs.gpt === true && attrs.tiktok === true) {
@@ -2067,7 +2106,9 @@ export default function ProductPage({
     if (availableCarriers.some((c) => /中國移動|CMCC/i.test(String(c)))) {
       tags.push("CMCC");
     }
-    if (availableCarriers.some((c) => /中國聯通|CUCC|Unicom/i.test(String(c)))) {
+    if (
+      availableCarriers.some((c) => /中國聯通|CUCC|Unicom/i.test(String(c)))
+    ) {
       tags.push("CUCC");
     }
     return tags.length ? ` ( ${tags.join(" / ")} )` : "";
@@ -2197,1296 +2238,1343 @@ export default function ProductPage({
 
   return (
     <>
-    <PageShell {...shellProps}>
-      <CompatibilityModal
-        isOpen={isCompatOpen}
-        onClose={() => setIsCompatOpen(false)}
-      />
-      <DataEstimatorModal
-        isOpen={isEstimatorOpen}
-        onClose={() => setIsEstimatorOpen(false)}
-        destination={getEstimatorDestinationLabel(
-          product,
-          router.query.category,
-        )}
-        productName={product?.name}
-        variations={variations}
-        comparablePlans={comparablePlans}
-        preferredTelecom={selectedAttributes?.telecom || ""}
-        onSelectVariant={handleEstimatorSelectVariant}
-      />
-
-      <div className="bg-white">
-        <div
-          className={`${
-            isPartnerShell
-              ? "max-w-[1100px] mx-auto"
-              : "max-w-[1280px] mx-auto"
-          } px-4 sm:px-6 pt-3 sm:pt-4 pb-16 lg:pb-20`}
-        >
-          {isPartnerShell ? (
-            <nav className="text-xs text-slate-400 mb-3 tracking-wide flex items-center gap-1.5 flex-wrap">
-              <a
-                href={`/p/${store.domain}/`}
-                className="hover:text-[#0A6CD0]"
-              >
-                {store.store_name || "賣場首頁"}
-              </a>
-              <MaterialIcon name="chevron_right" size={14} />
-              <span className="text-slate-600 truncate max-w-[240px]">
-                {product.name}
-              </span>
-            </nav>
-          ) : (
-            <nav className="text-xs text-gray-400 mb-3 tracking-wide">
-              首頁 / 商店 / {product.name}
-            </nav>
+      <PageShell {...shellProps}>
+        <CompatibilityModal
+          isOpen={isCompatOpen}
+          onClose={() => setIsCompatOpen(false)}
+        />
+        <DataEstimatorModal
+          isOpen={isEstimatorOpen}
+          onClose={() => setIsEstimatorOpen(false)}
+          destination={getEstimatorDestinationLabel(
+            product,
+            router.query.category,
           )}
+          productName={product?.name}
+          variations={variations}
+          comparablePlans={comparablePlans}
+          preferredTelecom={selectedAttributes?.telecom || ""}
+          onSelectVariant={handleEstimatorSelectVariant}
+        />
 
-          <section
-            id="purchase-section"
-            className={
+        <div className="bg-white">
+          <div
+            className={`${
               isPartnerShell
-                ? "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 mb-14 lg:mb-16"
-                : "grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-8 lg:gap-12 mb-16 lg:mb-20"
-            }
+                ? "max-w-[1100px] mx-auto"
+                : "max-w-[1280px] mx-auto"
+            } px-4 sm:px-6 pt-3 sm:pt-4 pb-16 lg:pb-20`}
           >
-            {/* ========== 左：媒體畫廊 ========== */}
-            <div className="w-full lg:sticky lg:top-24 lg:self-start">
-              <div
-                className={`relative bg-white overflow-hidden group ${
-                  isPartnerShell ? "border border-slate-100" : "border border-gray-100"
-                }`}
-              >
-                {priceSavings > 0 &&
-                  (isPartnerShell ? (
-                    <div
-                      className="absolute top-3 left-3 z-20 text-white text-[11px] font-bold px-2.5 py-1"
-                      style={{ background: "#0A6CD0" }}
-                    >
-                      省 NT${priceSavings}
-                    </div>
-                  ) : (
-                    <div
-                      className="absolute top-0 left-0 z-20 text-white text-[11px] font-bold leading-tight shadow-md"
-                      style={{
-                        background: ANKER_BLUE,
-                        clipPath: "polygon(0 0, 100% 0, 85% 100%, 0 100%)",
-                        padding: "10px 28px 10px 12px",
-                      }}
-                    >
-                      省 NT${priceSavings}
-                    </div>
-                  ))}
-                {images.length > 1 && (
-                  <div className="absolute bottom-3 right-3 z-20 bg-black/50 text-white text-xs font-medium px-2.5 py-1">
-                    {activeSlide + 1}/{images.length}
-                  </div>
-                )}
-
-                {images.length > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        mainSwiper?.slidePrev();
-                      }}
-                      aria-label="上一張"
-                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/90 shadow-md border border-gray-100 flex items-center justify-center text-gray-600 hover:bg-white transition-colors opacity-0 group-hover:opacity-100 sm:opacity-100"
-                    >
-                      <MaterialIcon name="chevron_left" size={22} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        mainSwiper?.slideNext();
-                      }}
-                      aria-label="下一張"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/90 shadow-md border border-gray-100 flex items-center justify-center text-gray-600 hover:bg-white transition-colors opacity-0 group-hover:opacity-100 sm:opacity-100"
-                    >
-                      <MaterialIcon name="chevron_right" size={22} />
-                    </button>
-                  </>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => openGalleryLightbox(activeSlide)}
-                  className="absolute top-3 right-3 z-20 w-9 h-9 bg-white/90 border border-gray-100 shadow-sm flex items-center justify-center text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100"
-                  aria-label="放大檢視"
-                >
-                  <MaterialIcon name="fullscreen" size={16} />
-                </button>
-
-                <Swiper
-                  onSwiper={setMainSwiper}
-                  loop={images.length > 1}
-                  modules={[Navigation]}
-                  slidesPerView={1}
-                  spaceBetween={0}
-                  centeredSlides={false}
-                  watchOverflow
-                  onSlideChange={(swiper) => setActiveSlide(swiper.realIndex)}
-                  className="w-full product-main-swiper !h-[min(52vh,460px)] bg-white"
-                >
-                  {images.map((item, idx) => (
-                    <SwiperSlide key={idx}>
-                      {item.type === "video" ? (
-                        <div
-                          className="relative block w-full h-full bg-black flex items-center justify-center"
-                          aria-label={`播放第 ${idx + 1} 部影片`}
-                        >
-                          <ProductMediaSlide
-                            item={item}
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => openGalleryLightbox(idx)}
-                          className={`relative block w-full h-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                            isPartnerShell
-                              ? "focus-visible:ring-[#0A6CD0]"
-                              : "focus-visible:ring-[#00befa]"
-                          }`}
-                          aria-label={`放大檢視第 ${idx + 1} 張圖片`}
-                        >
-                          <ProductMediaSlide
-                            item={item}
-                            fill
-                            className="object-contain pointer-events-none"
-                            priority={idx === 0}
-                          />
-                        </button>
-                      )}
-                    </SwiperSlide>
-                  ))}
-                </Swiper>
-              </div>
-
-              {/* 縮圖列（單行） */}
-              {images.length > 1 && (
-                <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
-                  {images.map((item, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => goToGallerySlide(idx)}
-                      className={`relative shrink-0 w-[64px] h-[80px] sm:w-[72px] sm:h-[90px] overflow-hidden border-2 transition-all ${
-                        activeSlide === idx
-                          ? isPartnerShell
-                            ? "border-[#0A6CD0]"
-                            : "border-[#00befa]"
-                          : "border-gray-200 hover:border-gray-400"
-                      }`}
-                      aria-label={`第 ${idx + 1} 個媒體`}
-                      aria-current={activeSlide === idx ? "true" : undefined}
-                    >
-                      {item.type === "video" ? (
-                        <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                          <MaterialIcon
-                            name="play_circle"
-                            size={28}
-                            className="text-white"
-                          />
-                        </div>
-                      ) : (
-                        <SafeImage
-                          src={item.src}
-                          alt=""
-                          fill
-                          sizes="80px"
-                          className="object-contain bg-white"
-                          unoptimized={shouldBypassImageOptimization(item.src)}
-                        />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <MediaGalleryLightbox
-                isOpen={galleryLightboxOpen}
-                onClose={(idx) => {
-                  setGalleryLightboxOpen(false);
-                  if (typeof idx === "number") goToGallerySlide(idx);
-                }}
-                images={images}
-                productName={product.name}
-                initialIndex={galleryLightboxIndex}
-                ariaLabel="商品圖片檢視"
-              />
-
-              <div className="mt-4 inline-flex rounded-full border border-gray-200 p-0.5 bg-white">
-                <button
-                  type="button"
-                  onClick={() => setMediaTab("overview")}
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
-                    mediaTab === "overview"
-                      ? "bg-slate-900 text-white"
-                      : "text-gray-600 hover:text-slate-900"
-                  }`}
-                >
-                  <MaterialIcon
-                    name="view_agenda"
-                    size={14}
-                    className="opacity-80"
-                  />
-                  概覽
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMediaTab("specs");
-                    document
-                      .getElementById("product-tabs")
-                      ?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
-                    mediaTab === "specs"
-                      ? "bg-slate-900 text-white"
-                      : "text-gray-600 hover:text-slate-900"
-                  }`}
-                >
-                  <MaterialIcon name="install_mobile" size={14} />
-                  安裝說明
-                </button>
-              </div>
-
-              {mediaTab === "overview" && (
-                <ProductOverviewNotices
-                  notices={overviewNotices}
-                  carrierFallback={marketingConfig}
-                  product={product}
-                  carrier={carrierName}
-                  onProductUpdate={(patch) =>
-                    setProduct((prev) => ({ ...prev, ...patch }))
-                  }
-                />
-              )}
-            </div>
-
             {isPartnerShell ? (
-              <div className="w-full flex flex-col">
-              <h1 className="text-[22px] sm:text-[26px] lg:text-[28px] font-bold text-slate-900 leading-snug tracking-tight mb-1.5">
-                {product.name}
-              </h1>
-              {displaySubtitle ? (
-                <p className="text-[14px] sm:text-[15px] font-semibold text-[#0A6CD0] leading-snug mb-1">
-                  {displaySubtitle}
-                </p>
-              ) : null}
-              {isAllOptionsSelected && currentVariation?.title ? (
-                <p className="text-[14px] sm:text-[15px] font-medium text-slate-500 leading-snug mb-3">
-                  {currentVariation.title}
-                </p>
-              ) : (
-                <div className="mb-3" />
-              )}
-
-              <a
-                href="#product-reviews"
-                className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-[#0A6CD0] mb-4 w-fit"
-              >
-                <span className="inline-flex items-center gap-0.5 text-[#3B9EFF]">
-                  {[...Array(5)].map((_, i) => (
-                    <MaterialIcon key={i} name="star" size={16} filled />
-                  ))}
-                </span>
-                <span className="underline underline-offset-2 decoration-slate-300">
-                  查看用戶評論
-                </span>
-              </a>
-
-              {introBullets[0] ? (
-                <p className="text-[15px] font-bold text-[#0A6CD0] leading-relaxed mb-2">
-                  <FeatureBulletText>{introBullets[0]}</FeatureBulletText>
-                </p>
-              ) : null}
-
-              <div className="text-[13px] sm:text-sm text-slate-600 leading-relaxed mb-3 space-y-1.5">
-                {(introBullets.length > 1 ? introBullets.slice(1, 4) : []).map(
-                  (line, i) => (
-                    <p key={i}>
-                      <FeatureBulletText>{line}</FeatureBulletText>
-                    </p>
-                  ),
-                )}
-                {introBullets.length === 0 && product.description ? (
-                  <p className="line-clamp-3">
-                    {String(product.description)
-                      .replace(/<[^>]+>/g, " ")
-                      .trim()}
-                  </p>
-                ) : null}
-              </div>
-
-              <ProductActualExperience text={actualExperience} />
-
-              <p className="text-xs text-slate-400 mb-5">
-                ID: {currentVariation?.sku || product.slug || product.id}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-2 mb-5">
-                <span className="inline-block bg-sky-50 text-[#0A6CD0] text-[11px] font-bold px-2.5 py-1 rounded-md">
-                  eSIM
-                </span>
-                {activeCarrierInfo.badges?.map((b, i) => (
-                  <span
-                    key={i}
-                    className="inline-block bg-slate-100 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-md"
-                  >
-                    {b.text} {b.type}
-                  </span>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setIsCompatOpen(true)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#0A6CD0] hover:underline ml-auto"
-                >
-                  <MaterialIcon name="phonelink_setup" size={15} />
-                  檢查相容性
-                </button>
-              </div>
-
-              <ProductPromoOfferBanner
-                product={product}
-                carrierName={carrierName}
-                isAdmin={isAdmin}
-                adminChecked={adminChecked}
-                authHeaders={authHeaders}
-                suppressCustomerBanner={suppressProductPromo}
-                onSaved={(promoMap) =>
-                  setProduct((prev) => ({
-                    ...prev,
-                    promo_offer_by_carrier: promoMap,
-                  }))
-                }
-              />
-
-              {/* 規格選擇 */}
-              {availableCarriers.length > 0 && (
-                <div id="product-options" className="mb-5 scroll-mt-24">
-                  <span className="text-xs font-bold text-slate-500 block mb-2.5">
-                    電信商{telecomSectionHint}
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {availableCarriers.map((opt) => (
-                      <div key={opt} className="relative">
-                        {isHotSaleTelecom(product.hot_sale_telecoms, opt) ? (
-                          <Image
-                            src="/images/hot-sale.png"
-                            alt="熱銷推薦"
-                            width={56}
-                            height={56}
-                            className="absolute -top-3 right-3 z-10 w-14 h-auto pointer-events-none drop-shadow-sm"
-                          />
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => handleAttributeSelect("telecom", opt)}
-                          className={`w-full px-4 py-3.5 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["telecom"] === opt)}`}
-                        >
-                          {formatTelecomLabel(opt)}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {availableDays.length > 0 && (
-                <div className="mb-5">
-                  <span className="text-xs font-bold text-slate-500 block mb-2.5">
-                    天數
-                  </span>
-                  <div className="relative sm:hidden">
-                    <select
-                      id="product-days-select-mobile"
-                      value={String(selectedAttributes["days"] ?? "")}
-                      onChange={(e) =>
-                        handleAttributeSelect("days", e.target.value)
-                      }
-                      className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
-                        selectedAttributes["days"]
-                          ? "bg-white text-slate-900 border-2 border-[#0A6CD0]"
-                          : "bg-white text-slate-500 border border-gray-200"
-                      }`}
-                    >
-                      <option value="" disabled>
-                        請選擇天數
-                      </option>
-                      {availableDays.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt} 天
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
-                      <MaterialIcon
-                        name="expand_more"
-                        size={20}
-                        className="text-slate-400"
-                      />
-                    </div>
-                  </div>
-                  <div className="hidden sm:grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                    {availableDays.map((opt) => (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => handleAttributeSelect("days", opt)}
-                        className={`px-4 py-3.5 text-sm rounded-xl transition-all ${variantBtnClass(String(selectedAttributes["days"]) === String(opt))}`}
-                      >
-                        {opt} 天
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {availableData.length > 0 && (
-                <div className="mb-5">
-                  <span className="text-xs font-bold text-slate-500 block mb-2.5">
-                    數據量
-                  </span>
-                  {!useDataAmountButtons ? (
-                    <div className="relative">
-                      <select
-                        id="product-data-select"
-                        value={String(selectedAttributes["data_amount"] ?? "")}
-                        onChange={(e) =>
-                          handleAttributeSelect("data_amount", e.target.value)
-                        }
-                        className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
-                          selectedAttributes["data_amount"]
-                            ? "bg-white text-slate-900 border-2 border-[#0A6CD0]"
-                            : "bg-white text-slate-500 border border-gray-200"
-                        }`}
-                      >
-                        <option value="" disabled>
-                          請選擇數據量
-                        </option>
-                        {availableData.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {renderDataAmountOptionLabel(opt, { compact: true })}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
-                        <MaterialIcon
-                          name="expand_more"
-                          size={20}
-                          className="text-slate-400"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {availableData.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() =>
-                            handleAttributeSelect("data_amount", opt)
-                          }
-                          className={`px-4 py-3.5 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["data_amount"] === opt)}`}
-                        >
-                          {renderDataAmountOptionLabel(opt)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {currentVariation?.tags && currentVariation.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {currentVariation.tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="bg-sky-50 text-[#0A6CD0] border border-sky-100 px-2.5 py-1 rounded-full text-xs font-bold"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <AnimatePresence mode="wait">
-                {showCarrierSpecsPanel && (
-                  <motion.div
-                    key={`specs-${carrierName}`}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="mb-5 p-4 rounded-xl flex flex-wrap items-center gap-x-6 gap-y-3 text-sm bg-slate-50 border border-gray-100"
-                  >
-                    {carrierSpecItems
-                      .filter((item) =>
-                        [
-                          "ip_type",
-                          "route_type",
-                          "network",
-                          "speed_rule",
-                        ].includes(item.key),
-                      )
-                      .map((item) => (
-                      <div
-                        key={item.key}
-                        className="flex items-center gap-2 min-w-[7.5rem]"
-                      >
-                        <MaterialIcon
-                          name={item.icon}
-                          size={20}
-                          className="text-slate-500 shrink-0"
-                        />
-                        <span className="font-semibold text-slate-700">
-                          {item.text}
-                        </span>
-                      </div>
-                    ))}
-                    {carrierSpecItems
-                      .filter(
-                        (item) =>
-                          ![
-                            "ip_type",
-                            "route_type",
-                            "network",
-                            "speed_rule",
-                          ].includes(item.key),
-                      )
-                      .map((item) => (
-                        <div
-                          key={item.key}
-                          className={`flex items-center gap-2.5 w-full ${
-                            item.fullWidth
-                              ? "pt-3 border-t border-gray-100"
-                              : ""
-                          }`}
-                        >
-                          <MaterialIcon
-                            name={item.icon}
-                            size={20}
-                            className={
-                              item.iconClass || "text-slate-500 shrink-0"
-                            }
-                          />
-                          <span
-                            className={`font-semibold text-slate-700 ${
-                              item.fullWidth ? "text-xs leading-relaxed" : ""
-                            }`}
-                          >
-                            {item.text}
-                          </span>
-                        </div>
-                      ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* 價格 */}
-              <div className="flex flex-wrap items-baseline gap-2 mb-5">
-                <p
-                  className={`text-[28px] sm:text-[32px] font-bold tracking-tight ${
-                    displayPrice != null ? "text-slate-900" : "text-gray-300"
-                  }`}
-                >
-                  {displayTotal != null
-                    ? `NT$${displayTotal.toLocaleString()}`
-                    : displayPrice != null
-                      ? `NT$${displayPrice.toLocaleString()}`
-                      : "請選擇規格"}
-                </p>
-                {displayPrice != null && (
-                  <span className="text-xs text-slate-400">（含稅）</span>
-                )}
-                {priceSavings > 0 && (
-                  <span className="inline-block bg-[#0A6CD0] text-white text-xs font-bold px-2.5 py-1 rounded-md">
-                    省 NT${priceSavings}
-                  </span>
-                )}
-              </div>
-              <p className="text-sm mb-5 -mt-3">
+              <nav className="text-xs text-slate-400 mb-3 tracking-wide flex items-center gap-1.5 flex-wrap">
                 <a
-                  href={buildLoginUrl("/account")}
-                  className="inline-flex items-center gap-1 font-semibold text-[#0A6CD0] hover:underline"
+                  href={`/p/${store.domain}/`}
+                  className="hover:text-[#0A6CD0]"
                 >
-                  登入會員享更多優惠
-                  <MaterialIcon name="arrow_forward" size={16} />
+                  {store.store_name || "賣場首頁"}
                 </a>
-              </p>
-
-              {/* 數量 */}
-              <div className="mb-5">
-                <div className="inline-flex items-center border border-gray-200 rounded-full overflow-hidden bg-white">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-11 h-11 flex items-center justify-center text-slate-500 hover:bg-slate-50"
-                    aria-label="減少數量"
-                  >
-                    <MaterialIcon name="remove" size={18} />
-                  </button>
-                  <div className="w-12 h-11 flex items-center justify-center font-bold text-slate-800 border-x border-gray-100 text-[15px]">
-                    {quantity}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-11 h-11 flex items-center justify-center text-slate-500 hover:bg-slate-50"
-                    aria-label="增加數量"
-                  >
-                    <MaterialIcon name="add" size={18} />
-                  </button>
-                </div>
-              </div>
-
-              <p className="text-[11px] text-slate-400 mb-4">
-                {canPurchase
-                  ? "現貨供應 — 下單後 Email 寄送 eSIM QR Code"
-                  : choiceSummary
-                    ? `已選：${choiceSummary}`
-                    : "請完整選擇電信商、天數與數據量"}
-              </p>
-
-              {/* CTA：加入購物車（主）＋ 立即購買（次） */}
-              <div data-product-buy-cta>
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={!canPurchase}
-                className={`w-full h-[52px] font-bold rounded-full text-[15px] text-white transition-all inline-flex items-center justify-center gap-2 mb-3 ${
-                  canPurchase
-                    ? "hover:opacity-90 shadow-sm"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
-                style={canPurchase ? { background: PRODUCT_BLUE } : undefined}
-              >
-                <MaterialIcon name="shopping_cart" size={20} />
-                {!isAllOptionsSelected
-                  ? "請選規格"
-                  : currentVariation?.price > 0
-                    ? "加入購物車"
-                    : "尚未定價"}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleBuyNow}
-                disabled={!canPurchase}
-                className={`w-full h-[52px] font-bold rounded-full text-[15px] transition-all inline-flex items-center justify-center gap-2 border-2 mb-4 ${
-                  canPurchase
-                    ? "bg-white hover:bg-sky-50"
-                    : "border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50"
-                }`}
-                style={
-                  canPurchase
-                    ? { borderColor: PRODUCT_BLUE, color: PRODUCT_BLUE }
-                    : undefined
-                }
-              >
-                立即購買
-              </button>
-              </div>
-
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-xs text-slate-400">分享商品</span>
-                <div className="flex items-center gap-2">
-                  {[
-                    { name: "share", label: "分享" },
-                    { name: "link", label: "複製連結" },
-                  ].map((item) => (
-                    <button
-                      key={item.name}
-                      type="button"
-                      aria-label={item.label}
-                      onClick={async () => {
-                        try {
-                          if (item.name === "link" || item.name === "share") {
-                            await navigator.clipboard.writeText(
-                              typeof window !== "undefined"
-                                ? window.location.href
-                                : "",
-                            );
-                          }
-                        } catch {
-                          /* ignore */
-                        }
-                      }}
-                      className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 hover:bg-sky-50 hover:text-[#0A6CD0] flex items-center justify-center transition"
-                    >
-                      <MaterialIcon name={item.name} size={16} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <EsimRefundDisclosure compact />
-              </div>
-
-              <DataEstimatorCta onClick={() => setIsEstimatorOpen(true)} />
-
-              <ServiceBenefits />
-              </div>
+                <MaterialIcon name="chevron_right" size={14} />
+                <span className="text-slate-600 truncate max-w-[240px]">
+                  {product.name}
+                </span>
+              </nav>
             ) : (
-              <div className="w-full flex flex-col">
-              <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-                <div className="flex flex-wrap gap-2">
-                  <span className="inline-block bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-md">
-                    eSIM
-                  </span>
-                  {activeCarrierInfo.badges?.map((b, i) => (
-                    <span
-                      key={i}
-                      className="inline-block bg-slate-100 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-md"
-                    >
-                      {b.text} {b.type}
-                    </span>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsCompatOpen(true)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-50 whitespace-nowrap"
-                >
-                  <MaterialIcon name="phonelink_setup" size={16} />
-                  檢查相容性
-                </button>
-              </div>
-
-              <h1 className="text-2xl sm:text-[28px] lg:text-[32px] font-bold text-slate-900 leading-tight tracking-tight mb-1.5">
-                {product.name}
-              </h1>
-              {displaySubtitle ? (
-                <p className="text-[15px] sm:text-base font-semibold text-[#00befa] leading-snug mb-1">
-                  {displaySubtitle}
-                </p>
-              ) : null}
-              {isAllOptionsSelected && currentVariation?.title ? (
-                <p className="text-[15px] sm:text-base font-medium text-slate-500 leading-snug mb-3">
-                  {currentVariation.title}
-                </p>
-              ) : (
-                <div className="mb-3" />
-              )}
-
-              <a
-                href="#product-reviews"
-                className="inline-flex items-center gap-1.5 text-sm text-[#00befa] font-semibold hover:underline mb-5 w-fit"
-              >
-                <span className="inline-flex items-center gap-0.5 text-amber-400">
-                  {[...Array(5)].map((_, i) => (
-                    <MaterialIcon key={i} name="star" size={16} filled />
-                  ))}
-                </span>
-                查看用戶評論
-              </a>
-
-              {/* 價格區 */}
-              <div className="flex flex-wrap items-center gap-3 mb-4 pb-5 border-b border-gray-100">
-                <p
-                  className={`text-3xl sm:text-4xl font-bold tracking-tight ${
-                    isAllOptionsSelected && currentVariation?.price > 0
-                      ? "text-slate-900"
-                      : "text-gray-300"
-                  }`}
-                >
-                  {isAllOptionsSelected && currentVariation ? (
-                    currentVariation.price > 0 ? (
-                      `NT$${currentVariation.price}`
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5">
-                        <MaterialIcon name="warning" size={20} />
-                        尚未定價
-                      </span>
-                    )
-                  ) : (
-                    "請選擇規格"
-                  )}
-                </p>
-                {priceSavings > 0 && (
-                  <span className="inline-block bg-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-md">
-                    省 NT${priceSavings}
-                  </span>
-                )}
-              </div>
-              <p className="text-sm mb-5 -mt-2">
-                <a
-                  href={buildLoginUrl("/account")}
-                  className="inline-flex items-center gap-1 font-semibold hover:underline"
-                  style={{ color: ANKER_BLUE }}
-                >
-                  登入會員享更多優惠
-                  <MaterialIcon name="arrow_forward" size={16} />
-                </a>
-              </p>
-
-              <ProductPromoOfferBanner
-                product={product}
-                carrierName={carrierName}
-                isAdmin={isAdmin}
-                adminChecked={adminChecked}
-                authHeaders={authHeaders}
-                suppressCustomerBanner={suppressProductPromo}
-                onSaved={(promoMap) =>
-                  setProduct((prev) => ({
-                    ...prev,
-                    promo_offer_by_carrier: promoMap,
-                  }))
-                }
-              />
-
-              {/* Key Features */}
-              <div className="mb-6 border-b border-gray-100 pb-5">
-                <button
-                  type="button"
-                  onClick={() => setFeaturesOpen((v) => !v)}
-                  className="flex w-full items-center justify-between text-left font-bold text-slate-900 mb-3"
-                >
-                  <span>重點特色</span>
-                  <span
-                    className={`text-gray-400 transition-transform inline-flex ${featuresOpen ? "rotate-180" : ""}`}
-                  >
-                    <MaterialIcon name="expand_more" size={22} />
-                  </span>
-                </button>
-                <AnimatePresence initial={false}>
-                  {featuresOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <ul className="space-y-2.5 text-sm text-slate-600 leading-relaxed">
-                        {introBullets.length > 0 ? (
-                          introBullets.map((line, i) => (
-                            <li
-                              key={i}
-                              className="flex gap-2 items-start list-none"
-                            >
-                              <span className="text-[#00befa] shrink-0 mt-0.5">
-                                •
-                              </span>
-                              <FeatureBulletText className="flex-1 min-w-0">
-                                {line}
-                              </FeatureBulletText>
-                            </li>
-                          ))
-                        ) : (
-                          <li className="text-gray-400 text-sm list-none">
-                            {carrierName && carrierName !== "default"
-                              ? "此電信商尚未設定重點特色。"
-                              : "請先選擇電信商以查看重點特色。"}
-                          </li>
-                        )}
-                      </ul>
-                      <ProductActualExperience text={actualExperience} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* 規格選擇（Anker Choice） */}
-              <h2
-                id="product-options"
-                className="text-sm font-bold text-slate-900 mb-4 scroll-mt-24"
-              >
-                方案選擇
-                {choiceSummary ? (
-                  <span className="font-normal text-gray-500 ml-1">
-                    ：{choiceSummary}
-                  </span>
-                ) : null}
-              </h2>
-
-              {availableCarriers.length > 0 && (
-                <div className="mb-5">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-3">
-                    電信商{telecomSectionHint}
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {availableCarriers.map((opt) => (
-                      <div key={opt} className="relative">
-                        {isHotSaleTelecom(product.hot_sale_telecoms, opt) ? (
-                          <Image
-                            src="/images/hot-sale.png"
-                            alt="熱銷推薦"
-                            width={56}
-                            height={56}
-                            className="absolute -top-3 right-3 z-10 w-14 h-auto pointer-events-none drop-shadow-sm"
-                          />
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => handleAttributeSelect("telecom", opt)}
-                          className={`w-full px-4 py-3 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["telecom"] === opt)}`}
-                        >
-                          {formatTelecomLabel(opt)}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {availableDays.length > 0 && (
-                <div className="mb-5">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-3">
-                    天數
-                  </span>
-
-                  {/* 手機版：Apple 風格下拉 */}
-                  <div className="relative sm:hidden">
-                    <select
-                      id="product-days-select-mobile"
-                      value={String(selectedAttributes["days"] ?? "")}
-                      onChange={(e) =>
-                        handleAttributeSelect("days", e.target.value)
-                      }
-                      className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium tracking-[-0.01em] rounded-[14px] appearance-none cursor-pointer transition-all duration-200 ease-out active:scale-[0.985] focus:outline-none ${
-                        selectedAttributes["days"]
-                          ? "bg-white text-slate-900 border border-[#007aff]/30 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_0_0_3px_rgba(0,122,255,0.12)]"
-                          : "bg-[#f2f2f7] text-slate-500 border border-black/[0.06] shadow-[inset_0_0.5px_0_rgba(0,0,0,0.06)] focus:bg-white focus:border-[#007aff]/40 focus:shadow-[0_0_0_3px_rgba(0,122,255,0.18)]"
-                      }`}
-                      style={{ WebkitTapHighlightColor: "transparent" }}
-                    >
-                      <option value="" disabled>
-                        請選擇天數
-                      </option>
-                      {availableDays.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt} 天
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-black/[0.05]">
-                        <MaterialIcon
-                          name="expand_more"
-                          size={20}
-                          className="text-slate-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 電腦版：原本按鈕網格 */}
-                  <div className="hidden sm:grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                    {availableDays.map((opt) => (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => handleAttributeSelect("days", opt)}
-                        className={`px-4 py-3 text-sm rounded-xl transition-all ${variantBtnClass(String(selectedAttributes["days"]) === String(opt))}`}
-                      >
-                        {opt} 天
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {availableData.length > 0 && (
-                <div className="mb-5">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-3">
-                    數據量
-                  </span>
-                  {!useDataAmountButtons ? (
-                    <div className="relative">
-                      <select
-                        id="product-data-select-partner"
-                        value={String(selectedAttributes["data_amount"] ?? "")}
-                        onChange={(e) =>
-                          handleAttributeSelect("data_amount", e.target.value)
-                        }
-                        className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
-                          selectedAttributes["data_amount"]
-                            ? "bg-white text-slate-900 border-2 border-[#00befa]"
-                            : "bg-white text-slate-500 border border-gray-200"
-                        }`}
-                      >
-                        <option value="" disabled>
-                          請選擇數據量
-                        </option>
-                        {availableData.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {renderDataAmountOptionLabel(opt, { compact: true })}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
-                        <MaterialIcon
-                          name="expand_more"
-                          size={20}
-                          className="text-slate-400"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {availableData.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() =>
-                            handleAttributeSelect("data_amount", opt)
-                          }
-                          className={`px-4 py-3 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["data_amount"] === opt)}`}
-                        >
-                          {renderDataAmountOptionLabel(opt)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {currentVariation?.tags && currentVariation.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 my-4">
-                  {currentVariation.tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="bg-sky-50 text-sky-700 border border-sky-100 px-2.5 py-1 rounded-full text-xs font-bold"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <AnimatePresence mode="wait">
-                {showCarrierSpecsPanel && (
-                  <motion.div
-                    key={`specs-main-${carrierName}`}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="my-5 p-4 rounded-xl flex flex-wrap items-center gap-x-6 gap-y-3 text-sm bg-slate-50 border border-gray-100"
-                  >
-                    {carrierSpecItems
-                      .filter((item) =>
-                        [
-                          "ip_type",
-                          "route_type",
-                          "network",
-                          "speed_rule",
-                        ].includes(item.key),
-                      )
-                      .map((item) => (
-                      <div
-                        key={item.key}
-                        className="flex items-center gap-2 min-w-[7.5rem]"
-                      >
-                        <MaterialIcon
-                          name={item.icon}
-                          size={20}
-                          className="text-slate-500 shrink-0"
-                        />
-                        <span className="font-semibold text-slate-700">
-                          {item.text}
-                        </span>
-                      </div>
-                    ))}
-                    {carrierSpecItems
-                      .filter(
-                        (item) =>
-                          ![
-                            "ip_type",
-                            "route_type",
-                            "network",
-                            "speed_rule",
-                          ].includes(item.key),
-                      )
-                      .map((item) => (
-                        <div
-                          key={item.key}
-                          className={`flex items-center gap-2.5 w-full ${
-                            item.fullWidth
-                              ? "pt-3 border-t border-gray-100"
-                              : ""
-                          }`}
-                        >
-                          <MaterialIcon
-                            name={item.icon}
-                            size={20}
-                            className={
-                              item.iconClass || "text-slate-500 shrink-0"
-                            }
-                          />
-                          <span
-                            className={`font-semibold text-slate-700 ${
-                              item.fullWidth ? "text-xs leading-relaxed" : ""
-                            }`}
-                          >
-                            {item.text}
-                          </span>
-                        </div>
-                      ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* 數量 */}
-              <div className="mb-6">
-                <p className="text-sm font-bold text-slate-900 mb-3">數量</p>
-                <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white w-[140px]">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-50"
-                    aria-label="減少數量"
-                  >
-                    <MaterialIcon name="remove" size={20} />
-                  </button>
-                  <div className="flex-1 h-11 flex items-center justify-center font-bold text-slate-800 border-x border-gray-100">
-                    {quantity}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-50"
-                    aria-label="增加數量"
-                  >
-                    <MaterialIcon name="add" size={20} />
-                  </button>
-                </div>
-              </div>
-
-              {/* 確認您的選擇（Anker Review Your Selections） */}
-              <div className="rounded-xl bg-[#f5f5f5] p-4 sm:p-5 mb-5">
-                <p className="text-sm font-bold text-slate-900 mb-4">
-                  確認您的選擇
-                </p>
-                <div className="flex gap-3 sm:gap-4">
-                  <div className="relative w-16 sm:w-[72px] aspect-[3/4] shrink-0 overflow-hidden bg-white border border-gray-200">
-                    <SafeImage
-                      src={images[0]?.src || "/default-image.jpg"}
-                      alt=""
-                      fill
-                      sizes="72px"
-                      className="object-contain p-1"
-                      unoptimized={shouldBypassImageOptimization(
-                        images[0]?.src || "/default-image.jpg",
-                      )}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">
-                      {product.name}
-                    </p>
-                    {displaySubtitle ? (
-                      <p className="text-xs font-semibold text-[#00befa] mt-0.5 line-clamp-1">
-                        {displaySubtitle}
-                      </p>
-                    ) : null}
-                    <p className="text-xs text-gray-500 mt-1">
-                      {choiceSummary || "請選擇方案規格"}
-                    </p>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-500 shrink-0">
-                    ×{quantity}
-                  </span>
-                </div>
-                <p className="text-[11px] font-normal text-slate-400 mt-4">
-                  •{" "}
-                  {canPurchase
-                    ? "現貨供應 — 下單後 Email 寄送 eSIM QR Code"
-                    : "請先選擇完整規格以查看供貨狀態"}
-                </p>
-              </div>
-
-              {/* 價格與雙 CTA（Anker Add to Cart + Buy Now） */}
-              <div className="flex flex-wrap items-center gap-3 mb-5">
-                <p
-                  className={`text-3xl sm:text-[34px] font-bold tracking-tight ${
-                    displayPrice != null ? "text-slate-900" : "text-gray-300"
-                  }`}
-                >
-                  {displayTotal != null
-                    ? `NT$${displayTotal}`
-                    : displayPrice != null
-                      ? `NT$${displayPrice}`
-                      : "請選擇規格"}
-                </p>
-                {priceSavings > 0 && (
-                  <span className="inline-block bg-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded">
-                    省 NT${priceSavings}
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3" data-product-buy-cta>
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  disabled={!canPurchase}
-                  className={`h-[52px] font-bold rounded-lg text-[15px] border-2 transition-all ${
-                    canPurchase
-                      ? "bg-white hover:bg-sky-50"
-                      : "border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50"
-                  }`}
-                  style={
-                    canPurchase
-                      ? { borderColor: ANKER_BLUE, color: ANKER_BLUE }
-                      : undefined
-                  }
-                >
-                  {!isAllOptionsSelected
-                    ? "請選規格"
-                    : currentVariation?.price > 0
-                      ? "加入購物車"
-                      : "尚未定價"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleBuyNow}
-                  disabled={!canPurchase}
-                  className={`h-[52px] font-bold rounded-lg text-[15px] text-white transition-all ${
-                    canPurchase
-                      ? "hover:opacity-90 shadow-md"
-                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  }`}
-                  style={canPurchase ? { background: ANKER_BLUE } : undefined}
-                >
-                  立即購買
-                </button>
-              </div>
-
-              <div className="mt-4">
-                <EsimRefundDisclosure compact />
-              </div>
-
-              <DataEstimatorCta onClick={() => setIsEstimatorOpen(true)} />
-
-              <ServiceBenefits />
-              </div>
+              <nav className="text-xs text-gray-400 mb-3 tracking-wide">
+                首頁 / 商店 / {product.name}
+              </nav>
             )}
 
-          </section>
+            <section
+              id="purchase-section"
+              className={
+                isPartnerShell
+                  ? "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 mb-14 lg:mb-16"
+                  : "grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-8 lg:gap-12 mb-16 lg:mb-20"
+              }
+            >
+              {/* ========== 左：媒體畫廊 ========== */}
+              <div className="w-full lg:sticky lg:top-24 lg:self-start">
+                <div
+                  className={`relative bg-white overflow-hidden group ${
+                    isPartnerShell
+                      ? "border border-slate-100"
+                      : "border border-gray-100"
+                  }`}
+                >
+                  {priceSavings > 0 &&
+                    (isPartnerShell ? (
+                      <div
+                        className="absolute top-3 left-3 z-20 text-white text-[11px] font-bold px-2.5 py-1"
+                        style={{ background: "#0A6CD0" }}
+                      >
+                        省 NT${priceSavings}
+                      </div>
+                    ) : (
+                      <div
+                        className="absolute top-0 left-0 z-20 text-white text-[11px] font-bold leading-tight shadow-md"
+                        style={{
+                          background: ANKER_BLUE,
+                          clipPath: "polygon(0 0, 100% 0, 85% 100%, 0 100%)",
+                          padding: "10px 28px 10px 12px",
+                        }}
+                      >
+                        省 NT${priceSavings}
+                      </div>
+                    ))}
+                  {images.length > 1 && (
+                    <div className="absolute bottom-3 right-3 z-20 bg-black/50 text-white text-xs font-medium px-2.5 py-1">
+                      {activeSlide + 1}/{images.length}
+                    </div>
+                  )}
 
-          <ProductTabs
-            product={product}
-            selectedCarrier={carrierName}
-            onProductUpdate={(patch) =>
-              setProduct((prev) => ({ ...prev, ...patch }))
-            }
-          />
-          <ProductReviewsSection
-            productId={product.id}
-            productTitle={product.name}
-            design={isPartnerShell ? "nissin" : "default"}
-          />
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          mainSwiper?.slidePrev();
+                        }}
+                        aria-label="上一張"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/90 shadow-md border border-gray-100 flex items-center justify-center text-gray-600 hover:bg-white transition-colors opacity-0 group-hover:opacity-100 sm:opacity-100"
+                      >
+                        <MaterialIcon name="chevron_left" size={22} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          mainSwiper?.slideNext();
+                        }}
+                        aria-label="下一張"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/90 shadow-md border border-gray-100 flex items-center justify-center text-gray-600 hover:bg-white transition-colors opacity-0 group-hover:opacity-100 sm:opacity-100"
+                      >
+                        <MaterialIcon name="chevron_right" size={22} />
+                      </button>
+                    </>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => openGalleryLightbox(activeSlide)}
+                    className="absolute top-3 right-3 z-20 w-9 h-9 bg-white/90 border border-gray-100 shadow-sm flex items-center justify-center text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100"
+                    aria-label="放大檢視"
+                  >
+                    <MaterialIcon name="fullscreen" size={16} />
+                  </button>
+
+                  <Swiper
+                    onSwiper={setMainSwiper}
+                    loop={images.length > 1}
+                    modules={[Navigation]}
+                    slidesPerView={1}
+                    spaceBetween={0}
+                    centeredSlides={false}
+                    watchOverflow
+                    onSlideChange={(swiper) => setActiveSlide(swiper.realIndex)}
+                    className="w-full product-main-swiper !h-[min(52vh,460px)] bg-white"
+                  >
+                    {images.map((item, idx) => (
+                      <SwiperSlide key={idx}>
+                        {item.type === "video" ? (
+                          <div
+                            className="relative block w-full h-full bg-black flex items-center justify-center"
+                            aria-label={`播放第 ${idx + 1} 部影片`}
+                          >
+                            <ProductMediaSlide
+                              item={item}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => openGalleryLightbox(idx)}
+                            className={`relative block w-full h-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                              isPartnerShell
+                                ? "focus-visible:ring-[#0A6CD0]"
+                                : "focus-visible:ring-[#00befa]"
+                            }`}
+                            aria-label={`放大檢視第 ${idx + 1} 張圖片`}
+                          >
+                            <ProductMediaSlide
+                              item={item}
+                              fill
+                              className="object-contain pointer-events-none"
+                              priority={idx === 0}
+                            />
+                          </button>
+                        )}
+                      </SwiperSlide>
+                    ))}
+                  </Swiper>
+                </div>
+
+                {/* 縮圖列（單行） */}
+                {images.length > 1 && (
+                  <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
+                    {images.map((item, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => goToGallerySlide(idx)}
+                        className={`relative shrink-0 w-[64px] h-[80px] sm:w-[72px] sm:h-[90px] overflow-hidden border-2 transition-all ${
+                          activeSlide === idx
+                            ? isPartnerShell
+                              ? "border-[#0A6CD0]"
+                              : "border-[#00befa]"
+                            : "border-gray-200 hover:border-gray-400"
+                        }`}
+                        aria-label={`第 ${idx + 1} 個媒體`}
+                        aria-current={activeSlide === idx ? "true" : undefined}
+                      >
+                        {item.type === "video" ? (
+                          <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
+                            <MaterialIcon
+                              name="play_circle"
+                              size={28}
+                              className="text-white"
+                            />
+                          </div>
+                        ) : (
+                          <SafeImage
+                            src={item.src}
+                            alt=""
+                            fill
+                            sizes="80px"
+                            className="object-contain bg-white"
+                            unoptimized={shouldBypassImageOptimization(
+                              item.src,
+                            )}
+                          />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <MediaGalleryLightbox
+                  isOpen={galleryLightboxOpen}
+                  onClose={(idx) => {
+                    setGalleryLightboxOpen(false);
+                    if (typeof idx === "number") goToGallerySlide(idx);
+                  }}
+                  images={images}
+                  productName={product.name}
+                  initialIndex={galleryLightboxIndex}
+                  ariaLabel="商品圖片檢視"
+                />
+
+                <div className="mt-4 inline-flex rounded-full border border-gray-200 p-0.5 bg-white">
+                  <button
+                    type="button"
+                    onClick={() => setMediaTab("overview")}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
+                      mediaTab === "overview"
+                        ? "bg-slate-900 text-white"
+                        : "text-gray-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <MaterialIcon
+                      name="view_agenda"
+                      size={14}
+                      className="opacity-80"
+                    />
+                    概覽
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMediaTab("specs");
+                      document
+                        .getElementById("product-tabs")
+                        ?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
+                      mediaTab === "specs"
+                        ? "bg-slate-900 text-white"
+                        : "text-gray-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <MaterialIcon name="install_mobile" size={14} />
+                    安裝說明
+                  </button>
+                </div>
+
+                {mediaTab === "overview" && (
+                  <ProductOverviewNotices
+                    notices={overviewNotices}
+                    carrierFallback={marketingConfig}
+                    product={product}
+                    carrier={carrierName}
+                    onProductUpdate={(patch) =>
+                      setProduct((prev) => ({ ...prev, ...patch }))
+                    }
+                  />
+                )}
+              </div>
+
+              {isPartnerShell ? (
+                <div className="w-full flex flex-col">
+                  <h1 className="text-[22px] sm:text-[26px] lg:text-[28px] font-bold text-slate-900 leading-snug tracking-tight mb-1.5">
+                    {product.name}
+                  </h1>
+                  {displaySubtitle ? (
+                    <p className="text-[14px] sm:text-[15px] font-semibold text-[#0A6CD0] leading-snug mb-1">
+                      {displaySubtitle}
+                    </p>
+                  ) : null}
+                  {isAllOptionsSelected && currentVariation?.title ? (
+                    <p className="text-[14px] sm:text-[15px] font-medium text-slate-500 leading-snug mb-3">
+                      {currentVariation.title}
+                    </p>
+                  ) : (
+                    <div className="mb-3" />
+                  )}
+
+                  <a
+                    href="#product-reviews"
+                    className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-[#0A6CD0] mb-4 w-fit"
+                  >
+                    <span className="inline-flex items-center gap-0.5 text-[#3B9EFF]">
+                      {[...Array(5)].map((_, i) => (
+                        <MaterialIcon key={i} name="star" size={16} filled />
+                      ))}
+                    </span>
+                    <span className="underline underline-offset-2 decoration-slate-300">
+                      查看用戶評論
+                    </span>
+                  </a>
+
+                  {introBullets[0] ? (
+                    <p className="text-[15px] font-bold text-[#0A6CD0] leading-relaxed mb-2">
+                      <FeatureBulletText>{introBullets[0]}</FeatureBulletText>
+                    </p>
+                  ) : null}
+
+                  <div className="text-[13px] sm:text-sm text-slate-600 leading-relaxed mb-3 space-y-1.5">
+                    {(introBullets.length > 1
+                      ? introBullets.slice(1, 4)
+                      : []
+                    ).map((line, i) => (
+                      <p key={i}>
+                        <FeatureBulletText>{line}</FeatureBulletText>
+                      </p>
+                    ))}
+                    {introBullets.length === 0 && product.description ? (
+                      <p className="line-clamp-3">
+                        {String(product.description)
+                          .replace(/<[^>]+>/g, " ")
+                          .trim()}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <ProductActualExperience text={actualExperience} />
+
+                  <p className="text-xs text-slate-400 mb-5">
+                    ID: {currentVariation?.sku || product.slug || product.id}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 mb-5">
+                    <span className="inline-block bg-sky-50 text-[#0A6CD0] text-[11px] font-bold px-2.5 py-1 rounded-md">
+                      eSIM
+                    </span>
+                    {activeCarrierInfo.badges?.map((b, i) => (
+                      <span
+                        key={i}
+                        className="inline-block bg-slate-100 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-md"
+                      >
+                        {b.text} {b.type}
+                      </span>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setIsCompatOpen(true)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#0A6CD0] hover:underline ml-auto"
+                    >
+                      <MaterialIcon name="phonelink_setup" size={15} />
+                      檢查相容性
+                    </button>
+                  </div>
+
+                  <ProductPromoOfferBanner
+                    product={product}
+                    carrierName={carrierName}
+                    isAdmin={isAdmin}
+                    adminChecked={adminChecked}
+                    authHeaders={authHeaders}
+                    suppressCustomerBanner={suppressProductPromo}
+                    onSaved={(promoMap) =>
+                      setProduct((prev) => ({
+                        ...prev,
+                        promo_offer_by_carrier: promoMap,
+                      }))
+                    }
+                  />
+
+                  {/* 規格選擇 */}
+                  {availableCarriers.length > 0 && (
+                    <div id="product-options" className="mb-5 scroll-mt-24">
+                      <span className="text-xs font-bold text-slate-500 block mb-2.5">
+                        電信商{telecomSectionHint}
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {availableCarriers.map((opt) => (
+                          <div key={opt} className="relative">
+                            {isHotSaleTelecom(
+                              product.hot_sale_telecoms,
+                              opt,
+                            ) ? (
+                              <Image
+                                src="/images/hot-sale.png"
+                                alt="熱銷推薦"
+                                width={56}
+                                height={56}
+                                className="absolute -top-3 right-3 z-10 w-14 h-auto pointer-events-none drop-shadow-sm"
+                              />
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleAttributeSelect("telecom", opt)
+                              }
+                              className={`w-full px-4 py-3.5 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["telecom"] === opt)}`}
+                            >
+                              {formatTelecomLabel(opt)}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {availableDays.length > 0 && (
+                    <div className="mb-5">
+                      <span className="text-xs font-bold text-slate-500 block mb-2.5">
+                        天數
+                      </span>
+                      <div className="relative sm:hidden">
+                        <select
+                          id="product-days-select-mobile"
+                          value={String(selectedAttributes["days"] ?? "")}
+                          onChange={(e) =>
+                            handleAttributeSelect("days", e.target.value)
+                          }
+                          className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
+                            selectedAttributes["days"]
+                              ? "bg-white text-slate-900 border-2 border-[#0A6CD0]"
+                              : "bg-white text-slate-500 border border-gray-200"
+                          }`}
+                        >
+                          <option value="" disabled>
+                            請選擇天數
+                          </option>
+                          {availableDays.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt} 天
+                            </option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
+                          <MaterialIcon
+                            name="expand_more"
+                            size={20}
+                            className="text-slate-400"
+                          />
+                        </div>
+                      </div>
+                      <div className="hidden sm:grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        {availableDays.map((opt) => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => handleAttributeSelect("days", opt)}
+                            className={`px-4 py-3.5 text-sm rounded-xl transition-all ${variantBtnClass(String(selectedAttributes["days"]) === String(opt))}`}
+                          >
+                            {opt} 天
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {availableData.length > 0 && (
+                    <div className="mb-5">
+                      <span className="text-xs font-bold text-slate-500 block mb-2.5">
+                        數據量
+                      </span>
+                      {!useDataAmountButtons ? (
+                        <div className="relative">
+                          <select
+                            id="product-data-select"
+                            value={String(
+                              selectedAttributes["data_amount"] ?? "",
+                            )}
+                            onChange={(e) =>
+                              handleAttributeSelect(
+                                "data_amount",
+                                e.target.value,
+                              )
+                            }
+                            className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
+                              selectedAttributes["data_amount"]
+                                ? "bg-white text-slate-900 border-2 border-[#0A6CD0]"
+                                : "bg-white text-slate-500 border border-gray-200"
+                            }`}
+                          >
+                            <option value="" disabled>
+                              請選擇數據量
+                            </option>
+                            {availableData.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {renderDataAmountOptionLabel(opt, {
+                                  compact: true,
+                                })}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
+                            <MaterialIcon
+                              name="expand_more"
+                              size={20}
+                              className="text-slate-400"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {availableData.map((opt) => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() =>
+                                handleAttributeSelect("data_amount", opt)
+                              }
+                              className={`px-4 py-3.5 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["data_amount"] === opt)}`}
+                            >
+                              {renderDataAmountOptionLabel(opt)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {currentVariation?.tags &&
+                    currentVariation.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {currentVariation.tags.map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="bg-sky-50 text-[#0A6CD0] border border-sky-100 px-2.5 py-1 rounded-full text-xs font-bold"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                  <AnimatePresence mode="wait">
+                    {showCarrierSpecsPanel && (
+                      <motion.div
+                        key={`specs-${carrierName}`}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="mb-5 p-4 rounded-xl flex flex-wrap items-center gap-x-6 gap-y-3 text-sm bg-slate-50 border border-gray-100"
+                      >
+                        {carrierSpecItems
+                          .filter((item) =>
+                            [
+                              "ip_type",
+                              "route_type",
+                              "network",
+                              "speed_rule",
+                            ].includes(item.key),
+                          )
+                          .map((item) => (
+                            <div
+                              key={item.key}
+                              className="flex items-center gap-2 min-w-[7.5rem]"
+                            >
+                              <MaterialIcon
+                                name={item.icon}
+                                size={20}
+                                className="text-slate-500 shrink-0"
+                              />
+                              <span className="font-semibold text-slate-700">
+                                {item.text}
+                              </span>
+                            </div>
+                          ))}
+                        {carrierSpecItems
+                          .filter(
+                            (item) =>
+                              ![
+                                "ip_type",
+                                "route_type",
+                                "network",
+                                "speed_rule",
+                              ].includes(item.key),
+                          )
+                          .map((item) => (
+                            <div
+                              key={item.key}
+                              className={`flex items-center gap-2.5 w-full ${
+                                item.fullWidth
+                                  ? "pt-3 border-t border-gray-100"
+                                  : ""
+                              }`}
+                            >
+                              <MaterialIcon
+                                name={item.icon}
+                                size={20}
+                                className={
+                                  item.iconClass || "text-slate-500 shrink-0"
+                                }
+                              />
+                              <span
+                                className={`font-semibold text-slate-700 ${
+                                  item.fullWidth
+                                    ? "text-xs leading-relaxed"
+                                    : ""
+                                }`}
+                              >
+                                {item.text}
+                              </span>
+                            </div>
+                          ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* 價格 */}
+                  <div className="flex flex-wrap items-baseline gap-2 mb-5">
+                    <p
+                      className={`text-[28px] sm:text-[32px] font-bold tracking-tight ${
+                        displayPrice != null
+                          ? "text-slate-900"
+                          : "text-gray-300"
+                      }`}
+                    >
+                      {displayTotal != null
+                        ? `NT$${displayTotal.toLocaleString()}`
+                        : displayPrice != null
+                          ? `NT$${displayPrice.toLocaleString()}`
+                          : "請選擇規格"}
+                    </p>
+                    {displayPrice != null && (
+                      <span className="text-xs text-slate-400">（含稅）</span>
+                    )}
+                    {priceSavings > 0 && (
+                      <span className="inline-block bg-[#0A6CD0] text-white text-xs font-bold px-2.5 py-1 rounded-md">
+                        省 NT${priceSavings}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm mb-5 -mt-3">
+                    <a
+                      href={buildLoginUrl("/account")}
+                      className="inline-flex items-center gap-1 font-semibold text-[#0A6CD0] hover:underline"
+                    >
+                      登入會員享更多優惠
+                      <MaterialIcon name="arrow_forward" size={16} />
+                    </a>
+                  </p>
+
+                  {/* 數量 */}
+                  <div className="mb-5">
+                    <div className="inline-flex items-center border border-gray-200 rounded-full overflow-hidden bg-white">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="w-11 h-11 flex items-center justify-center text-slate-500 hover:bg-slate-50"
+                        aria-label="減少數量"
+                      >
+                        <MaterialIcon name="remove" size={18} />
+                      </button>
+                      <div className="w-12 h-11 flex items-center justify-center font-bold text-slate-800 border-x border-gray-100 text-[15px]">
+                        {quantity}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(quantity + 1)}
+                        className="w-11 h-11 flex items-center justify-center text-slate-500 hover:bg-slate-50"
+                        aria-label="增加數量"
+                      >
+                        <MaterialIcon name="add" size={18} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 mb-4">
+                    {canPurchase
+                      ? "現貨供應 — 下單後 Email 寄送 eSIM QR Code"
+                      : choiceSummary
+                        ? `已選：${choiceSummary}`
+                        : "請完整選擇電信商、天數與數據量"}
+                  </p>
+
+                  {/* CTA：加入購物車（主）＋ 立即購買（次） */}
+                  <div data-product-buy-cta>
+                    <button
+                      type="button"
+                      onClick={handleAddToCart}
+                      disabled={!canPurchase}
+                      className={`w-full h-[52px] font-bold rounded-full text-[15px] text-white transition-all inline-flex items-center justify-center gap-2 mb-3 ${
+                        canPurchase
+                          ? "hover:opacity-90 shadow-sm"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      }`}
+                      style={
+                        canPurchase ? { background: PRODUCT_BLUE } : undefined
+                      }
+                    >
+                      <MaterialIcon name="shopping_cart" size={20} />
+                      {!isAllOptionsSelected
+                        ? "請選規格"
+                        : currentVariation?.price > 0
+                          ? "加入購物車"
+                          : "尚未定價"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleBuyNow}
+                      disabled={!canPurchase}
+                      className={`w-full h-[52px] font-bold rounded-full text-[15px] transition-all inline-flex items-center justify-center gap-2 border-2 mb-4 ${
+                        canPurchase
+                          ? "bg-white hover:bg-sky-50"
+                          : "border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50"
+                      }`}
+                      style={
+                        canPurchase
+                          ? { borderColor: PRODUCT_BLUE, color: PRODUCT_BLUE }
+                          : undefined
+                      }
+                    >
+                      立即購買
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs text-slate-400">分享商品</span>
+                    <div className="flex items-center gap-2">
+                      {[
+                        { name: "share", label: "分享" },
+                        { name: "link", label: "複製連結" },
+                      ].map((item) => (
+                        <button
+                          key={item.name}
+                          type="button"
+                          aria-label={item.label}
+                          onClick={async () => {
+                            try {
+                              if (
+                                item.name === "link" ||
+                                item.name === "share"
+                              ) {
+                                await navigator.clipboard.writeText(
+                                  typeof window !== "undefined"
+                                    ? window.location.href
+                                    : "",
+                                );
+                              }
+                            } catch {
+                              /* ignore */
+                            }
+                          }}
+                          className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 hover:bg-sky-50 hover:text-[#0A6CD0] flex items-center justify-center transition"
+                        >
+                          <MaterialIcon name={item.name} size={16} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <EsimRefundDisclosure compact />
+                  </div>
+
+                  <DataEstimatorCta onClick={() => setIsEstimatorOpen(true)} />
+
+                  <ServiceBenefits />
+                </div>
+              ) : (
+                <div className="w-full flex flex-col">
+                  <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-block bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-md">
+                        eSIM
+                      </span>
+                      {activeCarrierInfo.badges?.map((b, i) => (
+                        <span
+                          key={i}
+                          className="inline-block bg-slate-100 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-md"
+                        >
+                          {b.text} {b.type}
+                        </span>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsCompatOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-50 whitespace-nowrap"
+                    >
+                      <MaterialIcon name="phonelink_setup" size={16} />
+                      檢查相容性
+                    </button>
+                  </div>
+
+                  <h1 className="text-2xl sm:text-[28px] lg:text-[32px] font-bold text-slate-900 leading-tight tracking-tight mb-1.5">
+                    {product.name}
+                  </h1>
+                  {displaySubtitle ? (
+                    <p className="text-[15px] sm:text-base font-semibold text-[#00befa] leading-snug mb-1">
+                      {displaySubtitle}
+                    </p>
+                  ) : null}
+                  {isAllOptionsSelected && currentVariation?.title ? (
+                    <p className="text-[15px] sm:text-base font-medium text-slate-500 leading-snug mb-3">
+                      {currentVariation.title}
+                    </p>
+                  ) : (
+                    <div className="mb-3" />
+                  )}
+
+                  <a
+                    href="#product-reviews"
+                    className="inline-flex items-center gap-1.5 text-sm text-[#00befa] font-semibold hover:underline mb-5 w-fit"
+                  >
+                    <span className="inline-flex items-center gap-0.5 text-amber-400">
+                      {[...Array(5)].map((_, i) => (
+                        <MaterialIcon key={i} name="star" size={16} filled />
+                      ))}
+                    </span>
+                    查看用戶評論
+                  </a>
+
+                  {/* 價格區 */}
+                  <div className="flex flex-wrap items-center gap-3 mb-4 pb-5 border-b border-gray-100">
+                    <p
+                      className={`text-3xl sm:text-4xl font-bold tracking-tight ${
+                        isAllOptionsSelected && currentVariation?.price > 0
+                          ? "text-slate-900"
+                          : "text-gray-300"
+                      }`}
+                    >
+                      {isAllOptionsSelected && currentVariation ? (
+                        currentVariation.price > 0 ? (
+                          `NT$${currentVariation.price}`
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5">
+                            <MaterialIcon name="warning" size={20} />
+                            尚未定價
+                          </span>
+                        )
+                      ) : (
+                        "請選擇規格"
+                      )}
+                    </p>
+                    {priceSavings > 0 && (
+                      <span className="inline-block bg-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-md">
+                        省 NT${priceSavings}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm mb-5 -mt-2">
+                    <a
+                      href={buildLoginUrl("/account")}
+                      className="inline-flex items-center gap-1 font-semibold hover:underline"
+                      style={{ color: ANKER_BLUE }}
+                    >
+                      登入會員享更多優惠
+                      <MaterialIcon name="arrow_forward" size={16} />
+                    </a>
+                  </p>
+
+                  <ProductPromoOfferBanner
+                    product={product}
+                    carrierName={carrierName}
+                    isAdmin={isAdmin}
+                    adminChecked={adminChecked}
+                    authHeaders={authHeaders}
+                    suppressCustomerBanner={suppressProductPromo}
+                    onSaved={(promoMap) =>
+                      setProduct((prev) => ({
+                        ...prev,
+                        promo_offer_by_carrier: promoMap,
+                      }))
+                    }
+                  />
+
+                  {/* Key Features */}
+                  <div className="mb-6 border-b border-gray-100 pb-5">
+                    <button
+                      type="button"
+                      onClick={() => setFeaturesOpen((v) => !v)}
+                      className="flex w-full items-center justify-between text-left font-bold text-slate-900 mb-3"
+                    >
+                      <span>重點特色</span>
+                      <span
+                        className={`text-gray-400 transition-transform inline-flex ${featuresOpen ? "rotate-180" : ""}`}
+                      >
+                        <MaterialIcon name="expand_more" size={22} />
+                      </span>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {featuresOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <ul className="space-y-2.5 text-sm text-slate-600 leading-relaxed">
+                            {introBullets.length > 0 ? (
+                              introBullets.map((line, i) => (
+                                <li
+                                  key={i}
+                                  className="flex gap-2 items-start list-none"
+                                >
+                                  <span className="text-[#00befa] shrink-0 mt-0.5">
+                                    •
+                                  </span>
+                                  <FeatureBulletText className="flex-1 min-w-0">
+                                    {line}
+                                  </FeatureBulletText>
+                                </li>
+                              ))
+                            ) : (
+                              <li className="text-gray-400 text-sm list-none">
+                                {carrierName && carrierName !== "default"
+                                  ? "此電信商尚未設定重點特色。"
+                                  : "請先選擇電信商以查看重點特色。"}
+                              </li>
+                            )}
+                          </ul>
+                          <ProductActualExperience text={actualExperience} />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* 規格選擇（Anker Choice） */}
+                  <h2
+                    id="product-options"
+                    className="text-sm font-bold text-slate-900 mb-4 scroll-mt-24"
+                  >
+                    方案選擇
+                    {choiceSummary ? (
+                      <span className="font-normal text-gray-500 ml-1">
+                        ：{choiceSummary}
+                      </span>
+                    ) : null}
+                  </h2>
+
+                  {availableCarriers.length > 0 && (
+                    <div className="mb-5">
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-3">
+                        電信商{telecomSectionHint}
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {availableCarriers.map((opt) => (
+                          <div key={opt} className="relative">
+                            {isHotSaleTelecom(
+                              product.hot_sale_telecoms,
+                              opt,
+                            ) ? (
+                              <Image
+                                src="/images/hot-sale.png"
+                                alt="熱銷推薦"
+                                width={56}
+                                height={56}
+                                className="absolute -top-3 right-3 z-10 w-14 h-auto pointer-events-none drop-shadow-sm"
+                              />
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleAttributeSelect("telecom", opt)
+                              }
+                              className={`w-full px-4 py-3 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["telecom"] === opt)}`}
+                            >
+                              {formatTelecomLabel(opt)}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {availableDays.length > 0 && (
+                    <div className="mb-5">
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-3">
+                        天數
+                      </span>
+
+                      {/* 手機版：Apple 風格下拉 */}
+                      <div className="relative sm:hidden">
+                        <select
+                          id="product-days-select-mobile"
+                          value={String(selectedAttributes["days"] ?? "")}
+                          onChange={(e) =>
+                            handleAttributeSelect("days", e.target.value)
+                          }
+                          className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium tracking-[-0.01em] rounded-[14px] appearance-none cursor-pointer transition-all duration-200 ease-out active:scale-[0.985] focus:outline-none ${
+                            selectedAttributes["days"]
+                              ? "bg-white text-slate-900 border border-[#007aff]/30 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_0_0_3px_rgba(0,122,255,0.12)]"
+                              : "bg-[#f2f2f7] text-slate-500 border border-black/[0.06] shadow-[inset_0_0.5px_0_rgba(0,0,0,0.06)] focus:bg-white focus:border-[#007aff]/40 focus:shadow-[0_0_0_3px_rgba(0,122,255,0.18)]"
+                          }`}
+                          style={{ WebkitTapHighlightColor: "transparent" }}
+                        >
+                          <option value="" disabled>
+                            請選擇天數
+                          </option>
+                          {availableDays.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt} 天
+                            </option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-black/[0.05]">
+                            <MaterialIcon
+                              name="expand_more"
+                              size={20}
+                              className="text-slate-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 電腦版：原本按鈕網格 */}
+                      <div className="hidden sm:grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        {availableDays.map((opt) => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => handleAttributeSelect("days", opt)}
+                            className={`px-4 py-3 text-sm rounded-xl transition-all ${variantBtnClass(String(selectedAttributes["days"]) === String(opt))}`}
+                          >
+                            {opt} 天
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {availableData.length > 0 && (
+                    <div className="mb-5">
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-3">
+                        數據量
+                      </span>
+                      {!useDataAmountButtons ? (
+                        <div className="relative">
+                          <select
+                            id="product-data-select-partner"
+                            value={String(
+                              selectedAttributes["data_amount"] ?? "",
+                            )}
+                            onChange={(e) =>
+                              handleAttributeSelect(
+                                "data_amount",
+                                e.target.value,
+                              )
+                            }
+                            className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
+                              selectedAttributes["data_amount"]
+                                ? "bg-white text-slate-900 border-2 border-[#00befa]"
+                                : "bg-white text-slate-500 border border-gray-200"
+                            }`}
+                          >
+                            <option value="" disabled>
+                              請選擇數據量
+                            </option>
+                            {availableData.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {renderDataAmountOptionLabel(opt, {
+                                  compact: true,
+                                })}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
+                            <MaterialIcon
+                              name="expand_more"
+                              size={20}
+                              className="text-slate-400"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {availableData.map((opt) => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() =>
+                                handleAttributeSelect("data_amount", opt)
+                              }
+                              className={`px-4 py-3 text-sm rounded-xl transition-all text-left ${variantBtnClass(selectedAttributes["data_amount"] === opt)}`}
+                            >
+                              {renderDataAmountOptionLabel(opt)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {currentVariation?.tags &&
+                    currentVariation.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 my-4">
+                        {currentVariation.tags.map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="bg-sky-50 text-sky-700 border border-sky-100 px-2.5 py-1 rounded-full text-xs font-bold"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                  <AnimatePresence mode="wait">
+                    {showCarrierSpecsPanel && (
+                      <motion.div
+                        key={`specs-main-${carrierName}`}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="my-5 p-4 rounded-xl flex flex-wrap items-center gap-x-6 gap-y-3 text-sm bg-slate-50 border border-gray-100"
+                      >
+                        {carrierSpecItems
+                          .filter((item) =>
+                            [
+                              "ip_type",
+                              "route_type",
+                              "network",
+                              "speed_rule",
+                            ].includes(item.key),
+                          )
+                          .map((item) => (
+                            <div
+                              key={item.key}
+                              className="flex items-center gap-2 min-w-[7.5rem]"
+                            >
+                              <MaterialIcon
+                                name={item.icon}
+                                size={20}
+                                className="text-slate-500 shrink-0"
+                              />
+                              <span className="font-semibold text-slate-700">
+                                {item.text}
+                              </span>
+                            </div>
+                          ))}
+                        {carrierSpecItems
+                          .filter(
+                            (item) =>
+                              ![
+                                "ip_type",
+                                "route_type",
+                                "network",
+                                "speed_rule",
+                              ].includes(item.key),
+                          )
+                          .map((item) => (
+                            <div
+                              key={item.key}
+                              className={`flex items-center gap-2.5 w-full ${
+                                item.fullWidth
+                                  ? "pt-3 border-t border-gray-100"
+                                  : ""
+                              }`}
+                            >
+                              <MaterialIcon
+                                name={item.icon}
+                                size={20}
+                                className={
+                                  item.iconClass || "text-slate-500 shrink-0"
+                                }
+                              />
+                              <span
+                                className={`font-semibold text-slate-700 ${
+                                  item.fullWidth
+                                    ? "text-xs leading-relaxed"
+                                    : ""
+                                }`}
+                              >
+                                {item.text}
+                              </span>
+                            </div>
+                          ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* 數量 */}
+                  <div className="mb-6">
+                    <p className="text-sm font-bold text-slate-900 mb-3">
+                      數量
+                    </p>
+                    <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white w-[140px]">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-50"
+                        aria-label="減少數量"
+                      >
+                        <MaterialIcon name="remove" size={20} />
+                      </button>
+                      <div className="flex-1 h-11 flex items-center justify-center font-bold text-slate-800 border-x border-gray-100">
+                        {quantity}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(quantity + 1)}
+                        className="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-50"
+                        aria-label="增加數量"
+                      >
+                        <MaterialIcon name="add" size={20} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 確認您的選擇（Anker Review Your Selections） */}
+                  <div className="rounded-xl bg-[#f5f5f5] p-4 sm:p-5 mb-5">
+                    <p className="text-sm font-bold text-slate-900 mb-4">
+                      確認您的選擇
+                    </p>
+                    <div className="flex gap-3 sm:gap-4">
+                      <div className="relative w-16 sm:w-[72px] aspect-[3/4] shrink-0 overflow-hidden bg-white border border-gray-200">
+                        <SafeImage
+                          src={images[0]?.src || "/default-image.jpg"}
+                          alt=""
+                          fill
+                          sizes="72px"
+                          className="object-contain p-1"
+                          unoptimized={shouldBypassImageOptimization(
+                            images[0]?.src || "/default-image.jpg",
+                          )}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">
+                          {product.name}
+                        </p>
+                        {displaySubtitle ? (
+                          <p className="text-xs font-semibold text-[#00befa] mt-0.5 line-clamp-1">
+                            {displaySubtitle}
+                          </p>
+                        ) : null}
+                        <p className="text-xs text-gray-500 mt-1">
+                          {choiceSummary || "請選擇方案規格"}
+                        </p>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-500 shrink-0">
+                        ×{quantity}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-normal text-slate-400 mt-4">
+                      •{" "}
+                      {canPurchase
+                        ? "現貨供應 — 下單後 Email 寄送 eSIM QR Code"
+                        : "請先選擇完整規格以查看供貨狀態"}
+                    </p>
+                  </div>
+
+                  {/* 價格與雙 CTA（Anker Add to Cart + Buy Now） */}
+                  <div className="flex flex-wrap items-center gap-3 mb-5">
+                    <p
+                      className={`text-3xl sm:text-[34px] font-bold tracking-tight ${
+                        displayPrice != null
+                          ? "text-slate-900"
+                          : "text-gray-300"
+                      }`}
+                    >
+                      {displayTotal != null
+                        ? `NT$${displayTotal}`
+                        : displayPrice != null
+                          ? `NT$${displayPrice}`
+                          : "請選擇規格"}
+                    </p>
+                    {priceSavings > 0 && (
+                      <span className="inline-block bg-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded">
+                        省 NT${priceSavings}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3" data-product-buy-cta>
+                    <button
+                      type="button"
+                      onClick={handleAddToCart}
+                      disabled={!canPurchase}
+                      className={`h-[52px] font-bold rounded-lg text-[15px] border-2 transition-all ${
+                        canPurchase
+                          ? "bg-white hover:bg-sky-50"
+                          : "border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50"
+                      }`}
+                      style={
+                        canPurchase
+                          ? { borderColor: ANKER_BLUE, color: ANKER_BLUE }
+                          : undefined
+                      }
+                    >
+                      {!isAllOptionsSelected
+                        ? "請選規格"
+                        : currentVariation?.price > 0
+                          ? "加入購物車"
+                          : "尚未定價"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleBuyNow}
+                      disabled={!canPurchase}
+                      className={`h-[52px] font-bold rounded-lg text-[15px] text-white transition-all ${
+                        canPurchase
+                          ? "hover:opacity-90 shadow-md"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      }`}
+                      style={
+                        canPurchase ? { background: ANKER_BLUE } : undefined
+                      }
+                    >
+                      立即購買
+                    </button>
+                  </div>
+
+                  <div className="mt-4">
+                    <EsimRefundDisclosure compact />
+                  </div>
+
+                  <DataEstimatorCta onClick={() => setIsEstimatorOpen(true)} />
+
+                  <ServiceBenefits />
+                </div>
+              )}
+            </section>
+
+            <ProductTabs
+              product={product}
+              selectedCarrier={carrierName}
+              onProductUpdate={(patch) =>
+                setProduct((prev) => ({ ...prev, ...patch }))
+              }
+            />
+            <ProductReviewsSection
+              productId={product.id}
+              productTitle={product.name}
+              design={isPartnerShell ? "nissin" : "default"}
+            />
+          </div>
         </div>
-      </div>
-    </PageShell>
+      </PageShell>
 
       {/* 滾過頁內購買區後才出現：規格選擇 + 立即購買（層級低於「我的 eSIM」） */}
       {showStickyBuy && (

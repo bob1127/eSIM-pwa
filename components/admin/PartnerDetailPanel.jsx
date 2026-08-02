@@ -6,12 +6,118 @@ import {
   parsePartnerType,
   parseDescriptionField,
 } from "@/lib/partnerDescriptionParse";
-import { bossFetch } from "@/lib/bossAdminClient";
+import { bossFetch, bossFetchBlob } from "@/lib/bossAdminClient";
 import {
   DEFAULT_REFERRAL_DISCOUNT_PERCENT,
   MIN_REFERRAL_DISCOUNT_PERCENT,
   MAX_REFERRAL_DISCOUNT_PERCENT,
 } from "@/lib/partnerReferralDiscount";
+
+function defaultSettlementMonth() {
+  const now = new Date();
+  const taipei = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Taipei" }),
+  );
+  const d = new Date(taipei.getFullYear(), taipei.getMonth() - 1, 1);
+  return {
+    year: d.getFullYear(),
+    month: d.getMonth() + 1,
+  };
+}
+
+function SettlementStatementBlock({ partner }) {
+  const defaults = defaultSettlementMonth();
+  const [year, setYear] = useState(defaults.year);
+  const [month, setMonth] = useState(defaults.month);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const openStatement = async () => {
+    setBusy(true);
+    setMessage("");
+    try {
+      const qs = new URLSearchParams({
+        partner_id: String(partner.id),
+        year: String(year),
+        month: String(month),
+        format: "html",
+      });
+      const { blob, filename } = await bossFetchBlob(
+        `/api/admin/partner-settlement-statement?${qs}`,
+      );
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, "_blank", "noopener,noreferrer");
+      if (!win) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename || `JEKO-對帳單-${year}${String(month).padStart(2, "0")}.html`;
+        a.click();
+        setMessage("已下載電子對帳單（可開啟後「列印 → 儲存為 PDF」）");
+      } else {
+        setMessage("已開啟對帳單：按「列印／另存 PDF」即可給夥伴電子檔");
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setMessage(err.message || "產製失敗");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-sm border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-[#2563eb]">
+          分潤對帳單
+        </p>
+        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+          選擇「成交月」產製電子對帳單，匯款前寄給夥伴確認；開啟後可列印／另存
+          PDF。若夥伴曾加速提領並已匯款，對帳單會自動扣減避免重複給付。備註格式由平台匯款時填寫：
+          <span className="font-mono font-bold text-slate-700">
+            {" "}
+            JEKO-YYYYMM-代碼
+          </span>
+        </p>
+      </div>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="text-xs">
+          <span className="block text-slate-400 font-bold mb-1">年</span>
+          <input
+            type="number"
+            min={2024}
+            max={2100}
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            className="w-24 border border-slate-200 rounded-sm px-2 py-1.5 text-sm font-bold"
+          />
+        </label>
+        <label className="text-xs">
+          <span className="block text-slate-400 font-bold mb-1">月</span>
+          <select
+            value={month}
+            onChange={(e) => setMonth(Number(e.target.value))}
+            className="w-20 border border-slate-200 rounded-sm px-2 py-1.5 text-sm font-bold"
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={openStatement}
+          className="text-xs font-bold bg-[#0f172a] text-white px-3 py-2 rounded-sm hover:bg-slate-800 disabled:opacity-50"
+        >
+          {busy ? "產製中…" : "開啟／下載對帳單"}
+        </button>
+      </div>
+      {message && <p className="text-xs text-slate-500">{message}</p>}
+    </div>
+  );
+}
 
 function ReferralDiscountSettings({ partner, onUpdated }) {
   const [enabled, setEnabled] = useState(true);
@@ -107,6 +213,9 @@ function ReferralDiscountSettings({ partner, onUpdated }) {
             onChange={(e) => setRate(e.target.value)}
             className="mt-1 w-full rounded-sm border border-slate-200 px-2 py-1.5 text-sm focus:border-[#0071EB] outline-none"
           />
+          <span className="mt-1 block text-[10px] text-slate-400 leading-snug">
+            內部結算用。對外約實付 15%（成本 25%＋九折時常見約此水準）。無達標加碼。
+          </span>
         </label>
         <label className="block">
           <span className="text-xs font-bold text-slate-600">
@@ -162,6 +271,151 @@ function ReferralDiscountSettings({ partner, onUpdated }) {
         </button>
         {message && <span className="text-xs text-slate-500">{message}</span>}
       </div>
+    </div>
+  );
+}
+
+function WithdrawalAdminBlock({ partner }) {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+  const [message, setMessage] = useState("");
+  const [bank, setBank] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await bossFetch(
+        `/api/admin/partner-withdrawals?partner_id=${partner.id}`,
+      );
+      setRows(data.requests || []);
+      setBank(
+        data.bank ||
+          data.requests?.find((r) => r.bank)?.bank ||
+          null,
+      );
+    } catch (err) {
+      setMessage(err.message || "載入提領失敗");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partner.id]);
+
+  const patchStatus = async (id, status) => {
+    setBusyId(id);
+    setMessage("");
+    try {
+      await bossFetch("/api/admin/partner-withdrawals", {
+        method: "PATCH",
+        body: JSON.stringify({ id, status }),
+      });
+      setMessage(
+        status === "remitted"
+          ? "已標記匯款完成"
+          : status === "approved"
+            ? "已核准"
+            : status === "rejected"
+              ? "已拒絕"
+              : "已更新",
+      );
+      await load();
+    } catch (err) {
+      setMessage(err.message || "更新失敗");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="rounded-sm border border-emerald-200 bg-emerald-50/40 p-4 space-y-3">
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+          提領申請（加速通道）
+        </p>
+        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+          月結對帳單供核對金額。夥伴申請提領後請於 10
+          個工作天內匯款（實匯＝申請金額−手續費），再標記已匯款。每月第 1
+          次免手續費，之後每次 NT$15。
+        </p>
+      </div>
+      {bank ? (
+        <p className="text-[11px] text-slate-600 bg-white border border-slate-100 rounded-sm px-2 py-1.5">
+          帳戶：{bank.bank_name} {bank.branch_name}／{bank.account_name}／
+          {bank.account_number}
+        </p>
+      ) : (
+        <p className="text-[11px] text-amber-700">夥伴尚未儲存收款帳戶</p>
+      )}
+      {loading ? (
+        <p className="text-xs text-slate-400">載入中…</p>
+      ) : !rows.length ? (
+        <p className="text-xs text-slate-400">尚無提領申請</p>
+      ) : (
+        <ul className="space-y-2">
+          {rows.slice(0, 8).map((r) => (
+            <li
+              key={r.id}
+              className="bg-white border border-slate-100 rounded-sm px-3 py-2 text-xs"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-black text-[#1E4AD1]">
+                  申請 NT${Number(r.amount || 0).toLocaleString()}
+                  {r.fee_amount > 0
+                    ? `（手續費 ${Number(r.fee_amount).toLocaleString()} → 實匯 ${Number(r.net_amount || r.amount - r.fee_amount).toLocaleString()}）`
+                    : "（免手續費）"}
+                </span>
+                <span className="font-bold text-slate-700">
+                  {r.status_label || r.status}
+                </span>
+              </div>
+              <p className="text-slate-400 mt-0.5">
+                {r.requested_at
+                  ? new Date(r.requested_at).toLocaleString("zh-TW", {
+                      timeZone: "Asia/Taipei",
+                    })
+                  : ""}
+                {r.remittance_memo ? ` · ${r.remittance_memo}` : ""}
+              </p>
+              {r.status === "pending" ? (
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    disabled={busyId === r.id}
+                    onClick={() => patchStatus(r.id, "approved")}
+                    className="text-[11px] font-bold px-2 py-1 rounded-sm bg-emerald-600 text-white disabled:opacity-50"
+                  >
+                    核准
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyId === r.id}
+                    onClick={() => patchStatus(r.id, "rejected")}
+                    className="text-[11px] font-bold px-2 py-1 rounded-sm bg-white border border-red-200 text-red-600 disabled:opacity-50"
+                  >
+                    拒絕
+                  </button>
+                </div>
+              ) : null}
+              {r.status === "approved" ? (
+                <button
+                  type="button"
+                  disabled={busyId === r.id}
+                  onClick={() => patchStatus(r.id, "remitted")}
+                  className="mt-2 text-[11px] font-bold px-2 py-1 rounded-sm bg-[#1E4AD1] text-white disabled:opacity-50"
+                >
+                  標記已匯款
+                </button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      {message ? <p className="text-[11px] text-slate-500">{message}</p> : null}
     </div>
   );
 }
@@ -235,6 +489,12 @@ export default function PartnerDetailPanel({ partner, onClose, onUpdated }) {
 
           {isReferral && partner.status === "active" && (
             <ReferralDiscountSettings partner={partner} onUpdated={onUpdated} />
+          )}
+
+          <SettlementStatementBlock partner={partner} />
+
+          {partner.status === "active" && (
+            <WithdrawalAdminBlock partner={partner} />
           )}
 
           <div>

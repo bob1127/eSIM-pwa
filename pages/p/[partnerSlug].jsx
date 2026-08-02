@@ -281,18 +281,30 @@ export async function getServerSideProps(context) {
   const { partnerSlug } = context.params;
   const slug = String(partnerSlug || "").trim().toLowerCase();
 
-  try {
-    const store = await fetchActiveStoreByDomain(slug);
-    if (!store) {
-      console.error("Store Not Found:", slug);
-      return { notFound: true };
-    }
-
-    const products = await fetchStoreProductsForStorefront(store);
-    const navCountries = buildPartnerCountryNavItems(products, store.domain);
-    return { props: { store, products, navCountries } };
-  } catch (err) {
-    console.error("SSR Error:", err);
+  const store = await fetchActiveStoreByDomain(slug);
+  if (!store) {
+    console.error("[p/[partnerSlug]] Store Not Found:", slug);
     return { notFound: true };
   }
+
+  // 商品載入失敗不應讓整間店 404
+  let products = [];
+  let navCountries = [];
+  try {
+    products = await fetchStoreProductsForStorefront(store);
+    navCountries = buildPartnerCountryNavItems(products, store.domain);
+  } catch (err) {
+    console.error("[p/[partnerSlug]] products SSR error:", err);
+  }
+
+  // 確保可序列化（避免 Date / undefined 造成生產環境 props 失敗）
+  const safe = (v) => JSON.parse(JSON.stringify(v ?? null));
+
+  return {
+    props: {
+      store: safe(store),
+      products: safe(products) || [],
+      navCountries: safe(navCountries) || [],
+    },
+  };
 }

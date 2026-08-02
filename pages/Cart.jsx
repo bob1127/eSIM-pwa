@@ -117,9 +117,13 @@ const CartPage = () => {
     }
     if (!pending) return undefined;
 
-    // 先清掉，避免套用失敗時 effect 無限重試
+    // 同一碼剛自動套用失敗 → 不要無限重試（使用者仍可手動按套用）
     try {
-      sessionStorage.removeItem(PENDING_COUPON_KEY);
+      if (sessionStorage.getItem(`${PENDING_COUPON_KEY}_failed`) === pending) {
+        setCoupon(pending);
+        setPromoOpen(true);
+        return undefined;
+      }
     } catch {
       /* ignore */
     }
@@ -142,6 +146,12 @@ const CartPage = () => {
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (res.ok && data.success) {
+          try {
+            sessionStorage.removeItem(PENDING_COUPON_KEY);
+            sessionStorage.removeItem(`${PENDING_COUPON_KEY}_failed`);
+          } catch {
+            /* ignore */
+          }
           const raw = Number(data.discount_total || 0);
           const asYen = raw >= 1000 ? Math.round(raw / 100) : raw;
           setDiscount(asYen);
@@ -152,10 +162,22 @@ const CartPage = () => {
               : `已自動套用折扣碼 ${data.code || pending}`,
           );
         } else if (data.error) {
+          try {
+            sessionStorage.setItem(`${PENDING_COUPON_KEY}_failed`, pending);
+          } catch {
+            /* ignore */
+          }
           setCouponMessage(data.error);
         }
       } catch (e) {
-        if (!cancelled) setCouponMessage(e.message || "折扣碼套用失敗");
+        if (!cancelled) {
+          try {
+            sessionStorage.setItem(`${PENDING_COUPON_KEY}_failed`, pending);
+          } catch {
+            /* ignore */
+          }
+          setCouponMessage(e.message || "折扣碼套用失敗");
+        }
       } finally {
         if (!cancelled) setIsApplyingCoupon(false);
       }
@@ -328,6 +350,12 @@ const CartPage = () => {
       setDiscount(asYen);
       setAppliedCode(data.code || code.toUpperCase());
       setCouponMessage(`已套用折扣碼 ${data.code || code.toUpperCase()}`);
+      try {
+        sessionStorage.removeItem(PENDING_COUPON_KEY);
+        sessionStorage.removeItem(`${PENDING_COUPON_KEY}_failed`);
+      } catch {
+        /* ignore */
+      }
     } catch (err) {
       setDiscount(0);
       setAppliedCode(null);
@@ -666,14 +694,8 @@ const CartPage = () => {
                             <span className="font-medium">－${discount}</span>
                           </div>
                         )}
-                        <div className="flex justify-between text-sm text-gray-600 mb-4 pb-4 border-b border-gray-200">
-                          <span>稅金</span>
-                          <span className="font-medium text-gray-900">
-                            $0.00
-                          </span>
-                        </div>
 
-                        <div className="flex justify-between items-center mb-6">
+                        <div className="flex justify-between items-center mb-6 pt-4 border-t border-gray-200">
                           <span className="text-base font-bold text-gray-900">
                             應付總額
                           </span>

@@ -39,7 +39,7 @@ function orderStatusBadge(status) {
   const s = String(status || "").toLowerCase();
   const map = {
     completed: { label: "已發貨", cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-    pending: { label: "待付款", cls: "bg-amber-100 text-amber-700 border-amber-200" },
+    pending: { label: "尚未付款", cls: "bg-amber-100 text-amber-700 border-amber-200" },
     cancelled: { label: "已取消", cls: "bg-slate-100 text-slate-600 border-slate-200" },
     failed: { label: "付款失敗", cls: "bg-red-100 text-red-700 border-red-200" },
     refund_pending: { label: "退款審核中", cls: "bg-amber-100 text-amber-800 border-amber-200" },

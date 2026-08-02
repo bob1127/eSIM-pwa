@@ -26,7 +26,9 @@ export default async function handler(req, res) {
 
   const { data: partner } = await supabaseAdmin
     .from("partners")
-    .select("id, referral_code, status, cooperation_model")
+    .select(
+      "id, referral_code, status, cooperation_model, referral_discount_enabled, referral_medusa_code",
+    )
     .eq("referral_code", code)
     .eq("status", "active")
     .eq("cooperation_model", "referral")
@@ -53,5 +55,15 @@ export default async function handler(req, res) {
     res.setHeader("Set-Cookie", setCookie);
   }
 
-  return res.status(200).json({ ok: true, partner_id: partner.id });
+  // 告知前端可否自動排隊折扣碼（不回傳 Medusa 內部碼）
+  const pendingCoupon =
+    partner.referral_discount_enabled !== false && partner.referral_medusa_code
+      ? String(partner.referral_code || code).toUpperCase()
+      : null;
+
+  return res.status(200).json({
+    ok: true,
+    partner_id: partner.id,
+    pending_coupon: pendingCoupon,
+  });
 }

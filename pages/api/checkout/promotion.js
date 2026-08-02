@@ -198,11 +198,30 @@ export default async function handler(req, res) {
     let isWelcomeFlow = false;
     let partnerReferral = null;
 
-    // 專屬連結折扣碼：旅客輸入 referral_code → 映射 Medusa JEKO_PREF_{n}
+    // 專屬連結折扣碼：旅客輸入 referral_code → 映射 Medusa 內部碼
     partnerReferral = await resolvePartnerReferralDiscount(normalizedCode);
-    if (partnerReferral) {
+    if (partnerReferral?.unavailable) {
+      await logCouponAttempt({
+        ip: clientIp,
+        cartId,
+        code: normalizedCode,
+        success: false,
+      });
+      const msg =
+        partnerReferral.reason === "not_synced"
+          ? "此專屬折扣尚未開通完成，請聯繫平台管理員同步折扣活動"
+          : "此專屬折扣目前未開放";
+      return res.status(400).json({
+        success: false,
+        error: msg,
+        code: partnerReferral.displayCode || normalizedCode,
+      });
+    }
+    if (partnerReferral?.medusaCode) {
       displayCode = partnerReferral.displayCode;
       normalizedCode = partnerReferral.medusaCode;
+    } else {
+      partnerReferral = null;
     }
 
     if (isMemberLotteryCouponCode(normalizedCode)) {
@@ -306,7 +325,21 @@ export default async function handler(req, res) {
     );
     const applyData = await applyRes.json().catch(() => ({}));
     if (!applyRes.ok) {
-      // 錯誤訊息只給通用文案，避免把內部 Medusa 代碼／夥伴對應關係洩漏到前端
+      await logCouponAttempt({
+        ip: clientIp,
+        cartId,
+        code: displayCode,
+        success: false,
+      });
+      // 夥伴碼已映射但 Medusa 端失敗 → 多半是正式環境尚未同步折扣活動
+      if (partnerReferral) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "專屬折扣碼暫時無法套用（活動尚未同步）。請稍後再試，或由後台重新儲存該夥伴的折扣設定。",
+          code: displayCode,
+        });
+      }
       throw new Error("折扣碼無效或已過期");
     }
 

@@ -11,7 +11,7 @@ const STATUS_TABS = [
   { value: "all", label: "全部" },
   { value: "completed", label: "已完成" },
   { value: "refunded", label: "已退款" },
-  { value: "pending", label: "待付款" },
+  { value: "pending", label: "尚未付款" },
   { value: "refund_pending", label: "退款審核中" },
 ];
 

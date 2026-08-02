@@ -9,10 +9,7 @@ import {
   partnerLoginBlockMessage,
   verifyPartnerAccess,
 } from "@/lib/partnerAuth";
-import {
-  logLineLoginStart,
-  startLineLoginWithFormPost,
-} from "@/lib/authDebug";
+import { logLineLoginStart, startLineLoginWithFormPost } from "@/lib/authDebug";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
 const INPUT_CLASS =
@@ -119,7 +116,8 @@ function ForgotPasswordPanel({ initialEmail, onClose }) {
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
       <h2 className="text-xl font-black text-white mb-2">忘記密碼</h2>
       <p className="text-sm text-blue-100 leading-relaxed mb-6">
-        請輸入您<strong className="text-white">申請合作夥伴時填寫的 Email</strong>
+        請輸入您
+        <strong className="text-white">申請合作夥伴時填寫的 Email</strong>
         ，我們將寄送重設密碼連結。
       </p>
 
@@ -247,20 +245,15 @@ function PartnerHeroPanel() {
       {/* 文案（保留原內容）＋手機圖 */}
       <div className="relative z-10 flex flex-col items-center w-full h-full px-10 pt-14 pb-10">
         <div className="text-center max-w-md mx-auto shrink-0">
-          <p className="text-xs font-bold text-[#3A6DFF] uppercase tracking-[0.2em] mb-3">
-            JEKO eSIM Partner
-          </p>
           <h2 className="text-[32px] font-black text-slate-900 leading-[1.25] tracking-tight mb-3">
             零成本開店
             <br />
-            <span className="relative inline-block">
-              即時分潤
-              <span className="partner-underline absolute left-0 right-0 -bottom-1 h-[6px] rounded-full bg-[#3A6DFF]/85" />
-            </span>
+            <span className="relative inline-block">即時分潤</span>
           </h2>
-          <p className="text-slate-500 text-sm leading-relaxed">
-            加入 Jeko eSIM 合作夥伴計畫，取得專屬賣場連結，推廣日本、韓國、泰國等多國
-            eSIM 方案，每筆成交自動計算分潤。
+          <p className="text-stone-900 text-sm leading-relaxed">
+            加入 Jeko eSIM
+            合作夥伴計畫，取得專屬賣場連結，推廣日本、韓國、泰國等多國 eSIM
+            方案，每筆成交自動計算分潤。
           </p>
         </div>
 
@@ -477,7 +470,10 @@ export default function PartnerLogin() {
     setError("");
     setOauthLoading("line");
     try {
-      if (typeof window !== "undefined" && window.location.hostname === "127.0.0.1") {
+      if (
+        typeof window !== "undefined" &&
+        window.location.hostname === "127.0.0.1"
+      ) {
         setError("請改用 http://localhost:3000 再開啟 LINE 登入");
         setOauthLoading("");
         return;
@@ -523,18 +519,14 @@ export default function PartnerLogin() {
 
           {!showForgot && (
             <>
-              <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-2">
-                Partner Portal
-              </p>
               <h1 className="text-3xl md:text-4xl font-black text-white leading-tight mb-3">
                 合作夥伴
                 <br />
                 管理後台
               </h1>
               <p className="text-blue-100 text-sm leading-relaxed mb-6">
-                請使用「申請合作夥伴時填寫的 Email」與密碼；若該 Email
-                綁定 Google／Facebook，或申請時已用 LINE
-                登入，也可直接快速登入。
+                請使用「申請合作夥伴時填寫的 Email」與密碼；若該 Email 綁定
+                Google／Facebook，或申請時已用 LINE 登入，也可直接快速登入。
                 <span className="block mt-2 text-blue-200/90 text-xs">
                   審核通過前無法進入後台。建議先用社群登入再申請，通過後可一鍵進後台。
                 </span>
@@ -559,7 +551,9 @@ export default function PartnerLogin() {
                   onClick={() => handleOAuth("google")}
                   className="flex items-center justify-center gap-2 w-full bg-white/10 border border-white/30 hover:bg-white/20 disabled:opacity-60 py-3 rounded-xl text-sm font-bold text-white transition"
                 >
-                  {oauthLoading === "google" ? "導向 Google..." : "Google 快速登入"}
+                  {oauthLoading === "google"
+                    ? "導向 Google..."
+                    : "Google 快速登入"}
                 </button>
                 <button
                   type="button"
@@ -599,7 +593,9 @@ export default function PartnerLogin() {
                     required
                     type="email"
                     value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, email: e.target.value })
+                    }
                     placeholder="your@email.com"
                     className={INPUT_CLASS}
                   />
@@ -632,7 +628,9 @@ export default function PartnerLogin() {
                 </div>
 
                 {error && (
-                  <p className="text-sm text-blue-100 leading-relaxed">{error}</p>
+                  <p className="text-sm text-blue-100 leading-relaxed">
+                    {error}
+                  </p>
                 )}
 
                 <button

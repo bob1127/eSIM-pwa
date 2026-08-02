@@ -14,7 +14,7 @@ export const METRIC_HELP = {
       "專屬連結：依約定成本加成點數計算分潤",
       "專屬商店：客戶實付 − 底價等成本後之夥伴分潤",
       "已取消、已退款訂單不計入",
-      "此為預估淨收益，實際匯款以每月結算為準",
+      "此為預估淨收益；實際以次月 15 日結算對帳單為準，匯款為申請提領後 10 個工作天內（最低額／凍結天數；每月第 1 次免手續費，之後每次 NT$15）。",
     ],
   },
   storeRevenue: {
@@ -36,13 +36,14 @@ export const METRIC_HELP = {
     ],
   },
   profitRate: {
-    title: "分潤率分析",
-    body: "反映報表期間內，分潤占店鋪營收的比例，以及有效推廣訂單數量。",
+    title: "分潤占營收",
+    body: "反映報表期間內，您的分潤占店鋪營收的比例（不是商店加價趴數）。",
     bullets: [
-      "分潤率 = 累計分潤 ÷ 店鋪營收 × 100%",
+      "計算：累計分潤 ÷ 店鋪營收 × 100%",
+      "白話：客人每付 NT$100，約有多少元是您的分潤",
+      "≠ 商店「加價 %」、≠ 平台底價兩成、≠ 專屬連結約 15%",
+      "會因各商品定價、折扣、金流手續費而浮動",
       "有效訂單：已付款 + 待付款，不含取消／退款",
-      "訂單詳情可分別查看「已付款」「待付款」狀態",
-      "分潤率會因各商品定價、折扣活動而有所浮動",
     ],
   },
   productShare: {
@@ -72,18 +73,24 @@ export const METRIC_HELP = {
     ],
   },
   revenueTrend: {
-    title: "收益趨勢（近 6 期）",
-    body: "折線圖顯示近 6 個月份的分潤與店鋪營收變化趨勢。",
+    title: "收益趨勢",
+    body: "折線圖依「日／月／季／年」顯示分潤、店鋪營收與底價成本變化。",
     bullets: [
       "藍線：我的分潤（淨收益）",
       "綠色虛線：店鋪營收（客戶付款總額）",
-      "月份依訂單建立日期歸類",
+      "灰線：底價成本合計",
+      "時間以台北時區、訂單建立日期歸桶",
+      "可於報表列切換日／月／季／年視角",
     ],
   },
   orderVolume: {
-    title: "訂單量分析（近 6 期）",
-    body: "柱狀圖顯示近 6 個月份的有效推廣訂單數量。",
-    bullets: ["僅計入已付款與待付款訂單", "可用於觀察推廣成效與季節性變化"],
+    title: "訂單量分析",
+    body: "柱狀圖依所選時間粒度顯示有效推廣訂單數量。",
+    bullets: [
+      "僅計入已付款與待付款訂單",
+      "粒度與上方「日／月／季／年」同步",
+      "可用於觀察推廣成效與季節性變化",
+    ],
   },
   cumulativeProfit: {
     title: "累計分潤",
@@ -274,6 +281,30 @@ export function MetricPanelHeader({ icon, title, help, href }) {
   );
 }
 
+function taipeiTodayYmd() {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Taipei",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+function ymdParts(ymd) {
+  const [y, m, d] = String(ymd).split("-").map(Number);
+  return { y, m, d };
+}
+
+function addCalendarDays(ymd, n) {
+  const { y, m, d } = ymdParts(ymd);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return dt.toISOString().slice(0, 10);
+}
+
 export function prevMonthRange() {
   const now = new Date();
   const y = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
@@ -285,14 +316,69 @@ export function prevMonthRange() {
 }
 
 export function thisMonthRange() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
+  const end = taipeiTodayYmd();
+  const { y, m } = ymdParts(end);
   return {
     start: `${y}-${String(m).padStart(2, "0")}-01`,
-    end: now.toISOString().slice(0, 10),
+    end,
   };
 }
+
+export function lastNDaysRange(n = 14) {
+  const end = taipeiTodayYmd();
+  const start = addCalendarDays(end, -(Math.max(1, n) - 1));
+  return { start, end };
+}
+
+export function lastNMonthsRange(n = 6) {
+  const end = taipeiTodayYmd();
+  const { y, m } = ymdParts(end);
+  const total = y * 12 + (m - 1) - (Math.max(1, n) - 1);
+  const sy = Math.floor(total / 12);
+  const sm = (total % 12) + 1;
+  return { start: `${sy}-${String(sm).padStart(2, "0")}-01`, end };
+}
+
+export function thisQuarterRange() {
+  const end = taipeiTodayYmd();
+  const { y, m } = ymdParts(end);
+  const qStart = Math.floor((m - 1) / 3) * 3 + 1;
+  return { start: `${y}-${String(qStart).padStart(2, "0")}-01`, end };
+}
+
+export function lastNQuartersRange(n = 4) {
+  const end = taipeiTodayYmd();
+  const { y, m } = ymdParts(end);
+  const q = Math.ceil(m / 3);
+  let ty = y;
+  let tq = q - (Math.max(1, n) - 1);
+  while (tq <= 0) {
+    tq += 4;
+    ty -= 1;
+  }
+  const sm = (tq - 1) * 3 + 1;
+  return { start: `${ty}-${String(sm).padStart(2, "0")}-01`, end };
+}
+
+export function thisYearRange() {
+  const end = taipeiTodayYmd();
+  const { y } = ymdParts(end);
+  return { start: `${y}-01-01`, end };
+}
+
+export function lastNYearsRange(n = 3) {
+  const end = taipeiTodayYmd();
+  const { y } = ymdParts(end);
+  const sy = y - (Math.max(1, n) - 1);
+  return { start: `${sy}-01-01`, end };
+}
+
+const DEFAULT_GRANULARITIES = [
+  { id: "day", label: "日" },
+  { id: "month", label: "月" },
+  { id: "quarter", label: "季" },
+  { id: "year", label: "年" },
+];
 
 export function ReportPeriodBar({
   rangeStart,
@@ -301,55 +387,104 @@ export function ReportPeriodBar({
   onRangeEndChange,
   onQuickRange,
   onExport,
+  granularity,
+  onGranularityChange,
+  granularities = DEFAULT_GRANULARITIES,
 }) {
+  const analyticsMode = typeof onGranularityChange === "function";
+  const quickLinks = !analyticsMode
+    ? [
+        { id: "prevMonth", label: "前月" },
+        { id: "thisMonth", label: "當月" },
+      ]
+    : granularity === "day"
+      ? [
+          { id: "last7d", label: "近 7 日" },
+          { id: "last14d", label: "近 14 日" },
+          { id: "thisMonth", label: "當月" },
+        ]
+      : granularity === "quarter"
+        ? [
+            { id: "thisQuarter", label: "本季" },
+            { id: "last4q", label: "近 4 季" },
+            { id: "thisYear", label: "今年" },
+          ]
+        : granularity === "year"
+          ? [
+              { id: "thisYear", label: "今年" },
+              { id: "last3y", label: "近 3 年" },
+            ]
+          : [
+              { id: "prevMonth", label: "前月" },
+              { id: "thisMonth", label: "當月" },
+              { id: "last6m", label: "近 6 月" },
+            ];
+
   return (
-    <div className="bg-white border-b border-slate-200 px-4 py-3 sm:px-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 sm:flex-wrap min-w-0">
-        <span className="text-xs sm:text-sm font-black text-slate-800 border border-slate-300 px-3 py-2 sm:px-4 sm:py-1.5 bg-white rounded-lg sm:rounded-none w-fit">
-          報表期間
-        </span>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <input
-            type="date"
-            value={rangeStart}
-            onChange={(e) => onRangeStartChange(e.target.value)}
-            className="flex-1 sm:flex-none text-sm border border-slate-300 rounded-lg sm:rounded-none px-3 py-2.5 sm:py-1.5 focus:border-[#1E4AD1] outline-none min-w-0"
-          />
-          <span className="text-slate-400 shrink-0">→</span>
-          <input
-            type="date"
-            value={rangeEnd}
-            onChange={(e) => onRangeEndChange(e.target.value)}
-            className="flex-1 sm:flex-none text-sm border border-slate-300 rounded-lg sm:rounded-none px-3 py-2.5 sm:py-1.5 focus:border-[#1E4AD1] outline-none min-w-0"
-          />
+    <div className="bg-white border-b border-slate-200 px-4 py-3 sm:px-5 flex flex-col gap-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 sm:flex-wrap min-w-0">
+          <span className="text-xs sm:text-sm font-black text-slate-800 border border-slate-300 px-3 py-2 sm:px-4 sm:py-1.5 bg-white rounded-lg sm:rounded-none w-fit">
+            報表期間
+          </span>
+          {analyticsMode ? (
+            <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg w-fit">
+              {granularities.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => onGranularityChange(g.id)}
+                  className={`min-w-[2.5rem] px-3 py-1.5 text-xs font-black rounded-md transition ${
+                    granularity === g.id
+                      ? "bg-[#1E4AD1] text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <input
+              type="date"
+              value={rangeStart}
+              onChange={(e) => onRangeStartChange(e.target.value)}
+              className="flex-1 sm:flex-none text-sm border border-slate-300 rounded-lg sm:rounded-none px-3 py-2.5 sm:py-1.5 focus:border-[#1E4AD1] outline-none min-w-0"
+            />
+            <span className="text-slate-400 shrink-0">→</span>
+            <input
+              type="date"
+              value={rangeEnd}
+              onChange={(e) => onRangeEndChange(e.target.value)}
+              className="flex-1 sm:flex-none text-sm border border-slate-300 rounded-lg sm:rounded-none px-3 py-2.5 sm:py-1.5 focus:border-[#1E4AD1] outline-none min-w-0"
+            />
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 text-sm flex-wrap">
+            {quickLinks.map((q, i) => (
+              <span key={q.id} className="inline-flex items-center gap-2 sm:gap-3">
+                {i > 0 ? <span className="text-slate-300">｜</span> : null}
+                <button
+                  type="button"
+                  onClick={() => onQuickRange(q.id)}
+                  className="font-bold text-slate-700 hover:text-[#1E4AD1] py-1"
+                >
+                  {q.label}
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-3 text-sm">
-          <button
-            type="button"
-            onClick={() => onQuickRange("prevMonth")}
-            className="font-bold text-slate-700 hover:text-[#1E4AD1] py-1"
-          >
-            前月
-          </button>
-          <span className="text-slate-300">｜</span>
-          <button
-            type="button"
-            onClick={() => onQuickRange("thisMonth")}
-            className="font-bold text-slate-700 hover:text-[#1E4AD1] py-1"
-          >
-            當月
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onExport || (() => window.print())}
+          className="inline-flex items-center justify-center gap-2 font-black text-sm px-4 py-2.5 sm:px-5 sm:py-2 shadow-sm transition shrink-0 text-[#111] hover:brightness-95 rounded-lg sm:rounded-none w-full sm:w-auto lg:w-auto"
+          style={{ backgroundColor: PARTNER_UI.yellow }}
+        >
+          <MaterialIcon name="download" size={18} />
+          匯出 PDF
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={onExport || (() => window.print())}
-        className="inline-flex items-center justify-center gap-2 font-black text-sm px-4 py-2.5 sm:px-5 sm:py-2 shadow-sm transition shrink-0 text-[#111] hover:brightness-95 rounded-lg sm:rounded-none w-full sm:w-auto"
-        style={{ backgroundColor: PARTNER_UI.yellow }}
-      >
-        <MaterialIcon name="download" size={18} />
-        匯出 PDF
-      </button>
     </div>
   );
 }

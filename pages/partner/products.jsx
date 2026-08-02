@@ -15,6 +15,13 @@ import {
   resolveMarkupStrategy,
   resolvePartnerVariantBasePrice,
 } from "@/lib/partnerPricing";
+import { isHotSaleTelecom } from "@/lib/productHotSale";
+import {
+  CSV_EXPORT_OPTIONS,
+  exportPartnerCsv,
+  buildMonthlyRows,
+} from "@/lib/partnerCsvExport";
+import { isSettledOrderStatus } from "@/lib/refundPolicy";
 
 const PartnerProductAnalytics = dynamic(
   () => import("@/components/partner/PartnerProductAnalytics"),
@@ -769,10 +776,23 @@ function PricingVariantTable({
               <tr key={key} className={isOverridden ? "bg-amber-50/60" : ""}>
                 <td className="px-3 py-2 text-slate-700">
                   <p
-                    className="font-bold flex items-center gap-1.5"
+                    className="font-bold flex items-center gap-1.5 flex-wrap"
                     title={v.sku || undefined}
                   >
                     {v.label}
+                    {(v.is_hot_sale ||
+                      isHotSaleTelecom(
+                        p.hotSaleTelecoms || p.hot_sale_telecoms,
+                        v.telecom || v.attributes?.telecom,
+                      )) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src="/images/hot-sale-tag.png"
+                        alt="熱銷推薦"
+                        className="h-5 w-auto inline-block shrink-0"
+                        title="官網熱銷推薦電信商"
+                      />
+                    )}
                     {isOverridden && (
                       <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-sm">
                         已手動
@@ -1113,7 +1133,10 @@ function PricingTab({
     if (!store?.id) return;
     const mode = normalizeMarkupMode(globalMode);
     const rate = Math.min(500, Math.max(0, Number(globalMarkup) || 0));
-    const fixed = Math.min(10000, Math.max(0, Math.round(Number(globalFixed) || 0)));
+    const fixed = Math.min(
+      10000,
+      Math.max(0, Math.round(Number(globalFixed) || 0)),
+    );
     setSavingMarkup(true);
     setMessage("");
     try {
@@ -1136,12 +1159,97 @@ function PricingTab({
       setGlobalMode(normalizeMarkupMode(data.store?.markup_mode || mode));
       setGlobalMarkup(Number(data.store?.markup_rate) || rate);
       setGlobalFixed(Number(data.store?.markup_fixed) || fixed);
+
+      // 跟隨商店設定的商品：用新全局加價重算方案售價，並清掉舊的單方案覆寫
+      // （否則 custom_prices 鎖死舊售價，畫面上／賣場都不會動）
+      const inheritStrategy = resolveMarkupStrategy({
+        storeMarkupRate: Number(data.store?.markup_rate) || rate,
+        storeMarkupMode: data.store?.markup_mode || mode,
+        storeMarkupFixed: Number(data.store?.markup_fixed) || fixed,
+        customPrices: {},
+      });
+      const inheritProducts = [];
+      const nextVariantMaps = {};
+      const nextSingles = {};
+      for (const p of products) {
+        const ownPercent =
+          (draftMarkups[p.id] !== "" &&
+            draftMarkups[p.id] != null &&
+            Number.isFinite(Number(draftMarkups[p.id]))) ||
+          (p.customPrices?._markup != null && p.customPrices?._markup !== "");
+        const ownFixed =
+          (draftFixedMarkups[p.id] !== "" &&
+            draftFixedMarkups[p.id] != null &&
+            Number.isFinite(Number(draftFixedMarkups[p.id]))) ||
+          (p.customPrices?._markup_fixed != null &&
+            p.customPrices?._markup_fixed !== "");
+        if (ownPercent || ownFixed) continue;
+
+        clearDirty(p.id);
+        inheritProducts.push(p);
+        const variants = p.variants || [];
+        if (variants.length > 0) {
+          const vMap = {};
+          for (const v of variants) {
+            vMap[v.price_key] = applyMarkupStrategy(v.cost, inheritStrategy);
+          }
+          nextVariantMaps[p.id] = vMap;
+        } else {
+          const cost = Number(p.cost) || 0;
+          if (cost > 0) {
+            nextSingles[p.id] = applyMarkupStrategy(cost, inheritStrategy);
+          }
+        }
+      }
+
+      if (Object.keys(nextVariantMaps).length) {
+        setDraftVariantPrices((prev) => ({ ...prev, ...nextVariantMaps }));
+      }
+      if (Object.keys(nextSingles).length) {
+        setDrafts((prev) => ({ ...prev, ...nextSingles }));
+      }
+      setDraftMarkups((prev) => {
+        const next = { ...prev };
+        for (const p of inheritProducts) next[p.id] = "";
+        return next;
+      });
+      setDraftFixedMarkups((prev) => {
+        const next = { ...prev };
+        for (const p of inheritProducts) next[p.id] = "";
+        return next;
+      });
+
+      // 寫回 DB：跟隨商店的商品清掉單方案／_sell 覆寫，賣場才會跟新加價
+      let cleared = 0;
+      for (const p of inheritProducts) {
+        const prevCustom = p.customPrices || {};
+        const hasVariantOverrides = Object.keys(prevCustom).some(
+          (k) => k !== "_markup" && k !== "_markup_fixed",
+        );
+        if (!hasVariantOverrides) continue;
+        // eslint-disable-next-line no-await-in-loop
+        const clearRes = await fetch("/api/partner/store-listings", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            medusa_product_id: p.medusaProductId,
+            product_id: p.productId,
+            custom_prices: {},
+          }),
+        });
+        if (clearRes.ok) cleared += 1;
+      }
+
       setMessage(
         mode === MARKUP_MODE_FIXED
-          ? `已改為固定加價 NT$${fixed}（賣場列表與商品內頁會同步）`
-          : `全局加價率已更新為 ${rate}%（賣場列表與商品內頁會同步）`,
+          ? `已改為固定加價 NT$${fixed}，已重算 ${inheritProducts.length} 項跟隨商店的商品`
+          : `全局加價率已更新為 ${rate}%，已重算 ${inheritProducts.length} 項跟隨商店的商品` +
+              (cleared ? `（清除 ${cleared} 項舊售價覆寫）` : ""),
       );
-      showToast("儲存成功", "success");
+      showToast("加價已套用，方案售價已更新", "success");
       await onSaved?.();
     } catch (err) {
       setMessage(err.message || "加價設定儲存失敗");
@@ -1312,7 +1420,9 @@ function PricingTab({
             <div className="min-w-0 flex-1">
               <h3 className="text-sm font-black text-slate-800">商店加價設定</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                可選「比例加價」或「固定加價」。固定加價較適合低單價日租方案，每個方案分潤會比較平均。
+                可選「比例加價」或「固定加價」。按「套用加價設定」後，
+                <strong className="text-slate-700">跟隨商店設定</strong>
+                的商品會自動重算下方方案售價；已改成「比例／固定加價」或手動改過單方案售價的商品不受影響。
               </p>
             </div>
           </div>
@@ -1799,20 +1909,22 @@ function PricingTab({
    月次報告
 ────────────────────────────────────────────────────────── */
 function ReportTab({ stats, partner, store, onGoTab }) {
-  const monthly = useMemo(() => {
-    const map = {};
-    for (const o of stats?.orders || []) {
-      if (o.status !== "completed" && o.status !== "pending") continue;
-      const d = new Date(o.created_at);
-      const k = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-      if (!map[k]) map[k] = { month: k, revenue: 0, profit: 0, cost: 0, count: 0 };
-      map[k].revenue += Number(o.total_amount) || 0;
-      map[k].profit += Number(o.partner_profit) || 0;
-      map[k].cost += Number(o.b2b_cost) || 0;
-      map[k].count += 1;
-    }
-    return Object.values(map).sort((a, b) => a.month.localeCompare(b.month));
-  }, [stats]);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!exportOpen) return;
+    const onDoc = (e) => {
+      if (!exportMenuRef.current?.contains(e.target)) setExportOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [exportOpen]);
+
+  const monthly = useMemo(
+    () => buildMonthlyRows(stats?.orders || []),
+    [stats],
+  );
 
   const totals = useMemo(
     () => ({
@@ -1827,32 +1939,80 @@ function ReportTab({ stats, partner, store, onGoTab }) {
   const recent = useMemo(
     () =>
       (stats?.orders || [])
+        .filter((o) => isSettledOrderStatus(o.status))
         .slice()
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         .slice(0, 5),
     [stats],
   );
 
-  const exportCsv = () => {
-    const rows = [
-      ["月份", "店鋪營收", "底價成本", "我的分潤", "訂單數"],
-      ...monthly.map((r) => [
-        r.month,
-        r.revenue,
-        r.cost,
-        r.profit,
-        r.count,
-      ]),
-    ];
-    const csv = rows.map((r) => r.join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `partner-monthly-report-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const runExport = (type) => {
+    exportPartnerCsv({
+      type,
+      orders: stats?.orders || [],
+      store,
+      partner,
+    });
+    setExportOpen(false);
   };
+
+  const ExportMenu = ({ align = "right" }) => (
+    <div className="relative" ref={exportMenuRef}>
+      <button
+        type="button"
+        onClick={() => setExportOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 text-xs border border-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-sm hover:bg-slate-50 hover:border-[#1E4AD1] hover:text-[#1E4AD1] transition"
+      >
+        <MaterialIcon name="download" size={16} />
+        匯出 CSV
+        <MaterialIcon name={exportOpen ? "expand_less" : "expand_more"} size={16} />
+      </button>
+      {exportOpen ? (
+        <div
+          className={`absolute z-40 mt-1.5 w-72 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden ${
+            align === "left" ? "left-0" : "right-0"
+          }`}
+        >
+          <div className="px-3 py-2 bg-slate-50 border-b border-slate-100">
+            <p className="text-[11px] font-black text-slate-600">選擇匯出內容</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Excel／Numbers 可直接開啟（UTF-8）
+            </p>
+          </div>
+          <ul className="py-1">
+            {CSV_EXPORT_OPTIONS.map((opt) => (
+              <li key={opt.id}>
+                <button
+                  type="button"
+                  onClick={() => runExport(opt.id)}
+                  className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-blue-50 transition"
+                >
+                  <MaterialIcon
+                    name={opt.icon}
+                    size={18}
+                    className="text-[#1E4AD1] mt-0.5 shrink-0"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-xs font-black text-slate-800">
+                      {opt.label}
+                      {opt.id === "full" ? (
+                        <span className="ml-1.5 text-[10px] font-bold text-[#1E4AD1] bg-blue-50 px-1.5 py-0.5 rounded">
+                          建議
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="block text-[10px] text-slate-500 mt-0.5 leading-snug">
+                      {opt.sub}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
 
   const TOP_CARDS = [
     {
@@ -1873,8 +2033,14 @@ function ReportTab({ stats, partner, store, onGoTab }) {
     {
       icon: "📁",
       label: "CSV 匯出",
-      sub: "批次匯出銷售資料",
-      onClick: exportCsv,
+      sub: "商品明細／訂單／完整報表",
+      onClick: () => {
+        setExportOpen(true);
+        document.getElementById("monthly-report-table")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      },
     },
     {
       icon: "⚙️",
@@ -1921,18 +2087,17 @@ function ReportTab({ stats, partner, store, onGoTab }) {
         <div className="flex-1 space-y-4">
           <div
             id="monthly-report-table"
-            className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden"
+            className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-visible"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-              <h3 className="text-sm font-black text-slate-800">月次分潤報告</h3>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={exportCsv}
-                  className="text-xs border border-slate-300 text-slate-600 font-bold px-3 py-1.5 rounded-sm hover:bg-slate-50"
-                >
-                  匯出 CSV
-                </button>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 gap-3 flex-wrap">
+              <div>
+                <h3 className="text-sm font-black text-slate-800">月次分潤報告</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  匯出可含商品明細、訂單逐筆與各項 KPI
+                </p>
+              </div>
+              <div className="flex gap-2 items-center">
+                <ExportMenu />
                 <button
                   type="button"
                   onClick={() => onGoTab("analytics")}
@@ -2125,7 +2290,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
                   className="text-[#1E4AD1] shrink-0 mt-0.5"
                   filled
                 />
-                <span>每月結算，月底匯款</span>
+                <span>次月 15 對帳單；申請提領後 10 工作天匯款（每月第 1 次免手續費，之後 NT$15）</span>
               </li>
               <li className="flex items-start gap-2">
                 <MaterialIcon
@@ -2199,11 +2364,11 @@ export default function PartnerProductsPage() {
       const r = prevMonthRange();
       setRangeStart(r.start);
       setRangeEnd(r.end);
-    } else {
-      const r = thisMonthRange();
-      setRangeStart(r.start);
-      setRangeEnd(r.end);
+      return;
     }
+    const r = thisMonthRange();
+    setRangeStart(r.start);
+    setRangeEnd(r.end);
   };
 
   const loadProducts = useCallback(async () => {
@@ -2269,6 +2434,7 @@ export default function PartnerProductsPage() {
           customSell,
           customPrices: row.custom_prices || {},
           variants: row.variants || [],
+          hotSaleTelecoms: row.hot_sale_telecoms || [],
           totalSales: sales.totalSales,
           totalProfit: sales.totalProfit,
           status,
@@ -2418,7 +2584,7 @@ export default function PartnerProductsPage() {
           )}
 
           {activeTab === "report" && (
-            <div className="flex-1 min-h-0 overflow-hidden p-3 sm:p-5 pb-24 md:pb-5">
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 pb-24 md:pb-5">
               <ReportTab
                 stats={stats}
                 partner={partner}

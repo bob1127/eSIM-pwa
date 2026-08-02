@@ -26,8 +26,8 @@ const MODE_COPY = {
     cards: [
       {
         title: ["Jeko的", "分潤制度"],
-        big: { num: "25", suffix: "%", badge: "up" },
-        desc: ["只要透過專屬連結下單", "即可獲得分潤回饋"],
+        big: { num: "15", suffix: "%", badge: "up" },
+        desc: ["旅客經專屬連結／折扣碼下單", "約可獲訂單實付一成五分潤"],
       },
       {
         title: ["不須繁瑣審核", "最快當日開通"],
@@ -41,15 +41,14 @@ const MODE_COPY = {
       },
     ],
     banner: {
-      lead: "業績達標再加碼",
-      rest: "，讓您的分潤更上一層樓！",
-      baseLabel: "基本分潤",
-      base: "25",
-      bonusLabel: "達標獎金",
-      bonus: "5",
-      maxLabel: "最高可達",
-      max: "30",
-      note: "※基本為產品成本 25%；當月有效訂單達 40 筆，該月調為成本 30%，次月重算。客服／行銷／SEO 由我們支援。",
+      variant: "referralSimple",
+      lead: "旅客享九折",
+      rest: "，您拿約實付一成五分潤",
+      discountLabel: "旅客折扣",
+      discount: "10",
+      shareLabel: "約實付分潤",
+      share: "15",
+      note: "※以九折後實付估算，常見約 13～16%（依方案毛利略有差異）；實際金額以訂單／對帳單為準。客服／行銷／SEO 由我們支援。",
     },
     ctaTitle: {
       before: "歡迎成為我們",
@@ -59,7 +58,7 @@ const MODE_COPY = {
     flow: {
       sub: "從註冊到提領收入",
       title: "分潤與請款流程說明",
-      desc: "推廣訂單自動記錄，客服／行銷／SEO 由我們支援，不須複雜手續即可每月領取分潤。",
+      desc: "推廣訂單自動記錄；次月 15 產製對帳單，申請提領後 10 個工作天內匯款（最低 NT$3,000／滿 10 天；每月第 1 次免手續費，之後每次 NT$15）。",
       periodLabel: "推廣期間",
       buyerLabel: ["一般使用者的", "購買流程"],
       step1: { main: "點擊連結", sub: "進入官網" },
@@ -91,15 +90,15 @@ const MODE_COPY = {
       },
     ],
     banner: {
-      lead: "風格＋AI選品",
-      rest: "，賣場利潤再加碼衝更高！",
-      baseLabel: "基本加價",
-      base: "25",
-      bonusLabel: "達標獎金",
-      bonus: "5",
-      maxLabel: "最高可達",
-      max: "30",
-      note: "※以上為範例。可自訂商店風格；自動選品一鍵開通；客服／行銷／SEO 由我們支援。",
+      variant: "storeSimple",
+      lead: "底價清楚",
+      rest: "，加價與利潤由你決定",
+      costLabel: "平台底價",
+      costHint: "系統提供",
+      profitLabel: "加價／利潤",
+      profit: "自訂",
+      profitHint: "售價 − 底價 − 金流",
+      note: "※夥伴底價由平台統一設定；您可自訂商店加價與售價，利潤＝實付 − 底價 − 金流手續費。客服／行銷／SEO 由我們支援。",
     },
     ctaTitle: {
       before: "歡迎成為我們",
@@ -109,7 +108,7 @@ const MODE_COPY = {
     flow: {
       sub: "從開通賣場到提領收入",
       title: "賣場營運與請款流程",
-      desc: "設定商店風格、自動選品一鍵開通後即可營運；客服／行銷／SEO 由我們支援，訂單自動累積分潤。",
+      desc: "設定風格、選品開通後即可營運；次月 15 產製對帳單，申請提領後 10 個工作天內匯款（最低 NT$3,000／滿 10 天；每月第 1 次免手續費，之後每次 NT$15）。",
       periodLabel: "賣場營運",
       buyerLabel: ["旅客在賣場的", "購買流程"],
       step1: { main: "進入賣場", sub: "選購方案" },
@@ -573,46 +572,110 @@ export default function Home() {
                   </span>
                   {copy.banner.rest}
                 </div>
-                <div className="py-8 px-4 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
-                  <div className="flex flex-col items-center">
-                    <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
-                      {copy.banner.baseLabel}
-                    </span>
-                    <span className="text-5xl font-black text-[#1E4AD1]">
-                      {copy.banner.base}
-                      <span className="text-3xl">%</span>
-                    </span>
-                  </div>
+                {copy.banner.variant === "referralSimple" ? (
+                  <div className="py-8 px-4 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
+                    <div className="flex flex-col items-center">
+                      <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
+                        {copy.banner.discountLabel}
+                      </span>
+                      <span className="text-5xl font-black text-[#1E4AD1]">
+                        {copy.banner.discount}
+                        <span className="text-3xl">%</span>
+                      </span>
+                      <span className="mt-1 text-xs font-bold text-slate-500">
+                        專屬碼九折
+                      </span>
+                    </div>
 
-                  <div className="text-4xl text-slate-300 font-black hidden md:block">
-                    +
-                  </div>
+                    <div className="text-4xl text-slate-300 font-black hidden md:block">
+                      →
+                    </div>
 
-                  <div className="flex flex-col items-center">
-                    <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
-                      {copy.banner.bonusLabel}
-                    </span>
-                    <span className="text-5xl font-black text-[#1E4AD1]">
-                      {copy.banner.bonus}
-                      <span className="text-3xl">%</span>
-                    </span>
+                    <div className="flex flex-col items-center">
+                      <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
+                        {copy.banner.shareLabel}
+                      </span>
+                      <span className="text-6xl md:text-7xl font-black text-[#1E4AD1]">
+                        {copy.banner.share}
+                        <span className="text-4xl">%</span>
+                      </span>
+                      <span className="mt-1 text-xs font-bold text-slate-500">
+                        分潤 ÷ 九折後實付
+                      </span>
+                    </div>
                   </div>
+                ) : copy.banner.variant === "storeSimple" ? (
+                  <div className="py-8 px-4 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
+                    <div className="flex flex-col items-center">
+                      <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
+                        {copy.banner.costLabel}
+                      </span>
+                      <span className="text-4xl md:text-5xl font-black text-[#1E4AD1]">
+                        透明
+                      </span>
+                      <span className="mt-1 text-xs font-bold text-slate-500">
+                        {copy.banner.costHint}
+                      </span>
+                    </div>
 
-                  <div className="text-4xl text-slate-300 font-black hidden md:block">
-                    =
-                  </div>
+                    <div className="text-4xl text-slate-300 font-black hidden md:block">
+                      →
+                    </div>
 
-                  <div className="flex flex-col items-center">
-                    <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
-                      {copy.banner.maxLabel}
-                    </span>
-                    <span className="text-6xl md:text-7xl font-black text-[#1E4AD1]">
-                      {copy.banner.max}
-                      <span className="text-4xl">%</span>
-                    </span>
+                    <div className="flex flex-col items-center">
+                      <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
+                        {copy.banner.profitLabel}
+                      </span>
+                      <span className="text-5xl md:text-6xl font-black text-[#1E4AD1]">
+                        {copy.banner.profit}
+                      </span>
+                      <span className="mt-1 text-xs font-bold text-slate-500">
+                        {copy.banner.profitHint}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="w-full text-center text-[11px] text-slate-500 pb-3">
+                ) : (
+                  <div className="py-8 px-4 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
+                    <div className="flex flex-col items-center">
+                      <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
+                        {copy.banner.baseLabel}
+                      </span>
+                      <span className="text-5xl font-black text-[#1E4AD1]">
+                        {copy.banner.base}
+                        <span className="text-3xl">%</span>
+                      </span>
+                    </div>
+
+                    <div className="text-4xl text-slate-300 font-black hidden md:block">
+                      +
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                      <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
+                        {copy.banner.bonusLabel}
+                      </span>
+                      <span className="text-5xl font-black text-[#1E4AD1]">
+                        {copy.banner.bonus}
+                        <span className="text-3xl">%</span>
+                      </span>
+                    </div>
+
+                    <div className="text-4xl text-slate-300 font-black hidden md:block">
+                      =
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                      <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
+                        {copy.banner.maxLabel}
+                      </span>
+                      <span className="text-6xl md:text-7xl font-black text-[#1E4AD1]">
+                        {copy.banner.max}
+                        <span className="text-4xl">%</span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <div className="w-full text-center text-[11px] text-slate-500 pb-3 px-4">
                   {copy.banner.note}
                 </div>
               </div>
@@ -710,18 +773,18 @@ export default function Home() {
                       訂單結算日
                     </div>
                     <div className="bg-[#CF213A] text-white text-[10px] px-3 py-0.5 rounded-full mt-1">
-                      例：15日
+                      15日
                     </div>
                   </div>
                   <div className="flex flex-col items-center">
                     <div className="bg-white border-2 border-[#333] font-bold text-[14px] px-6 py-1 rounded mb-2">
-                      次次月
+                      次月
                     </div>
                     <div className="text-[12px] font-bold text-[#333]">
-                      獎金匯款日
+                      獎金匯款
                     </div>
                     <div className="bg-white border border-slate-300 text-[#333] text-[10px] px-3 py-0.5 rounded-full mt-1">
-                      例：5日
+                      申請後 10 工作天
                     </div>
                   </div>
                 </div>
@@ -787,7 +850,7 @@ export default function Home() {
                       <div className="absolute top-[20%] bottom-[20%] left-[45%] right-[20%] bg-[#e4ecf9] -z-10 flex items-center justify-center clip-path-arrow">
                         <div className="flex flex-col items-center pl-8">
                           <span className="text-[11px] font-bold text-[#1E4AD1]">
-                            系統自動出帳
+                            對帳單確認後
                           </span>
                           <span className="text-[16px] font-black text-[#1E4AD1]">
                             匯款至指定帳戶
@@ -808,6 +871,11 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+                <p className="mt-4 text-center text-[12px] md:text-[13px] text-[#5B7382] font-medium max-w-[720px] mx-auto leading-relaxed">
+                  請於夥伴後台「結算與提領」申請提領：最低 NT$3,000、訂單滿 10
+                  天；每月第 1 次免手續費，第 2 次起每次扣 NT$15；核准後目標於
+                  10 個工作天內匯款。
+                </p>
               </div>
             </motion.div>
           </AnimatePresence>

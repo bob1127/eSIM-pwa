@@ -121,7 +121,8 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
       const merged = mergeCheckoutForm(prev, safePatches);
       if (merged !== prev) {
         const filled = ["email", "name", "phone", "address", "city"].filter(
-          (k) => !String(prev[k] || "").trim() && String(merged[k] || "").trim(),
+          (k) =>
+            !String(prev[k] || "").trim() && String(merged[k] || "").trim(),
         );
         if (filled.length) {
           const via =
@@ -283,8 +284,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
       handleLinePaySubmit();
     };
     window.addEventListener("esim-checkout-linepay", onLinePay);
-    return () =>
-      window.removeEventListener("esim-checkout-linepay", onLinePay);
+    return () => window.removeEventListener("esim-checkout-linepay", onLinePay);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.name, formData.email, formData.phone]);
 
@@ -307,7 +307,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold text-gray-900">聯絡資訊</h2>
             {isLoggedIn || memberInfo?.email ? (
-              <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full">
+              <span className="text-xs text-white bg-[#2e5fff] border border-emerald-100 px-2 py-1 rounded-full">
                 已登入
                 {memberInfo?.name ? ` · ${memberInfo.name}` : ""}
               </span>

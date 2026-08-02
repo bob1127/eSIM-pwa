@@ -56,7 +56,24 @@ export default function ReferralCapture() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, landing_path: landing }),
-    }).catch(() => {});
+    })
+      .then((r) => r.json().catch(() => ({})))
+      .then((data) => {
+        if (!data?.pending_coupon || typeof window === "undefined") return;
+        try {
+          // URL 已帶 coupon 時優先保留；否則用 hit API 確認可折扣後再排隊
+          const existing = sessionStorage.getItem(PENDING_COUPON_KEY);
+          if (!existing) {
+            sessionStorage.setItem(
+              PENDING_COUPON_KEY,
+              String(data.pending_coupon).toUpperCase(),
+            );
+          }
+        } catch {
+          /* ignore */
+        }
+      })
+      .catch(() => {});
   }, [
     router.isReady,
     router.query.ref,

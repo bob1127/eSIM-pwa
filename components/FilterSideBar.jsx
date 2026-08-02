@@ -79,7 +79,13 @@ const FILTER_GROUPS = [
       {
         label: "SoftBank / KDDI",
         value: "SoftBank / KDDI",
-        match: (t) => /SoftBank/i.test(t),
+        match: (t) =>
+          /SoftBank/i.test(t) && !/10\s*Mbps/i.test(t),
+      },
+      {
+        label: "SoftBank / KDDI 10Mbps",
+        value: "SoftBank / KDDI 10Mbps",
+        match: (t) => /SoftBank/i.test(t) && /10\s*Mbps/i.test(t),
       },
       {
         label: "IIJ Docomo",

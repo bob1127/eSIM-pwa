@@ -1397,13 +1397,13 @@ export default function RegisterDistributor() {
                     selected={form.cooperationModel === "referral"}
                     onClick={() => set("cooperationModel", "referral")}
                     label="專屬連結"
-                    desc="審核通過後給您一條推薦連結。旅客進官網下單，30 天內購買都算您的分潤。"
+                    desc="審核通過後給您一條推薦連結。旅客進官網下單（可享專屬折扣），約可獲實付一成五分潤；Cookie 30 天內購買都算您的。"
                   />
                   <SelectCard
                     selected={form.cooperationModel === "store"}
                     onClick={() => set("cooperationModel", "store")}
                     label="專屬商店"
-                    desc="審核通過後開通專屬商店，可自訂風格、自動選品與售價，旅客在您的店結帳才算分潤。"
+                    desc="審核通過後開通專屬商店，可自訂風格、自動選品與售價，利潤自己決定；旅客在您的店結帳才算分潤。"
                   />
                 </div>
 
@@ -1646,13 +1646,13 @@ export default function RegisterDistributor() {
                     selected={form.cooperationModel === "referral"}
                     onClick={() => set("cooperationModel", "referral")}
                     label="專屬連結"
-                    desc="審核通過後給您一條連結。旅客進官網下單，Cookie 30 天內購買都算您的分潤（像聯盟行銷）。"
+                    desc="審核通過後給您一條連結。旅客進官網下單（可享專屬折扣），約可獲實付一成五分潤；Cookie 30 天內購買都算您的。"
                   />
                   <SelectCard
                     selected={form.cooperationModel === "store"}
                     onClick={() => set("cooperationModel", "store")}
                     label="專屬商店"
-                    desc="審核通過後開通 /p/您的代碼 商店，可自訂風格、AI 選品與售價，旅客在您的店結帳才算分潤。"
+                    desc="審核通過後開通 /p/您的代碼 商店，可自訂風格、AI 選品與售價，利潤自己決定；旅客在您的店結帳才算分潤。"
                   />
                 </div>
 

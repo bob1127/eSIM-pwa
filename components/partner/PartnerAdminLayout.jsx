@@ -36,6 +36,13 @@ const NAV_ITEMS = [
     models: ["store", "referral"],
   },
   {
+    href: "/partner/settlement",
+    label: "結算與提領",
+    short: "結算",
+    icon: "account_balance_wallet",
+    models: ["store", "referral"],
+  },
+  {
     href: "/partner/blog",
     label: "文章管理",
     short: "文章",

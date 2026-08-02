@@ -7,6 +7,15 @@ import { upsertMedusaProductToSupabase } from "../../../lib/medusaProductSync";
 import { applyPartnerB2BMarkup } from "../../../lib/medusaPartnerPricing";
 import { validateCustomPricesInput } from "../../../lib/partnerPricing";
 import { logPricingAudit } from "../../../lib/partnerPricingAudit";
+import { fetchMedusaHotSaleMapByIds } from "../../../lib/medusaStoreApi";
+import {
+  parseHotSaleTelecoms,
+  isHotSaleTelecom,
+} from "../../../lib/productHotSale";
+import {
+  healStoreProductListings,
+  healEmptyListingsForProduct,
+} from "../../../lib/healStoreProductListings";
 
 /**
  * 與前台商品頁「確認您的選擇」一致：
@@ -47,6 +56,9 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     const selectAttempts = [
+      "id, store_id, product_id, medusa_product_id, custom_prices, status, created_at",
+      "id, store_id, product_id, medusa_product_id, custom_prices, created_at",
+      "id, store_id, product_id, custom_prices, created_at",
       "id, product_id, medusa_product_id, custom_prices, status, created_at",
       "id, product_id, medusa_product_id, custom_prices, created_at",
       "id, product_id, custom_prices, created_at",
@@ -60,7 +72,10 @@ export default async function handler(req, res) {
         .select(cols)
         .eq("store_id", storeId);
       if (!error) {
-        listings = data || [];
+        listings = (data || []).map((r) => ({
+          ...r,
+          store_id: r.store_id ?? storeId,
+        }));
         break;
       }
       lastError = error;
@@ -72,6 +87,21 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: lastError?.message || "讀取失敗" });
     }
 
+    // 自動對齊：空殼／舊 products → 有 Medusa＋方案的正確商品
+    let healInfo = { healed: 0, removed: 0 };
+    try {
+      const healed = await healStoreProductListings(supabase, listings);
+      healInfo = { healed: healed.healed, removed: healed.removed };
+      listings = healed.listings;
+      if (healInfo.healed || healInfo.removed) {
+        console.log(
+          `[store-listings] heal store=${storeId} healed=${healInfo.healed} removed=${healInfo.removed}`,
+        );
+      }
+    } catch (err) {
+      console.warn("[store-listings] heal failed:", err?.message || err);
+    }
+
     const productIds = [
       ...new Set(listings.map((r) => r.product_id).filter(Boolean)),
     ];
@@ -79,6 +109,8 @@ export default async function handler(req, res) {
     const variantsByProduct = {};
     if (productIds.length) {
       const nameTries = [
+        "id, name, image_url, handle, hot_sale_telecoms, medusa_product_id",
+        "id, name, image_url, handle, medusa_product_id",
         "id, name, image_url, handle",
         "id, name, image_url",
         "id, name",
@@ -99,6 +131,8 @@ export default async function handler(req, res) {
           name: p.name,
           image_url: p.image_url || null,
           handle: p.handle || null,
+          medusa_product_id: p.medusa_product_id || null,
+          hot_sale_telecoms: parseHotSaleTelecoms(p.hot_sale_telecoms),
           minB2B: 0,
           planCount: 0,
         };
@@ -124,6 +158,7 @@ export default async function handler(req, res) {
         const title = includeExtra ? v.title || null : null;
         // 優先用 Medusa variant id 當 price_key，與前台商品頁一致
         const priceKey = String(medusaVariantId || v.id);
+        const telecom = attrs.telecom || attrs.電信商 || null;
         variantsByProduct[v.product_id].push({
           id: v.id,
           medusa_variant_id: medusaVariantId,
@@ -131,6 +166,7 @@ export default async function handler(req, res) {
           sku: v.sku || null,
           title,
           attributes: attrs,
+          telecom,
           label: formatPartnerVariantLabel(attrs, title, v.sku, v.id),
           api_b2b: apiCost,
           cost: partnerCost,
@@ -189,22 +225,63 @@ export default async function handler(req, res) {
       }
     }
 
+    // 本機尚無熱銷快取時，向 Medusa 補 metadata.hot_sale_telecoms（對齊官網推薦）
+    const medusaIdsNeedingHotSale = [
+      ...new Set(
+        listings
+          .map((row) => {
+            const local = row.product_id ? productMeta[row.product_id] : null;
+            const mid =
+              row.medusa_product_id || local?.medusa_product_id || null;
+            if (!mid) return null;
+            if ((local?.hot_sale_telecoms || []).length) return null;
+            return String(mid);
+          })
+          .filter(Boolean),
+      ),
+    ];
+    let medusaHotSaleMap = {};
+    if (medusaIdsNeedingHotSale.length) {
+      try {
+        medusaHotSaleMap = await fetchMedusaHotSaleMapByIds(
+          medusaIdsNeedingHotSale,
+        );
+      } catch (err) {
+        console.warn(
+          "[store-listings] hot_sale fetch failed:",
+          err?.message || err,
+        );
+      }
+    }
+
     const enriched = listings.map((row) => {
       const local = row.product_id ? productMeta[row.product_id] : null;
       const apiMin = local?.minB2B || 0;
+      const medusaId =
+        row.medusa_product_id || local?.medusa_product_id || null;
+      const hotSale =
+        (local?.hot_sale_telecoms || []).length > 0
+          ? local.hot_sale_telecoms
+          : parseHotSaleTelecoms(medusaHotSaleMap[String(medusaId)] || []);
+      const variants = (row.product_id
+        ? variantsByProduct[row.product_id] || []
+        : []
+      ).map((v) => ({
+        ...v,
+        is_hot_sale: isHotSaleTelecom(hotSale, v.telecom),
+      }));
       return {
         ...row,
         product_name: local?.name || null,
         product_image: local?.image_url || null,
         product_handle: local?.handle || null,
+        hot_sale_telecoms: hotSale,
         /** 夥伴可見底價（已含平台 PARTNER_B2B_COST_RATE） */
         min_b2b: applyPartnerB2BMarkup(apiMin),
         /** API 原始最低底價 */
         api_min_b2b: apiMin,
         plan_count: local?.planCount || 0,
-        variants: row.product_id
-          ? variantsByProduct[row.product_id] || []
-          : [],
+        variants,
       };
     });
 
@@ -213,6 +290,7 @@ export default async function handler(req, res) {
       markup_rate: Number(access.store.markup_rate) || 20,
       markup_mode: access.store.markup_mode || "percent",
       markup_fixed: Number(access.store.markup_fixed) || 50,
+      heal: healInfo,
     });
   }
 
@@ -223,16 +301,42 @@ export default async function handler(req, res) {
     }
 
     try {
-      const { productId } = await upsertMedusaProductToSupabase(medusaProductId);
+      const { productId, formatted } = await upsertMedusaProductToSupabase(
+        medusaProductId,
+      );
+
+      try {
+        await healEmptyListingsForProduct(supabase, {
+          storeId,
+          productId,
+          medusaProductId,
+          productName: formatted?.name,
+        });
+      } catch (healErr) {
+        console.warn(
+          "[store-listings POST] heal:",
+          healErr?.message || healErr,
+        );
+      }
 
       const { data: existing } = await supabase
         .from("store_products")
-        .select("id")
+        .select("id, medusa_product_id")
         .eq("store_id", storeId)
         .eq("product_id", productId)
         .maybeSingle();
 
+      const hasMedusaCol = !(
+        await supabase.from("store_products").select("medusa_product_id").limit(1)
+      ).error;
+
       if (existing) {
+        if (hasMedusaCol && !existing.medusa_product_id) {
+          await supabase
+            .from("store_products")
+            .update({ medusa_product_id: medusaProductId })
+            .eq("id", existing.id);
+        }
         return res.status(200).json({
           ok: true,
           productId,
@@ -247,10 +351,6 @@ export default async function handler(req, res) {
         product_id: productId,
         custom_prices: {},
       };
-
-      const hasMedusaCol = !(
-        await supabase.from("store_products").select("medusa_product_id").limit(1)
-      ).error;
       if (hasMedusaCol) insertPayload.medusa_product_id = medusaProductId;
 
       const { data, error } = await supabase

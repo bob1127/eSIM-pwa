@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { getClientPlatformFxRates } from "@/lib/esim/platformFx";
+
+const PLATFORM_FX = getClientPlatformFxRates();
 
 // --- 1. 國家設定檔 ---
 const COUNTRIES: Record<string, any> = {
@@ -606,7 +609,11 @@ export default function GlobalPlanScanner() {
   ]);
 
   const [baseCurrency, setBaseCurrency] = useState("HKD");
-  const [exchangeRates, setExchangeRates] = useState({ USD: 32.5, HKD: 4.1 });
+  /** platform = 與夥伴底價同一套；market = 即時市價對照 */
+  const [fxMode, setFxMode] = useState<"platform" | "market">("platform");
+  const [marketRates, setMarketRates] = useState<{ USD: number; HKD: number } | null>(null);
+  const exchangeRates =
+    fxMode === "market" && marketRates ? marketRates : PLATFORM_FX;
   const [savedPlanIds, setSavedPlanIds] = useState<string[]>([]);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   /** 建議售價利潤％（漫遊／原生分開，對成本加成；即官網動態售價） */
@@ -624,10 +631,11 @@ export default function GlobalPlanScanner() {
   const [partnerDiscountPercent, setPartnerDiscountPercent] = useState(10);
 
   useEffect(() => {
-    fetchRates();
     fetchPlans();
     const saved = localStorage.getItem("savedPlans");
     if (saved) setSavedPlanIds(JSON.parse(saved));
+    const savedFx = localStorage.getItem("esimSelectionFxMode");
+    if (savedFx === "market" || savedFx === "platform") setFxMode(savedFx);
     const savedProfit = localStorage.getItem("esimSelectionProfitPercent");
     const savedNative = localStorage.getItem("esimSelectionNativeProfitPercent");
     const savedPartner = localStorage.getItem("esimSelectionPartnerRate");
@@ -692,14 +700,23 @@ export default function GlobalPlanScanner() {
       prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id],
     );
   };
-  const fetchRates = async () => {
+  const fetchMarketRates = async () => {
     try {
       const res = await fetch("https://api.exchangerate-api.com/v4/latest/TWD");
       const data = await res.json();
-      setExchangeRates({ USD: 1 / data.rates.USD, HKD: 1 / data.rates.HKD });
+      setMarketRates({ USD: 1 / data.rates.USD, HKD: 1 / data.rates.HKD });
     } catch (e) {
       console.error(e);
     }
+  };
+
+  useEffect(() => {
+    if (fxMode === "market" && !marketRates) fetchMarketRates();
+  }, [fxMode, marketRates]);
+
+  const setFxModePersist = (mode: "platform" | "market") => {
+    setFxMode(mode);
+    localStorage.setItem("esimSelectionFxMode", mode);
   };
   const fetchPlans = async () => {
     try {
@@ -1000,9 +1017,34 @@ export default function GlobalPlanScanner() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <span>
-              1 USD ≈ {exchangeRates.USD.toFixed(1)} TWD | 1 HKD ≈{" "}
+              {fxMode === "platform" ? "平台匯率" : "市價匯率"}：1 USD ≈{" "}
+              {exchangeRates.USD.toFixed(1)} TWD | 1 HKD ≈{" "}
               {exchangeRates.HKD.toFixed(1)} TWD
             </span>
+            <div className="flex rounded-md overflow-hidden border border-slate-500">
+              <button
+                type="button"
+                onClick={() => setFxModePersist("platform")}
+                className={`px-2 py-0.5 text-[11px] font-bold ${
+                  fxMode === "platform"
+                    ? "bg-emerald-500 text-white"
+                    : "bg-slate-700 text-slate-300"
+                }`}
+              >
+                平台（夥伴底價）
+              </button>
+              <button
+                type="button"
+                onClick={() => setFxModePersist("market")}
+                className={`px-2 py-0.5 text-[11px] font-bold ${
+                  fxMode === "market"
+                    ? "bg-sky-500 text-white"
+                    : "bg-slate-700 text-slate-300"
+                }`}
+              >
+                市價對照
+              </button>
+            </div>
             <span className="text-emerald-300">
               官網售價：漫遊 {profitPercent}% · 原生 {nativeProfitPercent}%
             </span>

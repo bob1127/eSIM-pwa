@@ -20,13 +20,14 @@ function formatDate(d) {
   });
 }
 
-/** 分潤者可見狀態：已付款／待付款要一眼分清 */
+/** 分潤者可見狀態：已完成／尚未付款要一眼分清 */
 const STATUS_MAP = {
-  completed: { label: "已付款", cls: "bg-[#d1fae5] text-[#065f46]" },
-  pending: { label: "待付款", cls: "bg-[#fef3c7] text-[#92400e]" },
+  completed: { label: "已完成", cls: "bg-[#d1fae5] text-[#065f46]" },
+  pending: { label: "尚未付款", cls: "bg-[#fef3c7] text-[#92400e]" },
   cancelled: { label: "已取消", cls: "bg-slate-100 text-slate-500" },
-  failed: { label: "失敗", cls: "bg-red-100 text-red-600" },
+  failed: { label: "付款失敗", cls: "bg-red-100 text-red-600" },
   refunded: { label: "已退款", cls: "bg-slate-100 text-slate-500" },
+  refund_pending: { label: "退款審核中", cls: "bg-amber-100 text-amber-800" },
 };
 
 export default function PartnerOrdersPage() {
@@ -68,6 +69,16 @@ export default function PartnerOrdersPage() {
   return (
     <PartnerAdminLayout title="訂單分潤">
       <div className={`${PARTNER_UI.pageFlush} flex flex-col flex-1 min-h-0`}>
+      <div className="px-4 sm:px-5 py-3 border-b border-slate-200 bg-[#F7F9FB] text-xs text-slate-600 leading-relaxed">
+        分潤採月結對帳單（次月 15）＋後台申請提領；核准後目標 10 個工作天內匯款。請至{" "}
+        <Link
+          href="/partner/settlement"
+          className="font-bold text-[#1E4AD1] underline underline-offset-2"
+        >
+          結算與提領
+        </Link>
+        申請（最低 NT$3,000／滿 10 天；每月第 1 次免手續費，之後每次 NT$15）。
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 border-x border-b border-slate-200">
         <div className="border-b md:border-b-0 md:border-r border-slate-200">
           <DobermanPanel
@@ -84,7 +95,7 @@ export default function PartnerOrdersPage() {
             help={METRIC_HELP.validOrders}
             rows={[
               {
-                label: "合計（已付款＋待付款）",
+                label: "合計（已完成＋尚未付款）",
                 value: loading ? "..." : statusCounts.valid,
                 unit: "筆",
               },
@@ -94,7 +105,7 @@ export default function PartnerOrdersPage() {
                 unit: "筆",
               },
               {
-                label: "待付款",
+                label: "尚未付款",
                 value: loading ? "..." : statusCounts.unpaid,
                 unit: "筆",
               },
@@ -120,7 +131,7 @@ export default function PartnerOrdersPage() {
         >
           <p className="font-bold mb-0.5 text-[#1E4AD1]">關於買家聯絡資訊</p>
           <p>
-            僅顯示姓名與 Email，方便您針對「待付款」訂單禮貌提醒。請勿濫發訊息或用於分潤以外用途；繳費代碼等敏感資料不會提供給夥伴。
+            僅顯示姓名與 Email，方便您針對「尚未付款」訂單禮貌提醒。請勿濫發訊息或用於分潤以外用途；繳費代碼等敏感資料不會提供給夥伴。
           </p>
         </div>
 
@@ -131,7 +142,7 @@ export default function PartnerOrdersPage() {
           {[
             { id: "all", label: "全部有效", count: statusCounts.valid },
             { id: "completed", label: "已付款", count: statusCounts.paid },
-            { id: "pending", label: "待付款", count: statusCounts.unpaid },
+            { id: "pending", label: "尚未付款", count: statusCounts.unpaid },
           ].map((f) => (
             <button
               key={f.id}

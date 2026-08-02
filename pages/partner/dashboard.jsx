@@ -17,11 +17,7 @@ import MaterialIcon from "@/components/MaterialIcon";
 import { usePartnerSession, fetchPartnerStats, SITE_URL } from "@/lib/partnerAuth";
 import {
   buildReferralShareUrl,
-  DEFAULT_REFERRAL_RATE,
-  REFERRAL_BONUS_RATE,
-  REFERRAL_BONUS_ORDER_THRESHOLD,
-  referralRateForMonthCount,
-  monthBoundsIso,
+  getPartnerReferralRate,
 } from "@/lib/partnerReferral";
 import {
   DEFAULT_REFERRAL_DISCOUNT_PERCENT,
@@ -144,29 +140,8 @@ export default function PartnerDashboard() {
     : "";
   const isGood = !loading && totals.count > 0 && totals.profit > 0;
 
-  /** 本月有效單量 → 決定目前分潤趴數（25% / 30%） */
-  const monthTier = useMemo(() => {
-    const { start, end } = monthBoundsIso();
-    const startMs = new Date(start).getTime();
-    const endMs = new Date(end).getTime();
-    const monthOrders = (stats?.orders || []).filter((o) => {
-      const t = new Date(o.created_at).getTime();
-      return t >= startMs && t <= endMs && isSettledOrderStatus(o.status);
-    });
-    const count = monthOrders.length;
-    const effectiveRate = referralRateForMonthCount(partner, count);
-    const threshold = REFERRAL_BONUS_ORDER_THRESHOLD;
-    const remain = Math.max(0, threshold - count);
-    return {
-      count,
-      threshold,
-      remain,
-      effectiveRate,
-      baseRate: DEFAULT_REFERRAL_RATE,
-      bonusRate: REFERRAL_BONUS_RATE,
-      hit: count >= threshold,
-    };
-  }, [stats?.orders, partner]);
+  /** 專屬連結分潤：依核准 referral_rate（成本 × %），無達標加碼 */
+  const referralRatePct = getPartnerReferralRate(partner);
 
   const copyReferral = async () => {
     if (!referralUrl) return;
@@ -251,55 +226,15 @@ export default function PartnerDashboard() {
             <p className="text-[12px] font-black text-slate-900 mb-2 tracking-wide">
               分潤說明
             </p>
-            <div className="mb-3 rounded-lg border border-[#1E4AD1]/20 bg-white px-3 py-2.5">
-              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1.5">
-                <p className="text-[12px] font-bold text-slate-800">
-                  本月進度
-                  <span className="ml-2 text-[#1E4AD1]">
-                    {loading ? "…" : `${monthTier.count} / ${monthTier.threshold}`}
-                  </span>
-                  <span className="ml-1 font-medium text-slate-500">有效訂單</span>
-                </p>
-                <p className="text-[12px] font-black text-[#1E4AD1]">
-                  本月分潤 {loading ? "…" : `${monthTier.effectiveRate}%`}
-                </p>
-              </div>
-              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-[#1E4AD1] transition-all"
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      Math.round(
-                        (monthTier.count / monthTier.threshold) * 100,
-                      ),
-                    )}%`,
-                  }}
-                />
-              </div>
-              <p className="text-[11px] text-slate-500 mt-1.5">
-                {monthTier.hit
-                  ? `已達標：本月有效單皆以成本 × ${monthTier.bonusRate}% 結算；次月重新計算。`
-                  : `再 ${monthTier.remain} 筆達標，本月改為成本 × ${monthTier.bonusRate}%（達標後本月先前訂單一併調升）。`}
-              </p>
-            </div>
             <ul className="list-disc pl-5 space-y-1.5 mb-3">
               <li>
-                分潤依
-                <strong className="text-[#1E4AD1]">產品成本價</strong>
-                計算：基本{" "}
-                <strong className="text-[#1E4AD1]">
-                  {monthTier.baseRate}%
-                </strong>
-                ；當月有效訂單達 {monthTier.threshold} 筆 →{" "}
-                <strong className="text-[#1E4AD1]">
-                  {monthTier.bonusRate}%
-                </strong>
-                ；次月重算，未達標回到基本。
+                對外參考約為訂單實付
+                <strong className="text-[#1E4AD1]"> 15%</strong>
+                （常見約 13～16%，依方案與是否九折略有差異）。
               </li>
               <li>
-                旅客付官網售價，您
-                <strong>不用自己訂價</strong>。
+                旅客付官網售價（可享專屬折扣碼），您
+                <strong>不用自己訂價</strong>；本模式<strong>無達標加碼</strong>。
               </li>
               <li>
                 旅客點您的連結後
@@ -310,14 +245,15 @@ export default function PartnerDashboard() {
             <div className="rounded-lg bg-white border border-slate-200 px-3 py-2.5 text-[12px]">
               <p className="font-bold text-slate-800 mb-1">舉例</p>
               <p>
-                方案成本 NT$300 → 基本約拿{" "}
+                成本 NT$225、九折實付約 NT$305 → 分潤約{" "}
                 <strong className="text-[#1E4AD1]">
-                  NT${Math.round((300 * monthTier.baseRate) / 100)}
+                  NT${Math.round((225 * referralRatePct) / 100)}
                 </strong>
-                ；達標月約拿{" "}
-                <strong className="text-[#1E4AD1]">
-                  NT${Math.round((300 * monthTier.bonusRate) / 100)}
-                </strong>
+                （約實付{" "}
+                {Math.round(
+                  (((225 * referralRatePct) / 100) / 305) * 1000,
+                ) / 10}
+                %）
               </p>
               <p className="text-slate-500 mt-1">
                 實際金額以訂單結算為準，可在「訂單分潤」查看每筆明細。
@@ -346,7 +282,7 @@ export default function PartnerDashboard() {
             loading
               ? "正在讀取分潤數據..."
               : totals.count > 0
-                ? `期間內 ${totals.count} 筆訂單・累計分潤 ${fmt(totals.profit)}・分潤率 ${totals.rate}%`
+                ? `期間內 ${totals.count} 筆訂單・累計分潤 ${fmt(totals.profit)}・分潤占營收 ${totals.rate}%（每付 NT$100 約 NT$${totals.rate}）`
                 : isReferral
                   ? referralDiscountOn
                     ? "複製上方專屬折扣碼連結，旅客點進會自動帶折扣碼，下單即可累積分潤。"
@@ -387,10 +323,19 @@ export default function PartnerDashboard() {
           <div className="lg:border-r border-b lg:border-b-0 border-slate-200">
             <DobermanPanel
               icon="filter_alt"
-              title="分潤率分析"
+              title="分潤占營收"
               help={METRIC_HELP.profitRate}
               rows={[
-                { label: "分潤率", value: loading ? "..." : totals.rate, unit: "%" },
+                {
+                  label: "分潤占營收",
+                  value: loading ? "..." : totals.rate,
+                  unit: "%",
+                },
+                {
+                  label: "每付 NT$100 約分潤",
+                  value: loading ? "..." : totals.rate,
+                  unit: "元",
+                },
                 { label: "有效訂單", value: loading ? "..." : totals.count, unit: "筆" },
               ]}
             />
@@ -441,7 +386,7 @@ export default function PartnerDashboard() {
         <div
           className={`grid gap-3 ${
             isReferral
-              ? "grid-cols-1 sm:grid-cols-2 max-w-xl"
+              ? "grid-cols-1 sm:grid-cols-3 max-w-3xl"
               : "grid-cols-2 md:grid-cols-4"
           }`}
         >
@@ -452,6 +397,12 @@ export default function PartnerDashboard() {
                   icon: "receipt",
                   label: "訂單分潤",
                   sub: "查看每筆推薦分潤",
+                },
+                {
+                  href: "/partner/settlement",
+                  icon: "account_balance_wallet",
+                  label: "結算與提領",
+                  sub: "對帳單／申請提領",
                 },
                 {
                   href: "#copy-referral",
@@ -481,10 +432,10 @@ export default function PartnerDashboard() {
                   sub: "查看分潤明細",
                 },
                 {
-                  href: "/partner/settings",
-                  icon: "store",
-                  label: "商店設定",
-                  sub: "編輯品牌資訊",
+                  href: "/partner/settlement",
+                  icon: "account_balance_wallet",
+                  label: "結算與提領",
+                  sub: "對帳單／申請提領",
                 },
               ]
           ).map((item) =>

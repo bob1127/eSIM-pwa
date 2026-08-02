@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { DEFAULT_PLATFORM_FX } from "@/lib/esim/platformFx";
 // import Layout from "../Layout"; // 如果您有 Layout 請自行取消註解
+
+// --- 匯率設定：與夥伴底價同一套平台匯率 ---
+const RATES = DEFAULT_PLATFORM_FX;
 
 // --- 國家設定檔 ---
 const COUNTRIES = {
@@ -52,12 +56,6 @@ const COUNTRIES = {
     keywords: ["Malaysia"],
     nativeKeywords: ["celcom", "maxis", "digi", "umobile"],
   },
-};
-
-// --- 匯率設定 (請依照您的銀行匯率微調) ---
-const RATES = {
-  USD: 33.0, // 美金轉台幣 (抓寬鬆一點)
-  HKD: 4.5, // 港幣轉台幣
 };
 
 export default function GlobalPlanScanner() {

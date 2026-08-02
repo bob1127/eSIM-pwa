@@ -137,10 +137,13 @@ export default async function handler(req, res) {
         const varPayload = {
           product_id: productId,
           sku: v.sku || v.medusa_variant_id || `${productId}-${varCount.upserted}`,
-          // DB 一律存「API 原始底價」（與 lib/medusaProductSync.js 同慣例）；
-          // 夥伴可見底價在讀取時才 × PARTNER_B2B_COST_RATE，不可把已含平台
-          // 抽成的 v.b2b_price 寫進這欄，否則底價會被灌水、後續計算全錯。
-          b2b_price: v.api_b2b_price ?? v.b2b_price ?? 0,
+          // DB 存 API 原始底價。不可靠來源時保留舊值，禁止寫入零售價冒充成本。
+          b2b_price:
+            Number(v.api_b2b_price) > 0 &&
+            v.b2bPriceSource &&
+            v.b2bPriceSource !== "unavailable"
+              ? Math.round(Number(v.api_b2b_price))
+              : undefined,
           attributes: v.attributes || {},
         };
 
@@ -171,12 +174,17 @@ export default async function handler(req, res) {
         }
 
         if (existingVar?.id) {
+          const updatePayload = { ...varPayload };
+          if (updatePayload.b2b_price == null) delete updatePayload.b2b_price;
           await supabase
             .from("product_variations")
-            .update(varPayload)
+            .update(updatePayload)
             .eq("id", existingVar.id);
         } else {
-          await supabase.from("product_variations").insert(varPayload);
+          await supabase.from("product_variations").insert({
+            ...varPayload,
+            b2b_price: varPayload.b2b_price ?? 0,
+          });
         }
         varCount.upserted++;
       }
