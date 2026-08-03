@@ -137,7 +137,9 @@ export async function getStaticProps({ params }) {
     });
 
     // MicroeSIM 測試購買商品置頂，方便串接驗證
-    formattedProducts.sort((a, b) => Number(b.isTestPlan) - Number(a.isTestPlan));
+    formattedProducts.sort(
+      (a, b) => Number(b.isTestPlan) - Number(a.isTestPlan),
+    );
 
     return {
       props: {
@@ -185,7 +187,10 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
   );
 
   const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-  const currentProducts = filteredProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+  const currentProducts = filteredProducts.slice(
+    startIndex,
+    startIndex + PRODUCTS_PER_PAGE,
+  );
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
 
   if (router.isFallback)
@@ -269,9 +274,9 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
           )}
         </AnimatePresence>
 
-        <div className="filter-wrap flex lg:flex-row flex-col px-4 sm:px-6 md:px-10 min-h-screen pt-6 md:pt-10 pb-16 bg-[#F7F9FB]">
+        <div className="filter-wrap flex lg:flex-row flex-col px-4 sm:px-5 md:px-8 min-h-screen pt-6 md:pt-10 pb-16 bg-[#F7F9FB] max-w-[1440px] mx-auto w-full">
           {/* ── 桌面版左側篩選欄 ── */}
-          <div className="filter_bar hidden lg:block w-[260px] shrink-0 mt-6 mr-6 self-start sticky top-32">
+          <div className="filter_bar hidden lg:block w-[240px] shrink-0 mt-6 mr-6 self-start sticky top-32">
             <FilterSideBar
               products={initialProducts}
               activeTags={activeTags}
@@ -285,12 +290,8 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
               aria-label="麵包屑"
               className="flex items-center gap-1 text-[12px] sm:text-[13px] text-slate-500 overflow-x-auto whitespace-nowrap scrollbar-none pb-0.5"
             >
-              <Link href="/" className="hover:text-[#0071EB] shrink-0">
-                首頁
-              </Link>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
               <Link href="/product" className="hover:text-[#0071EB] shrink-0">
-                所有商品
+                商店
               </Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
               <span className="font-bold text-[#1E4AD1] shrink-0">
@@ -302,9 +303,6 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-4 sm:px-6 py-4 sm:py-5">
               <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[11px] font-bold tracking-[0.16em] text-[#0071EB] mb-1">
-                    eSIM 方案
-                  </p>
                   <h1 className="text-[22px] sm:text-[28px] font-black text-slate-900 tracking-tight leading-tight">
                     {currentCategory?.name}
                   </h1>
@@ -429,17 +427,12 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
               </p>
             </div>
 
-            {/* 商品格 */}
+            {/* 商品格 — 卡片固定較窄寬度；外層 max-w-[1200px] 限制整體 */}
             {currentProducts.length > 0 ? (
-              <div
-                className={`grid gap-3 sm:gap-4 ${
-                  filteredProducts.length === 1
-                    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                    : "grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4"
-                }`}
-              >
+              <div className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(220px,280px))] gap-2.5 sm:gap-3.5 justify-start">
                 {currentProducts.map((product, index) => {
-                  const productImage = product.image_url || "/default-image.jpg";
+                  const productImage =
+                    product.image_url || "/default-image.jpg";
                   const price = product.price;
                   const regularPrice = product.original_price;
                   const productLink = `/product/${currentCategory.slug}/${product.slug}`;
@@ -451,15 +444,12 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.35, delay: index * 0.04 }}
-                      className={
-                        filteredProducts.length === 1
-                          ? "sm:col-span-1 max-w-md"
-                          : ""
-                      }
+                      className="min-w-0 w-full"
                     >
                       <Link href={productLink} className="block h-full group">
-                        <div className="h-full flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-[#0071EB]/25 transition-all">
-                          <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-50 rounded-t-2xl">
+                        <div className="h-full flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/90 hover:border-[#0071EB]/30 hover:shadow-md transition-all">
+                          {/* 圖片區維持原設計 */}
+                          <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-50 rounded-t-xl">
                             <SafeImage
                               src={productImage}
                               alt={product.name}
@@ -471,31 +461,24 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                               className="object-contain p-5 sm:p-6 group-hover:scale-[1.03] transition-transform duration-500"
                             />
                           </div>
-                          <div className="flex flex-col flex-1 p-3 sm:p-4">
-                            <h2 className="font-bold text-[13px] sm:text-[14px] text-slate-800 leading-snug line-clamp-2 min-h-[2.6em]">
+                          <div className="flex flex-col flex-1 p-2.5 sm:p-3.5">
+                            <h2 className="font-bold text-[12px] sm:text-[13px] text-slate-800 leading-snug line-clamp-2 min-h-[2.5em]">
                               {product.name}
                             </h2>
                             {cardTags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {cardTags.map((t) => (
-                                  <span
-                                    key={t}
-                                    className="text-[10px] px-1.5 py-0.5 bg-[#EFF6FC] text-[#1E4AD1] rounded-full font-medium leading-tight"
-                                  >
-                                    {t}
-                                  </span>
-                                ))}
-                              </div>
+                              <p className="mt-1.5 text-[10px] sm:text-[11px] text-[#1E4AD1] font-medium leading-snug line-clamp-2">
+                                {cardTags.join(" · ")}
+                              </p>
                             )}
-                            <div className="flex items-end gap-2 mt-auto pt-3">
-                              <span className="text-[#0071EB] font-black text-base sm:text-lg tabular-nums">
+                            <div className="flex items-end gap-1.5 mt-auto pt-2.5">
+                              <span className="text-[#0071EB] font-black text-[15px] sm:text-base tabular-nums leading-none">
                                 NT${price}
-                                <span className="text-[11px] font-bold ml-0.5">
+                                <span className="text-[10px] sm:text-[11px] font-bold ml-0.5">
                                   起
                                 </span>
                               </span>
                               {regularPrice && regularPrice !== price && (
-                                <del className="text-slate-400 text-xs mb-0.5">
+                                <del className="text-slate-400 text-[10px] mb-px">
                                   NT${regularPrice}
                                 </del>
                               )}
@@ -512,9 +495,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                 <p className="font-bold text-slate-700 mb-1 text-base">
                   找不到符合條件的商品
                 </p>
-                <p className="text-sm text-slate-500">
-                  試試放寬天數或流量條件
-                </p>
+                <p className="text-sm text-slate-500">試試放寬天數或流量條件</p>
                 <button
                   type="button"
                   onClick={() => handleSetActiveTags([])}

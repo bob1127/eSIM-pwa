@@ -128,7 +128,7 @@ async function main() {
   };
   meta.subtitle_by_carrier = {
     ...(meta.subtitle_by_carrier || {}),
-    [TELECOM]: "漫遊總量型・流量用完即斷網・支援 TikTok 與 ChatGPT",
+    [TELECOM]: "總量型・流量用完即斷網・支援 TikTok 與 ChatGPT",
   };
   meta.overview_notices_by_carrier = {
     ...(meta.overview_notices_by_carrier || {}),

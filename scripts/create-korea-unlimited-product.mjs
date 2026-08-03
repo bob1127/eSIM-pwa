@@ -204,7 +204,7 @@ async function main() {
       "韓國eSIM,韓國eSIM SK電信,高速數據流量吃到飽,原生eSIM,韓國IP,漫遊eSIM,新加坡IP,SK電信eSIM,LG U+ eSIM,真不限速,每日1GB,10Mbps吃到飽,旅遊eSIM,出國上網,Jeko eSIM,接口eSIM,免換卡",
     subtitle_by_carrier: {
       [TELECOM_SKT]: "原生eSIM：SK電信韓國IP真高速",
-      [TELECOM_PROMO]: "漫遊：LG U+·SK電信新加坡IP流量吃到飽",
+      [TELECOM_PROMO]: "LG U+·SK電信新加坡IP流量吃到飽",
     },
     carrier_specs_by_carrier: {
       [TELECOM_SKT]: {

@@ -163,8 +163,8 @@ const AllProductsPage = ({ initialProducts }) => {
   return (
     <Layout>
       <div className="flex flex-col bg-[#f9f9fa]">
-        <div className="filter-wrap flex lg:flex-row flex-col sm:px-5 px-4 md:px-10 min-h-screen">
-          <div className="filter_bar overflow-hidden w-full lg:w-[25%] bg-white mt-[30px] mr-4">
+        <div className="filter-wrap flex lg:flex-row flex-col sm:px-4 px-3 md:px-8 lg:px-10 min-h-screen gap-0 lg:gap-3 max-w-[1400px] mx-auto w-full">
+          <div className="filter_bar w-full lg:w-[22%] lg:max-w-[260px] lg:shrink-0 bg-white mt-[24px] lg:mt-[30px] rounded-xl border border-slate-100 lg:border-0 lg:self-start lg:sticky lg:top-28 lg:z-20 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
             <FilterSideBar
               products={initialProducts}
               activeTags={activeTags}
@@ -183,25 +183,36 @@ const AllProductsPage = ({ initialProducts }) => {
             />
           </div>
 
-          <div className="bottom-content mt-[30px] overflow-hidden w-full lg:w-[75%] flex flex-col">
-            <div className="top-navgation bg-white max-w-[1920px] border-b border-gray-200 py-5 flex flex-col sm:flex-row items-center pl-4 sm:pl-10">
-              <div className="bread_crumb w-full text-gray-500">
+          <div className="bottom-content mt-[24px] lg:mt-[30px] overflow-hidden w-full lg:flex-1 flex flex-col gap-3 sm:gap-4 pb-8">
+            <div className="top-navgation bg-white rounded-xl border border-slate-100 py-4 px-3 sm:px-5 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="bread_crumb w-full text-gray-500 text-sm">
                 <Link
-                  href="/"
-                  className="hover:text-blue-600 transition-colors"
+                  href="/product"
+                  className="hover:text-blue-600 transition-colors font-bold text-slate-800 text-[15px]"
                 >
-                  Home
+                  商店
                 </Link>
-                <span className="mx-2">/</span>
-                <span className="text-[16px] font-bold text-slate-800">
-                  所有商品
-                </span>
               </div>
               <CountryFilter />
             </div>
 
+            <div className="flex items-center justify-between px-1">
+              <p className="text-[13px] text-slate-500">
+                共{" "}
+                <span className="font-bold text-slate-800">
+                  {filteredProducts.length}
+                </span>{" "}
+                件商品
+                {activeTags.length > 0 && (
+                  <span className="text-slate-400">
+                    （已套用 {activeTags.length} 個篩選）
+                  </span>
+                )}
+              </p>
+            </div>
+
             {currentProducts.length > 0 ? (
-              <div className="grid grid-cols-1 bg-white sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-2 sm:p-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3.5">
                 {currentProducts.map((product, index) => {
                   const productImage =
                     product.image_url || "/default-image.jpg";
@@ -211,40 +222,55 @@ const AllProductsPage = ({ initialProducts }) => {
                     product.category_slug || "uncategorized";
                   const productSlug = product.slug || product.handle;
                   const productLink = `/product/${categorySlug}/${productSlug}`;
+                  const cardTags = product.displayTags || [];
 
                   return (
                     <motion.div
                       key={product.id}
-                      initial={{ opacity: 0, y: 40 }}
+                      initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: index * 0.05 }}
+                      transition={{ duration: 0.35, delay: index * 0.04 }}
                     >
-                      <Link href={productLink} className="block">
-                        <div className="card overflow-hidden p-4 bg-white">
-                          <div className="relative w-full aspect-[4/3] mb-3 overflow-hidden rounded-lg bg-slate-50">
+                      <Link href={productLink} className="block h-full group">
+                        <div className="h-full flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/90 hover:border-[#0071EB]/30 hover:shadow-md transition-all">
+                          <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-50">
                             <SafeImage
                               src={productImage}
                               alt={product.name}
                               fill
-                              sizes="(max-width: 768px) 50vw, 20vw"
+                              sizes="(max-width: 768px) 50vw, 22vw"
                               unoptimized={shouldBypassImageOptimization(
                                 productImage,
                               )}
-                              className="object-contain p-5 sm:p-6"
+                              className="object-contain p-3 sm:p-4 group-hover:scale-[1.03] transition-transform duration-500"
                             />
                           </div>
-                          <span className="font-bold text-sm text-slate-800 block mb-1 line-clamp-2 min-h-[40px]">
-                            {product.name}
-                          </span>
-                          <div className="text-stone-900 mt-2">
-                            <div className="flex items-end gap-2">
-                              <span className="text-blue-600 font-bold text-lg">
-                                {price > 0 ? `NT$${price}` : "查看方案"}
+                          <div className="flex flex-col flex-1 p-2.5 sm:p-3.5">
+                            <h2 className="font-bold text-[12px] sm:text-[13px] text-slate-800 leading-snug line-clamp-2 min-h-[2.5em]">
+                              {product.name}
+                            </h2>
+                            {cardTags.length > 0 && (
+                              <p className="mt-1.5 text-[10px] sm:text-[11px] text-[#1E4AD1] font-medium leading-snug line-clamp-2">
+                                {cardTags.join(" · ")}
+                              </p>
+                            )}
+                            <div className="flex items-end gap-1.5 mt-auto pt-2.5">
+                              <span className="text-[#0071EB] font-black text-[15px] sm:text-base tabular-nums leading-none">
+                                {price > 0 ? (
+                                  <>
+                                    NT${price}
+                                    <span className="text-[10px] sm:text-[11px] font-bold ml-0.5">
+                                      起
+                                    </span>
+                                  </>
+                                ) : (
+                                  "查看方案"
+                                )}
                               </span>
                               {regularPrice &&
                                 regularPrice !== price &&
                                 regularPrice > 0 && (
-                                  <del className="text-gray-400 text-xs mb-0.5">
+                                  <del className="text-slate-400 text-[10px] mb-px">
                                     NT${regularPrice}
                                   </del>
                                 )}
@@ -257,13 +283,16 @@ const AllProductsPage = ({ initialProducts }) => {
                 })}
               </div>
             ) : (
-              <div className="text-center text-gray-500 p-10 bg-white min-h-[300px] flex items-center justify-center">
-                暫無商品。
+              <div className="text-center text-slate-400 py-16 px-6 bg-white rounded-xl border border-slate-100 flex flex-col items-center justify-center min-h-[280px]">
+                <p className="font-bold text-slate-700 mb-1 text-base">
+                  暫無商品
+                </p>
+                <p className="text-sm text-slate-500">試試調整左側篩選條件</p>
               </div>
             )}
 
             {totalPages > 1 && (
-              <div className="flex justify-center mt-8 mb-8 space-x-2">
+              <div className="flex justify-center mt-4 mb-2 space-x-2">
                 {Array.from({ length: totalPages }, (_, i) => (
                   <button
                     key={i}

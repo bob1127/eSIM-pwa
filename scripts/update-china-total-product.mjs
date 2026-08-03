@@ -179,9 +179,9 @@ async function main() {
       }
     }
     meta.subtitle_by_carrier = {
-      中國移動: "漫遊總量型・高速用完後降速至 128 kbps",
-      "GPT + TikTok": "漫遊總量型・流量用完即斷網・支援 TikTok 與 ChatGPT",
-      中國聯通: "漫遊總量型・高速用完後降速至 128 kbps",
+      中國移動: "總量型・高速用完後降速至 128 kbps",
+      "GPT + TikTok": "總量型・流量用完即斷網・支援 TikTok 與 ChatGPT",
+      中國聯通: "總量型・高速用完後降速至 128 kbps",
     };
   for (const k of [
     "中國移動 GPT + TikTok",

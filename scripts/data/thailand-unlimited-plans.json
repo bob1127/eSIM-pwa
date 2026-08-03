@@ -1,0 +1,34 @@
+{
+  "note": "TrueMove H／True Dtac 吃到飽僅保留 TRUE 真．不限速兩檔：8天、15天（Thailand-Local-unlimited-*-D0）。不含限速 10Mbps 方案。",
+  "source": "local /api/esim/list",
+  "generated_at": "2026-08-03T15:02:51.591Z",
+  "plans": [
+    {
+      "sku": "Thailand-Local-unlimited-8-D0",
+      "plan_id": "8fc30995228b432e9a573278d2a9accc",
+      "day": 8,
+      "price_hkd": 55.9,
+      "networks": "TH:TRUE[4G;5G]|",
+      "rule_desc": "Unlimited High Speed",
+      "speed_desc": "the time starts from the installation.\n\nFree incoming calls and SMS reception\n\neSIMs from Thailand cannot be inserted or installed in non-covered areas, otherwise the plan will become invalid and unusable.\n\nDial for data usage：*900#\nDial for phone No.：*833#\nDial for balance：*123#",
+      "apn": "internet",
+      "ip": "TH",
+      "special_desc": "the time starts from the installation.\n\nFree incoming calls and SMS reception\n\neSIMs from Thailand cannot be inserted or installed in non-covered areas, otherwise the plan will become invalid and unusable.\n\nDial for data usage：*900#\nDial for phone No.：*833#\nDial for balance：*123#",
+      "speed_rule": "真．不限速（Unlimited High Speed）"
+    },
+    {
+      "sku": "Thailand-Local-unlimited-15-D0",
+      "plan_id": "0a0ba65f2e0d466780bee041ba9455b6",
+      "day": 15,
+      "price_hkd": 110.37,
+      "networks": "TH:TRUE[4G;5G]|",
+      "rule_desc": "Unlimited High Speed",
+      "speed_desc": "the time starts from the installation.\n\nFree incoming calls and SMS reception\n\neSIMs from Thailand cannot be inserted or installed in non-covered areas, otherwise the plan will become invalid and unusable.\n\nDial for data usage：*900#\nDial for phone No.：*833#\nDial for balance：*123#",
+      "apn": "internet",
+      "ip": "TH",
+      "special_desc": "the time starts from the installation.\n\nFree incoming calls and SMS reception\n\neSIMs from Thailand cannot be inserted or installed in non-covered areas, otherwise the plan will become invalid and unusable.\n\nDial for data usage：*900#\nDial for phone No.：*833#\nDial for balance：*123#",
+      "speed_rule": "真．不限速（Unlimited High Speed）"
+    }
+  ],
+  "updated_at": "2026-08-03T15:07:40.358Z"
+}

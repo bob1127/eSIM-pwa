@@ -1,15 +1,12 @@
 /**
- * 建立／更新「中國大陸 eSIM 每日型」
- * 三種電信 × 各流量／天數（50% 利潤）：
- *   1) 中國移動（CMCC）← China-Daily*（128kbps，排除用完斷網/terminate）
- *      + China-Daily1GB-*-5mbps（CMCC／cmlink，用完限速 5Mbps；data 標「5Mbps續航」）
- *   2) 中國聯通 GPT + TikTok (CUCC) ← China(T+C)-Daily*-D0（128kbps）
- *      + China(T+C)-Daily*-5mbps / China-Daily*5mbps*（用完限速 5Mbps；data 標「5Mbps續航」）
- *   3) 中國聯通（CUCC）← China-Daily* A2（128kbps）
+ * 建立／更新「日本 eSIM 總量型」
+ * 三種電信（對齊選品神器）：
+ *   1) IIJ(DOCOMO) ← Japan-IIJ-Total*（原生 JP IP，用完降速 200kbps）— 利潤 60%
+ *   2) KDDI ← Japan-Local-Total* au-net（原生 JP IP，用完降速 128kbps）— 利潤 60%
+ *   3) KDDI / SoftBank ← Japan(KDDI+SB)(T+C)-Total*（漫遊 SG IP，128kbps）— 利潤 50%
  *
  * 用法：
- *   node scripts/create-china-daily-product.mjs
- *   node scripts/create-china-daily-product.mjs --rebuild
+ *   HKD_TO_TWD=4.5 node scripts/create-japan-total-product.mjs --rebuild
  */
 import fs from "fs";
 import path from "path";
@@ -49,40 +46,40 @@ const MEDUSA_URL = (
 const EMAIL = process.env.MEDUSA_ADMIN_EMAIL || "script@esim.local";
 const PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "ScriptImport2026!";
 
-const HANDLE = "china-daily-esim";
+const HANDLE = "japan-total-esim";
+const TELECOM_IIJ = "IIJ(DOCOMO)";
+const TELECOM_KDDI = "KDDI";
+const TELECOM_DUAL = "KDDI / SoftBank";
 const LINE = "漫遊線路";
-const TELECOM_CMCC = "中國移動";
-const TELECOM_TC = "中國聯通 GPT + TikTok (CUCC)";
-const TELECOM_CUCC = "中國聯通";
 const DATA_ORDER = [
-  "每日 500MB",
-  "每日 1GB",
-  "每日 1GB（5Mbps續航）",
-  "每日 2GB",
-  "每日 2GB（5Mbps續航）",
-  "每日 3GB",
+  "1GB",
+  "3GB",
+  "5GB",
+  "10GB",
+  "12GB",
+  "20GB",
+  "21GB",
+  "30GB",
+  "50GB",
 ];
-const MARGIN = 1.5;
-/**
- * 匯率對齊選品神器（pages/esim-selection.tsx）：
- *   1 HKD ≈ (1 / rates.HKD) TWD，來自 exchangerate-api latest/TWD
- * 可用 HKD_TO_TWD 強制覆寫；抓不到時退回 4.12（近期實測，勿再用過時 4.1）
- */
+/** 原生 60%／漫遊雙網 50% */
+const PROFIT_BY_KIND = { iij: 60, kddi: 60, dual: 50 };
 const HKD_TO_TWD_ENV = process.env.HKD_TO_TWD
   ? Number(process.env.HKD_TO_TWD)
   : null;
-const HKD_TO_TWD_FALLBACK = 4.12;
+const HKD_TO_TWD_FALLBACK = 4.5;
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 
 const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
-const CATEGORY_IDS = ["pcat_01KY70EGV51W6NNHWBFGX3VZ1F"]; // china
+const CATEGORY_IDS = ["pcat_01KPJN0F8RYEENWHMS7D5WT7QR"]; // japan
 const THUMB =
-  process.env.CHINA_PRODUCT_THUMB ||
-  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KYBQ3HHZADQNWFGG6F02YKSP.png";
+  process.env.JAPAN_PRODUCT_THUMB ||
+  "https://www.jeko-esim.com.tw/images/japan-esim-banner.jpg";
 
-function retailFromCost(costTwd) {
-  return Math.ceil((costTwd * MARGIN) / 10) * 10 - 1;
+function retailFromCost(costTwd, profitPercent) {
+  const margin = 1 + profitPercent / 100;
+  return Math.ceil((costTwd * margin) / 10) * 10 - 1;
 }
 
 async function resolveHkdToTwd() {
@@ -111,33 +108,42 @@ function dataRank(label) {
   return i >= 0 ? i : 99;
 }
 
+function telecomRank(telecom) {
+  if (telecom === TELECOM_IIJ) return 0;
+  if (telecom === TELECOM_KDDI) return 1;
+  if (telecom === TELECOM_DUAL) return 2;
+  return 9;
+}
+
 function loadPlans(hkdToTwd) {
-  const file = path.join(__dirname, "data", "china-daily-plans.json");
+  const file = path.join(__dirname, "data", "japan-total-plans.json");
   const raw = JSON.parse(fs.readFileSync(file, "utf8"));
   const rows = [];
   const push = (list, telecom, kind) => {
+    const profit = PROFIT_BY_KIND[kind];
     for (const p of list || []) {
-      // JSON 內 cost_twd 實為 HKD；有 price_hkd 則優先
       const hkd = Number(p.price_hkd) || Number(p.cost_twd) || 0;
       const cost = Math.ceil(hkd * hkdToTwd);
-      const dataAmount = p.data_amount || "每日 3GB";
+      const dataAmount = p.data_amount || "5GB";
       rows.push({
         ...p,
         data_amount: dataAmount,
         price_hkd: hkd,
         cost_twd: cost,
-        retail_twd: retailFromCost(cost),
+        retail_twd: retailFromCost(cost, profit),
+        profit_percent: profit,
         telecom,
         daysLabel: `${p.day}天`,
         kind,
       });
     }
   };
-  push(raw.cmcc, TELECOM_CMCC, "cmcc");
-  push(raw.tc, TELECOM_TC, "tc");
+  push(raw.iij, TELECOM_IIJ, "iij");
+  push(raw.kddi, TELECOM_KDDI, "kddi");
+  push(raw.dual, TELECOM_DUAL, "dual");
   return rows.sort(
     (a, b) =>
-      a.telecom.localeCompare(b.telecom, "zh") ||
+      telecomRank(a.telecom) - telecomRank(b.telecom) ||
       dataRank(a.data_amount) - dataRank(b.data_amount) ||
       Number(a.day) - Number(b.day),
   );
@@ -187,18 +193,28 @@ function chunk(arr, size) {
 }
 
 function toVariant(row) {
-  const isTc = row.kind === "tc";
+  const isIij = row.kind === "iij";
+  const isKddi = row.kind === "kddi";
+  const isNative = isIij || isKddi;
   const dataAmount = row.data_amount;
-  const is5Mbps =
-    row.throttle_kind === "5mbps" ||
-    /5mbps/i.test(row.sku || "") ||
-    /5Mbps續航/.test(dataAmount) ||
-    /5\s*Mbps/i.test(row.speed_rule || "");
+  const profit = row.profit_percent;
   const speedRule =
     row.speed_rule ||
-    (is5Mbps
-      ? "每日高速用完後限速約 5 Mbps（可持續使用）"
-      : `${dataAmount.replace(/^每日\s*/, "每日 ").replace(/（5Mbps續航）/, "")} 高速，用完後降速至 128 kbps`);
+    (isIij
+      ? "高速用完後降速至 200 kbps"
+      : isKddi
+        ? "高速用完後降速至 128 kbps"
+        : "高速用完後降速至 128 kbps");
+  const network = isIij
+    ? "IIJ(DOCOMO) 4G/LTE"
+    : isKddi
+      ? "KDDI (au) 4G/5G"
+      : "KDDI / SoftBank 4G/5G 雙電信";
+  const apn = row.apn || (isIij ? "vmobile.jp" : isKddi ? "uad5gn.au-net.ne.jp" : "e-ideas");
+  const ip = isNative ? "JP" : "SG";
+  const ipType = isNative ? "日本IP" : "新加坡IP";
+  const routeType = isNative ? "原生eSIM" : "漫遊";
+
   return {
     title: `${row.telecom} · ${row.daysLabel} · ${dataAmount}`,
     sku: row.sku,
@@ -220,26 +236,26 @@ function toVariant(row) {
       days: String(row.day),
       cost_hkd: String(row.price_hkd || ""),
       cost_price: row.cost_twd,
-      profit_rate: "80%",
-      margin: MARGIN,
-      apn: row.apn || "",
+      profit_rate: `${profit}%`,
+      margin: 1 + profit / 100,
+      apn,
       networks: row.networks || "",
       rule_desc: row.rule_desc || "",
       speed_desc: row.speed_desc || "",
-      throttle_kind: is5Mbps ? "5mbps" : "128kbps",
-      ip: isTc ? "SG" : "HK",
+      throttle_kind: row.throttle_kind || (isIij ? "200kbps" : "128kbps"),
+      ip,
       attributes: {
         days: row.day,
         data: dataAmount,
         data_amount: dataAmount,
         telecom: row.telecom,
         line: LINE,
-        network: "4G / 5G",
-        ip_type: isTc ? "新加坡IP" : "香港IP",
-        route_type: LINE,
+        network,
+        ip_type: ipType,
+        route_type: routeType,
         hotspot: true,
-        gpt: isTc,
-        tiktok: isTc,
+        gpt: true,
+        tiktok: true,
         gemini: true,
         speed_rule: speedRule,
       },
@@ -252,7 +268,7 @@ async function main() {
   console.log(`💱 匯率 1 HKD ≈ ${hkdToTwd.toFixed(4)} TWD（${fxSource}）`);
 
   const rows = loadPlans(hkdToTwd);
-  if (!rows.length) throw new Error("china-daily-plans.json 無資料");
+  if (!rows.length) throw new Error("japan-total-plans.json 無資料");
 
   const dayValues = [...new Set(rows.map((r) => r.daysLabel))].sort(
     (a, b) => parseInt(a, 10) - parseInt(b, 10),
@@ -260,18 +276,25 @@ async function main() {
   const dataValues = DATA_ORDER.filter((d) =>
     rows.some((r) => r.data_amount === d),
   );
-  const telecomValues = [TELECOM_CMCC, TELECOM_TC];
+  const telecomValues = [TELECOM_IIJ, TELECOM_KDDI, TELECOM_DUAL];
 
-  const sampleCmcc3g = rows.find(
-    (r) =>
-      r.telecom === TELECOM_CMCC &&
-      r.day === 5 &&
-      r.data_amount === "每日 3GB",
-  );
-  if (sampleCmcc3g) {
-    console.log(
-      `核對 移動 5天 3GB: HKD ${sampleCmcc3g.price_hkd} → cost NT$${sampleCmcc3g.cost_twd} → 售價 NT$${sampleCmcc3g.retail_twd}（80%） (${sampleCmcc3g.sku})`,
+  for (const telecom of telecomValues) {
+    const sample = rows.find(
+      (r) =>
+        r.telecom === telecom && r.day === 5 && r.data_amount === "5GB",
     );
+    if (sample) {
+      console.log(
+        `核對 ${telecom} 5天 5GB: HKD ${sample.price_hkd} → cost NT$${sample.cost_twd} → 售價 NT$${sample.retail_twd}（${sample.profit_percent}%） (${sample.sku})`,
+      );
+    } else {
+      const any = rows.find((r) => r.telecom === telecom);
+      if (any) {
+        console.log(
+          `核對 ${telecom}（範例 ${any.daysLabel} ${any.data_amount}）: HKD ${any.price_hkd} → cost NT$${any.cost_twd} → 售價 NT$${any.retail_twd}（${any.profit_percent}%） (${any.sku})`,
+        );
+      }
+    }
   }
 
   console.log("🔐 登入…", EMAIL, "@", MEDUSA_URL);
@@ -285,80 +308,103 @@ async function main() {
 
   const productMeta = {
     type: "esim",
-    country: "CN",
-    plan_kind: "daily",
-    hot_sale_telecoms: [TELECOM_TC, TELECOM_CMCC],
+    country: "JP",
+    plan_kind: "total",
+    hot_sale_telecoms: [TELECOM_IIJ, TELECOM_KDDI],
     carrier_profit_by_carrier: {
-      [TELECOM_CMCC]: 80,
-      [TELECOM_TC]: 80,
+      [TELECOM_IIJ]: PROFIT_BY_KIND.iij,
+      [TELECOM_KDDI]: PROFIT_BY_KIND.kddi,
+      [TELECOM_DUAL]: PROFIT_BY_KIND.dual,
     },
     seo_title:
-      "中國大陸 eSIM 每日型｜500MB／1GB／2GB／3GB・移動／TikTok+ChatGPT｜Jeko eSIM",
+      "日本 eSIM 總量型｜IIJ(DOCOMO)・KDDI・KDDI/SoftBank｜Jeko eSIM",
     seo_description:
-      "中國大陸每日型 eSIM：中國移動、中國聯通 GPT + TikTok (CUCC)。皆含標準每日型與「5Mbps續航」選項；GPT+TikTok 另支援 TikTok／ChatGPT。",
+      "日本總量型 eSIM：IIJ(DOCOMO)、KDDI 原生（日本 IP），或 KDDI / SoftBank 雙網漫遊。依天數與總量選購，支援熱點分享。",
     seo_keywords:
-      "中國大陸eSIM,每日型eSIM,每日1GB,每日2GB,中國移動,中國聯通,TikTok,ChatGPT,5Mbps,旅遊eSIM,Jeko eSIM",
+      "日本eSIM,總量型eSIM,IIJ,DOCOMO,KDDI,SoftBank,原生eSIM,總量流量,旅遊eSIM,Jeko eSIM",
     subtitle_by_carrier: {
-      [TELECOM_CMCC]:
-        "每日型・500MB～3GB・標準 128kbps／可選 5Mbps 續航",
-      [TELECOM_TC]:
-        "每日型・500MB～3GB・標準 128kbps／可選 5Mbps 續航・支援 TikTok 與 ChatGPT",
+      [TELECOM_IIJ]:
+        "總量型・IIJ(DOCOMO) 原生・高速用完後降速 200kbps",
+      [TELECOM_KDDI]:
+        "總量型・KDDI 原生・高速用完後降速 128kbps",
+      [TELECOM_DUAL]:
+        "總量型・KDDI / SoftBank 雙網・高速用完後降速 128kbps",
     },
     carrier_specs_by_carrier: {
-      [TELECOM_CMCC]: {
-        ip_type: "香港IP",
-        route_type: "漫遊",
-        network: "CMCC 4G/5G",
-        speed_rule:
-          "標準方案用完後降速至 128 kbps；選「5Mbps續航」則用完後限速約 5 Mbps 可持續使用（每日重置）。不含用完斷網方案。",
-        apps: "熱點分享,Gemini",
+      [TELECOM_IIJ]: {
+        ip_type: "日本IP",
+        route_type: "原生eSIM",
+        network: "IIJ(DOCOMO) 4G/LTE",
+        speed_rule: "方案總量高速用完後降速至約 200 kbps（可持續使用）",
+        apps: "熱點分享,ChatGPT,TikTok,Gemini",
+        apn: "vmobile.jp",
       },
-      [TELECOM_TC]: {
+      [TELECOM_KDDI]: {
+        ip_type: "日本IP",
+        route_type: "原生eSIM",
+        network: "KDDI (au) 4G/5G",
+        speed_rule: "方案總量高速用完後降速至約 128 kbps（可持續使用）",
+        apps: "熱點分享,ChatGPT,TikTok,Gemini",
+        apn: "uad5gn.au-net.ne.jp",
+      },
+      [TELECOM_DUAL]: {
         ip_type: "新加坡IP",
         route_type: "漫遊",
-        network: "CUCC 4G/5G",
-        speed_rule:
-          "標準方案用完後降速至 128 kbps；選「5Mbps續航」則用完後限速約 5 Mbps 可持續使用（每日重置）",
+        network: "KDDI / SoftBank 4G/5G 雙電信",
+        speed_rule: "方案總量高速用完後降速至約 128 kbps（可持續使用）",
         apps: "熱點分享,ChatGPT,TikTok,Gemini",
+        apn: "e-ideas",
       },
     },
     key_features_by_carrier: {
-      [TELECOM_CMCC]: [
-        "每日型",
-        "500MB／1／2／3GB",
-        "可選 5Mbps 續航",
-        "4G / 5G",
-        "高速用完後降速（非斷網）",
+      [TELECOM_IIJ]: [
+        "總量型",
+        "3～50GB",
+        "IIJ(DOCOMO)",
+        "原生日本IP",
+        "用完降速 200kbps",
       ],
-      [TELECOM_TC]: [
-        "每日型",
-        "500MB／1／2／3GB",
-        "可選 5Mbps 續航",
-        "支援 TikTok",
-        "支援 ChatGPT",
-        "4G / 5G",
+      [TELECOM_KDDI]: [
+        "總量型",
+        "12／21／30GB",
+        "KDDI",
+        "原生日本IP",
+        "用完降速 128kbps",
+      ],
+      [TELECOM_DUAL]: [
+        "總量型",
+        "3～50GB",
+        "KDDI / SoftBank",
+        "用完降速 128kbps",
+        "支援 TikTok／ChatGPT",
       ],
     },
     overview_notices_by_carrier: {
-      [TELECOM_CMCC]: {
+      [TELECOM_IIJ]: {
         fup_notice:
-          "依所選方案提供每日高速流量（500MB／1GB／2GB／3GB）。標準方案用完後降速至約 128 kbps；若選「5Mbps續航」則用完後限速約 5 Mbps 可持續使用（每日重置）。本商品不含「用完斷網」方案。TikTok／ChatGPT 不保證可用。",
-        activation_notice: "建議抵達中國後再安裝／啟用 eSIM",
+          "依所選方案提供總量高速流量（3GB～50GB）。高速用完後降速至約 200 kbps 可持續使用。IIJ(DOCOMO) 原生網路，日本 IP。",
+        activation_notice: "建議抵達日本後再安裝／啟用 eSIM",
       },
-      [TELECOM_TC]: {
+      [TELECOM_KDDI]: {
         fup_notice:
-          "依所選方案提供每日高速流量（500MB／1GB／2GB／3GB）。標準方案用完後降速至約 128 kbps；若選「5Mbps續航」則用完後限速約 5 Mbps 可持續使用（每日重置）。支援 TikTok 與 ChatGPT。",
-        activation_notice: "建議抵達中國後再安裝／啟用 eSIM",
+          "依所選方案提供總量高速流量（12GB／21GB／30GB）。高速用完後降速至約 128 kbps 可持續使用。KDDI (au) 原生網路，日本 IP。",
+        activation_notice: "建議抵達日本後再安裝／啟用 eSIM",
+      },
+      [TELECOM_DUAL]: {
+        fup_notice:
+          "依所選方案提供總量高速流量（3GB～50GB）。高速用完後降速至約 128 kbps 可持續使用。KDDI 與 SoftBank 雙電信自動切換。",
+        activation_notice: "建議抵達日本後再安裝／啟用 eSIM",
       },
     },
   };
 
   const payloadBase = {
-    title: "中國大陸 eSIM 每日型",
-    subtitle: "每日型用量方案・兩種電信可選（移動／GPT+TikTok，含 5Mbps 續航）",
+    title: "日本 eSIM 總量型",
+    subtitle:
+      "三種電信可選：IIJ(DOCOMO)・KDDI・KDDI / SoftBank・3～50GB",
     handle: HANDLE,
     description:
-      "中國大陸 eSIM 每日型，兩種電信：中國移動、中國聯通 GPT + TikTok (CUCC)。均含標準每日型（用完降速）與 5Mbps 續航選項；不含用完斷網方案。",
+      "日本 eSIM 總量型，三種電信：IIJ(DOCOMO) 原生、KDDI 原生（日本 IP），以及 KDDI / SoftBank 雙網漫遊（新加坡 IP）。提供多種總量與天數方案，支援熱點分享。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,
@@ -375,12 +421,14 @@ async function main() {
   };
 
   const variants = rows.map(toVariant);
-  const nCmcc = rows.filter((r) => r.telecom === TELECOM_CMCC).length;
-  const nTc = rows.filter((r) => r.telecom === TELECOM_TC).length;
+  const nIij = rows.filter((r) => r.telecom === TELECOM_IIJ).length;
+  const nKddi = rows.filter((r) => r.telecom === TELECOM_KDDI).length;
+  const nDual = rows.filter((r) => r.telecom === TELECOM_DUAL).length;
   console.log(
-    `📦 方案 ${rows.length} 筆（移動 ${nCmcc} + GPT+TikTok ${nTc}）・80% 利潤`,
+    `📦 方案 ${rows.length} 筆（IIJ ${nIij} + KDDI ${nKddi} + 雙網 ${nDual}）・原生 60%／雙網 50%`,
   );
   console.log(`數據量選項: ${dataValues.join(" | ")}`);
+  console.log(`天數選項: ${dayValues.join(" | ")}`);
 
   if (!product) {
     console.log("🆕 建立商品…");
@@ -440,7 +488,7 @@ async function main() {
     } else {
       console.log("（未加 --rebuild，僅更新商品資訊；變體不變）");
       console.log(
-        "重建變體請執行：node scripts/create-china-daily-product.mjs --rebuild",
+        "重建變體請執行：HKD_TO_TWD=4.5 node scripts/create-japan-total-product.mjs --rebuild",
       );
       return;
     }
@@ -454,50 +502,43 @@ async function main() {
   const telecomOpt = (check.product?.options || []).find(
     (o) => o.title === "電信商",
   );
+  const dataOpt = (check.product?.options || []).find(
+    (o) => o.title === "數據量",
+  );
   console.log("\n======= 完成 =======");
   console.log(`標題: ${check.product?.title}`);
-  console.log(`前台: /product/china/${HANDLE}`);
+  console.log(`前台: /product/japan/${HANDLE}`);
   console.log(`變體數: ${vs.length}`);
   console.log(
     "電信商選項:",
     (telecomOpt?.values || []).map((v) => v.value).join(" | "),
   );
-  const dataOpt = (check.product?.options || []).find((o) => o.title === "數據量");
   console.log(
     "數據量選項:",
     (dataOpt?.values || []).map((v) => v.value).join(" | "),
   );
-  const sampleStd = rows.find(
+  const sIij = rows.find(
     (r) =>
-      r.telecom === TELECOM_TC &&
-      r.day === 1 &&
-      r.data_amount === "每日 500MB",
+      r.telecom === TELECOM_IIJ && r.day === 5 && r.data_amount === "5GB",
   );
-  const sample5 = rows.find(
+  const sDual = rows.find(
     (r) =>
-      r.telecom === TELECOM_TC &&
-      r.day === 5 &&
-      r.data_amount === "每日 2GB（5Mbps續航）",
+      r.telecom === TELECOM_DUAL && r.day === 5 && r.data_amount === "5GB",
   );
-  const sampleCmcc5 = rows.find(
-    (r) =>
-      r.telecom === TELECOM_CMCC &&
-      r.day === 5 &&
-      r.data_amount === "每日 1GB（5Mbps續航）",
-  );
-  if (sampleStd) {
+  const sKddi = rows.find((r) => r.telecom === TELECOM_KDDI);
+  if (sIij) {
     console.log(
-      `範例 GPT+TikTok 1天 500MB: HKD ${sampleStd.price_hkd} → cost NT$${sampleStd.cost_twd} → 售價 NT$${sampleStd.retail_twd} (${sampleStd.sku})`,
+      `範例 IIJ 5天 5GB: HKD ${sIij.price_hkd} → cost NT$${sIij.cost_twd} → 售價 NT$${sIij.retail_twd}（${sIij.profit_percent}%） (${sIij.sku})`,
     );
   }
-  if (sample5) {
+  if (sKddi) {
     console.log(
-      `範例 GPT+TikTok 5天 2GB 5Mbps: HKD ${sample5.price_hkd} → cost NT$${sample5.cost_twd} → 售價 NT$${sample5.retail_twd} (${sample5.sku})`,
+      `範例 KDDI ${sKddi.daysLabel} ${sKddi.data_amount}: HKD ${sKddi.price_hkd} → cost NT$${sKddi.cost_twd} → 售價 NT$${sKddi.retail_twd}（${sKddi.profit_percent}%） (${sKddi.sku})`,
     );
   }
-  if (sampleCmcc5) {
+  if (sDual) {
     console.log(
-      `範例 移動 5天 1GB 5Mbps: HKD ${sampleCmcc5.price_hkd} → cost NT$${sampleCmcc5.cost_twd} → 售價 NT$${sampleCmcc5.retail_twd} (${sampleCmcc5.sku})`,
+      `範例 雙網 5天 5GB: HKD ${sDual.price_hkd} → cost NT$${sDual.cost_twd} → 售價 NT$${sDual.retail_twd}（${sDual.profit_percent}%） (${sDual.sku})`,
     );
   }
 }

@@ -173,9 +173,9 @@ export default function PickUpJobsSection() {
             { text: "泰國本地IP", color: "#3BC7A8" },
           ],
           title: "泰國原生卡",
-          desc: "對應 AIS／DTAC／True 等本地線路，泰國本地 IP，曼谷、清邁、普吉等熱門旅遊地訊號覆蓋更穩定。",
+          desc: "對應 Truemove H 當地號碼／True Dtac 本地線路，泰國本地 IP，曼谷、清邁、普吉等熱門旅遊地訊號覆蓋更穩定。",
           tags: ["泰國IP", "本地電信", "原生線路"],
-          link: "/product/tailand",
+          link: "/product/tailand/thailand-unlimited-esim?telecom=Truemove%20H%20%E7%95%B6%E5%9C%B0%E8%99%9F%E7%A2%BC&days=8&data_amount=%E7%84%A1%E9%99%90%E6%B5%81%E9%87%8F",
         },
         {
           hotSale: true,

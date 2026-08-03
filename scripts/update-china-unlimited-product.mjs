@@ -198,9 +198,9 @@ async function main() {
     seo_keywords:
       "中國大陸eSIM,中國聯通eSIM,中國移動eSIM,吃到飽eSIM,TikTok,ChatGPT,70Mbps,8-20Mbps,旅遊eSIM,Jeko eSIM",
     subtitle_by_carrier: {
-      [TELECOM_TC]: "漫遊・支援 TikTok 與 ChatGPT・約 40–100 Mbps",
-      [TELECOM_70]: "漫遊・常規速度 50–70Mbps 吃到飽",
-      [TELECOM_8]: "漫遊・常規速度 8–20Mbps 吃到飽",
+      [TELECOM_TC]: "支援 TikTok 與 ChatGPT・約 40–100 Mbps",
+      [TELECOM_70]: "常規速度 50–70Mbps 吃到飽",
+      [TELECOM_8]: "常規速度 8–20Mbps 吃到飽",
     },
     carrier_specs_by_carrier: {
       [TELECOM_TC]: {

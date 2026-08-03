@@ -167,7 +167,7 @@ async function main() {
   };
   meta.subtitle_by_carrier = {
     ...(meta.subtitle_by_carrier || {}),
-    [TELECOM]: "漫遊總量型・高速用完後降速至 128 kbps",
+    [TELECOM]: "總量型・高速用完後降速至 128 kbps",
   };
   meta.overview_notices_by_carrier = {
     ...(meta.overview_notices_by_carrier || {}),

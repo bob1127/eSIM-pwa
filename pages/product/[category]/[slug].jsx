@@ -11,7 +11,7 @@ import { useRouter } from "next/router";
 import { useCart } from "../../../components/context/CartContext";
 import Layout from "../../Layout";
 import PartnerShopLayout from "../../../components/Shop/PartnerShopLayout";
-import { buildProductSeo } from "../../../lib/seo.config";
+import { buildProductSeo, resolveProductCategoryBreadcrumbLabel } from "../../../lib/seo.config";
 import {
   resolveOverviewNotices,
   parseOverviewNoticesByCarrier,
@@ -48,6 +48,7 @@ import {
 } from "../../../lib/resolveMedusaImageUrl";
 import EsimRefundDisclosure from "../../../components/legal/EsimRefundDisclosure";
 import Image from "next/image";
+import Link from "next/link";
 import SafeImage from "../../../components/SafeImage";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
@@ -283,6 +284,42 @@ const CARRIER_INFO_MAP = {
     },
     summaryPrefix: "IIJ Docomo",
   },
+  "IIJ(DOCOMO)": {
+    badges: [{ text: "Docomo", type: "4G/LTE" }],
+    marketingBox: {
+      bgColor: "bg-red-50",
+      borderColor: "border-red-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "總量高速用完後降速至約 200 kbps，可持續使用。",
+      note: "注意：此線路為日本 IP 原生。",
+    },
+    summaryPrefix: "IIJ(DOCOMO)",
+  },
+  KDDI: {
+    badges: [{ text: "KDDI", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "總量高速用完後降速至約 128 kbps，可持續使用。",
+      note: "注意：此線路為日本 IP 原生。",
+    },
+    summaryPrefix: "KDDI",
+  },
+  "KDDI / SoftBank": {
+    badges: [
+      { text: "KDDI", type: "5G" },
+      { text: "SoftBank", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "總量高速用完後降速至約 128 kbps，可持續使用。",
+      note: "注意：我們建議您抵達當地後再安裝 eSIM。",
+    },
+    summaryPrefix: "KDDI / SoftBank",
+  },
   default: {
     badges: [],
     marketingBox: {
@@ -293,6 +330,28 @@ const CARRIER_INFO_MAP = {
       note: "",
     },
     summaryPrefix: "eSIM",
+  },
+  "Truemove H 當地號碼": {
+    badges: [{ text: "TRUE", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-amber-50",
+      borderColor: "border-amber-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "無限高速數據，實際速度取決於您的位置及網路環境。",
+      note: "⚠️ 注意: eSIM新增後即開始計算使用有效期，我們建議您需要時再安裝。 查看啟用政策。\n我們建議您在抵達泰國後安裝此 eSIM。⚠️ 自泰國當地時間 2026 年 5 月 22 日起，撥出電話與發送 SMS 需完成護照實名登記。請前往 True 門店完成登記，以恢復通話功能。",
+    },
+    summaryPrefix: "Truemove H 當地號碼",
+  },
+  "True Dtac": {
+    badges: [{ text: "TRUE", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "10 Mbps的無限流量，實際速度可能有所變動。",
+      note: "注意：我們建議您抵達泰國後再安裝 eSIM。",
+    },
+    summaryPrefix: "True Dtac",
   },
 };
 
@@ -308,8 +367,78 @@ const formatFeatureBulletHtml = (text) => {
   return sanitizeProductRichTextHtml(raw, DOMPurify.sanitize);
 };
 
+/** 雙電信／單電信 + 5G → SoftBank 風格「名稱 + 5G 小徽章」 */
+function parseCarrierSpeedChips(text) {
+  const s = String(text || "").trim();
+  if (!s) return null;
+
+  const dual = s.match(
+    /^(LG\s*U\+|SoftBank|KDDI)\s*\/\s*(SKT|KDDI|SoftBank)(?:\s*[45]G)?(?:\s*雙切換)?$/i,
+  );
+  if (dual) {
+    const normalize = (raw) => {
+      if (/LG/i.test(raw)) return "LG U+";
+      if (/SKT/i.test(raw)) return "SKT";
+      if (/SoftBank/i.test(raw)) return "SoftBank";
+      return "KDDI";
+    };
+    return [
+      { name: normalize(dual[1]), speed: "5G" },
+      { name: normalize(dual[2]), speed: "5G" },
+    ];
+  }
+
+  const single = s.match(
+    /^(SKT|LG\s*U\+|KDDI|SoftBank|Docomo|IIJ)(?:\s*[45]G)?$/i,
+  );
+  if (single && /[45]G/i.test(s)) {
+    let name = single[1];
+    if (/LG/i.test(name)) name = "LG U+";
+    else if (/SKT/i.test(name)) name = "SKT";
+    else if (/SoftBank/i.test(name)) name = "SoftBank";
+    else if (/KDDI/i.test(name)) name = "KDDI";
+    return [{ name, speed: "5G" }];
+  }
+
+  return null;
+}
+
+function CarrierSpeedChips({ chips }) {
+  return (
+    <span className="inline-flex items-center flex-wrap gap-x-3 gap-y-1">
+      {chips.map((chip) => (
+        <span
+          key={`${chip.name}-${chip.speed}`}
+          className="inline-flex items-center gap-1.5"
+        >
+          <span className="font-semibold text-slate-700">{chip.name}</span>
+          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold leading-none text-slate-600">
+            {chip.speed}
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function FeatureBulletText({ children, className = "" }) {
-  const html = useMemo(() => formatFeatureBulletHtml(children), [children]);
+  const chips = useMemo(
+    () => parseCarrierSpeedChips(children),
+    [children],
+  );
+  const html = useMemo(
+    () => (chips ? "" : formatFeatureBulletHtml(children)),
+    [children, chips],
+  );
+
+  if (chips) {
+    return (
+      <div className={`feature-bullet-text ${className}`}>
+        <CarrierSpeedChips chips={chips} />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`feature-bullet-text ${className}`}
@@ -2004,8 +2133,21 @@ export default function ProductPage({
   const showCarrierSpecsPanel =
     !!carrierName && carrierName !== "default" && carrierSpecItems.length > 0;
 
-  /** 副標題：優先依電信商顯示（原生／漫遊分開）；中國 GPT 線路維持舊邏輯 */
+  /**
+   * 副標題：優先依電信商顯示。
+   * 「漫遊／原生」只標在下方規格卡 route_type，上方文案不重複標「漫遊」。
+   */
   const displaySubtitle = useMemo(() => {
+    const stripRoamingLabel = (text) => {
+      if (!text) return text;
+      return String(text)
+        .replace(/^漫遊每日型/u, "每日型")
+        .replace(/^漫遊總量型/u, "總量型")
+        .replace(/^漫遊[：:・‧·\s]+/u, "")
+        .replace(/^漫遊/u, "")
+        .trim();
+    };
+
     const telecom = String(selectedAttributes.telecom || "").trim();
     if (!telecom) return null;
 
@@ -2014,7 +2156,7 @@ export default function ProductPage({
       ...(product?.subtitle_by_carrier || {}),
     };
 
-    if (byCarrier[telecom]) return byCarrier[telecom];
+    if (byCarrier[telecom]) return stripRoamingLabel(byCarrier[telecom]);
 
     // URL／選項括號全半形差異時模糊比對
     const hit = Object.entries(byCarrier).find(([key]) => {
@@ -2028,31 +2170,33 @@ export default function ProductPage({
         telecom.includes(key)
       );
     });
-    if (hit) return hit[1];
+    if (hit) return stripRoamingLabel(hit[1]);
 
     if (/LG\s*U\+|Promo/i.test(telecom) && byCarrier["LG U+ / SK電信"]) {
-      return byCarrier["LG U+ / SK電信"];
+      return stripRoamingLabel(byCarrier["LG U+ / SK電信"]);
     }
     if (/韓國\s*IP|SK電信/i.test(telecom) && byCarrier["SK電信（韓國IP）"]) {
-      return byCarrier["SK電信（韓國IP）"];
+      return stripRoamingLabel(byCarrier["SK電信（韓國IP）"]);
     }
 
     if (/GPT|TikTok|ChatGPT/i.test(telecom)) {
-      return byCarrier[telecom] || "漫遊・支援 TikTok 與 ChatGPT";
+      return stripRoamingLabel(
+        byCarrier[telecom] || "支援 TikTok 與 ChatGPT",
+      );
     }
     const attrs = currentVariation?.attributes || {};
     if (attrs.gpt === true && attrs.tiktok === true) {
-      return (
+      return stripRoamingLabel(
         product?.subtitle_by_carrier?.[telecom] ||
-        product?.metadata?.subtitle_by_carrier?.[telecom] ||
-        "漫遊・支援 TikTok 與 ChatGPT"
+          product?.metadata?.subtitle_by_carrier?.[telecom] ||
+          "支援 TikTok 與 ChatGPT",
       );
     }
     if (/50-70|70Mbps|常規速度/i.test(telecom)) {
-      return "漫遊・常規速度 50–70Mbps 吃到飽";
+      return "常規速度 50–70Mbps 吃到飽";
     }
     if (/-B0$/i.test(String(currentVariation?.sku || ""))) {
-      return "漫遊・常規速度 50–70Mbps 吃到飽";
+      return "常規速度 50–70Mbps 吃到飽";
     }
     return null;
   }, [
@@ -2081,7 +2225,11 @@ export default function ProductPage({
     if (/\(\s*CMCC\s*\)/i.test(s) || /\(\s*CUCC\s*\)/i.test(s)) return s;
     if (/中國移動|CMCC/i.test(s)) return `${s} (CMCC)`;
     if (/中國聯通|CUCC|Unicom/i.test(s)) return `${s} (CUCC)`;
-    return s;
+    // 電信商按鈕不顯示 4G/5G（速度改在重點特色徽章呈現）
+    return s
+      .replace(/\s*[45]G(?:\s*\/\s*[45]G)?/gi, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
   };
 
   const renderDataAmountOptionLabel = (opt, { compact = false } = {}) => {
@@ -2211,6 +2359,17 @@ export default function ProductPage({
     router.query.category,
   );
 
+  const breadcrumbCategorySlug = String(
+    router.query.category ||
+      product.category_slug ||
+      product.categories?.[0]?.handle ||
+      "",
+  );
+  const breadcrumbCategoryLabel = resolveProductCategoryBreadcrumbLabel(
+    product,
+    breadcrumbCategorySlug,
+  );
+
   const documentTitle =
     pageSeo?.title ||
     [
@@ -2279,8 +2438,27 @@ export default function ProductPage({
                 </span>
               </nav>
             ) : (
-              <nav className="text-xs text-gray-400 mb-3 tracking-wide">
-                首頁 / 商店 / {product.name}
+              <nav className="text-xs text-gray-400 mb-3 tracking-wide flex items-center gap-1.5 flex-wrap">
+                <Link href="/product" className="hover:text-[#00befa]">
+                  商店
+                </Link>
+                <span>/</span>
+                {breadcrumbCategorySlug ? (
+                  <Link
+                    href={`/product/${breadcrumbCategorySlug}`}
+                    className="hover:text-[#00befa]"
+                  >
+                    {breadcrumbCategoryLabel}
+                  </Link>
+                ) : (
+                  <span className="text-gray-500">
+                    {breadcrumbCategoryLabel}
+                  </span>
+                )}
+                <span>/</span>
+                <span className="text-gray-600 truncate max-w-[280px]">
+                  {product.name}
+                </span>
               </nav>
             )}
 
@@ -2583,9 +2761,14 @@ export default function ProductPage({
                     {activeCarrierInfo.badges?.map((b, i) => (
                       <span
                         key={i}
-                        className="inline-block bg-slate-100 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-md"
+                        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700"
                       >
-                        {b.text} {b.type}
+                        <span>{b.text}</span>
+                        {b.type ? (
+                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold leading-none text-slate-600">
+                            {b.type}
+                          </span>
+                        ) : null}
                       </span>
                     ))}
                     <button
@@ -3012,9 +3195,14 @@ export default function ProductPage({
                       {activeCarrierInfo.badges?.map((b, i) => (
                         <span
                           key={i}
-                          className="inline-block bg-slate-100 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-md"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700"
                         >
-                          {b.text} {b.type}
+                          <span>{b.text}</span>
+                          {b.type ? (
+                            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold leading-none text-slate-600">
+                              {b.type}
+                            </span>
+                          ) : null}
                         </span>
                       ))}
                     </div>

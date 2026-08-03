@@ -3,10 +3,11 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, RotateCcw } from "lucide-react";
+import { parseHotSaleTelecoms } from "@/lib/productHotSale";
 
 /**
  * 篩選維度：只保留商品規格裡真的有的欄位
- * （對齊 Medusa options：使用天數／數據量／電信商）
+ * （對齊 Medusa options：使用天數／數據量／電信商／線路／熱銷）
  */
 const FILTER_GROUPS = [
   {
@@ -63,6 +64,32 @@ const FILTER_GROUPS = [
         label: "總量型",
         value: "總量型",
         match: (t) => /總量|固定流量|^\d+(\.\d+)?\s*GB$/i.test(t),
+      },
+    ],
+  },
+  {
+    key: "line",
+    label: "線路類型",
+    multi: true,
+    options: [
+      {
+        label: "原生卡",
+        value: "原生卡",
+        match: (t) =>
+          /原生卡|原生線路|本地\s*IP|本地IP|Native\s*IP|^native$/i.test(t),
+      },
+    ],
+  },
+  {
+    key: "promo",
+    label: "推薦",
+    multi: true,
+    options: [
+      {
+        label: "Hot Sale",
+        value: "hotsale",
+        match: (t) =>
+          /^hotsale$/i.test(t) || /hot[\s_-]*sale|熱銷|熱門推薦/i.test(t),
       },
     ],
   },
@@ -153,7 +180,7 @@ export function buildFilterTagsFromProduct(product) {
     }
   }
 
-  // 從電信商規格補網路制式（有才加入，不另外開篩選區塊除非有資料）
+  // 從電信商規格補網路制式／原生線路（有才加入）
   const specsRaw = product?.metadata?.carrier_specs_by_carrier;
   let specs = specsRaw;
   if (typeof specsRaw === "string") {
@@ -170,54 +197,127 @@ export function buildFilterTagsFromProduct(product) {
       if (/4G|LTE/i.test(network)) tags.add("4G");
       const apps = String(entry?.apps || "");
       if (/熱點/i.test(apps)) tags.add("支援熱點");
-      // 電信商 key 本身
+      const route = String(entry?.route_type || entry?.line || "");
+      const ip = String(entry?.ip_type || "");
+      if (/原生/i.test(route) || /本地/i.test(ip) || /Native/i.test(route + ip)) {
+        tags.add("原生卡");
+      }
     }
     for (const key of Object.keys(specs)) {
       if (key && key !== "default") tags.add(key);
     }
   }
 
-  // 標題語意補強
+  // 標題／metadata 語意補強
   if (/吃到飽|無限/i.test(title)) tags.add("吃到飽");
   if (/每日型|每日/i.test(title)) tags.add("每日型");
+  if (/原生|本地\s*IP|本地IP/i.test(title)) tags.add("原生卡");
+  if (
+    product?.metadata?.is_native === true ||
+    product?.metadata?.native === true ||
+    /native/i.test(String(product?.metadata?.line_type || ""))
+  ) {
+    tags.add("原生卡");
+  }
+
+  const hotSale = parseHotSaleTelecoms(product?.metadata?.hot_sale_telecoms);
+  if (hotSale.length > 0) tags.add("hotsale");
+  if (
+    product?.metadata?.hot_sale === true ||
+    product?.metadata?.hotsale === true
+  ) {
+    tags.add("hotsale");
+  }
 
   return Array.from(tags).filter(Boolean);
 }
 
-/** 商品卡顯示用短標籤（不要把所有天數都攤出來） */
-export function buildDisplayTagsFromProduct(product, filterTags = []) {
-  const tags = [];
-  const title = String(product?.title || product?.name || "");
-  const pool = (filterTags.length ? filterTags : []).map(String);
+/** 卡片顯示用：去掉電信商選項尾端的 4G/5G */
+function normalizeCardTelecomLabel(raw) {
+  let s = String(raw || "").trim();
+  if (!s) return "";
+  if (/^hotsale$/i.test(s)) return "";
+  if (/^\d+\s*天$/.test(s)) return "";
+  if (/^\d+(\.\d+)?\s*GB$/i.test(s)) return "";
+  if (
+    /^(吃到飽|無限流量|每日型|總量型|原生卡|支援熱點|熱點|5G|4G|Hot Sale)$/i.test(
+      s,
+    )
+  ) {
+    return "";
+  }
+  // 與商品頁電信按鈕一致：不顯示尾端 4G/5G
+  s = s
+    .replace(/\s*[45]G(?:\s*\/\s*[45]G)?\s*$/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return s;
+}
 
-  const pushUnique = (label) => {
+/**
+ * 商品卡顯示用標籤：只列出該商品內有的電信商名稱
+ * （不再顯示 吃到飽／Hot Sale／5G／熱點 等規格標）
+ */
+export function buildDisplayTagsFromProduct(product, _filterTags = []) {
+  const tags = [];
+  const pushUnique = (raw) => {
+    const label = normalizeCardTelecomLabel(raw);
     if (!label || tags.includes(label)) return;
     tags.push(label);
   };
 
-  if (/吃到飽|無限/i.test(title) || pool.some((t) => /吃到飽|無限流量/i.test(t))) {
-    pushUnique("吃到飽");
-  }
-  if (/每日型|每日/i.test(title) || pool.some((t) => /每日/i.test(t))) {
-    pushUnique("每日型");
-  }
-  if (/總量/i.test(title) || pool.some((t) => /總量型|總量\d/i.test(t))) {
-    pushUnique("總量型");
+  // 1) Medusa options「電信商」
+  for (const o of product?.options || []) {
+    if (!/電信/i.test(String(o?.title || ""))) continue;
+    for (const v of o.values || []) {
+      pushUnique(typeof v === "string" ? v : v?.value);
+    }
   }
 
-  for (const t of pool) {
-    if (/AU\s*\(?\s*KDDI\s*\)?/i.test(t)) pushUnique("AU(KDDI)");
-    else if (/SoftBank/i.test(t)) pushUnique("SoftBank");
-    else if (/IIJ|Docomo/i.test(t)) pushUnique("IIJ Docomo");
-    else if (/LG\s*U\+/i.test(t)) pushUnique("LG U+");
-    else if (/SKT|SK電信/i.test(t)) pushUnique("SK電信");
-    else if (/Global|全球/i.test(t)) pushUnique("全球");
+  // 2) 變體 option 值（options.values 有時未展開）
+  if (tags.length === 0) {
+    const optMap = {};
+    for (const o of product?.options || []) {
+      if (o?.id) optMap[o.id] = String(o.title || "");
+    }
+    for (const v of product?.variants || []) {
+      for (const o of v?.options || []) {
+        if (/電信/i.test(optMap[o.option_id] || "")) {
+          pushUnique(o.value);
+        }
+      }
+    }
   }
 
-  if (pool.some((t) => /5G/i.test(t))) pushUnique("5G");
-  if (pool.some((t) => /支援熱點|熱點/i.test(t))) pushUnique("熱點");
+  // 3) metadata 依電信商分組的 key
+  const metaObjs = [
+    product?.metadata?.carrier_specs_by_carrier,
+    product?.metadata?.carrier_profit_by_carrier,
+    product?.metadata?.subtitle_by_carrier,
+    product?.metadata?.key_features_by_carrier,
+  ];
+  for (const raw of metaObjs) {
+    let obj = raw;
+    if (typeof raw === "string") {
+      try {
+        obj = JSON.parse(raw);
+      } catch {
+        obj = null;
+      }
+    }
+    if (obj && typeof obj === "object") {
+      for (const key of Object.keys(obj)) {
+        if (key && key !== "default") pushUnique(key);
+      }
+    }
+  }
 
-  return tags.slice(0, 4);
+  // 4) hot_sale_telecoms（通常已在 options 內，補漏）
+  for (const t of parseHotSaleTelecoms(product?.metadata?.hot_sale_telecoms)) {
+    pushUnique(t);
+  }
+
+  return tags;
 }
 
 /** 供分類頁使用：依 activeTags 過濾商品 */
