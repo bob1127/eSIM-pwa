@@ -263,7 +263,7 @@ const CARRIER_INFO_MAP = {
     summaryPrefix: "SoftBank / KDDI 10Mbps",
   },
   "AU(KDDI)": {
-    badges: [{ text: "KDDI", type: "5G" }],
+    badges: [{ text: "AU (KDDI)", type: "5G" }],
     marketingBox: {
       bgColor: "bg-cyan-50",
       borderColor: "border-cyan-100",
@@ -295,8 +295,9 @@ const CARRIER_INFO_MAP = {
     },
     summaryPrefix: "IIJ(DOCOMO)",
   },
+  /** @deprecated 總量型已改名 AU(KDDI)；保留相容舊資料 */
   KDDI: {
-    badges: [{ text: "KDDI", type: "5G" }],
+    badges: [{ text: "AU (KDDI)", type: "5G" }],
     marketingBox: {
       bgColor: "bg-cyan-50",
       borderColor: "border-cyan-100",
@@ -304,7 +305,7 @@ const CARRIER_INFO_MAP = {
       policyDesc: "總量高速用完後降速至約 128 kbps，可持續使用。",
       note: "注意：此線路為日本 IP 原生。",
     },
-    summaryPrefix: "KDDI",
+    summaryPrefix: "AU(KDDI)",
   },
   "KDDI / SoftBank": {
     badges: [
@@ -319,6 +320,83 @@ const CARRIER_INFO_MAP = {
       note: "注意：我們建議您抵達當地後再安裝 eSIM。",
     },
     summaryPrefix: "KDDI / SoftBank",
+  },
+  "CSL / China Telecom HK": {
+    badges: [
+      { text: "CSL", type: "5G" },
+      { text: "China Telecom HK", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "每日約 1GB 高速後限速約 10 Mbps 吃到飽。",
+      note: "注意：香港 IP 線路，建議抵達後再安裝 eSIM。",
+    },
+    summaryPrefix: "CSL / China Telecom HK",
+  },
+  "CSL / SmarTone（總量型）": {
+    badges: [
+      { text: "CSL", type: "5G" },
+      { text: "SmarTone", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "總量高速用完後降速至約 128 kbps，可持續使用。",
+      note: "注意：新加坡 IP 漫遊，建議抵達後再安裝 eSIM。",
+    },
+    summaryPrefix: "CSL / SmarTone（總量型）",
+  },
+  "CSL / SmarTone（每日型）": {
+    badges: [
+      { text: "CSL", type: "5G" },
+      { text: "SmarTone", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "每日高速用完後降速至約 128 kbps，可持續使用。",
+      note: "注意：新加坡 IP 漫遊，建議抵達後再安裝 eSIM。",
+    },
+    summaryPrefix: "CSL / SmarTone（每日型）",
+  },
+  Vinaphone: {
+    badges: [{ text: "Vinaphone", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-red-50",
+      borderColor: "border-red-100",
+      policyTitle: "為什麼選擇 Vinaphone 本地 IP：",
+      policyDesc:
+        "越南本地 IP、4G/LTE/5G 高速連線；可使用 Facebook、Instagram、TikTok、LINE、WhatsApp、Zalo、Grab 等，無地區限制。",
+      note: "注意：由越南本地電信商直接運營，建議抵達後再安裝 eSIM。",
+    },
+    summaryPrefix: "Vinaphone",
+  },
+  Viettel: {
+    badges: [{ text: "Viettel", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-red-50",
+      borderColor: "border-red-100",
+      policyTitle: "為何選擇 Viettel 旅遊 eSIM：",
+      policyDesc:
+        "越南最可靠、最廣泛的網路；4G/LTE／多數城市 5G；本地 IP 可順暢使用 Facebook、Instagram、TikTok、LINE、WhatsApp 等。",
+      note: "注意：有效期於下載後立即開始，請準備好使用時再安裝 eSIM。",
+    },
+    summaryPrefix: "Viettel",
+  },
+  Wintel: {
+    badges: [{ text: "Wintel", type: "4G" }],
+    marketingBox: {
+      bgColor: "bg-red-50",
+      borderColor: "border-red-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "總量高速用完後斷網。",
+      note: "注意：越南原生當地 IP，建議抵達後再安裝 eSIM。",
+    },
+    summaryPrefix: "Wintel",
   },
   default: {
     badges: [],
@@ -373,19 +451,25 @@ function parseCarrierSpeedChips(text) {
   if (!s) return null;
 
   const dual = s.match(
-    /^(LG\s*U\+|SoftBank|KDDI)\s*\/\s*(SKT|KDDI|SoftBank)(?:\s*[45]G)?(?:\s*雙切換)?$/i,
+    /^(LG\s*U\+|SoftBank|KDDI|AU\s*\(?KDDI\)?)\s*\/\s*(SKT|KDDI|SoftBank)(?:\s*[45]G)?(?:\s*雙切換)?$/i,
   );
   if (dual) {
     const normalize = (raw) => {
       if (/LG/i.test(raw)) return "LG U+";
       if (/SKT/i.test(raw)) return "SKT";
       if (/SoftBank/i.test(raw)) return "SoftBank";
+      if (/AU/i.test(raw)) return "AU (KDDI)";
       return "KDDI";
     };
     return [
       { name: normalize(dual[1]), speed: "5G" },
       { name: normalize(dual[2]), speed: "5G" },
     ];
+  }
+
+  const au = s.match(/^AU\s*\(?\s*KDDI\s*\)?(?:\s*[45]G)?$/i);
+  if (au) {
+    return [{ name: "AU (KDDI)", speed: "5G" }];
   }
 
   const single = s.match(
@@ -396,7 +480,7 @@ function parseCarrierSpeedChips(text) {
     if (/LG/i.test(name)) name = "LG U+";
     else if (/SKT/i.test(name)) name = "SKT";
     else if (/SoftBank/i.test(name)) name = "SoftBank";
-    else if (/KDDI/i.test(name)) name = "KDDI";
+    else if (/KDDI/i.test(name)) name = "AU (KDDI)";
     return [{ name, speed: "5G" }];
   }
 
@@ -1619,13 +1703,21 @@ export async function getStaticProps({ params }) {
     const rawFaqByCarrier = product.metadata?.faq_content_by_carrier;
     const rawPromoByCarrier = product.metadata?.promo_offer_by_carrier;
 
+    // 分潤％／旅客折扣％（夥伴商業機密）絕不可送到客戶端頁面 props——
+    // getStaticProps 回傳值會整包序列化進 __NEXT_DATA__，訪客看原始碼／
+    // Network 分頁就能讀到。這兩個欄位只在 Medusa Admin 與後端伺服端流程
+    // （結帳套碼、夥伴後台 API）讀取，見 lib/productPartnerTerms.js。
+    const { ...publicMetadata } = product.metadata || {};
+    delete publicMetadata.carrier_partner_rate_by_carrier;
+    delete publicMetadata.carrier_referral_discount_by_carrier;
+
     const formattedProduct = {
       id: product.id,
       name: product.title,
       subtitle: product.subtitle || "",
       slug: product.handle,
       description: product.description || "",
-      metadata: product.metadata || {},
+      metadata: publicMetadata,
       subtitle_by_carrier:
         product.metadata?.subtitle_by_carrier &&
         typeof product.metadata.subtitle_by_carrier === "object"

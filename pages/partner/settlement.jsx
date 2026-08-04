@@ -1,10 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PartnerAdminLayout from "@/components/partner/PartnerAdminLayout";
 import MaterialIcon from "@/components/MaterialIcon";
+import {
+  ShopifyDropdown,
+  ShopifyTabs,
+  ShopifyPagination,
+} from "@/components/partner/ShopifyControls";
 import { usePartnerSession } from "@/lib/partnerAuth";
 import { supabase } from "@/lib/supabaseClient";
+import { SHOPIFY_BADGE } from "@/lib/shopifyUi";
 import {
   PAYOUT_FREEZE_DAYS,
   PAYOUT_MIN_WITHDRAWAL,
@@ -14,11 +20,242 @@ import {
   PAYOUT_FREE_WITHDRAWALS_PER_MONTH,
 } from "@/lib/partnerPayout";
 
+/** 結算頁：深灰／淺灰／白 + 小圓角；狀態徽章用特殊色 */
+const UI = {
+  dark: "#2d2d2d",
+  mid: "#5c5c5c",
+  soft: "#8a8a8a",
+  border: "#e5e5e5",
+  light: "#f0f0f0",
+  wash: "#f6f6f6",
+  white: "#ffffff",
+  radius: "0.5rem", // 8px 小圓角
+  radiusSm: "0.375rem", // 6px
+};
+
+const PAGE_SIZE = 8;
+
 const fmt = (n) => `NT$${Math.round(Number(n) || 0).toLocaleString()}`;
 
 async function getToken() {
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token || "";
+}
+
+function Badge({ tone = "neutral", children }) {
+  const t = SHOPIFY_BADGE[tone] || SHOPIFY_BADGE.neutral;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-bold whitespace-nowrap"
+      style={{
+        backgroundColor: t.bg,
+        color: t.text,
+        borderRadius: UI.radiusSm,
+      }}
+    >
+      <span
+        className="w-1.5 h-1.5 rounded-full shrink-0"
+        style={{ backgroundColor: t.dot }}
+      />
+      {children}
+    </span>
+  );
+}
+
+function Card({ children, className = "", style = {} }) {
+  return (
+    <div
+      className={className}
+      style={{
+        backgroundColor: UI.white,
+        border: `1px solid ${UI.border}`,
+        borderRadius: UI.radius,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function MetricCard({ label, value, hint, icon, iconBg }) {
+  return (
+    <Card className="px-4 py-3.5 flex-1 min-w-[140px]">
+      <div className="flex items-start justify-between gap-2">
+        <p
+          className="text-[10px] font-bold uppercase tracking-wider"
+          style={{ color: UI.soft }}
+        >
+          {label}
+        </p>
+        {icon ? (
+          <div
+            className="w-8 h-8 flex items-center justify-center shrink-0"
+            style={{ backgroundColor: iconBg, borderRadius: UI.radiusSm }}
+          >
+            <MaterialIcon name={icon} size={16} className="text-white" />
+          </div>
+        ) : null}
+      </div>
+      <p
+        className="text-xl sm:text-2xl font-black mt-2 tabular-nums"
+        style={{ color: UI.dark }}
+      >
+        {value}
+      </p>
+      {hint ? (
+        <p className="text-[11px] mt-1 leading-snug" style={{ color: UI.soft }}>
+          {hint}
+        </p>
+      ) : null}
+    </Card>
+  );
+}
+
+function statusTone(status) {
+  const s = String(status || "").toLowerCase();
+  if (s === "remitted") return "success";
+  if (s === "approved") return "info";
+  if (s === "pending") return "warning";
+  if (s === "rejected" || s === "cancelled") return "critical";
+  return "neutral";
+}
+
+function toCsvValue(v) {
+  const s = String(v ?? "");
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function downloadWithdrawalsCsv(rows) {
+  const header = ["申請時間", "申請金額", "手續費", "實匯", "狀態", "備註"];
+  const body = rows.map((r) => [
+    r.requested_at
+      ? new Date(r.requested_at).toLocaleString("zh-TW", {
+          timeZone: "Asia/Taipei",
+        })
+      : "",
+    Math.round(Number(r.amount) || 0),
+    r.fee_amount > 0 ? Math.round(Number(r.fee_amount) || 0) : "免",
+    Math.round(
+      Number(r.net_amount) ||
+        Math.max(0, (r.amount || 0) - (r.fee_amount || 0)),
+    ),
+    r.status_label || r.status || "",
+    r.remittance_memo || r.admin_note || "",
+  ]);
+  const csv = [header, ...body]
+    .map((row) => row.map(toCsvValue).join(","))
+    .join("\n");
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `提領紀錄_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/** 單筆提領詳情彈窗 */
+function WithdrawalDetailModal({ open, row, onClose }) {
+  if (!open || !row) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-3">
+      <div className="absolute inset-0 bg-black/45" onClick={onClose} aria-hidden />
+      <div
+        className="relative w-full max-w-md max-h-[85vh] shadow-2xl flex flex-col overflow-hidden"
+        style={{
+          backgroundColor: UI.white,
+          borderRadius: UI.radius,
+        }}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div
+          className="flex items-center justify-between px-4 py-3"
+          style={{ borderBottom: `1px solid ${UI.border}` }}
+        >
+          <div>
+            <p className="text-sm font-black" style={{ color: UI.dark }}>
+              提領詳情
+            </p>
+            <p className="text-[11px] mt-0.5" style={{ color: UI.soft }}>
+              {row.requested_at
+                ? new Date(row.requested_at).toLocaleString("zh-TW", {
+                    timeZone: "Asia/Taipei",
+                  })
+                : "—"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center hover:bg-black/5 transition"
+            style={{ borderRadius: UI.radiusSm }}
+          >
+            <MaterialIcon name="close" size={18} style={{ color: UI.mid }} />
+          </button>
+        </div>
+        <div className="p-4 space-y-3 overflow-y-auto">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold" style={{ color: UI.soft }}>
+              狀態
+            </span>
+            <Badge tone={statusTone(row.status)}>
+              {row.status_label || row.status}
+            </Badge>
+          </div>
+          {[
+            ["申請金額", fmt(row.amount)],
+            ["手續費", row.fee_amount > 0 ? fmt(row.fee_amount) : "免手續費"],
+            [
+              "實匯金額",
+              fmt(
+                row.net_amount ??
+                  Math.max(0, (row.amount || 0) - (row.fee_amount || 0)),
+              ),
+            ],
+            ["備註", row.remittance_memo || row.admin_note || "—"],
+          ].map(([label, value]) => (
+            <div
+              key={label}
+              className="flex items-start justify-between gap-3 py-2"
+              style={{ borderTop: `1px solid ${UI.border}` }}
+            >
+              <span className="text-xs font-bold shrink-0" style={{ color: UI.soft }}>
+                {label}
+              </span>
+              <span
+                className="text-sm font-bold text-right"
+                style={{ color: UI.dark }}
+              >
+                {value}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div
+          className="px-4 py-3 flex justify-end"
+          style={{ borderTop: `1px solid ${UI.border}` }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-8 px-3 text-xs font-bold"
+            style={{
+              borderRadius: UI.radiusSm,
+              border: `1px solid ${UI.border}`,
+              backgroundColor: UI.light,
+              color: UI.dark,
+            }}
+          >
+            關閉
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function PartnerSettlementPage() {
@@ -39,6 +276,9 @@ export default function PartnerSettlementPage() {
     account_number: "",
   });
   const [amount, setAmount] = useState("");
+  const [tab, setTab] = useState("all");
+  const [page, setPage] = useState(1);
+  const [detailRow, setDetailRow] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,6 +319,10 @@ export default function PartnerSettlementPage() {
   useEffect(() => {
     if (partner?.id) load();
   }, [partner?.id, load]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [tab]);
 
   const saveBank = async () => {
     setSavingBank(true);
@@ -135,207 +379,429 @@ export default function PartnerSettlementPage() {
     }
   };
 
+  const filteredRequests = useMemo(() => {
+    if (tab === "all") return requests;
+    return requests.filter(
+      (r) => String(r.status || "").toLowerCase() === tab,
+    );
+  }, [requests, tab]);
+
+  const statusCounts = useMemo(() => {
+    let pending = 0;
+    let remitted = 0;
+    for (const r of requests) {
+      const s = String(r.status || "").toLowerCase();
+      if (s === "pending") pending += 1;
+      if (s === "remitted") remitted += 1;
+    }
+    return { all: requests.length, pending, remitted };
+  }, [requests]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return filteredRequests.slice(start, start + PAGE_SIZE);
+  }, [filteredRequests, safePage]);
+
+  const tabs = [
+    { id: "all", label: "全部", count: statusCounts.all },
+    { id: "pending", label: "審核中", count: statusCounts.pending },
+    { id: "remitted", label: "已匯款", count: statusCounts.remitted },
+  ];
+
+  const exportMenu = [
+    {
+      id: "csv",
+      label: "匯出提領紀錄 CSV",
+      icon: "download",
+      disabled: !requests.length,
+      onClick: () => downloadWithdrawalsCsv(requests),
+    },
+    {
+      id: "csv-filtered",
+      label: "匯出目前篩選",
+      icon: "filter_list",
+      disabled: !filteredRequests.length,
+      onClick: () => downloadWithdrawalsCsv(filteredRequests),
+    },
+  ];
+
+  const moreMenu = [
+    {
+      id: "refresh",
+      label: loading ? "重新整理中…" : "重新整理",
+      icon: "refresh",
+      disabled: loading,
+      onClick: load,
+    },
+  ];
+
+  const inputClass =
+    "mt-1 w-full px-2.5 py-2 text-sm font-bold outline-none transition";
+  const inputStyle = {
+    border: `1px solid ${UI.border}`,
+    borderRadius: UI.radiusSm,
+    color: UI.dark,
+    backgroundColor: UI.white,
+  };
+
   return (
     <PartnerAdminLayout title="結算與提領">
-      <div className="px-4 sm:px-5 py-5 space-y-4 max-w-4xl">
-        <div className="rounded-sm border border-[#1E4AD1]/20 bg-[#F7F9FB] p-4">
-          <h2 className="text-sm font-black text-slate-800 mb-2">月結對帳單＋申請提領</h2>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            成交月之<strong>次月 15 日</strong>產製對帳單，供雙方核對金額。
-          </p>
-          <p className="text-xs text-slate-600 leading-relaxed mt-2">
-            實際匯款：於後台<strong>申請提領</strong>後，目標{" "}
-            <strong>{PAYOUT_REMITTANCE_WORKING_DAYS} 個工作天內</strong>
-            匯款。條件：訂單需滿 {PAYOUT_FREEZE_DAYS} 天、單次{" "}
-            {fmt(PAYOUT_MIN_WITHDRAWAL)}～{fmt(PAYOUT_MAX_WITHDRAWAL)}；每月第{" "}
-            {PAYOUT_FREE_WITHDRAWALS_PER_MONTH}{" "}
-            次免手續費，之後每次扣 {fmt(PAYOUT_EXTRA_WITHDRAWAL_FEE)}。
-          </p>
-          {scheduleHint ? (
-            <p className="text-[11px] text-slate-500 mt-2">{scheduleHint}</p>
-          ) : null}
+      <div
+        className="px-4 sm:px-6 pt-5 pb-24 md:pb-6 space-y-4"
+        style={{ backgroundColor: UI.wash }}
+      >
+        {/* 頁首 */}
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <h1
+              className="text-xl font-black tracking-tight"
+              style={{ color: UI.dark }}
+            >
+              結算與提領
+            </h1>
+            <p className="text-xs sm:text-sm mt-1 max-w-xl" style={{ color: UI.mid }}>
+              月結對帳單＋申請提領。成交月之次月 15 日產製對帳單；申請後目標{" "}
+              {PAYOUT_REMITTANCE_WORKING_DAYS} 個工作天內匯款。
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <ShopifyDropdown
+              label="匯出"
+              icon="download"
+              items={exportMenu}
+            />
+            <ShopifyDropdown label="更多操作" items={moreMenu} />
+          </div>
         </div>
 
+        {/* 規則說明（特殊色提示） */}
+        <Card
+          className="px-4 py-3.5 text-xs leading-relaxed"
+          style={{ backgroundColor: "#fffbeb", borderColor: "#fde68a" }}
+        >
+          <p className="font-bold mb-1" style={{ color: "#92400e" }}>
+            提領規則
+          </p>
+          <p style={{ color: "#78350f" }}>
+            訂單需滿 {PAYOUT_FREEZE_DAYS} 天、單次{" "}
+            {fmt(PAYOUT_MIN_WITHDRAWAL)}～{fmt(PAYOUT_MAX_WITHDRAWAL)}；每月第{" "}
+            {PAYOUT_FREE_WITHDRAWALS_PER_MONTH} 次免手續費，之後每次扣{" "}
+            {fmt(PAYOUT_EXTRA_WITHDRAWAL_FEE)}。
+            {scheduleHint ? ` ${scheduleHint}` : ""}
+          </p>
+        </Card>
+
         {error ? (
-          <div className="rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 font-bold">
+          <div
+            className="px-3 py-2 text-xs font-bold"
+            style={{
+              borderRadius: UI.radius,
+              border: "1px solid #fecaca",
+              backgroundColor: "#fef2f2",
+              color: "#b91c1c",
+            }}
+          >
             {error}
           </div>
         ) : null}
         {message ? (
-          <div className="rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 font-bold">
+          <div
+            className="px-3 py-2 text-xs font-bold"
+            style={{
+              borderRadius: UI.radius,
+              border: "1px solid #a7f3d0",
+              backgroundColor: "#ecfdf5",
+              color: "#047857",
+            }}
+          >
             {message}
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            {
-              label: "可提領餘額",
-              value: loading ? "…" : fmt(snapshot?.available),
-              hint: `已扣凍結 ${snapshot?.freezeDays ?? PAYOUT_FREEZE_DAYS} 天內訂單`,
-            },
-            {
-              label: "已申請／已匯保留",
-              value: loading ? "…" : fmt(snapshot?.reserved),
-              hint: "含審核中、已核准、已匯款",
-            },
-            {
-              label: "本次手續費",
-              value: loading
+        {/* KPI 卡片（圖示用特殊色） */}
+        <div className="flex flex-wrap gap-3">
+          <MetricCard
+            label="可提領餘額"
+            value={loading ? "…" : fmt(snapshot?.available)}
+            hint={`已扣凍結 ${snapshot?.freezeDays ?? PAYOUT_FREEZE_DAYS} 天內訂單`}
+            icon="account_balance_wallet"
+            iconBg="#008060"
+          />
+          <MetricCard
+            label="已申請／已匯保留"
+            value={loading ? "…" : fmt(snapshot?.reserved)}
+            hint="含審核中、已核准、已匯款"
+            icon="lock"
+            iconBg="#2c6ecb"
+          />
+          <MetricCard
+            label="本次手續費"
+            value={
+              loading
                 ? "…"
                 : snapshot?.nextFee
                   ? fmt(snapshot.nextFee)
-                  : "免手續費",
-              hint: `本月已申請 ${snapshot?.requestsThisMonth ?? 0} 次；第 ${PAYOUT_FREE_WITHDRAWALS_PER_MONTH} 次後每次 ${fmt(PAYOUT_EXTRA_WITHDRAWAL_FEE)}`,
-            },
-          ].map((c) => (
-            <div
-              key={c.label}
-              className="rounded-sm border border-slate-200 bg-white p-4"
-            >
-              <p className="text-[11px] font-bold text-slate-500">{c.label}</p>
-              <p className="text-xl font-black text-[#1E4AD1] mt-1">{c.value}</p>
-              <p className="text-[10px] text-slate-400 mt-1">{c.hint}</p>
-            </div>
-          ))}
+                  : "免手續費"
+            }
+            hint={`本月已申請 ${snapshot?.requestsThisMonth ?? 0} 次；第 ${PAYOUT_FREE_WITHDRAWALS_PER_MONTH} 次後每次 ${fmt(PAYOUT_EXTRA_WITHDRAWAL_FEE)}`}
+            icon="payments"
+            iconBg="#eec200"
+          />
         </div>
 
-        <div className="rounded-sm border border-slate-200 bg-white p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <MaterialIcon name="account_balance" size={18} className="text-[#1E4AD1]" />
-            <h3 className="text-sm font-black text-slate-800">收款帳戶</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              ["bank_name", "銀行名稱 *"],
-              ["bank_code", "銀行代碼"],
-              ["branch_name", "分行"],
-              ["account_name", "戶名 *"],
-              ["account_number", "帳號 *"],
-            ].map(([key, label]) => (
-              <label key={key} className="block text-xs">
-                <span className="font-bold text-slate-600">{label}</span>
+        {/* 兩欄：申請提領 + 收款帳戶（比照 Shopify 主欄／側欄） */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <Card className="lg:col-span-3 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-8 h-8 flex items-center justify-center"
+                style={{ backgroundColor: "#008060", borderRadius: UI.radiusSm }}
+              >
+                <MaterialIcon name="payments" size={16} className="text-white" />
+              </div>
+              <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                申請提領
+              </h3>
+            </div>
+
+            {snapshot?.blockReason ? (
+              <p
+                className="text-xs px-3 py-2"
+                style={{
+                  borderRadius: UI.radiusSm,
+                  backgroundColor: "#fffbeb",
+                  border: "1px solid #fde68a",
+                  color: "#92400e",
+                }}
+              >
+                {snapshot.blockReason}
+              </p>
+            ) : null}
+
+            {snapshot?.nextFee > 0 ? (
+              <p
+                className="text-xs px-3 py-2"
+                style={{
+                  borderRadius: UI.radiusSm,
+                  backgroundColor: UI.light,
+                  border: `1px solid ${UI.border}`,
+                  color: UI.mid,
+                }}
+              >
+                本次將扣除手續費 {fmt(snapshot.nextFee)}，實匯約{" "}
+                {fmt(
+                  Math.max(
+                    0,
+                    Math.round(Number(amount) || 0) - Number(snapshot.nextFee),
+                  ),
+                )}
+                。
+              </p>
+            ) : (
+              <p
+                className="text-xs px-3 py-2"
+                style={{
+                  borderRadius: UI.radiusSm,
+                  backgroundColor: "#ecfdf5",
+                  border: "1px solid #a7f3d0",
+                  color: "#047857",
+                }}
+              >
+                本月尚有免手續費提領名額。
+              </p>
+            )}
+
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="text-xs block">
+                <span className="font-bold" style={{ color: UI.mid }}>
+                  提領金額（NT$）
+                </span>
                 <input
-                  value={bank[key] || ""}
-                  onChange={(e) =>
-                    setBank((prev) => ({ ...prev, [key]: e.target.value }))
-                  }
-                  className="mt-1 w-full border border-slate-200 rounded-sm px-2.5 py-2 text-sm font-bold outline-none focus:border-[#1E4AD1]"
+                  type="number"
+                  min={PAYOUT_MIN_WITHDRAWAL}
+                  max={PAYOUT_MAX_WITHDRAWAL}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className={inputClass}
+                  style={{ ...inputStyle, width: "10rem" }}
                 />
               </label>
-            ))}
-          </div>
-          <button
-            type="button"
-            disabled={savingBank}
-            onClick={saveBank}
-            className="text-sm font-bold bg-[#1E4AD1] text-white px-4 py-2 rounded-sm hover:bg-[#1344b5] disabled:opacity-50"
-          >
-            {savingBank ? "儲存中…" : "儲存帳戶"}
-          </button>
-        </div>
+              <button
+                type="button"
+                disabled={submitting || !snapshot?.canRequest}
+                onClick={submitWithdrawal}
+                className="h-9 px-4 text-xs font-bold text-white disabled:opacity-50 transition"
+                style={{
+                  backgroundColor: "#008060",
+                  borderRadius: UI.radiusSm,
+                }}
+              >
+                {submitting ? "送出中…" : "一鍵申請提領"}
+              </button>
+            </div>
+            <p className="text-[11px] leading-relaxed" style={{ color: UI.soft }}>
+              送出後狀態為「審核中」；核准後目標於{" "}
+              {PAYOUT_REMITTANCE_WORKING_DAYS}{" "}
+              個工作天內匯款（遇金融機構非營業日得順延）。
+            </p>
+          </Card>
 
-        <div className="rounded-sm border border-slate-200 bg-white p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <MaterialIcon name="payments" size={18} className="text-[#1E4AD1]" />
-            <h3 className="text-sm font-black text-slate-800">申請提領</h3>
-          </div>
-          {snapshot?.blockReason ? (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-sm px-3 py-2">
-              {snapshot.blockReason}
-            </p>
-          ) : null}
-          {snapshot?.nextFee > 0 ? (
-            <p className="text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded-sm px-3 py-2">
-              本次將扣除手續費 {fmt(snapshot.nextFee)}，實匯約{" "}
-              {fmt(
-                Math.max(
-                  0,
-                  Math.round(Number(amount) || 0) - Number(snapshot.nextFee),
-                ),
-              )}
-              。
-            </p>
-          ) : (
-            <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-sm px-3 py-2">
-              本月尚有免手續費提領名額。
-            </p>
-          )}
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="text-xs">
-              <span className="font-bold text-slate-600">提領金額（NT$）</span>
-              <input
-                type="number"
-                min={PAYOUT_MIN_WITHDRAWAL}
-                max={PAYOUT_MAX_WITHDRAWAL}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="mt-1 block w-40 border border-slate-200 rounded-sm px-2.5 py-2 text-sm font-black outline-none focus:border-[#1E4AD1]"
-              />
-            </label>
+          <Card className="lg:col-span-2 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-8 h-8 flex items-center justify-center"
+                style={{ backgroundColor: UI.dark, borderRadius: UI.radiusSm }}
+              >
+                <MaterialIcon
+                  name="account_balance"
+                  size={16}
+                  className="text-white"
+                />
+              </div>
+              <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                收款帳戶
+              </h3>
+            </div>
+            <div className="space-y-2.5">
+              {[
+                ["bank_name", "銀行名稱 *"],
+                ["bank_code", "銀行代碼"],
+                ["branch_name", "分行"],
+                ["account_name", "戶名 *"],
+                ["account_number", "帳號 *"],
+              ].map(([key, label]) => (
+                <label key={key} className="block text-xs">
+                  <span className="font-bold" style={{ color: UI.mid }}>
+                    {label}
+                  </span>
+                  <input
+                    value={bank[key] || ""}
+                    onChange={(e) =>
+                      setBank((prev) => ({ ...prev, [key]: e.target.value }))
+                    }
+                    className={inputClass}
+                    style={inputStyle}
+                  />
+                </label>
+              ))}
+            </div>
             <button
               type="button"
-              disabled={submitting || !snapshot?.canRequest}
-              onClick={submitWithdrawal}
-              className="text-sm font-bold bg-emerald-600 text-white px-4 py-2 rounded-sm hover:bg-emerald-700 disabled:opacity-50"
+              disabled={savingBank}
+              onClick={saveBank}
+              className="h-9 px-4 text-xs font-bold text-white disabled:opacity-50 transition w-full sm:w-auto"
+              style={{
+                backgroundColor: UI.dark,
+                borderRadius: UI.radiusSm,
+              }}
             >
-              {submitting ? "送出中…" : "一鍵申請提領"}
+              {savingBank ? "儲存中…" : "儲存帳戶"}
             </button>
-          </div>
-          <p className="text-[11px] text-slate-500 leading-relaxed">
-            送出後狀態為「審核中」；核准後目標於{" "}
-            {PAYOUT_REMITTANCE_WORKING_DAYS}{" "}
-            個工作天內匯款（遇金融機構非營業日得順延）。
-          </p>
+          </Card>
         </div>
 
-        <div className="rounded-sm border border-slate-200 bg-white overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100">
-            <h3 className="text-sm font-black text-slate-800">提領紀錄</h3>
+        {/* 提領紀錄表 */}
+        <Card className="overflow-hidden">
+          <div
+            className="flex items-center justify-between gap-3 px-3 sm:px-4 pt-1"
+          >
+            <div className="min-w-0 flex-1">
+              <ShopifyTabs tabs={tabs} value={tab} onChange={setTab} />
+            </div>
           </div>
+
           {loading ? (
-            <p className="px-4 py-8 text-center text-sm text-slate-400">載入中…</p>
-          ) : !requests.length ? (
-            <p className="px-4 py-8 text-center text-sm text-slate-400">
+            <p
+              className="px-4 py-10 text-center text-sm"
+              style={{ color: UI.soft }}
+            >
+              載入中…
+            </p>
+          ) : !paged.length ? (
+            <p
+              className="px-4 py-10 text-center text-sm"
+              style={{ color: UI.soft }}
+            >
               尚無提領申請
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead className="bg-slate-50 text-slate-500">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-bold">申請時間</th>
-                    <th className="px-3 py-2 text-right font-bold">申請金額</th>
-                    <th className="px-3 py-2 text-right font-bold">手續費</th>
-                    <th className="px-3 py-2 text-right font-bold">實匯</th>
-                    <th className="px-3 py-2 text-left font-bold">狀態</th>
-                    <th className="px-3 py-2 text-left font-bold">備註</th>
+              <table className="w-full text-sm min-w-[640px]">
+                <thead>
+                  <tr
+                    className="text-[10px] uppercase tracking-wider"
+                    style={{ backgroundColor: UI.light, color: UI.soft }}
+                  >
+                    <th className="px-4 py-2.5 text-left font-bold">申請時間</th>
+                    <th className="px-4 py-2.5 text-right font-bold">申請金額</th>
+                    <th className="px-4 py-2.5 text-right font-bold">手續費</th>
+                    <th className="px-4 py-2.5 text-right font-bold">實匯</th>
+                    <th className="px-4 py-2.5 text-left font-bold">狀態</th>
+                    <th className="px-4 py-2.5 text-center font-bold w-14">
+                      操作
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {requests.map((r) => (
-                    <tr key={r.id}>
-                      <td className="px-3 py-2 text-slate-600">
+                <tbody>
+                  {paged.map((r) => (
+                    <tr
+                      key={r.id}
+                      style={{ borderTop: `1px solid ${UI.border}` }}
+                    >
+                      <td className="px-4 py-3 text-xs" style={{ color: UI.mid }}>
                         {r.requested_at
                           ? new Date(r.requested_at).toLocaleString("zh-TW", {
                               timeZone: "Asia/Taipei",
                             })
                           : "—"}
                       </td>
-                      <td className="px-3 py-2 text-right font-bold text-[#1E4AD1]">
+                      <td
+                        className="px-4 py-3 text-right font-bold tabular-nums"
+                        style={{ color: UI.dark }}
+                      >
                         {fmt(r.amount)}
                       </td>
-                      <td className="px-3 py-2 text-right text-slate-600">
+                      <td
+                        className="px-4 py-3 text-right text-xs"
+                        style={{ color: UI.mid }}
+                      >
                         {r.fee_amount > 0 ? fmt(r.fee_amount) : "免"}
                       </td>
-                      <td className="px-3 py-2 text-right font-bold text-slate-800">
-                        {fmt(r.net_amount ?? Math.max(0, (r.amount || 0) - (r.fee_amount || 0)))}
+                      <td
+                        className="px-4 py-3 text-right font-black tabular-nums"
+                        style={{ color: UI.dark }}
+                      >
+                        {fmt(
+                          r.net_amount ??
+                            Math.max(
+                              0,
+                              (r.amount || 0) - (r.fee_amount || 0),
+                            ),
+                        )}
                       </td>
-                      <td className="px-3 py-2 font-bold text-slate-700">
-                        {r.status_label || r.status}
+                      <td className="px-4 py-3">
+                        <Badge tone={statusTone(r.status)}>
+                          {r.status_label || r.status}
+                        </Badge>
                       </td>
-                      <td className="px-3 py-2 text-slate-500">
-                        {r.remittance_memo || r.admin_note || "—"}
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => setDetailRow(r)}
+                          className="w-8 h-8 inline-flex items-center justify-center transition"
+                          style={{
+                            borderRadius: UI.radiusSm,
+                            border: `1px solid ${UI.border}`,
+                            backgroundColor: UI.light,
+                            color: UI.dark,
+                          }}
+                          aria-label="查看提領詳情"
+                          title="查看詳情"
+                        >
+                          <MaterialIcon name="edit" size={16} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -343,8 +809,23 @@ export default function PartnerSettlementPage() {
               </table>
             </div>
           )}
-        </div>
+
+          {!loading && filteredRequests.length > 0 ? (
+            <ShopifyPagination
+              page={safePage}
+              pageSize={PAGE_SIZE}
+              total={filteredRequests.length}
+              onChange={setPage}
+            />
+          ) : null}
+        </Card>
       </div>
+
+      <WithdrawalDetailModal
+        open={!!detailRow}
+        row={detailRow}
+        onClose={() => setDetailRow(null)}
+      />
     </PartnerAdminLayout>
   );
 }

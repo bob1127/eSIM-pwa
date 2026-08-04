@@ -1,7 +1,17 @@
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/router";
 import Link from "next/link";
 import PartnerAdminLayout from "@/components/partner/PartnerAdminLayout";
-import { DobermanPanel, fmt, METRIC_HELP } from "@/components/partner/DobermanWidgets";
+import { fmt } from "@/components/partner/DobermanWidgets";
+import PrintOrdersModal, {
+  downloadOrdersCsv,
+} from "@/components/partner/PrintOrdersModal";
+import OrderDetailModal from "@/components/partner/OrderDetailModal";
+import {
+  ShopifyTabs,
+  ShopifyDropdown,
+  ShopifyPagination,
+} from "@/components/partner/ShopifyControls";
 import MaterialIcon from "@/components/MaterialIcon";
 import { usePartnerSession, fetchPartnerStats } from "@/lib/partnerAuth";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
@@ -11,6 +21,22 @@ import {
   buyerEmail,
 } from "@/lib/orderDisplay";
 import { PARTNER_UI } from "@/lib/partnerUi";
+import { SHOPIFY_BADGE } from "@/lib/shopifyUi";
+
+const PAGE_SIZE = 10;
+
+/** 訂單分潤：小圓角 + 深灰／淺灰／白；狀態徽章維持特殊色 */
+const UI = {
+  dark: "#2d2d2d",
+  mid: "#5c5c5c",
+  soft: "#8a8a8a",
+  border: "#e5e5e5",
+  light: "#f0f0f0",
+  wash: "#f6f6f6",
+  white: "#ffffff",
+  radius: "0.5rem",
+  radiusSm: "0.375rem",
+};
 
 function formatDate(d) {
   return new Date(d).toLocaleDateString("zh-TW", {
@@ -20,21 +46,105 @@ function formatDate(d) {
   });
 }
 
-/** 分潤者可見狀態：已完成／尚未付款要一眼分清 */
-const STATUS_MAP = {
-  completed: { label: "已完成", cls: "bg-[#d1fae5] text-[#065f46]" },
-  pending: { label: "尚未付款", cls: "bg-[#fef3c7] text-[#92400e]" },
-  cancelled: { label: "已取消", cls: "bg-slate-100 text-slate-500" },
-  failed: { label: "付款失敗", cls: "bg-red-100 text-red-600" },
-  refunded: { label: "已退款", cls: "bg-slate-100 text-slate-500" },
-  refund_pending: { label: "退款審核中", cls: "bg-amber-100 text-amber-800" },
+const STATUS_TONE = {
+  completed: "success",
+  pending: "warning",
+  cancelled: "neutral",
+  failed: "critical",
+  refunded: "neutral",
+  refund_pending: "warning",
 };
 
+const STATUS_LABEL = {
+  completed: "已完成",
+  pending: "尚未付款",
+  cancelled: "已取消",
+  failed: "付款失敗",
+  refunded: "已退款",
+  refund_pending: "退款審核中",
+};
+
+function StatusBadge({ status }) {
+  const tone = STATUS_TONE[status] || "neutral";
+  const t = SHOPIFY_BADGE[tone] || SHOPIFY_BADGE.neutral;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-bold whitespace-nowrap"
+      style={{
+        backgroundColor: t.bg,
+        color: t.text,
+        borderRadius: UI.radiusSm,
+      }}
+    >
+      <span
+        className="w-1.5 h-1.5 rounded-full shrink-0"
+        style={{ backgroundColor: t.dot }}
+      />
+      {STATUS_LABEL[status] || status}
+    </span>
+  );
+}
+
+function Card({ children, className = "", style = {} }) {
+  return (
+    <div
+      className={className}
+      style={{
+        backgroundColor: UI.white,
+        border: `1px solid ${UI.border}`,
+        borderRadius: UI.radius,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function MetricCard({ label, value, hint, icon, iconBg }) {
+  return (
+    <Card className="px-4 py-3.5 flex-1 min-w-[140px]">
+      <div className="flex items-start justify-between gap-2">
+        <p
+          className="text-[10px] font-bold uppercase tracking-wider"
+          style={{ color: UI.soft }}
+        >
+          {label}
+        </p>
+        {icon ? (
+          <div
+            className="w-8 h-8 flex items-center justify-center shrink-0"
+            style={{ backgroundColor: iconBg, borderRadius: UI.radiusSm }}
+          >
+            <MaterialIcon name={icon} size={16} className="text-white" />
+          </div>
+        ) : null}
+      </div>
+      <p
+        className="text-xl sm:text-2xl font-black mt-2 tabular-nums"
+        style={{ color: UI.dark }}
+      >
+        {value}
+      </p>
+      {hint ? (
+        <p className="text-[11px] mt-1 leading-snug" style={{ color: UI.soft }}>
+          {hint}
+        </p>
+      ) : null}
+    </Card>
+  );
+}
+
 export default function PartnerOrdersPage() {
+  const router = useRouter();
   const { partner, store } = usePartnerSession();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [selected, setSelected] = useState(() => new Set());
+  const [printOpen, setPrintOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [detailOrder, setDetailOrder] = useState(null);
 
   useEffect(() => {
     if (!partner) return;
@@ -43,6 +153,11 @@ export default function PartnerOrdersPage() {
       setLoading(false);
     });
   }, [partner, store]);
+
+  useEffect(() => {
+    setSelected(new Set());
+    setPage(1);
+  }, [filter]);
 
   const orders = stats?.orders || [];
 
@@ -61,294 +176,537 @@ export default function PartnerOrdersPage() {
     };
   }, [orders]);
 
-  const filtered = orders.filter((o) => {
-    if (filter === "all") return isSettledOrderStatus(o.status);
-    return o.status === filter;
-  });
+  const filtered = useMemo(
+    () =>
+      orders.filter((o) => {
+        if (filter === "all") return isSettledOrderStatus(o.status);
+        return o.status === filter;
+      }),
+    [orders, filter],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+
+  const paged = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, safePage]);
+
+  const allChecked =
+    paged.length > 0 && paged.every((o) => selected.has(o.id));
+  const someChecked =
+    paged.some((o) => selected.has(o.id)) && !allChecked;
+
+  const toggleAll = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allChecked) {
+        paged.forEach((o) => next.delete(o.id));
+      } else {
+        paged.forEach((o) => next.add(o.id));
+      }
+      return next;
+    });
+  };
+
+  const toggleRow = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectedOrders = filtered.filter((o) => selected.has(o.id));
+  const printTargetOrders = selectedOrders.length ? selectedOrders : filtered;
+  const partnerDisplayName = store?.store_name || partner?.name || "";
+  const csvName = `訂單分潤_${new Date().toISOString().slice(0, 10)}.csv`;
+  const selectionLabel =
+    selected.size > 0 ? `（已選 ${selected.size}）` : "";
+
+  const filterTabs = [
+    {
+      id: "all",
+      label: "全部有效",
+      count: loading ? "…" : statusCounts.valid,
+    },
+    {
+      id: "completed",
+      label: "已付款",
+      count: loading ? "…" : statusCounts.paid,
+    },
+    {
+      id: "pending",
+      label: "尚未付款",
+      count: loading ? "…" : statusCounts.unpaid,
+    },
+  ];
+
+  const printMenuItems = [
+    {
+      id: "printer",
+      label: "列印文件預覽",
+      icon: "print",
+      disabled: !filtered.length,
+      onClick: () => setPrintOpen(true),
+    },
+    {
+      id: "csv",
+      label: `匯出 CSV${selectionLabel}`,
+      icon: "download",
+      disabled: !filtered.length,
+      onClick: () => downloadOrdersCsv(printTargetOrders, csvName),
+    },
+    { divider: true },
+    {
+      id: "csv-selected",
+      label: selected.size
+        ? `只匯出所選 ${selected.size} 筆`
+        : "先勾選訂單再匯出",
+      icon: "checklist",
+      disabled: !selected.size,
+      onClick: () => downloadOrdersCsv(selectedOrders, csvName),
+    },
+  ];
+
+  const moreMenuItems = [
+    {
+      id: "settlement",
+      label: "結算與提領",
+      icon: "account_balance_wallet",
+      onClick: () => router.push("/partner/settlement"),
+    },
+    {
+      id: "analytics",
+      label: "分潤分析",
+      icon: "insights",
+      onClick: () => router.push("/partner/analytics"),
+    },
+    {
+      id: "rates",
+      label: "方案分潤一覽",
+      icon: "percent",
+      onClick: () => router.push("/partner/rates"),
+    },
+    { divider: true },
+    {
+      id: "products",
+      label: "商品管理",
+      icon: "inventory_2",
+      onClick: () => router.push("/partner/products?tab=products"),
+    },
+  ];
+
+  const openDetail = (order) => setDetailOrder(order);
+
+  const editBtnStyle = {
+    borderRadius: UI.radiusSm,
+    border: `1px solid ${UI.border}`,
+    backgroundColor: UI.light,
+    color: UI.dark,
+  };
 
   return (
     <PartnerAdminLayout title="訂單分潤">
-      <div className={`${PARTNER_UI.pageFlush} flex flex-col flex-1 min-h-0`}>
-      <div className="px-4 sm:px-5 py-3 border-b border-slate-200 bg-[#F7F9FB] text-xs text-slate-600 leading-relaxed">
-        分潤採月結對帳單（次月 15）＋後台申請提領；核准後目標 10 個工作天內匯款。請至{" "}
-        <Link
-          href="/partner/settlement"
-          className="font-bold text-[#1E4AD1] underline underline-offset-2"
-        >
-          結算與提領
-        </Link>
-        申請（最低 NT$3,000／滿 10 天；每月第 1 次免手續費，之後每次 NT$15）。
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 border-x border-b border-slate-200">
-        <div className="border-b md:border-b-0 md:border-r border-slate-200">
-          <DobermanPanel
-            icon="payments"
-            title="累計分潤"
-            help={METRIC_HELP.cumulativeProfit}
-            rows={[{ label: "分潤合計", value: loading ? "..." : fmt(stats?.totalProfit) }]}
-          />
-        </div>
-        <div className="border-b md:border-b-0 md:border-r border-slate-200">
-          <DobermanPanel
-            icon="receipt_long"
-            title="有效訂單"
-            help={METRIC_HELP.validOrders}
-            rows={[
-              {
-                label: "合計（已完成＋尚未付款）",
-                value: loading ? "..." : statusCounts.valid,
-                unit: "筆",
-              },
-              {
-                label: "已付款",
-                value: loading ? "..." : statusCounts.paid,
-                unit: "筆",
-              },
-              {
-                label: "尚未付款",
-                value: loading ? "..." : statusCounts.unpaid,
-                unit: "筆",
-              },
-            ]}
-          />
-        </div>
-        <DobermanPanel
-          icon="language"
-          title="店鋪營收"
-          help={METRIC_HELP.storeRevenueAll}
-          rows={[{ label: "受取合計", value: loading ? "..." : fmt(stats?.totalRevenue) }]}
-        />
-      </div>
-
-      <div className="p-4 sm:p-5 space-y-4">
-        <div
-          className="rounded-xl border px-3.5 py-3 sm:px-4 text-xs leading-relaxed"
-          style={{
-            borderColor: "rgba(250, 222, 43, 0.65)",
-            backgroundColor: "rgba(250, 222, 43, 0.18)",
-            color: "#5c4a00",
-          }}
-        >
-          <p className="font-bold mb-0.5 text-[#1E4AD1]">關於買家聯絡資訊</p>
-          <p>
-            僅顯示姓名與 Email，方便您針對「尚未付款」訂單禮貌提醒。請勿濫發訊息或用於分潤以外用途；繳費代碼等敏感資料不會提供給夥伴。
-          </p>
-        </div>
-
-        <div className="flex gap-2 flex-wrap items-center">
-          <span className="text-xs font-bold text-slate-500 w-full sm:w-auto mr-0 sm:mr-1">
-            篩選狀態
-          </span>
-          {[
-            { id: "all", label: "全部有效", count: statusCounts.valid },
-            { id: "completed", label: "已付款", count: statusCounts.paid },
-            { id: "pending", label: "尚未付款", count: statusCounts.unpaid },
-          ].map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setFilter(f.id)}
-              className={`inline-flex items-center gap-1.5 min-h-10 px-3.5 sm:px-4 py-2 rounded-lg text-xs font-bold transition ${
-                filter === f.id
-                  ? "bg-[#1E4AD1] text-white"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-              }`}
+      <div
+        className={`${PARTNER_UI.pageFlush} flex flex-col flex-1 min-h-0`}
+        style={{ backgroundColor: UI.wash }}
+      >
+        <div className="px-4 sm:px-6 pt-5 pb-4 flex items-start justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <h1
+              className="text-xl font-black tracking-tight"
+              style={{ color: UI.dark }}
             >
-              {f.label}
-              <span
-                className={`tabular-nums ${
-                  filter === f.id ? "text-blue-100" : "text-slate-400"
-                }`}
+              訂單分潤
+            </h1>
+            <p
+              className="text-xs sm:text-sm mt-1 leading-relaxed max-w-xl"
+              style={{ color: UI.mid }}
+            >
+              分潤採月結對帳單（次月 15）＋後台申請提領；核准後目標 10
+              個工作天內匯款。請至{" "}
+              <Link
+                href="/partner/settlement"
+                className="font-bold underline underline-offset-2"
+                style={{ color: UI.dark }}
               >
-                {loading ? "…" : f.count}
-              </span>
-            </button>
-          ))}
+                結算與提領
+              </Link>
+              申請。
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <ShopifyDropdown
+              label="列印"
+              icon="print"
+              disabled={!filtered.length && !loading}
+              items={printMenuItems}
+            />
+            <ShopifyDropdown label="更多操作" items={moreMenuItems} />
+          </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-          <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-100 bg-[#f8fafc]">
-            <div className="flex items-center gap-2 min-w-0">
-              <MaterialIcon name="receipt" size={20} className="text-[#1E4AD1]" />
-              <h2 className="text-sm font-black text-slate-800">訂單列表</h2>
-            </div>
-            <Link
-              href="/partner/products?tab=products"
-              className="text-xs text-[#1E4AD1] font-bold hover:underline flex items-center gap-1 shrink-0 min-h-9"
-            >
-              商品管理
-              <MaterialIcon name="chevron_right" size={16} />
-            </Link>
+        <div className="px-4 sm:px-6 pb-4">
+          <div className="flex flex-wrap gap-3">
+            <MetricCard
+              label="累計分潤"
+              value={loading ? "…" : fmt(stats?.totalProfit)}
+              hint="有效訂單分潤合計"
+              icon="payments"
+              iconBg="#008060"
+            />
+            <MetricCard
+              label="有效訂單"
+              value={loading ? "…" : statusCounts.valid}
+              hint={`已付款 ${loading ? "…" : statusCounts.paid} · 尚未付款 ${loading ? "…" : statusCounts.unpaid}`}
+              icon="receipt_long"
+              iconBg="#2c6ecb"
+            />
+            <MetricCard
+              label="店鋪營收"
+              value={loading ? "…" : fmt(stats?.totalRevenue)}
+              hint="受取合計"
+              icon="storefront"
+              iconBg="#eec200"
+            />
           </div>
+        </div>
 
-          {/* 手機卡片 */}
-          <div className="md:hidden divide-y divide-slate-100">
-            {loading ? (
-              <div className="py-10 text-center text-slate-400 text-sm">載入中...</div>
-            ) : filtered.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 text-sm">
-                目前沒有符合條件的訂單
+        <div className="px-4 sm:px-6 pb-6 space-y-4">
+          <Card
+            className="px-3.5 py-3 sm:px-4 text-xs leading-relaxed"
+            style={{ backgroundColor: "#fffbeb", borderColor: "#fde68a" }}
+          >
+            <p className="font-bold mb-0.5" style={{ color: "#92400e" }}>
+              關於買家聯絡資訊
+            </p>
+            <p style={{ color: "#78350f" }}>
+              僅顯示姓名與 Email，方便您針對「尚未付款」訂單禮貌提醒。請勿濫發訊息或用於分潤以外用途；繳費代碼等敏感資料不會提供給夥伴。點「編輯」可查看單筆訂單詳情。
+            </p>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between gap-3 px-3 sm:px-4 pt-1">
+              <div className="min-w-0 flex-1">
+                <ShopifyTabs
+                  tabs={filterTabs}
+                  value={filter}
+                  onChange={setFilter}
+                />
               </div>
-            ) : (
-              filtered.map((order) => {
-                const st = STATUS_MAP[order.status] || {
-                  label: order.status,
-                  cls: "bg-slate-100 text-slate-500",
-                };
-                const email = buyerEmail(order);
-                const isPending = order.status === "pending";
-                return (
-                  <div key={order.id} className="p-4 space-y-2.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-mono font-bold text-slate-700 text-xs">
-                          {String(order.id).substring(0, 8).toUpperCase()}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          {formatDate(order.created_at)}
-                        </p>
-                      </div>
-                      <span
-                        className={`text-[11px] font-bold px-2 py-1 rounded-md shrink-0 ${st.cls}`}
-                      >
-                        {st.label}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">
-                        {buyerDisplayName(order)}
-                      </p>
-                      {email ? (
-                        <a
-                          href={`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(
-                            isPending
-                              ? `【Jeko】訂單付款提醒`
-                              : `【Jeko】訂單諮詢`,
-                          )}`}
-                          className="text-xs text-[#1E4AD1] font-bold break-all"
-                        >
-                          {email}
-                        </a>
-                      ) : (
-                        <p className="text-xs text-slate-400">無 Email</p>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                      <div className="rounded-lg bg-slate-50 px-3 py-2">
-                        <p className="text-slate-400 font-bold">金額</p>
-                        <p className="font-bold text-slate-800 mt-0.5">
-                          {fmt(order.total_amount)}
-                        </p>
-                      </div>
-                      <div className="rounded-lg bg-blue-50 px-3 py-2">
-                        <p className="text-slate-400 font-bold">分潤</p>
-                        <p className="font-black text-[#1E4AD1] mt-0.5">
-                          {fmt(order.partner_profit)}
-                        </p>
-                      </div>
-                      <div className="rounded-lg bg-slate-50 px-3 py-2 col-span-2">
-                        <p className="text-slate-400 font-bold">付款方式</p>
-                        <p className="font-medium text-slate-700 mt-0.5">
-                          {paymentMethodLabel(order) || "—"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+              {selected.size > 0 ? (
+                <span
+                  className="hidden sm:inline-flex text-xs font-bold shrink-0 px-2.5 py-1"
+                  style={{
+                    backgroundColor: UI.light,
+                    color: UI.dark,
+                    borderRadius: UI.radiusSm,
+                  }}
+                >
+                  已選取 {selected.size}
+                </span>
+              ) : null}
+            </div>
 
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm min-w-[720px]">
-              <thead className="bg-white text-slate-500 text-xs border-b border-slate-100">
-                <tr>
-                  <th className="px-5 py-3 text-left font-bold">訂單 / 日期</th>
-                  <th className="px-5 py-3 text-left font-bold">買家</th>
-                  <th className="px-5 py-3 text-left font-bold">付款方式</th>
-                  <th className="px-5 py-3 text-left font-bold">訂單金額</th>
-                  <th className="px-5 py-3 text-left font-bold">底價成本</th>
-                  <th className="px-5 py-3 text-left font-bold">分潤</th>
-                  <th className="px-5 py-3 text-left font-bold">付款狀態</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-10 text-slate-400">
-                      載入中...
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-12 text-slate-400">
-                      目前沒有符合條件的訂單
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((order) => {
-                    const st = STATUS_MAP[order.status] || {
-                      label: order.status,
-                      cls: "bg-slate-100 text-slate-500",
-                    };
-                    const email = buyerEmail(order);
-                    const isPending = order.status === "pending";
-                    return (
-                      <tr key={order.id} className="hover:bg-slate-50/50">
-                        <td className="px-5 py-4">
-                          <p className="font-mono font-bold text-slate-700 text-xs">
+            {/* 手機卡片 */}
+            <div
+              className="md:hidden"
+              style={{ borderTop: `1px solid ${UI.border}` }}
+            >
+              {loading ? (
+                <div
+                  className="py-10 text-center text-sm"
+                  style={{ color: UI.soft }}
+                >
+                  載入中...
+                </div>
+              ) : paged.length === 0 ? (
+                <div
+                  className="py-12 text-center text-sm"
+                  style={{ color: UI.soft }}
+                >
+                  目前沒有符合條件的訂單
+                </div>
+              ) : (
+                paged.map((order) => {
+                  const email = buyerEmail(order);
+                  return (
+                    <div
+                      key={order.id}
+                      className="p-4 space-y-2.5"
+                      style={{ borderTop: `1px solid ${UI.border}` }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p
+                            className="font-mono font-bold text-xs"
+                            style={{ color: UI.dark }}
+                          >
                             {String(order.id).substring(0, 8).toUpperCase()}
                           </p>
-                          <p className="text-xs text-slate-400 mt-0.5">
+                          <p
+                            className="text-xs mt-0.5"
+                            style={{ color: UI.soft }}
+                          >
                             {formatDate(order.created_at)}
                           </p>
-                        </td>
-                        <td className="px-5 py-4">
-                          <p className="text-sm font-bold text-slate-800">
-                            {buyerDisplayName(order)}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <StatusBadge status={order.status} />
+                          <button
+                            type="button"
+                            onClick={() => openDetail(order)}
+                            className="w-8 h-8 inline-flex items-center justify-center transition"
+                            style={editBtnStyle}
+                            aria-label="查看訂單"
+                            title="查看訂單"
+                          >
+                            <MaterialIcon name="edit" size={16} />
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <p
+                          className="text-sm font-bold"
+                          style={{ color: UI.dark }}
+                        >
+                          {buyerDisplayName(order)}
+                        </p>
+                        {email ? (
+                          <p
+                            className="text-xs break-all"
+                            style={{ color: UI.soft }}
+                          >
+                            {email}
                           </p>
-                          {email ? (
-                            <a
-                              href={`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(
-                                isPending
-                                  ? `【Jeko eSIM】訂單付款提醒 #${String(order.id).slice(0, 8)}`
-                                  : `【Jeko eSIM】關於您的訂單 #${String(order.id).slice(0, 8)}`,
-                              )}`}
-                              className="text-xs text-[#1E4AD1] hover:underline break-all"
+                        ) : (
+                          <p className="text-xs" style={{ color: UI.soft }}>
+                            無 Email
+                          </p>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                        <div
+                          className="px-3 py-2"
+                          style={{
+                            backgroundColor: UI.light,
+                            borderRadius: UI.radiusSm,
+                          }}
+                        >
+                          <p className="font-bold" style={{ color: UI.soft }}>
+                            金額
+                          </p>
+                          <p
+                            className="font-bold mt-0.5"
+                            style={{ color: UI.dark }}
+                          >
+                            {fmt(order.total_amount)}
+                          </p>
+                        </div>
+                        <div
+                          className="px-3 py-2"
+                          style={{
+                            backgroundColor: UI.light,
+                            borderRadius: UI.radiusSm,
+                          }}
+                        >
+                          <p className="font-bold" style={{ color: UI.soft }}>
+                            分潤
+                          </p>
+                          <p
+                            className="font-black mt-0.5"
+                            style={{ color: UI.dark }}
+                          >
+                            {fmt(order.partner_profit)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm min-w-[780px]">
+                <thead>
+                  <tr
+                    className="text-[10px] uppercase tracking-wider"
+                    style={{ backgroundColor: UI.light, color: UI.soft }}
+                  >
+                    <th className="pl-5 pr-2 py-3 w-8">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded accent-black cursor-pointer"
+                        checked={allChecked}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someChecked;
+                        }}
+                        onChange={toggleAll}
+                        aria-label="全選本頁"
+                      />
+                    </th>
+                    <th className="px-3 py-3 text-left font-bold">
+                      訂單 / 日期
+                    </th>
+                    <th className="px-5 py-3 text-left font-bold">買家</th>
+                    <th className="px-5 py-3 text-left font-bold">付款方式</th>
+                    <th className="px-5 py-3 text-left font-bold">訂單金額</th>
+                    <th className="px-5 py-3 text-left font-bold">底價成本</th>
+                    <th className="px-5 py-3 text-left font-bold">分潤</th>
+                    <th className="px-5 py-3 text-left font-bold">付款狀態</th>
+                    <th className="px-4 py-3 text-center font-bold w-16">
+                      操作
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td
+                        colSpan={9}
+                        className="text-center py-10 text-sm"
+                        style={{ color: UI.soft }}
+                      >
+                        載入中...
+                      </td>
+                    </tr>
+                  ) : paged.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={9}
+                        className="text-center py-12 text-sm"
+                        style={{ color: UI.soft }}
+                      >
+                        目前沒有符合條件的訂單
+                      </td>
+                    </tr>
+                  ) : (
+                    paged.map((order) => {
+                      const email = buyerEmail(order);
+                      const checked = selected.has(order.id);
+                      return (
+                        <tr
+                          key={order.id}
+                          style={{
+                            borderTop: `1px solid ${UI.border}`,
+                            backgroundColor: checked ? UI.light : undefined,
+                          }}
+                        >
+                          <td className="pl-5 pr-2 py-4">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 rounded accent-black cursor-pointer"
+                              checked={checked}
+                              onChange={() => toggleRow(order.id)}
+                              aria-label={`選取訂單 ${order.id}`}
+                            />
+                          </td>
+                          <td className="px-3 py-4">
+                            <p
+                              className="font-mono font-bold text-xs"
+                              style={{ color: UI.dark }}
                             >
-                              {email}
-                            </a>
-                          ) : (
-                            <p className="text-xs text-slate-400">無 Email</p>
-                          )}
-                        </td>
-                        <td className="px-5 py-4 text-slate-700 text-xs font-medium">
-                          {paymentMethodLabel(order)}
-                        </td>
-                        <td className="px-5 py-4 font-bold text-slate-800">
-                          {fmt(order.total_amount)}
-                        </td>
-                        <td className="px-5 py-4 text-slate-500">
-                          {fmt(order.b2b_cost)}
-                        </td>
-                        <td className="px-5 py-4 font-black text-[#1E4AD1]">
-                          +{fmt(order.partner_profit)}
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className={`text-xs font-bold px-2.5 py-1 rounded-sm ${st.cls}`}>
-                            {st.label}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                              {String(order.id).substring(0, 8).toUpperCase()}
+                            </p>
+                            <p
+                              className="text-xs mt-0.5"
+                              style={{ color: UI.soft }}
+                            >
+                              {formatDate(order.created_at)}
+                            </p>
+                          </td>
+                          <td className="px-5 py-4">
+                            <p
+                              className="text-sm font-bold"
+                              style={{ color: UI.dark }}
+                            >
+                              {buyerDisplayName(order)}
+                            </p>
+                            {email ? (
+                              <p
+                                className="text-xs truncate max-w-[180px]"
+                                style={{ color: UI.soft }}
+                              >
+                                {email}
+                              </p>
+                            ) : (
+                              <p className="text-xs" style={{ color: UI.soft }}>
+                                無 Email
+                              </p>
+                            )}
+                          </td>
+                          <td
+                            className="px-5 py-4 text-xs font-medium"
+                            style={{ color: UI.mid }}
+                          >
+                            {paymentMethodLabel(order)}
+                          </td>
+                          <td
+                            className="px-5 py-4 font-bold"
+                            style={{ color: UI.dark }}
+                          >
+                            {fmt(order.total_amount)}
+                          </td>
+                          <td className="px-5 py-4" style={{ color: UI.soft }}>
+                            {fmt(order.b2b_cost)}
+                          </td>
+                          <td
+                            className="px-5 py-4 font-black"
+                            style={{ color: UI.dark }}
+                          >
+                            +{fmt(order.partner_profit)}
+                          </td>
+                          <td className="px-5 py-4">
+                            <StatusBadge status={order.status} />
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => openDetail(order)}
+                              className="w-8 h-8 inline-flex items-center justify-center transition"
+                              style={editBtnStyle}
+                              aria-label="查看訂單詳情"
+                              title="查看訂單"
+                            >
+                              <MaterialIcon name="edit" size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {!loading && filtered.length > 0 ? (
+              <ShopifyPagination
+                page={safePage}
+                pageSize={PAGE_SIZE}
+                total={filtered.length}
+                onChange={setPage}
+              />
+            ) : null}
+          </Card>
         </div>
       </div>
-      </div>
+
+      <PrintOrdersModal
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+        orders={printTargetOrders}
+        partnerName={partnerDisplayName}
+      />
+
+      <OrderDetailModal
+        open={!!detailOrder}
+        order={detailOrder}
+        onClose={() => setDetailOrder(null)}
+      />
     </PartnerAdminLayout>
   );
 }

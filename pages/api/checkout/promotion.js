@@ -27,6 +27,12 @@ import {
 } from "../../../lib/welcomeGuard";
 import { resolveMemberEmail } from "../push/_memberAuth";
 import { resolvePartnerReferralDiscount } from "../../../lib/partnerReferralDiscount";
+import {
+  resolveReferralDiscountPercentFromCartItems,
+  fallbackReferralDiscountPercent,
+} from "../../../lib/resolveCartPartnerTerms";
+import { syncPartnerDiscountPromotion } from "../../../lib/medusaPartnerPromotions";
+import { loginMedusaAdmin } from "../../../lib/medusaAdminAuth";
 import { buildSetSignedReferralCookieHeader } from "../../../lib/referralSignature";
 import {
   getClientIp,
@@ -99,14 +105,50 @@ function lineFriendBlockedResponse(res, lineOaUrl, error, extra = {}) {
 }
 
 async function fetchCart(cartId) {
-  const res = await fetch(`${MEDUSA_URL}/store/carts/${cartId}`, {
-    headers: medusaHeaders(),
-  });
+  const fields =
+    "*items,*items.variant,*items.variant.options,*items.product,*items.product.metadata,*promotions";
+  const res = await fetch(
+    `${MEDUSA_URL}/store/carts/${cartId}?fields=${encodeURIComponent(fields)}`,
+    {
+      headers: medusaHeaders(),
+    },
+  );
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data?.message || "無法取得購物車");
   }
   return data.cart;
+}
+
+async function syncPartnerPromoPercentFromCart(partnerReferral, cart) {
+  if (!partnerReferral?.medusaCode) return partnerReferral?.percent || null;
+
+  const fromProduct = resolveReferralDiscountPercentFromCartItems(
+    cart?.items || [],
+  );
+  const percent =
+    fromProduct ||
+    fallbackReferralDiscountPercent(partnerReferral.percent);
+
+  const email = process.env.MEDUSA_ADMIN_EMAIL || "script@esim.local";
+  const password = process.env.MEDUSA_ADMIN_PASSWORD || "ScriptImport2026!";
+  try {
+    const token = await loginMedusaAdmin(email, password);
+    const synced = await syncPartnerDiscountPromotion(token, {
+      code: partnerReferral.medusaCode,
+      percent,
+      active: true,
+    });
+    if (!synced.ok) {
+      console.warn(
+        "[promotion] 同步夥伴折扣趴數失敗:",
+        synced.error || synced.action,
+      );
+    }
+  } catch (err) {
+    console.warn("[promotion] 無法登入 Medusa 同步折扣趴數:", err.message);
+  }
+  return percent;
 }
 
 function pickTotals(cart) {
@@ -302,6 +344,20 @@ export default async function handler(req, res) {
     }
 
     const currentCart = await fetchCart(cartId);
+
+    // 專屬連結：依購物車商品電信商 metadata 同步 Medusa 折扣趴數後再套用
+    let effectivePartnerPercent = partnerReferral?.percent || null;
+    if (partnerReferral?.medusaCode) {
+      effectivePartnerPercent = await syncPartnerPromoPercentFromCart(
+        partnerReferral,
+        currentCart,
+      );
+      partnerReferral = {
+        ...partnerReferral,
+        percent: effectivePartnerPercent,
+      };
+    }
+
     const existingCodes = (currentCart?.promotions || [])
       .map((p) => p.code)
       .filter(Boolean)

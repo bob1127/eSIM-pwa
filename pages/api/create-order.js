@@ -10,6 +10,7 @@ import {
   computeAuthoritativeStoreOrder,
   PricingError,
 } from "../../lib/partnerOrderPricing";
+import { resolvePartnerRatePercentFromCartItems } from "../../lib/resolveCartPartnerTerms";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -147,11 +148,13 @@ export default async function handler(req, res) {
         const refPartner = await resolveActiveReferralPartner(referralCode);
         if (refPartner) {
           finalPartnerId = refPartner.id;
+          const rateFromItems =
+            resolvePartnerRatePercentFromCartItems(items) || null;
           computedProfit = await profitFromReferralPartner(
             refPartner,
             total_amount,
             b2b_cost,
-            { admin: supabase },
+            { admin: supabase, ratePercent: rateFromItems },
           );
         }
       }

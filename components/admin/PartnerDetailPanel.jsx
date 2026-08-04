@@ -7,11 +7,6 @@ import {
   parseDescriptionField,
 } from "@/lib/partnerDescriptionParse";
 import { bossFetch, bossFetchBlob } from "@/lib/bossAdminClient";
-import {
-  DEFAULT_REFERRAL_DISCOUNT_PERCENT,
-  MIN_REFERRAL_DISCOUNT_PERCENT,
-  MAX_REFERRAL_DISCOUNT_PERCENT,
-} from "@/lib/partnerReferralDiscount";
 
 function defaultSettlementMonth() {
   const now = new Date();
@@ -121,20 +116,12 @@ function SettlementStatementBlock({ partner }) {
 
 function ReferralDiscountSettings({ partner, onUpdated }) {
   const [enabled, setEnabled] = useState(true);
-  const [percent, setPercent] = useState(DEFAULT_REFERRAL_DISCOUNT_PERCENT);
-  const [rate, setRate] = useState(25);
   const [saving, setSaving] = useState(false);
   const [rotating, setRotating] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     setEnabled(partner.referral_discount_enabled !== false);
-    setPercent(
-      Number(partner.referral_discount_percent) > 0
-        ? Number(partner.referral_discount_percent)
-        : DEFAULT_REFERRAL_DISCOUNT_PERCENT,
-    );
-    setRate(Number(partner.referral_rate) || 25);
     setMessage("");
   }, [partner.id]);
 
@@ -156,9 +143,7 @@ function ReferralDiscountSettings({ partner, onUpdated }) {
         method: "PATCH",
         body: JSON.stringify({
           id: partner.id,
-          referral_rate: rate,
           referral_discount_enabled: enabled,
-          referral_discount_percent: percent,
         }),
       });
       setMessage(data.warning || "已儲存，立即生效");
@@ -197,41 +182,12 @@ function ReferralDiscountSettings({ partner, onUpdated }) {
   return (
     <div className="border border-blue-100 bg-blue-50/40 rounded-sm p-4 space-y-3">
       <p className="text-[10px] text-slate-400 font-bold uppercase">
-        分潤／折扣趴數（由您決定，可隨時調整）
+        專屬折扣碼開關
       </p>
-
-      <div className="grid grid-cols-2 gap-3">
-        <label className="block">
-          <span className="text-xs font-bold text-slate-600">
-            分潤趴數（成本 × %）
-          </span>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={rate}
-            onChange={(e) => setRate(e.target.value)}
-            className="mt-1 w-full rounded-sm border border-slate-200 px-2 py-1.5 text-sm focus:border-[#0071EB] outline-none"
-          />
-          <span className="mt-1 block text-[10px] text-slate-400 leading-snug">
-            內部結算用。對外約實付 15%（成本 25%＋九折時常見約此水準）。無達標加碼。
-          </span>
-        </label>
-        <label className="block">
-          <span className="text-xs font-bold text-slate-600">
-            旅客折扣（全單 %）
-          </span>
-          <input
-            type="number"
-            min={MIN_REFERRAL_DISCOUNT_PERCENT}
-            max={MAX_REFERRAL_DISCOUNT_PERCENT}
-            value={percent}
-            onChange={(e) => setPercent(e.target.value)}
-            disabled={!enabled}
-            className="mt-1 w-full rounded-sm border border-slate-200 px-2 py-1.5 text-sm focus:border-[#0071EB] outline-none disabled:bg-slate-100 disabled:text-slate-400"
-          />
-        </label>
-      </div>
+      <p className="text-xs text-slate-600 leading-relaxed">
+        分潤％與旅客折扣％已改為在各商品頁（依電信商）設定並寫入 Medusa。
+        此處只負責開／關此夥伴的專屬折扣碼。夥伴可在後台「方案分潤一覽」查看各產品趴數。
+      </p>
 
       <label className="flex items-center gap-2 text-xs font-bold text-slate-600">
         <input

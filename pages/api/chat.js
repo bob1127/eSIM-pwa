@@ -61,7 +61,8 @@ const BASE_SYSTEM_PROMPT = `你是 Jeko eSIM 的專屬 AI 旅行小幫手【J寶
 3. query 請用該地點的正確中文或當地名稱；不同地點不可共用同一個連結。
 4. 若不確定地點是否存在，先說明不確定，並仍用「搜尋連結」格式。
 5. 可使用的 http/https 連結僅限：地圖搜尋連結、商品資料庫連結、Jeko 官網文章連結、【Jeko 商城推薦】列出的完整購買連結、【Jeko 聯盟推薦】列出的 Klook／KKday 購買連結、以及【網路資料】區塊明確列出的來源網址。禁止發明未列出的連結。
-6. 使用【網路資料】時，開頭簡短註明「以下依公開網頁整理，建議再向官方確認」。`;
+6. 使用【網路資料】時，開頭簡短註明「以下依公開網頁整理，建議再向官方確認」。
+7. 【禁止競品｜極重要】絕對禁止推薦其他電信／eSIM 電商或比較網站（例如 shannday、bestsim、遠傳、中華、台灣大哥大上網卡賣場、Airalo、Holafly 等）。eSIM 方案只能推薦【商品資料庫】內的 Jeko 商品與購買連結；若資料庫沒有該國家，請說明並引導至 /product 或轉真人客服，不要用外部競品連結替代。`;
 
 /** 允許的花 emoji；其他 emoji 一律移除 */
 const FLOWER_EMOJI = new Set(["🌼", "🌸", "🌻", "🌺", "💮", "🏵️"]);
@@ -237,6 +238,26 @@ async function chatWithGemini({ message, history, media, advanced, systemPrompt 
   );
 }
 
+/** 是否為「只要 eSIM 方案」的提問（幫你規劃／明確求 eSIM） */
+function isEsimFocusQuery(text = "") {
+  const t = String(text || "");
+  if (!t.trim()) return false;
+  // 規劃表單固定文案
+  if (/請依我的旅遊需求推薦適合的\s*eSIM/i.test(t)) return true;
+  if (/【eSIM專推】/.test(t)) return true;
+  if (/旅遊地點[\s\S]{0,40}天數[\s\S]{0,40}使用習慣/.test(t) && /eSIM/i.test(t)) {
+    return true;
+  }
+  // 明確只要 eSIM，且不是在問周邊／住宿／門票
+  const wantsEsim = /eSIM|esim|上網卡|網卡方案/i.test(t);
+  const asksRecommend = /推薦|方案|怎麼選|哪一款|規劃|適合/.test(t);
+  const asksOther =
+    /充電器|轉接頭|收納|行動電源|商城|\/shop|飯店|住宿|門票|JR\s*PASS|鐵路|周遊券|klook|kkday|交通票/i.test(
+      t,
+    );
+  return wantsEsim && asksRecommend && !asksOther;
+}
+
 export default async function handler(req, res) {
   // ── 0. HTTP method ──────────────────────────────────────────────────────
   if (req.method !== "POST") {
@@ -330,6 +351,8 @@ export default async function handler(req, res) {
     }
 
     // ── 8. 知識庫：eSIM + 聯盟 + 官網文章 → 不足再用網路 ─────────────
+    const esimOnly = isEsimFocusQuery(msgText);
+
     const [
       productKnowledge,
       articleResult,
@@ -342,10 +365,11 @@ export default async function handler(req, res) {
       fetchProductKnowledge(msgText),
       fetchArticleKnowledgeByQuery(msgText),
       fetchProductCards(msgText),
-      Promise.resolve(fetchAffiliateKnowledge(msgText)),
-      Promise.resolve(fetchAffiliateCards(msgText)),
-      Promise.resolve(fetchShopKnowledge(msgText)),
-      Promise.resolve(fetchShopCards(msgText)),
+      // eSIM 規劃／推薦：不要帶入商城與聯盟，避免推到充電器、JR PASS 等
+      esimOnly ? Promise.resolve("") : Promise.resolve(fetchAffiliateKnowledge(msgText)),
+      esimOnly ? Promise.resolve([]) : Promise.resolve(fetchAffiliateCards(msgText)),
+      esimOnly ? Promise.resolve("") : Promise.resolve(fetchShopKnowledge(msgText)),
+      esimOnly ? Promise.resolve([]) : Promise.resolve(fetchShopCards(msgText)),
     ]);
 
     const articleKnowledge =
@@ -355,11 +379,23 @@ export default async function handler(req, res) {
     const strongCoverage = Boolean(articleResult?.strongCoverage);
     const hasAffiliate = Boolean(affiliateCards?.length);
     const hasShop = Boolean(shopCards?.length);
+    const hasProductCards = Boolean(productCards?.length);
+    const hasProductDb =
+      typeof productKnowledge === "string" &&
+      productKnowledge.includes("購買連結：");
 
-    // 官網文章不夠、且也沒有可推的聯盟／商城卡時，才補網路資料
+    // 已有 Jeko 商品可推時不要補網路（避免競品 eSIM 網站污染回答）
     let webKnowledge = "";
     let webMeta = { usedWeb: false, provider: null };
-    if (!strongCoverage && !hasAffiliate && !hasShop && msgText) {
+    if (
+      !esimOnly &&
+      !strongCoverage &&
+      !hasAffiliate &&
+      !hasShop &&
+      !hasProductCards &&
+      !hasProductDb &&
+      msgText
+    ) {
       try {
         const web = await fetchWebKnowledgeByQuery(msgText);
         webKnowledge = web?.text || "";
@@ -377,11 +413,25 @@ export default async function handler(req, res) {
     const systemPrompt = [
       BASE_SYSTEM_PROMPT,
       productKnowledge,
-      shopKnowledge,
-      affiliateKnowledge,
+      esimOnly ? "" : shopKnowledge,
+      esimOnly ? "" : affiliateKnowledge,
+      // eSIM 專問時文章可留作安裝／注意事項，但仍以商品庫為主
       articleKnowledge,
       webKnowledge,
-      strongCoverage
+      esimOnly
+        ? "【本次來源｜eSIM 專推】使用者只要 eSIM 上網方案。只能依【商品資料庫】推薦 1～2 個 Jeko eSIM；聊天室會顯示 eSIM 商品卡。禁止提及或推薦 Jeko 商城配件、Klook／KKday 聯盟商品、門票、鐵路周遊券、住宿。\n" +
+          "【HOT SALE 優先｜一律遵守】若商品標註 HOT SALE 電信（例如日本總量型的 AU(KDDI)、KDDI / SoftBank），推薦時一律以該電信商方案為主推；說明時可點出這是熱銷／推薦線路。不要主推非 HOT SALE 電信（如 IIJ(DOCOMO)），除非使用者明確指定。\n" +
+          "【用量緩衝設計｜極重要｜避免客訴】可推 1～2 個：第 1 優先吃到飽／高容量；第 2 可推「明顯留餘裕」的總量型，禁止用「總量÷天數剛好夠」當理由。\n" +
+          "依使用習慣的「建議最低總量」（約等於 天數 × 下列每日下限，再往上取商品庫現有檔）：\n" +
+          "- 輕量（地圖／訊息）：每日至少約 1.5GB → 例 10 天至少約 15GB；或吃到飽。禁止推每日均攤＜1GB 的總量。\n" +
+          "- 社群／拍照：每日至少約 2.5GB → 例 10 天至少約 25GB；優先吃到飽，其次高總量。\n" +
+          "- 影音吃到飽：第 1 必推吃到飽；第 2 若推總量，每日至少約 5GB（10 天≥50GB），否則不要硬推總量。\n" +
+          "- 工作視訊／會議雲端：第 1 必推吃到飽；第 2 若推總量，每日至少約 3～4GB（10 天至少約 30～40GB）。禁止推「10天10GB≈每日1GB」這類對視訊明顯不足的方案，並可明說視訊耗流大、總量要預留很多。\n" +
+          "- 說明時寫「預留緩衝，避免旅遊中不夠用」；兩個方案都要合理，不要為了湊數推不夠用的第二個。"
+        : hasProductCards || hasProductDb
+        ? "【本次來源】已提供 Jeko 商品資料庫與／或推薦卡。請依資料庫推薦，並引導點下方商品卡；禁止推薦外部競品 eSIM／電信網站。" +
+          "【HOT SALE】若知識庫標了 HOT SALE 電信，一律優先推薦該電信商方案。"
+        : strongCoverage
         ? "【本次來源】以 Jeko 官網文章為主；不要改用訓練記憶補充名單。"
         : hasShop && hasAffiliate
           ? "【本次來源】已提供商城與聯盟商品。請先寫實用說明，再引導點下方卡片；文字勿硬推價格清單。"
@@ -390,7 +440,7 @@ export default async function handler(req, res) {
             : hasAffiliate
               ? "【本次來源】已提供 Klook／KKday 聯盟商品；請優先推薦並列出購買連結（可計分潤）。聊天室會顯示同款卡片，請引導使用者點「查看詳情」。"
               : webMeta.usedWeb
-                ? "【本次來源】官網／聯盟／商城無強相關，已提供【網路資料】；只能引用所列來源，並提醒向官方確認。"
+                ? "【本次來源】官網／聯盟／商城／商品庫無強相關，已提供【網路資料】；只能引用所列來源，並提醒向官方確認。仍禁止推薦競品 eSIM 電商。"
                 : "【本次來源】官網／聯盟／商城無強相關且網路資料不足；請誠實說明無法確認，勿編造。",
     ]
       .filter(Boolean)

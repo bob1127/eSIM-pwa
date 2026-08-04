@@ -539,9 +539,9 @@ export default function AccountPage() {
   if (!isLoggedIn || !user) {
     return (
       <Layout hideNavbar>
-        <div className="min-h-screen flex items-center justify-center bg-[#e8ecf1] text-slate-500">
+        <div className="min-h-screen flex items-center justify-center bg-[#f6f6f6] text-slate-500">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-4 border-[#1E4AD1] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#1a1a1a] border-t-transparent rounded-full animate-spin" />
             <p className="text-sm font-medium">導向登入頁…</p>
           </div>
         </div>

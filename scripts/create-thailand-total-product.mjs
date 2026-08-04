@@ -1,12 +1,13 @@
 /**
- * 建立／更新「日本 eSIM 總量型」
- * 三種電信（對齊選品神器）：
- *   1) IIJ(DOCOMO) ← Japan-IIJ-Total*（原生 JP IP，用完降速 200kbps）— 利潤 60%
- *   2) AU(KDDI) ← Japan-Local-Total* au-net（原生 JP IP，用完降速 128kbps）— 利潤 60%
- *   3) KDDI / SoftBank ← Japan(KDDI+SB)(T+C)-Total*（漫遊 SG IP，128kbps）— 利潤 50%（HOT SALE）
+ * 建立「泰國 eSIM 總量型」— 兩個電信變體
+ *   1) AIS ← Thailand-Total*GB（AIS Thailand／e-ideas／新加坡 IP 漫遊）
+ *      利潤 50%｜專屬夥伴連結 25%｜95 折（5%）
+ *   2) TRUE ← Thailand-Local-Total*（TRUE 原生 TH IP）
+ *      利潤 85%｜專屬夥伴連結 45%｜95 折（5%）
  *
  * 用法：
- *   HKD_TO_TWD=4.5 node scripts/create-japan-total-product.mjs --rebuild
+ *   HKD_TO_TWD=4.5 node scripts/create-thailand-total-product.mjs
+ *   HKD_TO_TWD=4.5 node scripts/create-thailand-total-product.mjs --rebuild
  */
 import fs from "fs";
 import path from "path";
@@ -46,24 +47,25 @@ const MEDUSA_URL = (
 const EMAIL = process.env.MEDUSA_ADMIN_EMAIL || "script@esim.local";
 const PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "ScriptImport2026!";
 
-const HANDLE = "japan-total-esim";
-const TELECOM_IIJ = "IIJ(DOCOMO)";
-const TELECOM_KDDI = "AU(KDDI)";
-const TELECOM_DUAL = "KDDI / SoftBank";
-const LINE = "漫遊線路";
-const DATA_ORDER = [
-  "1GB",
-  "3GB",
-  "5GB",
-  "10GB",
-  "12GB",
-  "20GB",
-  "21GB",
-  "30GB",
-  "50GB",
-];
-/** 原生 60%／漫遊雙網 50% */
-const PROFIT_BY_KIND = { iij: 60, kddi: 60, dual: 50 };
+const HANDLE = "thailand-total-esim";
+const TELECOM_AIS = "AIS";
+const TELECOM_TRUE = "TRUE";
+const LINE = "總量型";
+
+const PROFIT_BY_TELECOM = {
+  [TELECOM_AIS]: 50,
+  [TELECOM_TRUE]: 85,
+};
+const PARTNER_RATE_BY_TELECOM = {
+  [TELECOM_AIS]: 25,
+  [TELECOM_TRUE]: 45,
+};
+const REFERRAL_DISCOUNT_BY_TELECOM = {
+  [TELECOM_AIS]: 5, // 95 折
+  [TELECOM_TRUE]: 5, // 95 折
+};
+
+const DATA_ORDER = ["3GB", "5GB", "10GB", "15GB", "20GB", "30GB", "50GB"];
 const HKD_TO_TWD_ENV = process.env.HKD_TO_TWD
   ? Number(process.env.HKD_TO_TWD)
   : null;
@@ -72,10 +74,10 @@ const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 
 const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
-const CATEGORY_IDS = ["pcat_01KPJN0F8RYEENWHMS7D5WT7QR"]; // japan
+const CATEGORY_IDS = ["pcat_01KPJQPEK3V9SEDPW9TDW3GB46"]; // tailand
 const THUMB =
-  process.env.JAPAN_PRODUCT_THUMB ||
-  "https://www.jeko-esim.com.tw/images/japan-esim-banner.jpg";
+  process.env.THAILAND_PRODUCT_THUMB ||
+  "https://www.jeko-esim.com.tw/images/tailand-esim-banner.jpg";
 
 function retailFromCost(costTwd, profitPercent) {
   const margin = 1 + profitPercent / 100;
@@ -94,7 +96,7 @@ async function resolveHkdToTwd() {
     const data = await res.json();
     const rate = 1 / Number(data?.rates?.HKD);
     if (!Number.isFinite(rate) || rate <= 0) throw new Error("invalid HKD rate");
-    return { rate, source: "exchangerate-api (同選品神器)" };
+    return { rate, source: "exchangerate-api" };
   } catch (err) {
     console.warn(
       `⚠️ 匯率抓取失敗（${err.message}），改用 fallback ${HKD_TO_TWD_FALLBACK}`,
@@ -109,20 +111,19 @@ function dataRank(label) {
 }
 
 function telecomRank(telecom) {
-  if (telecom === TELECOM_IIJ) return 0;
-  if (telecom === TELECOM_KDDI) return 1;
-  if (telecom === TELECOM_DUAL) return 2;
+  if (telecom === TELECOM_AIS) return 0;
+  if (telecom === TELECOM_TRUE) return 1;
   return 9;
 }
 
 function loadPlans(hkdToTwd) {
-  const file = path.join(__dirname, "data", "japan-total-plans.json");
+  const file = path.join(__dirname, "data", "thailand-total-plans.json");
   const raw = JSON.parse(fs.readFileSync(file, "utf8"));
   const rows = [];
   const push = (list, telecom, kind) => {
-    const profit = PROFIT_BY_KIND[kind];
+    const profit = PROFIT_BY_TELECOM[telecom];
     for (const p of list || []) {
-      const hkd = Number(p.price_hkd) || Number(p.cost_twd) || 0;
+      const hkd = Number(p.price_hkd) || 0;
       const cost = Math.ceil(hkd * hkdToTwd);
       const dataAmount = p.data_amount || "5GB";
       rows.push({
@@ -132,15 +133,16 @@ function loadPlans(hkdToTwd) {
         cost_twd: cost,
         retail_twd: retailFromCost(cost, profit),
         profit_percent: profit,
+        partner_rate_percent: PARTNER_RATE_BY_TELECOM[telecom],
+        referral_discount_percent: REFERRAL_DISCOUNT_BY_TELECOM[telecom],
         telecom,
         daysLabel: `${p.day}天`,
         kind,
       });
     }
   };
-  push(raw.iij, TELECOM_IIJ, "iij");
-  push(raw.kddi, TELECOM_KDDI, "kddi");
-  push(raw.dual, TELECOM_DUAL, "dual");
+  push(raw.ais, TELECOM_AIS, "ais");
+  push(raw.true, TELECOM_TRUE, "true");
   return rows.sort(
     (a, b) =>
       telecomRank(a.telecom) - telecomRank(b.telecom) ||
@@ -193,27 +195,19 @@ function chunk(arr, size) {
 }
 
 function toVariant(row) {
-  const isIij = row.kind === "iij";
-  const isKddi = row.kind === "kddi";
-  const isNative = isIij || isKddi;
+  const isTrue = row.kind === "true";
   const dataAmount = row.data_amount;
   const profit = row.profit_percent;
   const speedRule =
     row.speed_rule ||
-    (isIij
-      ? "高速用完後降速至 200 kbps"
-      : isKddi
-        ? "高速用完後降速至 128 kbps"
-        : "高速用完後降速至 128 kbps");
-  const network = isIij
-    ? "IIJ(DOCOMO) 4G/LTE"
-    : isKddi
-      ? "AU(KDDI) 4G/5G"
-      : "KDDI / SoftBank 4G/5G 雙電信";
-  const apn = row.apn || (isIij ? "vmobile.jp" : isKddi ? "uad5gn.au-net.ne.jp" : "e-ideas");
-  const ip = isNative ? "JP" : "SG";
-  const ipType = isNative ? "日本IP" : "新加坡IP";
-  const routeType = isNative ? "原生eSIM" : "漫遊";
+    (isTrue
+      ? "高速用完後降速（依供應商規則）"
+      : "高速用完後降速至約 128 kbps");
+  const network = isTrue ? "TRUE 4G/5G" : "AIS Thailand 4G/LTE/5G";
+  const apn = row.apn || (isTrue ? "internet" : "e-ideas");
+  const ip = isTrue ? "TH" : "SG";
+  const ipType = isTrue ? "泰國 IP" : "新加坡 IP";
+  const routeType = isTrue ? "原生eSIM" : "漫遊";
 
   return {
     title: `${row.telecom} · ${row.daysLabel} · ${dataAmount}`,
@@ -236,13 +230,16 @@ function toVariant(row) {
       days: String(row.day),
       cost_hkd: String(row.price_hkd || ""),
       cost_price: row.cost_twd,
+      profit_percent: profit,
+      profit_margin: `${profit}%`,
       profit_rate: `${profit}%`,
       margin: 1 + profit / 100,
+      partner_rate_percent: row.partner_rate_percent,
+      referral_discount_percent: row.referral_discount_percent,
       apn,
       networks: row.networks || "",
       rule_desc: row.rule_desc || "",
       speed_desc: row.speed_desc || "",
-      throttle_kind: row.throttle_kind || (isIij ? "200kbps" : "128kbps"),
       ip,
       attributes: {
         days: row.day,
@@ -268,7 +265,7 @@ async function main() {
   console.log(`💱 匯率 1 HKD ≈ ${hkdToTwd.toFixed(4)} TWD（${fxSource}）`);
 
   const rows = loadPlans(hkdToTwd);
-  if (!rows.length) throw new Error("japan-total-plans.json 無資料");
+  if (!rows.length) throw new Error("thailand-total-plans.json 無資料");
 
   const dayValues = [...new Set(rows.map((r) => r.daysLabel))].sort(
     (a, b) => parseInt(a, 10) - parseInt(b, 10),
@@ -276,24 +273,16 @@ async function main() {
   const dataValues = DATA_ORDER.filter((d) =>
     rows.some((r) => r.data_amount === d),
   );
-  const telecomValues = [TELECOM_IIJ, TELECOM_KDDI, TELECOM_DUAL];
+  const telecomValues = [TELECOM_AIS, TELECOM_TRUE];
 
   for (const telecom of telecomValues) {
-    const sample = rows.find(
-      (r) =>
-        r.telecom === telecom && r.day === 5 && r.data_amount === "5GB",
-    );
+    const sample =
+      rows.find((r) => r.telecom === telecom && r.day === 7) ||
+      rows.find((r) => r.telecom === telecom);
     if (sample) {
       console.log(
-        `核對 ${telecom} 5天 5GB: HKD ${sample.price_hkd} → cost NT$${sample.cost_twd} → 售價 NT$${sample.retail_twd}（${sample.profit_percent}%） (${sample.sku})`,
+        `核對 ${telecom} ${sample.daysLabel} ${sample.data_amount}: HKD ${sample.price_hkd} → cost NT$${sample.cost_twd} → 售價 NT$${sample.retail_twd}（利潤 ${sample.profit_percent}%｜夥伴 ${sample.partner_rate_percent}%｜折扣 ${sample.referral_discount_percent}%） (${sample.sku})`,
       );
-    } else {
-      const any = rows.find((r) => r.telecom === telecom);
-      if (any) {
-        console.log(
-          `核對 ${telecom}（範例 ${any.daysLabel} ${any.data_amount}）: HKD ${any.price_hkd} → cost NT$${any.cost_twd} → 售價 NT$${any.retail_twd}（${any.profit_percent}%） (${any.sku})`,
-        );
-      }
     }
   }
 
@@ -308,103 +297,86 @@ async function main() {
 
   const productMeta = {
     type: "esim",
-    country: "JP",
+    country: "TH",
     plan_kind: "total",
-    hot_sale_telecoms: [TELECOM_KDDI, TELECOM_DUAL],
+    hot_sale_telecoms: [TELECOM_TRUE],
     carrier_profit_by_carrier: {
-      [TELECOM_IIJ]: PROFIT_BY_KIND.iij,
-      [TELECOM_KDDI]: PROFIT_BY_KIND.kddi,
-      [TELECOM_DUAL]: PROFIT_BY_KIND.dual,
+      [TELECOM_AIS]: PROFIT_BY_TELECOM[TELECOM_AIS],
+      [TELECOM_TRUE]: PROFIT_BY_TELECOM[TELECOM_TRUE],
     },
-    seo_title:
-      "日本 eSIM 總量型｜IIJ(DOCOMO)・AU(KDDI)・KDDI/SoftBank｜Jeko eSIM",
+    carrier_partner_rate_by_carrier: {
+      [TELECOM_AIS]: PARTNER_RATE_BY_TELECOM[TELECOM_AIS],
+      [TELECOM_TRUE]: PARTNER_RATE_BY_TELECOM[TELECOM_TRUE],
+    },
+    carrier_referral_discount_by_carrier: {
+      [TELECOM_AIS]: REFERRAL_DISCOUNT_BY_TELECOM[TELECOM_AIS],
+      [TELECOM_TRUE]: REFERRAL_DISCOUNT_BY_TELECOM[TELECOM_TRUE],
+    },
+    seo_title: "泰國 eSIM 總量型｜AIS / TRUE｜Jeko eSIM",
     seo_description:
-      "日本總量型 eSIM：IIJ(DOCOMO)、AU(KDDI) 原生（日本 IP），或 KDDI / SoftBank 雙網漫遊（HOT SALE）。依天數與總量選購，支援熱點分享。",
+      "泰國總量型 eSIM：AIS（新加坡 IP 漫遊）與 TRUE（泰國 IP 原生）。依天數與總量選購，支援熱點分享。",
     seo_keywords:
-      "日本eSIM,總量型eSIM,IIJ,DOCOMO,AU,KDDI,SoftBank,原生eSIM,總量流量,旅遊eSIM,Jeko eSIM",
+      "泰國eSIM,總量型eSIM,AIS,TRUE,原生eSIM,漫遊eSIM,總量流量,旅遊eSIM,Jeko eSIM",
     subtitle_by_carrier: {
-      [TELECOM_IIJ]:
-        "總量型・IIJ(DOCOMO) 原生・高速用完後降速 200kbps",
-      [TELECOM_KDDI]:
-        "總量型・AU(KDDI) 原生・高速用完後降速 128kbps",
-      [TELECOM_DUAL]:
-        "總量型・KDDI / SoftBank 雙網・高速用完後降速 128kbps",
+      [TELECOM_AIS]: "總量型・AIS Thailand・新加坡 IP 漫遊・用完降速 128kbps",
+      [TELECOM_TRUE]: "總量型・TRUE 原生・泰國當地 IP",
     },
     carrier_specs_by_carrier: {
-      [TELECOM_IIJ]: {
-        ip_type: "日本IP",
-        route_type: "原生eSIM",
-        network: "IIJ(DOCOMO) 4G/LTE",
-        speed_rule: "方案總量高速用完後降速至約 200 kbps（可持續使用）",
-        apps: "熱點分享,ChatGPT,TikTok,Gemini",
-        apn: "vmobile.jp",
-      },
-      [TELECOM_KDDI]: {
-        ip_type: "日本IP",
-        route_type: "原生eSIM",
-        network: "AU(KDDI) 4G/5G",
-        speed_rule: "方案總量高速用完後降速至約 128 kbps（可持續使用）",
-        apps: "熱點分享,ChatGPT,TikTok,Gemini",
-        apn: "uad5gn.au-net.ne.jp",
-      },
-      [TELECOM_DUAL]: {
-        ip_type: "新加坡IP",
+      [TELECOM_AIS]: {
+        ip_type: "新加坡 IP",
         route_type: "漫遊",
-        network: "KDDI / SoftBank 4G/5G 雙電信",
+        network: "AIS Thailand 4G/LTE/5G",
         speed_rule: "方案總量高速用完後降速至約 128 kbps（可持續使用）",
         apps: "熱點分享,ChatGPT,TikTok,Gemini",
         apn: "e-ideas",
       },
+      [TELECOM_TRUE]: {
+        ip_type: "泰國 IP",
+        route_type: "原生eSIM",
+        network: "TRUE 4G/5G",
+        speed_rule:
+          "15GB／7天：用完降速約 1 Mbps；50GB／10天：用完降速約 384 kbps",
+        apps: "熱點分享,ChatGPT,TikTok,Gemini",
+        apn: "internet",
+      },
     },
     key_features_by_carrier: {
-      [TELECOM_IIJ]: [
+      [TELECOM_AIS]: [
         "總量型",
         "3～50GB",
-        "IIJ(DOCOMO)",
-        "原生日本IP",
-        "用完降速 200kbps",
-      ],
-      [TELECOM_KDDI]: [
-        "總量型",
-        "12／21／30GB",
-        "AU(KDDI)",
-        "原生日本IP",
+        "AIS Thailand",
+        "新加坡IP漫遊",
         "用完降速 128kbps",
       ],
-      [TELECOM_DUAL]: [
+      [TELECOM_TRUE]: [
         "總量型",
-        "3～50GB",
-        "KDDI / SoftBank",
-        "用完降速 128kbps",
-        "支援 TikTok／ChatGPT",
+        "15GB／50GB",
+        "TRUE",
+        "泰國當地IP",
+        "原生eSIM",
       ],
     },
     overview_notices_by_carrier: {
-      [TELECOM_IIJ]: {
+      [TELECOM_AIS]: {
         fup_notice:
-          "依所選方案提供總量高速流量（3GB～50GB）。高速用完後降速至約 200 kbps 可持續使用。IIJ(DOCOMO) 原生網路，日本 IP。",
-        activation_notice: "建議抵達日本後再安裝／啟用 eSIM",
+          "公平使用政策 (FUP): 方案總量高速用完後降速至約 128 kbps，可持續使用。實際速度取決於您的位置及網路環境。",
+        activation_notice: "建議抵達泰國後再安裝／啟用 eSIM",
       },
-      [TELECOM_KDDI]: {
+      [TELECOM_TRUE]: {
         fup_notice:
-          "依所選方案提供總量高速流量（12GB／21GB／30GB）。高速用完後降速至約 128 kbps 可持續使用。AU(KDDI) 原生網路，日本 IP。",
-        activation_notice: "建議抵達日本後再安裝／啟用 eSIM",
-      },
-      [TELECOM_DUAL]: {
-        fup_notice:
-          "依所選方案提供總量高速流量（3GB～50GB）。高速用完後降速至約 128 kbps 可持續使用。KDDI 與 SoftBank 雙電信自動切換。",
-        activation_notice: "建議抵達日本後再安裝／啟用 eSIM",
+          "公平使用政策 (FUP): 方案總量高速用完後降速（15GB 約 1 Mbps／50GB 約 384 kbps），可持續使用。實際速度取決於您的位置及網路環境。",
+        activation_notice:
+          "建議抵達泰國後再安裝／啟用 eSIM。泰國原生卡請勿在覆蓋範圍外安裝，否則方案可能失效。",
       },
     },
   };
 
   const payloadBase = {
-    title: "日本 eSIM 總量型",
-    subtitle:
-      "三種電信可選：IIJ(DOCOMO)・AU(KDDI)・KDDI / SoftBank・3～50GB",
+    title: "泰國 eSIM 總量型",
+    subtitle: "AIS／TRUE｜依天數與總量選購｜支援熱點",
     handle: HANDLE,
     description:
-      "日本 eSIM 總量型，三種電信：IIJ(DOCOMO) 原生、AU(KDDI) 原生（日本 IP），以及 KDDI / SoftBank 雙網漫遊（新加坡 IP）。提供多種總量與天數方案，支援熱點分享。",
+      "泰國 eSIM 總量型，兩種電信：AIS（AIS Thailand／新加坡 IP 漫遊，高速用完後約 128 kbps）與 TRUE（原生泰國 IP：15GB／7天、50GB／10天）。支援熱點與主流 App，依天數與流量選購。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,
@@ -421,11 +393,10 @@ async function main() {
   };
 
   const variants = rows.map(toVariant);
-  const nIij = rows.filter((r) => r.telecom === TELECOM_IIJ).length;
-  const nKddi = rows.filter((r) => r.telecom === TELECOM_KDDI).length;
-  const nDual = rows.filter((r) => r.telecom === TELECOM_DUAL).length;
+  const nAis = rows.filter((r) => r.telecom === TELECOM_AIS).length;
+  const nTrue = rows.filter((r) => r.telecom === TELECOM_TRUE).length;
   console.log(
-    `📦 方案 ${rows.length} 筆（IIJ ${nIij} + AU(KDDI) ${nKddi} + 雙網 ${nDual}）・原生 60%／雙網 50%・HOT SALE=${TELECOM_KDDI} + ${TELECOM_DUAL}`,
+    `📦 方案 ${rows.length} 筆（AIS ${nAis} + TRUE ${nTrue}）・利潤 50%／85%`,
   );
   console.log(`數據量選項: ${dataValues.join(" | ")}`);
   console.log(`天數選項: ${dayValues.join(" | ")}`);
@@ -488,62 +459,30 @@ async function main() {
     } else {
       console.log("（未加 --rebuild，僅更新商品資訊；變體不變）");
       console.log(
-        "重建變體請執行：HKD_TO_TWD=4.5 node scripts/create-japan-total-product.mjs --rebuild",
+        "若要重建變體請加：HKD_TO_TWD=4.5 node scripts/create-thailand-total-product.mjs --rebuild",
       );
-      return;
     }
   }
 
   const check = await admin(
     token,
-    `/admin/products/${product.id}?fields=*variants,*options`,
+    `/admin/products/${product.id}?fields=*variants`,
   );
   const vs = check.product?.variants || [];
-  const telecomOpt = (check.product?.options || []).find(
-    (o) => o.title === "電信商",
-  );
-  const dataOpt = (check.product?.options || []).find(
-    (o) => o.title === "數據量",
-  );
   console.log("\n======= 完成 =======");
-  console.log(`標題: ${check.product?.title}`);
-  console.log(`前台: /product/japan/${HANDLE}`);
+  console.log(`前台: /product/tailand/${HANDLE}`);
   console.log(`變體數: ${vs.length}`);
   console.log(
-    "電信商選項:",
-    (telecomOpt?.values || []).map((v) => v.value).join(" | "),
+    `範例: AIS →`,
+    rows.find((r) => r.telecom === TELECOM_AIS && r.day === 3 && r.data_amount === "3GB"),
   );
   console.log(
-    "數據量選項:",
-    (dataOpt?.values || []).map((v) => v.value).join(" | "),
+    `範例: TRUE →`,
+    rows.find((r) => r.telecom === TELECOM_TRUE && r.day === 7),
   );
-  const sIij = rows.find(
-    (r) =>
-      r.telecom === TELECOM_IIJ && r.day === 5 && r.data_amount === "5GB",
-  );
-  const sDual = rows.find(
-    (r) =>
-      r.telecom === TELECOM_DUAL && r.day === 5 && r.data_amount === "5GB",
-  );
-  const sKddi = rows.find((r) => r.telecom === TELECOM_KDDI);
-  if (sIij) {
-    console.log(
-      `範例 IIJ 5天 5GB: HKD ${sIij.price_hkd} → cost NT$${sIij.cost_twd} → 售價 NT$${sIij.retail_twd}（${sIij.profit_percent}%） (${sIij.sku})`,
-    );
-  }
-  if (sKddi) {
-    console.log(
-      `範例 AU(KDDI) ${sKddi.daysLabel} ${sKddi.data_amount}: HKD ${sKddi.price_hkd} → cost NT$${sKddi.cost_twd} → 售價 NT$${sKddi.retail_twd}（${sKddi.profit_percent}%） (${sKddi.sku})`,
-    );
-  }
-  if (sDual) {
-    console.log(
-      `範例 雙網 5天 5GB: HKD ${sDual.price_hkd} → cost NT$${sDual.cost_twd} → 售價 NT$${sDual.retail_twd}（${sDual.profit_percent}%） (${sDual.sku})`,
-    );
-  }
 }
 
 main().catch((e) => {
-  console.error(e);
+  console.error("❌", e.message || e);
   process.exit(1);
 });

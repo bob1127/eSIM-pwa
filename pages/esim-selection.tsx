@@ -3,84 +3,158 @@ import { getClientPlatformFxRates } from "@/lib/esim/platformFx";
 
 const PLATFORM_FX = getClientPlatformFxRates();
 
+/**
+ * 將 location / code 正規化成 ISO token 列表。
+ * 例："CN,HK,MO" → ["CN","HK","MO"]；"Hong Kong" → ["HK"]
+ */
+function normalizeLocationTokens(raw: string): string[] {
+  const s = String(raw || "")
+    .toUpperCase()
+    .trim();
+  if (!s) return [];
+
+  return s
+    .split(/[,;/|]+/)
+    .map((part) => {
+      const t = part.trim().replace(/\s+/g, " ");
+      if (!t) return "";
+      if (/^(HK|HKG|HONG KONG)$/.test(t)) return "HK";
+      if (/^(MO|MACAU|MACAO)$/.test(t)) return "MO";
+      if (/^(TW|TWN|TAIWAN)$/.test(t)) return "TW";
+      if (/^(JP|JPN|JAPAN)$/.test(t)) return "JP";
+      if (/^(KR|KOR|KOREA|SOUTH KOREA)$/.test(t)) return "KR";
+      if (/^(TH|THA|THAILAND)$/.test(t)) return "TH";
+      if (/^(CN|CHN|CHINA|MAINLAND CHINA)$/.test(t)) return "CN";
+      if (/^(SG|SGP|SINGAPORE)$/.test(t)) return "SG";
+      if (/^(MY|MYS|MALAYSIA)$/.test(t)) return "MY";
+      if (/^(VN|VNM|VIETNAM)$/.test(t)) return "VN";
+      if (/^(ID|IDN|INDONESIA)$/.test(t)) return "ID";
+      if (/^(AU|AUS|AUSTRALIA)$/.test(t)) return "AU";
+      if (/^(NZ|NZL|NEW ZEALAND)$/.test(t)) return "NZ";
+      return t.replace(/\s+/g, "");
+    })
+    .filter(Boolean);
+}
+
+function sameTokenSet(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const setB = new Set(b);
+  return a.every((t) => setB.has(t));
+}
+
+function normalizeAliasCodes(codes: string[] = []): string[] {
+  return codes
+    .map((c) => normalizeLocationTokens(c)[0] || String(c).toUpperCase().trim())
+    .filter(Boolean);
+}
+
+type CountryConfig = {
+  emoji: string;
+  name: string;
+  /** 純單國：location 只能是該國一碼 */
+  pure?: boolean;
+  codes: string[];
+  /** 多國：location token 集合需完全相符（順序不拘） */
+  locationSet?: string[];
+  locationSets?: string[][];
+  /** 只掃方案名稱／SKU（禁止掃整包 JSON，避免 Hong Kong Time 誤傷） */
+  keywords?: string[];
+  /** 名稱前綴備援（僅 pure 且 location 空白時） */
+  namePrefixes?: string[];
+  exclude?: string[];
+  order?: number;
+};
+
 // --- 1. 國家設定檔 ---
-const COUNTRIES: Record<string, any> = {
+const COUNTRIES: Record<string, CountryConfig> = {
   JP: {
     emoji: "🇯🇵",
     name: "日本 (純日)",
+    pure: true,
     codes: ["JP", "JPN", "JAPAN"],
-    keywords: ["Japan", "Osaka", "Tokyo", "SoftBank", "Docomo", "KDDI", "IIJ"],
-    exclude: [
-      "ASIA",
-      "GLOBAL",
-      "WORLD",
-      "EUROPE",
-      "TOTAL COUNTRIES",
-      "KOREA",
-      "Japan/Korea",
-      "Japan Korea",
-    ],
+    namePrefixes: ["Japan-", "Japan ", "Japan("],
+    keywords: [],
+    exclude: ["ASIA", "GLOBAL", "WORLD", "EUROPE", "Japan/Korea", "Japan Korea"],
   },
   KR: {
     emoji: "🇰🇷",
     name: "韓國 (純韓)",
+    pure: true,
     codes: ["KR", "KOR", "KOREA"],
-    keywords: ["Korea", "Seoul", "SKT", "KT", "LGU"],
-    exclude: ["ASIA", "GLOBAL", "WORLD", "JAPAN", "Japan/Korea", "Japan Korea"],
+    namePrefixes: ["Korea-", "Korea ", "Korea(", "South Korea"],
+    keywords: [],
+    exclude: ["ASIA", "GLOBAL", "WORLD", "Japan/Korea", "Japan Korea"],
   },
   TH: {
     emoji: "🇹🇭",
-    name: "泰國",
+    name: "泰國 (純泰)",
+    pure: true,
     codes: ["TH", "THA", "THAILAND"],
-    keywords: ["Thailand", "Bangkok", "AIS", "DTAC"],
+    namePrefixes: ["Thailand-", "Thailand ", "Thailand("],
+    keywords: [],
     exclude: ["ASIA", "GLOBAL", "Singapore", "Malaysia"],
   },
   CN: {
     emoji: "🇨🇳",
-    name: "中國",
+    name: "中國 (純陸)",
+    pure: true,
     codes: ["CN", "CHN", "CHINA"],
-    keywords: ["China", "Shanghai", "Unicom"],
-    exclude: ["ASIA", "GLOBAL", "HK", "MACAU"],
+    namePrefixes: ["China-", "China ", "China(", "China,"],
+    keywords: [],
+    // 名稱含港澳／大中華包的不要進純陸
+    exclude: ["ASIA", "GLOBAL", "HK", "MACAU", "MACAO", "HONG KONG", "CNHKMO", "CHMT"],
   },
   HK: {
     emoji: "🇭🇰",
-    name: "香港",
+    name: "香港 (純港)",
+    pure: true,
     codes: ["HK", "HKG", "HONG KONG"],
-    keywords: ["Hong Kong", "CSL", "SmarTone"],
-    exclude: ["ASIA", "GLOBAL", "CHINA"],
+    namePrefixes: ["Hong Kong-", "Hong Kong ", "Hong Kong("],
+    keywords: [],
+    exclude: ["ASIA", "GLOBAL", "CHINA", "CNHKMO", "MACAU", "MACAO", ",MO", "MO)"],
   },
   SG: {
     emoji: "🇸🇬",
-    name: "新加坡",
+    name: "新加坡 (純星)",
+    pure: true,
     codes: ["SG", "SGP", "SINGAPORE"],
-    keywords: ["Singapore", "Singtel", "StarHub", "M1"],
+    namePrefixes: ["Singapore-", "Singapore ", "Singapore("],
+    keywords: [],
     exclude: ["ASIA", "GLOBAL", "Malaysia", "Thailand"],
   },
   MY: {
     emoji: "🇲🇾",
-    name: "馬來西亞",
+    name: "馬來西亞 (純馬)",
+    pure: true,
     codes: ["MY", "MYS", "MALAYSIA"],
-    keywords: ["Malaysia", "Kuala Lumpur", "Maxis", "Celcom"],
+    namePrefixes: ["Malaysia-", "Malaysia ", "Malaysia("],
+    keywords: [],
     exclude: ["ASIA", "GLOBAL", "Singapore"],
   },
   VN: {
     emoji: "🇻🇳",
-    name: "越南",
+    name: "越南 (純越)",
+    pure: true,
     codes: ["VN", "VNM", "VIETNAM"],
-    keywords: ["Vietnam", "Viettel", "Vinaphone"],
+    namePrefixes: ["Vietnam-", "Vietnam ", "Vietnam("],
+    keywords: [],
     exclude: ["ASIA", "GLOBAL"],
   },
   ID: {
     emoji: "🇮🇩",
-    name: "印尼",
+    name: "印尼 (純印)",
+    pure: true,
     codes: ["ID", "IDN", "INDONESIA"],
-    keywords: ["Indonesia", "Bali", "Telkomsel", "Indosat"],
+    namePrefixes: ["Indonesia-", "Indonesia ", "Indonesia("],
+    keywords: [],
     exclude: ["ASIA", "GLOBAL"],
   },
   JP_KR: {
     emoji: "🇯🇵🇰🇷",
     name: "日韓通用",
+    pure: false,
     codes: ["JP_KR", "KR_JP"],
+    locationSet: ["JP", "KR"],
     keywords: [
       "Japan Korea",
       "Japan/Korea",
@@ -90,12 +164,14 @@ const COUNTRIES: Record<string, any> = {
       "Korea&Japan",
       "日韓",
     ],
-    exclude: [],
+    exclude: ["ASIA", "GLOBAL"],
   },
   SMT: {
     emoji: "🏖️",
     name: "新馬泰 (星馬泰)",
+    pure: false,
     codes: ["SMT", "SG_MY_TH", "TH_SG_MY"],
+    locationSet: ["SG", "MY", "TH"],
     keywords: [
       "Singapore&Malaysia&Thailand",
       "Singapore-Malaysia-Thailand",
@@ -103,49 +179,125 @@ const COUNTRIES: Record<string, any> = {
       "新馬泰",
       "星馬泰",
     ],
-    exclude: [],
+    exclude: ["ASIA", "GLOBAL"],
   },
   ANZ: {
     emoji: "🦘",
     name: "紐澳 (澳洲+紐西蘭)",
+    pure: false,
     codes: ["ANZ", "AU_NZ", "AU-NZ"],
+    locationSet: ["AU", "NZ"],
     keywords: [
       "Australia&New Zealand",
       "Australia-New Zealand",
+      "Australia/New Zealand",
       "紐澳",
       "澳紐",
     ],
-    exclude: [],
+    exclude: ["ASIA", "GLOBAL"],
   },
   CN_HK_MO: {
     emoji: "🐲",
     name: "中港澳",
-    codes: ["CN_HK_MO", "GREATER_CHINA"],
-    keywords: ["China&HK", "China-HK", "Greater China", "中港澳"],
-    exclude: ["ASIA"],
+    pure: false,
+    codes: ["CN_HK_MO"],
+    // location 精確三碼；名稱關鍵字備援
+    locationSet: ["CN", "HK", "MO"],
+    keywords: [
+      "CNHKMO-",
+      "CN,HK,MO(T+C)",
+      "CN,HK,MO-",
+      "China&Hong Kong&Macau",
+      "China,Hongkong,Macao",
+      "China&HK&Macau",
+      "中港澳",
+    ],
+    // 排除含台灣的 Greater China(CHMT)、亞洲包、純港／純陸
+    exclude: ["ASIA", "CHMT", "GREATER CHINA", ",TW", "TW)", "GLOBAL"],
   },
   ASIA: {
     emoji: "🌏",
     name: "亞洲多國 (Asia)",
+    pure: false,
     codes: ["ASIA", "ASIA11", "ASIA24"],
-    keywords: ["ASIA", "Countries"],
+    keywords: ["ASIA", "Asia "],
     exclude: ["GLOBAL", "EUROPE"],
   },
   EU: {
     emoji: "🇪🇺",
     name: "歐洲多國 (EU)",
+    pure: false,
     codes: ["EU", "EUROPE", "EU33", "EU42"],
-    keywords: ["Europe", "EU 33", "EU 42", "歐洲"],
-    exclude: ["GLOBAL"],
+    keywords: ["Europe", "EU 33", "EU 42", "EU 3", "歐洲"],
+    exclude: ["GLOBAL", "ASIA"],
   },
   GLOBAL: {
     emoji: "🌍",
     name: "全球/歐美",
+    pure: false,
     codes: ["GLOBAL"],
-    keywords: ["GLOBAL", "WORLD"],
+    keywords: ["GLOBAL", "WORLD", "Global "],
     exclude: [],
   },
 };
+
+/** 方案是否符合選中的國家／區域（純單國＝location 精確單碼） */
+function planMatchesCountry(
+  p: { name?: string; channel_dataplan_name?: string; code?: string; location?: string },
+  config: CountryConfig,
+): boolean {
+  const pName = String(p.name || p.channel_dataplan_name || "").toUpperCase();
+  const pLocRaw = String(p.code || p.location || "");
+  const tokens = normalizeLocationTokens(pLocRaw);
+  const hayForExclude = `${pName} ${pLocRaw.toUpperCase()}`;
+
+  if (config.exclude?.length) {
+    const hit = config.exclude.some((ex) =>
+      hayForExclude.includes(String(ex).toUpperCase()),
+    );
+    if (hit) return false;
+  }
+
+  // ── 純單國：location 只能是該國一碼 ──
+  if (config.pure) {
+    const aliases = normalizeAliasCodes(config.codes);
+    if (tokens.length === 1 && aliases.includes(tokens[0])) return true;
+
+    // location 空白時，允許名稱前綴（如 Hong Kong-Daily…）
+    if (tokens.length === 0 && config.namePrefixes?.length) {
+      return config.namePrefixes.some((prefix) =>
+        pName.startsWith(String(prefix).toUpperCase()),
+      );
+    }
+    return false;
+  }
+
+  // ── 多國／區域：location token 集合完全相符 ──
+  const sets: string[][] = [];
+  if (config.locationSet?.length) {
+    sets.push(normalizeAliasCodes(config.locationSet));
+  }
+  for (const set of config.locationSets || []) {
+    sets.push(normalizeAliasCodes(set));
+  }
+  if (sets.some((set) => sameTokenSet(tokens, set))) return true;
+
+  // 名稱關鍵字（只掃 name／SKU，不掃整包 JSON）
+  if (config.keywords?.length) {
+    if (
+      config.keywords.some((k) => pName.includes(String(k).toUpperCase()))
+    ) {
+      // 中港澳：名稱命中但 location 含 TW 已在 exclude；若有明確多國 location 且不是目標 set，擋下
+      if (config.locationSet?.length && tokens.length > 0) {
+        const want = normalizeAliasCodes(config.locationSet);
+        if (!sameTokenSet(tokens, want)) return false;
+      }
+      return true;
+    }
+  }
+
+  return false;
+}
 
 // --- 2. 輔助函式 ---
 const parseDataValue = (name: string) => {
@@ -774,28 +926,7 @@ export default function GlobalPlanScanner() {
     return rawPlans
       .filter((p) => {
         if (showSavedOnly) return savedPlanIds.includes(p.id);
-        const fullString = JSON.stringify(p).toUpperCase();
-        const pCode = (p.code || p.location || "").toUpperCase();
-        const pName = p.name.toUpperCase();
-
-        if (config.exclude && config.exclude.length > 0) {
-          const isExcluded = config.exclude.some((exWord: string) =>
-            pName.includes(exWord.toUpperCase()),
-          );
-          if (isExcluded) return false;
-        }
-
-        const matchCode = config.codes
-          ? config.codes.some((c: string) => pCode === c || pCode.includes(c))
-          : pCode === selectedCountry;
-
-        const matchKeyword = config.keywords
-          ? config.keywords.some((k: string) =>
-              fullString.includes(k.toUpperCase()),
-            )
-          : false;
-
-        return matchCode || matchKeyword;
+        return planMatchesCountry(p, config);
       })
       .map((p) => {
         const details = parsePlanDetails(p, config);

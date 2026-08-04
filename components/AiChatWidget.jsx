@@ -22,6 +22,8 @@ import {
   ChevronRight,
   Tag,
   Percent,
+  MapPin,
+  CalendarDays,
 } from "lucide-react";
 
 import { getPublicSiteUrl } from "../lib/siteUrl";
@@ -46,6 +48,8 @@ const WELCOME_TEXT =
   "🌼 嗨！我是 J寶，Jeko 的旅行小幫手～\n" +
   "不論 eSIM 上網、住宿、包車，還是景點行程推薦，都可以問我；" +
   "店裡也有 3C 與旅行用品可以一起搭配。需要什麼直接跟我說～";
+
+const WELCOME_TEXT_VERSION = 2; // 變更歡迎詞時 +1，自動替換快取中的舊歡迎詞
 
 /** 歡迎詞下方的優惠／活動輪播（圖卡，可之後改成 API） */
 const WELCOME_PROMO_CARDS = [
@@ -173,6 +177,7 @@ const DEFAULT_WELCOME_MESSAGE = {
   id: 1,
   role: "ai",
   content: WELCOME_TEXT,
+  welcomeVersion: WELCOME_TEXT_VERSION,
   promoCards: WELCOME_PROMO_CARDS,
 };
 
@@ -391,6 +396,27 @@ const QUICK_QUESTIONS = [
   "出國前要準備什麼",
 ];
 
+const PLAN_DESTINATIONS = [
+  "日本",
+  "韓國",
+  "泰國",
+  "越南",
+  "新加坡／馬來西亞",
+  "港澳",
+  "歐洲",
+  "美國",
+  "澳洲／紐西蘭",
+  "多國／其他",
+];
+
+const PLAN_DAYS = ["3", "5", "7", "10", "15", "30"];
+
+const PLAN_USAGE = [
+  { id: "light", label: "輕量使用", desc: "地圖、訊息、查資料" },
+  { id: "social", label: "社群／拍照分享", desc: "IG、定位、偶爾影片" },
+  { id: "stream", label: "影音吃到飽", desc: "常看影片、直播" },
+  { id: "work", label: "工作視訊", desc: "會議、雲端、穩定連線" },
+];
 
 /** 商品推薦卡（單張） */
 function ProductCard({ card }) {
@@ -407,20 +433,37 @@ function ProductCard({ card }) {
       ? "查看詳情"
       : "立即購買";
 
+  const rawUrl = card.url || "/product";
+  let href = rawUrl;
+  let openExternal = false;
+  if (/^https?:\/\//i.test(rawUrl)) {
+    try {
+      const u = new URL(rawUrl);
+      const host = u.hostname.replace(/^www\./, "");
+      if (host.endsWith("jeko-esim.com.tw") || host === "localhost") {
+        href = `${u.pathname}${u.search}`;
+      } else {
+        openExternal = true;
+      }
+    } catch {
+      openExternal = true;
+    }
+  }
+
   return (
     <a
-      href={card.url}
-      target="_blank"
-      rel="noopener noreferrer sponsored"
-      className="flex-shrink-0 w-[160px] rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+      href={href}
+      target={openExternal ? "_blank" : undefined}
+      rel={openExternal ? "noopener noreferrer" : undefined}
+      className="flex-shrink-0 w-[168px] rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
     >
-      <div className="relative h-[90px] bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center overflow-hidden">
+      <div className="relative h-[108px] bg-gradient-to-br from-slate-50 to-blue-50/60 flex items-center justify-center overflow-hidden">
         {card.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={card.imageUrl}
             alt={card.name}
-            className="h-full w-full object-cover"
+            className="max-h-full max-w-full w-auto h-auto object-contain p-2.5"
           />
         ) : (
           <ShoppingCart className="w-8 h-8 text-blue-300" />
@@ -438,7 +481,7 @@ function ProductCard({ card }) {
         )}
       </div>
       <div className="p-2.5">
-        <p className="text-[11px] font-bold text-slate-800 leading-snug line-clamp-2 mb-1">
+        <p className="text-[11px] font-bold text-slate-800 leading-snug line-clamp-2 mb-1 min-h-[2.4em]">
           {card.name}
         </p>
         {priceLabel && (
@@ -472,24 +515,26 @@ function ProductCardCarousel({ cards }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="mt-2 -mx-0.5"
+      className="mt-2 w-full"
     >
       <p className="text-[10px] text-slate-400 mb-1.5 flex items-center gap-1">
         <ShoppingCart className="w-3 h-3" /> eSIM 方案推薦
       </p>
-      <div className="relative">
+      <div className="relative px-0.5">
         {cards.length > 1 && (
           <>
             <button
+              type="button"
               onClick={() => scroll(-1)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 border border-slate-200 rounded-full p-0.5 shadow-sm hover:bg-slate-50"
+              className="absolute left-0 top-[52px] -translate-y-1/2 z-10 bg-white/95 border border-slate-200 rounded-full p-0.5 shadow-sm hover:bg-slate-50"
               aria-label="上一張"
             >
               <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
             </button>
             <button
+              type="button"
               onClick={() => scroll(1)}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 border border-slate-200 rounded-full p-0.5 shadow-sm hover:bg-slate-50"
+              className="absolute right-0 top-[52px] -translate-y-1/2 z-10 bg-white/95 border border-slate-200 rounded-full p-0.5 shadow-sm hover:bg-slate-50"
               aria-label="下一張"
             >
               <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
@@ -498,14 +543,162 @@ function ProductCardCarousel({ cards }) {
         )}
         <div
           ref={trackRef}
-          className="flex gap-2 overflow-x-auto scroll-smooth pb-1 px-0.5"
+          className="flex gap-2.5 overflow-x-auto scroll-smooth py-1 px-1"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {cards.map((card, i) => (
-            <ProductCard key={i} card={card} />
+            <ProductCard key={card.url || i} card={card} />
           ))}
         </div>
       </div>
+    </motion.div>
+  );
+}
+
+/** 「幫你規劃」表單：地點／天數／使用習慣 → 推薦產品 */
+function PlanTripForm({ disabled = false, onCancel, onSubmit }) {
+  const [destination, setDestination] = useState("");
+  const [customDestination, setCustomDestination] = useState("");
+  const [days, setDays] = useState("7");
+  const [usageId, setUsageId] = useState("social");
+
+  const usage = PLAN_USAGE.find((u) => u.id === usageId) || PLAN_USAGE[1];
+  const place =
+    destination === "多國／其他"
+      ? customDestination.trim()
+      : destination;
+  const canSubmit = Boolean(place) && Boolean(days) && Boolean(usage) && !disabled;
+
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    if (!canSubmit) return;
+    onSubmit?.({
+      destination: place,
+      days,
+      usageLabel: usage.label,
+      usageDesc: usage.desc,
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 6 }}
+      className="rounded-2xl border border-blue-100 bg-gradient-to-b from-blue-50/90 to-white shadow-sm overflow-hidden"
+    >
+      <div className="flex items-center justify-between px-3 py-2 border-b border-blue-100/80 sticky top-0 z-[1] bg-blue-50/95 backdrop-blur-sm">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+          <p className="text-[13px] font-bold text-slate-800">幫你規劃 eSIM</p>
+        </div>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="p-1 rounded-full text-slate-400 hover:bg-white hover:text-slate-600"
+          aria-label="關閉規劃表單"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="p-3 space-y-2.5">
+        <div>
+          <label className="flex items-center gap-1 text-[11px] font-bold text-slate-600 mb-1.5">
+            <MapPin className="w-3 h-3 text-blue-500" />
+            旅遊地點
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {PLAN_DESTINATIONS.map((d) => (
+              <button
+                key={d}
+                type="button"
+                disabled={disabled}
+                onClick={() => setDestination(d)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
+                  destination === d
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-blue-200"
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+          {destination === "多國／其他" && (
+            <input
+              type="text"
+              value={customDestination}
+              onChange={(e) => setCustomDestination(e.target.value)}
+              placeholder="例如：日本＋韓國，或填國家名"
+              disabled={disabled}
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            />
+          )}
+        </div>
+
+        <div>
+          <label className="flex items-center gap-1 text-[11px] font-bold text-slate-600 mb-1.5">
+            <CalendarDays className="w-3 h-3 text-blue-500" />
+            天數
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {PLAN_DAYS.map((d) => (
+              <button
+                key={d}
+                type="button"
+                disabled={disabled}
+                onClick={() => setDays(d)}
+                className={`min-w-[2.5rem] px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
+                  days === d
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-blue-200"
+                }`}
+              >
+                {d} 天
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="flex items-center gap-1 text-[11px] font-bold text-slate-600 mb-1.5">
+            <Sparkles className="w-3 h-3 text-blue-500" />
+            使用習慣
+          </label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {PLAN_USAGE.map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                disabled={disabled}
+                onClick={() => setUsageId(u.id)}
+                className={`rounded-xl border px-2.5 py-2 text-left transition-all ${
+                  usageId === u.id
+                    ? "border-blue-500 bg-blue-50 ring-1 ring-blue-200"
+                    : "border-slate-200 bg-white hover:border-blue-200"
+                }`}
+              >
+                <span className="block text-[11px] font-bold text-slate-800">
+                  {u.label}
+                </span>
+                <span className="block text-[10px] text-slate-400 mt-0.5 leading-snug">
+                  {u.desc}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 text-white text-[13px] font-bold py-2.5 hover:bg-blue-700 disabled:opacity-45 disabled:cursor-not-allowed transition-colors"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          幫我推薦方案
+        </button>
+      </form>
     </motion.div>
   );
 }
@@ -697,6 +890,7 @@ export default function AiChatWidget() {
   const [pendingMedia, setPendingMedia] = useState(null);
   const [messages, setMessages] = useState([DEFAULT_WELCOME_MESSAGE]);
   const [chatHydrated, setChatHydrated] = useState(false);
+  const [showPlanForm, setShowPlanForm] = useState(false);
 
   // 每個對話視窗有唯一 sessionId（跳頁會從 storage 還原）
   const sessionIdRef = useRef(null);
@@ -716,7 +910,27 @@ export default function AiChatWidget() {
       if (cancelled) return;
       if (saved?.messages?.length) {
         if (saved.sessionId) sessionIdRef.current = saved.sessionId;
-        setMessages(saved.messages);
+        let restored = saved.messages;
+        // 舊歡迎詞／步驟引導文案 → 換成初版
+        const first = restored[0];
+        const firstText = String(first?.content || "");
+        const needsWelcomeRefresh =
+          first?.role === "ai" &&
+          (first.showWizard ||
+            first.welcomeVersion !== WELCOME_TEXT_VERSION ||
+            firstText.includes("先選你想了解的服務") ||
+            (firstText.includes("嗨！我是 J寶") &&
+              firstText !== WELCOME_TEXT));
+        if (needsWelcomeRefresh) {
+          restored = [
+            {
+              ...DEFAULT_WELCOME_MESSAGE,
+              id: first?.id || 1,
+            },
+            ...restored.slice(1),
+          ];
+        }
+        setMessages(restored);
         if (saved.isOpen) setIsOpen(true);
         if (saved.pendingMedia) setPendingMedia(saved.pendingMedia);
       }
@@ -858,12 +1072,17 @@ export default function AiChatWidget() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading, pendingMedia, scrollToBottom]);
+  }, [messages, isLoading, pendingMedia, showPlanForm, scrollToBottom]);
 
   useEffect(() => {
     const open = () => setIsOpen(true);
+    const close = () => setIsOpen(false);
     window.addEventListener("jeko:open-ai-chat", open);
-    return () => window.removeEventListener("jeko:open-ai-chat", open);
+    window.addEventListener("jeko:close-ai-chat", close);
+    return () => {
+      window.removeEventListener("jeko:open-ai-chat", open);
+      window.removeEventListener("jeko:close-ai-chat", close);
+    };
   }, []);
 
   useEffect(() => {
@@ -873,10 +1092,14 @@ export default function AiChatWidget() {
     );
   }, [isOpen]);
 
+  /** 快捷 tag：僅在橫向意圖或按住 Shift 時轉成橫滑，避免攔截直向捲動 */
   const handleWheel = (e) => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollLeft += e.deltaY;
-    }
+    const el = scrollRef.current;
+    if (!el) return;
+    const mostlyHorizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+    if (!mostlyHorizontal && !e.shiftKey) return;
+    e.preventDefault();
+    el.scrollLeft += e.deltaX + e.deltaY;
   };
 
   const renderMessageContent = (content) => {
@@ -1094,12 +1317,37 @@ export default function AiChatWidget() {
     processChat(text);
   };
 
+  const handlePlanSubmit = ({ destination, days, usageLabel, usageDesc }) => {
+    if (isLoading) return;
+    setShowPlanForm(false);
+    const n = Number(days) || 0;
+    const usageFloor =
+      usageLabel === "工作視訊"
+        ? { perDay: 3.5, label: "工作視訊約每日 3.5GB 起" }
+        : usageLabel === "影音吃到飽"
+          ? { perDay: 5, label: "影音約每日 5GB 起" }
+          : usageLabel === "社群／拍照分享"
+            ? { perDay: 2.5, label: "社群約每日 2.5GB 起" }
+            : { perDay: 1.5, label: "輕量約每日 1.5GB 起" };
+    const minTotal = n > 0 ? Math.ceil(n * usageFloor.perDay) : 0;
+    const prompt =
+      `【eSIM專推】請依我的旅遊需求推薦適合的 eSIM 方案（請附上商品推薦）：\n` +
+      `· 旅遊地點：${destination}\n` +
+      `· 天數：${days} 天\n` +
+      `· 使用習慣：${usageLabel}（${usageDesc}）\n` +
+      `請只推薦 Jeko eSIM 商品 1～2 個，不要推薦商城配件、Klook／KKday、門票或鐵路周遊券。\n` +
+      `推薦原則：第 1 優先吃到飽；第 2 可推總量型，但總量至少約 ${minTotal || "（天數×每日下限）"}GB` +
+      `（${usageFloor.label} × ${days} 天），禁止推剛好均攤、也不要為湊數推不夠用的方案。` +
+      `並簡短說明為什麼適合我。`;
+    processChat(prompt);
+  };
+
   return (
     <div
       className={`fixed font-sans ${
         isOpen
-          ? "inset-0 z-[12000] flex flex-col md:inset-auto md:bottom-6 md:right-6 md:items-end"
-          : "bottom-[8.75rem] right-4 z-[11000] flex flex-col items-end md:bottom-6 md:right-6"
+          ? "inset-0 z-[12000] flex flex-col pointer-events-none md:inset-auto md:bottom-6 md:right-6 md:items-end"
+          : "bottom-[8.75rem] right-4 z-[11000] flex flex-col items-end pointer-events-none md:bottom-6 md:right-6"
       }`}
     >
       <AnimatePresence>
@@ -1108,7 +1356,7 @@ export default function AiChatWidget() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="bg-white w-full h-[100dvh] max-h-[100dvh] rounded-none shadow-2xl border-0 md:border md:border-gray-100 flex flex-col overflow-hidden overscroll-contain md:w-[400px] md:h-[min(600px,70vh)] md:max-h-[80vh] md:rounded-2xl md:mb-4 origin-bottom-right"
+            className="pointer-events-auto bg-white w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 md:border md:border-gray-300 flex flex-col overflow-hidden overscroll-contain md:w-[400px] md:h-[min(600px,70vh)] md:max-h-[80vh] md:rounded-2xl md:mb-4 origin-bottom-right"
           >
             <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-4 flex justify-between items-center text-white">
               <div className="flex items-center gap-3">
@@ -1258,8 +1506,8 @@ export default function AiChatWidget() {
             <div
               ref={messagesContainerRef}
               onScroll={handleMessagesScroll}
-              className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-4 bg-slate-50/50"
-              style={{ overflowAnchor: "none" }}
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-4 bg-slate-50/50 touch-pan-y"
+              style={{ overflowAnchor: "none", WebkitOverflowScrolling: "touch" }}
             >
               {messages.map((msg) => {
                 const isUser = msg.role === "user";
@@ -1280,7 +1528,9 @@ export default function AiChatWidget() {
                     )}
                     <div
                       className={`flex flex-col gap-0 ${
-                        msg.promoCards ? "max-w-[92%]" : "max-w-[80%]"
+                        msg.promoCards || msg.productCards
+                          ? "max-w-[92%]"
+                          : "max-w-[80%]"
                       }`}
                     >
                       <div
@@ -1387,9 +1637,21 @@ export default function AiChatWidget() {
                   </div>
                 </div>
               )}
+
+              <AnimatePresence>
+                {showPlanForm && (
+                  <div className="pt-1">
+                    <PlanTripForm
+                      disabled={isLoading}
+                      onCancel={() => setShowPlanForm(false)}
+                      onSubmit={handlePlanSubmit}
+                    />
+                  </div>
+                )}
+              </AnimatePresence>
             </div>
 
-            <div className="bg-white px-2 pt-2 pb-1 border-t border-gray-50">
+            <div className="bg-white px-2 pt-2 pb-1 border-t border-gray-50 shrink-0">
               <p className="px-2 pb-1.5 text-[10px] text-slate-400">
                 試試這樣問 · 左右滑看更多
               </p>
@@ -1404,10 +1666,30 @@ export default function AiChatWidget() {
                 }}
               >
                 <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+                <button
+                  type="button"
+                  onClick={() => {
+                    stickToBottomRef.current = true;
+                    setShowPlanForm(true);
+                  }}
+                  disabled={isLoading}
+                  className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12px] font-bold border transition-all disabled:opacity-50 inline-flex items-center gap-1 ${
+                    showPlanForm
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3" />
+                  幫你規劃
+                </button>
                 {QUICK_QUESTIONS.map((q, idx) => (
                   <button
                     key={idx}
-                    onClick={() => processChat(q)}
+                    type="button"
+                    onClick={() => {
+                      setShowPlanForm(false);
+                      processChat(q);
+                    }}
                     disabled={isLoading}
                     className="whitespace-nowrap px-3.5 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[12px] font-bold hover:bg-blue-600 hover:text-white transition-all disabled:opacity-50"
                   >
@@ -1417,7 +1699,7 @@ export default function AiChatWidget() {
               </div>
             </div>
 
-            <div className="p-4 bg-white border-t border-gray-100">
+            <div className="p-4 bg-white border-t border-gray-100 shrink-0">
               {pendingMedia && (
                 <div className="mb-2 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/80 px-2 py-1.5">
                   {pendingMedia.kind === "image" ? (
@@ -1507,9 +1789,7 @@ export default function AiChatWidget() {
         initial="rest"
         whileHover="hover"
         animate="rest"
-        className={`${
-          isOpen ? "hidden md:flex" : "flex"
-        } items-center gap-3 cursor-pointer group`}
+        className="pointer-events-auto hidden md:flex items-center gap-3 cursor-pointer group"
         onClick={() => setIsOpen(!isOpen)}
       >
         <AnimatePresence>
@@ -1520,7 +1800,7 @@ export default function AiChatWidget() {
                 hover: { opacity: 1, x: 0, scale: 1 },
               }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className="bg-white text-blue-600 px-4 py-2 rounded-full shadow-xl text-[13px] font-bold border border-blue-50 whitespace-nowrap"
+              className="bg-white text-blue-600 px-4 py-2 rounded-full text-[13px] font-bold border border-gray-300 whitespace-nowrap"
             >
               您的旅行小幫手
             </motion.div>
@@ -1530,7 +1810,7 @@ export default function AiChatWidget() {
         <motion.div
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          className={`flex items-center justify-center w-14 h-14 rounded-full shadow-2xl transition-all ${
+          className={`flex items-center justify-center w-14 h-14 rounded-full border border-gray-300 transition-all ${
             isOpen
               ? "bg-slate-800 text-white"
               : "bg-gradient-to-r from-blue-600 to-cyan-500 text-white"

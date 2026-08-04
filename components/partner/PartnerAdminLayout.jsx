@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
 import MaterialIcon from "@/components/MaterialIcon";
 import { DobermanFooter } from "@/components/partner/DobermanWidgets";
 import { usePartnerSession, partnerLogout, SITE_URL } from "@/lib/partnerAuth";
-import { PARTNER_UI } from "@/lib/partnerUi";
+import { SHOPIFY_UI } from "@/lib/shopifyUi";
 
 const NAV_ITEMS = [
   {
@@ -13,6 +14,20 @@ const NAV_ITEMS = [
     short: "儀表板",
     icon: "space_dashboard",
     models: ["store", "referral"],
+  },
+  {
+    href: "/partner/analytics",
+    label: "分潤分析",
+    short: "分析",
+    icon: "insights",
+    models: ["store", "referral"],
+  },
+  {
+    href: "/partner/rates",
+    label: "方案分潤一覽",
+    short: "分潤",
+    icon: "percent",
+    models: ["referral"],
   },
   {
     href: "/partner/catalog",
@@ -58,23 +73,35 @@ const NAV_ITEMS = [
   },
 ];
 
+/** 頂欄圖示按鈕（深色底、白色圖示，比照 Shopify 頂欄的通知／頭像按鈕） */
+function ChromeIconButton({ children, ...props }) {
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white/90 hover:bg-white/10 transition"
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function PartnerAdminLayout({ title, children, footerNotice }) {
   const router = useRouter();
   const { loading, user, partner, store } = usePartnerSession();
+  const [navQuery, setNavQuery] = useState("");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   if (loading) {
     return (
       <div
         className="min-h-screen flex items-center justify-center px-4"
-        style={{ backgroundColor: PARTNER_UI.content }}
+        style={{ backgroundColor: SHOPIFY_UI.canvasBg }}
       >
         <div className="flex flex-col items-center gap-3">
           <div
             className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin"
-            style={{
-              borderColor: PARTNER_UI.navy,
-              borderTopColor: "transparent",
-            }}
+            style={{ borderColor: SHOPIFY_UI.chromeBg, borderTopColor: "transparent" }}
           />
           <p className="text-sm text-slate-500 font-medium">
             載入合作夥伴後台...
@@ -93,103 +120,180 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
   const displayName = isReferral
     ? partner.name
     : store?.store_name || partner.name;
+  const initials = (displayName || "P").trim().slice(0, 2).toUpperCase();
+
+  const handleQuickNav = (e) => {
+    e.preventDefault();
+    const q = navQuery.trim().toLowerCase();
+    if (!q) return;
+    const match = navItems.find((item) => item.label.toLowerCase().includes(q));
+    if (match) {
+      router.push(match.href);
+      setNavQuery("");
+    }
+  };
 
   return (
     <div
       className="min-h-[100dvh] flex flex-col font-sans"
-      style={{ backgroundColor: PARTNER_UI.content }}
+      style={{ backgroundColor: SHOPIFY_UI.canvasBg }}
     >
       <Head>
         <title>{title ? `${title} | JEKO 夥伴後台` : "JEKO 夥伴後台"}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </Head>
 
-      {/* 頂欄 */}
+      {/* 頂欄：黑底比照 Shopify Admin chrome */}
       <header
-        className="text-white min-h-12 flex items-center justify-between gap-2 px-3 sm:px-5 shrink-0 shadow-md z-20 relative pt-[env(safe-area-inset-top)]"
-        style={{ backgroundColor: PARTNER_UI.navy }}
+        className="min-h-14 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 shrink-0 z-20 relative pt-[env(safe-area-inset-top)]"
+        style={{ backgroundColor: SHOPIFY_UI.chromeBg }}
       >
-        <div
-          className="absolute bottom-0 left-0 right-0 h-[3px]"
-          style={{ backgroundColor: PARTNER_UI.yellow }}
-        />
-        <div className="flex items-center gap-2.5 min-w-0 py-2">
-          <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition">
-              <MaterialIcon name="storefront" size={18} className="text-white" />
-            </div>
-            <div className="leading-none hidden sm:block">
-              <span className="font-black text-sm tracking-tight">
-                <span className="text-white">Jeko</span>
-                <span style={{ color: PARTNER_UI.yellow }}>.Partner</span>
-              </span>
-              <p className="text-[10px] text-blue-100/80 mt-0.5 hidden sm:block">
-                合作夥伴後台
-              </p>
-            </div>
-          </Link>
-          <div className="min-w-0 border-l border-white/20 pl-2.5 sm:pl-4">
-            <p className="text-xs sm:text-sm font-bold text-white truncate max-w-[42vw] sm:max-w-[180px]">
-              {displayName}
-            </p>
-            <p className="text-[10px] text-blue-100/80 font-medium">
-              {isReferral ? "專屬折扣碼連結" : "專屬商店"}
-              {title ? ` · ${title}` : ""}
-            </p>
+        <Link href="/" className="flex items-center gap-2 shrink-0 group">
+          <div className="w-7 h-7 rounded-md bg-white flex items-center justify-center">
+            <MaterialIcon name="storefront" size={16} className="text-[#1a1a1a]" />
           </div>
-        </div>
+          <span className="text-white font-black text-sm tracking-tight hidden sm:inline">
+            Jeko
+          </span>
+        </Link>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 py-2">
+        <form
+          onSubmit={handleQuickNav}
+          className="flex-1 max-w-sm mx-auto hidden sm:block"
+        >
+          <div className="relative">
+            <MaterialIcon
+              name="search"
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+            />
+            <input
+              value={navQuery}
+              onChange={(e) => setNavQuery(e.target.value)}
+              placeholder="搜尋後台功能（例如：分潤、訂單）"
+              className="w-full h-8 rounded-md bg-white/10 focus:bg-white text-white focus:text-[#1a1a1a] placeholder:text-gray-400 text-xs pl-8 pr-3 outline-none transition"
+            />
+          </div>
+        </form>
+
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto">
           {storeUrl && (
             <a
               href={storeUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center gap-1 min-h-10 min-w-10 sm:min-w-0 sm:px-3 rounded-lg text-xs font-bold text-[#111] hover:brightness-95 transition"
-              style={{ backgroundColor: PARTNER_UI.yellow }}
               title="預覽賣場"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white/90 hover:bg-white/10 transition"
             >
-              <MaterialIcon name="open_in_new" size={16} />
-              <span className="hidden sm:inline">預覽</span>
+              <MaterialIcon name="open_in_new" size={18} />
             </a>
           )}
-          <button
-            type="button"
-            onClick={() => partnerLogout(router)}
-            className="inline-flex items-center justify-center gap-1 min-h-10 min-w-10 sm:min-w-0 sm:px-3 rounded-lg text-xs font-bold border border-white/30 hover:bg-white/10 transition"
-            title="登出"
-          >
-            <MaterialIcon name="logout" size={16} />
-            <span className="hidden sm:inline">登出</span>
-          </button>
+          <ChromeIconButton title="通知">
+            <MaterialIcon name="notifications" size={18} />
+          </ChromeIconButton>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setUserMenuOpen((v) => !v)}
+              className="flex items-center gap-1 pl-0.5 pr-1.5 sm:pr-2 h-9 rounded-full hover:bg-white/10 transition"
+            >
+              <span
+                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-black shrink-0"
+                style={{ backgroundColor: SHOPIFY_UI.link }}
+              >
+                {initials}
+              </span>
+              <span className="text-white text-xs font-bold hidden md:inline max-w-[120px] truncate">
+                {displayName}
+              </span>
+              <MaterialIcon
+                name="expand_more"
+                size={16}
+                className="text-white/70 hidden md:inline"
+              />
+            </button>
+
+            {userMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setUserMenuOpen(false)}
+                />
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-[#e3e3e3] z-20 py-1.5 overflow-hidden">
+                  <div className="px-3 py-2 border-b border-[#eceef0]">
+                    <p className="text-sm font-bold text-[#1a1a1a] truncate">
+                      {displayName}
+                    </p>
+                    <p className="text-[11px] text-[#6b6b6b]">
+                      {isReferral ? "專屬折扣碼連結" : "專屬商店"}
+                    </p>
+                  </div>
+                  <Link
+                    href="/account"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-[#1a1a1a] hover:bg-[#f1f1f1] transition"
+                  >
+                    <MaterialIcon name="arrow_back" size={16} />
+                    會員中心
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => partnerLogout(router)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#d82c0d] hover:bg-[#fed3d1]/40 transition text-left"
+                  >
+                    <MaterialIcon name="logout" size={16} />
+                    登出
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden min-h-0">
-        {/* 桌面側欄 */}
+        {/* 桌面側欄：白底比照 Shopify sidebar */}
         <aside
-          className="w-[232px] flex-col shrink-0 hidden md:flex text-white"
-          style={{ backgroundColor: PARTNER_UI.sidebar }}
+          className="w-[232px] flex-col shrink-0 hidden md:flex"
+          style={{
+            backgroundColor: SHOPIFY_UI.sidebarBg,
+            borderRight: `1px solid ${SHOPIFY_UI.sidebarBorder}`,
+          }}
         >
-          <div className="px-4 py-4 border-b border-white/10">
-            <p className="text-sm font-black text-white leading-tight">
-              JEKO 夥伴
-            </p>
-            <div
-              className="mt-1.5 h-[3px] w-10 rounded-full"
-              style={{ backgroundColor: PARTNER_UI.yellow }}
-            />
-            <p className="text-xs text-blue-100/70 mt-1">Partner Portal</p>
+          <div
+            className="px-3 py-3"
+            style={{ borderBottom: `1px solid ${SHOPIFY_UI.sidebarBorder}` }}
+          >
+            <div className="flex items-center gap-2 px-1.5 py-1.5 rounded-md">
+              <div
+                className="w-6 h-6 rounded flex items-center justify-center text-white text-[11px] font-black shrink-0"
+                style={{ backgroundColor: SHOPIFY_UI.chromeBg }}
+              >
+                J
+              </div>
+              <span
+                className="text-sm font-bold truncate flex-1"
+                style={{ color: SHOPIFY_UI.sidebarText }}
+              >
+                {displayName}
+              </span>
+            </div>
           </div>
 
-          <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+          <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
             <Link
               href="/"
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-blue-100 hover:bg-white/10 transition"
+              className="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium hover:bg-[#f1f1f1] transition"
+              style={{ color: SHOPIFY_UI.sidebarTextMuted }}
             >
-              <MaterialIcon name="home" size={20} className="opacity-90" />
+              <MaterialIcon name="home" size={18} />
               <span className="flex-1 truncate">回到首頁</span>
             </Link>
+
+            <div
+              className="h-px my-2 mx-1"
+              style={{ backgroundColor: SHOPIFY_UI.divider }}
+            />
 
             {navItems.map(({ href, label, icon }) => {
               const active = router.pathname === href;
@@ -197,41 +301,28 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
                 <Link
                   key={href}
                   href={href}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition relative ${
-                    active
-                      ? "bg-white text-[#1E4AD1] shadow-sm font-bold"
-                      : "text-blue-50 hover:bg-white/10"
-                  }`}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm transition"
+                  style={{
+                    backgroundColor: active ? SHOPIFY_UI.sidebarActiveBg : "transparent",
+                    color: active ? SHOPIFY_UI.sidebarText : SHOPIFY_UI.sidebarTextMuted,
+                    fontWeight: active ? 700 : 500,
+                  }}
                 >
-                  {active && (
-                    <span
-                      className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
-                      style={{ backgroundColor: PARTNER_UI.yellow }}
-                    />
-                  )}
-                  <MaterialIcon
-                    name={icon}
-                    size={20}
-                    className={active ? "text-[#1E4AD1]" : "text-blue-100"}
-                  />
+                  <MaterialIcon name={icon} size={18} />
                   <span className="flex-1 truncate">{label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          <div className="p-3 border-t border-white/10 space-y-2">
-            <Link
-              href="/account"
-              className="flex items-center gap-2 text-xs text-blue-100 hover:text-white transition px-2 py-1.5"
-            >
-              <MaterialIcon name="arrow_back" size={14} />
-              會員中心
-            </Link>
+          <div
+            className="p-3"
+            style={{ borderTop: `1px solid ${SHOPIFY_UI.sidebarBorder}` }}
+          >
             <Link
               href={storeUrl || "/cooperation"}
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full text-sm font-bold text-[#111] hover:brightness-95 transition shadow-sm"
-              style={{ backgroundColor: PARTNER_UI.yellow }}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-md text-sm font-bold text-white transition"
+              style={{ backgroundColor: SHOPIFY_UI.primaryBtnBg }}
               {...(storeUrl ? { target: "_blank", rel: "noreferrer" } : {})}
             >
               <MaterialIcon name="storefront" size={18} />
@@ -253,10 +344,14 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
         </div>
       </div>
 
-      {/* 手機底部導覽 */}
+      {/* 手機底部導覽：白底比照 Shopify 行動版樣式 */}
       <nav
-        className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur-md"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        className="md:hidden fixed bottom-0 inset-x-0 z-30 backdrop-blur-md"
+        style={{
+          borderTop: `1px solid ${SHOPIFY_UI.sidebarBorder}`,
+          backgroundColor: "rgba(255,255,255,0.97)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
       >
         <div
           className={`flex items-stretch justify-around gap-0.5 px-1 pt-1 ${
@@ -269,21 +364,20 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
               <Link
                 key={href}
                 href={href}
-                className={`flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[56px] min-w-[56px] rounded-lg text-[10px] font-bold transition ${
-                  active
-                    ? "text-[#1E4AD1]"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
+                className="flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[56px] min-w-[56px] rounded-lg text-[10px] transition"
+                style={{
+                  color: active ? SHOPIFY_UI.textPrimary : SHOPIFY_UI.textTertiary,
+                  fontWeight: active ? 700 : 500,
+                }}
               >
                 <span
-                  className={`flex items-center justify-center w-9 h-8 rounded-lg ${
-                    active ? "bg-[#1E4AD1]/10" : ""
-                  }`}
+                  className="flex items-center justify-center w-9 h-8 rounded-lg"
+                  style={{ backgroundColor: active ? SHOPIFY_UI.sidebarActiveBg : "transparent" }}
                 >
                   <MaterialIcon
                     name={icon}
                     size={22}
-                    className={active ? "text-[#1E4AD1]" : "text-slate-500"}
+                    style={{ color: active ? SHOPIFY_UI.textPrimary : SHOPIFY_UI.textTertiary }}
                   />
                 </span>
                 {short}
@@ -307,25 +401,25 @@ export function StatCard({ label, value, sub, accent = false, onClick }) {
           ? "text-white shadow-sm"
           : "bg-white border border-slate-200 shadow-sm"
       } ${onClick ? "cursor-pointer" : ""}`}
-      style={accent ? { backgroundColor: PARTNER_UI.navy } : undefined}
+      style={accent ? { backgroundColor: SHOPIFY_UI.chromeBg } : undefined}
     >
       <p
         className={`text-xs font-bold uppercase tracking-wide ${
-          accent ? "text-blue-100" : "text-slate-500"
+          accent ? "text-white/70" : "text-slate-500"
         }`}
       >
         {label}
       </p>
       <p
         className={`text-xl sm:text-2xl font-black ${
-          accent ? "text-white" : "text-[#1E4AD1]"
+          accent ? "text-white" : "text-[#1a1a1a]"
         }`}
       >
         {value}
       </p>
       {sub && (
         <p
-          className={`text-xs mt-1 ${accent ? "text-blue-100" : "text-slate-400"}`}
+          className={`text-xs mt-1 ${accent ? "text-white/70" : "text-slate-400"}`}
         >
           {sub}
         </p>
@@ -337,8 +431,8 @@ export function StatCard({ label, value, sub, accent = false, onClick }) {
 /** @deprecated 使用 DobermanStatusBanner 代替 */
 export function StatusBanner({ title, message, status = "good" }) {
   const colors = {
-    good: PARTNER_UI.navy,
-    warn: "#f59e0b",
+    good: SHOPIFY_UI.chromeBg,
+    warn: "#8a5a00",
     info: "#475569",
   };
   return (
@@ -346,12 +440,6 @@ export function StatusBanner({ title, message, status = "good" }) {
       className="text-white p-4 sm:p-5 flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 shadow-sm relative overflow-hidden rounded-xl sm:rounded-none"
       style={{ backgroundColor: colors[status] || colors.good }}
     >
-      {status === "good" && (
-        <div
-          className="absolute bottom-0 left-0 right-0 h-[3px]"
-          style={{ backgroundColor: PARTNER_UI.yellow }}
-        />
-      )}
       <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0">
         <MaterialIcon
           name="verified_user"
@@ -362,7 +450,7 @@ export function StatusBanner({ title, message, status = "good" }) {
       </div>
       <div className="min-w-0">
         <p className="font-black text-base sm:text-lg">{title}</p>
-        <p className="text-xs sm:text-sm text-blue-100 mt-0.5 leading-relaxed">
+        <p className="text-xs sm:text-sm text-white/80 mt-0.5 leading-relaxed">
           {message}
         </p>
       </div>

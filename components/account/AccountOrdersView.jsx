@@ -1,20 +1,45 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import MaterialIcon from "@/components/MaterialIcon";
 import RefundRequestModal from "@/components/refund/RefundRequestModal";
 import OrderRefundDetailModal from "@/components/refund/OrderRefundDetailModal";
-import { ACCOUNT_UI } from "@/lib/accountUi";
+import {
+  ACCOUNT_UI,
+  ACCOUNT_THEME,
+  SHOPIFY_BADGE,
+} from "@/lib/accountUi";
+import {
+  ShopifyTabs,
+  ShopifyDropdown,
+  ShopifyPagination,
+} from "@/components/partner/ShopifyControls";
 import {
   getRefundEligibility,
   getRefundUiState,
   refundColumnLabel,
   orderItemSummary,
 } from "@/lib/refundPolicy";
-import { AccountPageWrap } from "./AccountShell";
+import {
+  AccountPageWrap,
+  AccountBadge,
+  NavyPanel,
+} from "./AccountShell";
 
 const PAGE_SIZE = 10;
+
+const UI = {
+  dark: ACCOUNT_THEME.dark,
+  mid: ACCOUNT_THEME.mid,
+  soft: ACCOUNT_THEME.soft,
+  border: ACCOUNT_THEME.border,
+  light: ACCOUNT_THEME.light,
+  wash: ACCOUNT_THEME.wash,
+  white: ACCOUNT_THEME.white,
+  radius: ACCOUNT_UI.radius,
+  radiusSm: ACCOUNT_UI.radiusSm,
+};
 
 function getEsimQRCodes(order) {
   if (!order?.qrcode_data) return [];
@@ -30,7 +55,9 @@ function getEsimQRCodes(order) {
   if (!Array.isArray(data)) return [];
   return data
     .map((item) => {
-      const cleanSrc = String(item.qrcodeUrl || item.src || "").split(",")[0].trim();
+      const cleanSrc = String(item.qrcodeUrl || item.src || "")
+        .split(",")[0]
+        .trim();
       return {
         name: item.productName || item.name || "eSIM 方案",
         src: cleanSrc,
@@ -44,7 +71,11 @@ function getEsimIccids(order) {
   if (!order?.qrcode_data) return [];
   let data = order.qrcode_data;
   if (typeof data === "string") {
-    try { data = JSON.parse(data); } catch { return []; }
+    try {
+      data = JSON.parse(data);
+    } catch {
+      return [];
+    }
   }
   if (data && typeof data === "object" && !Array.isArray(data)) data = [data];
   if (!Array.isArray(data)) return [];
@@ -57,58 +88,40 @@ function getEsimIccids(order) {
     .filter((item) => item.iccid || item.topupId);
 }
 
+const STATUS_TONE = {
+  completed: "success",
+  pending: "warning",
+  refund_pending: "warning",
+  refunded: "neutral",
+  cancelled: "neutral",
+  failed: "critical",
+};
+
+const STATUS_LABEL = {
+  completed: "已發貨",
+  pending: "待付款",
+  refund_pending: "退款審核",
+  refunded: "已退款",
+  cancelled: "已取消",
+  failed: "失敗",
+};
+
 function statusMeta(status) {
   const s = String(status || "").toLowerCase();
-  const map = {
-    completed: {
-      label: "已發貨",
-      pill: "bg-teal-50 text-teal-700 border-teal-200",
-      icon: "check_circle",
-      iconColor: "text-teal-500",
-      flag: false,
-    },
-    pending: {
-      label: "待付款",
-      pill: "bg-slate-100 text-slate-600 border-slate-200",
-      icon: "schedule",
-      iconColor: "text-slate-400",
-      flag: true,
-    },
-    refund_pending: {
-      label: "退款審核",
-      pill: "bg-red-50 text-red-700 border-red-200",
-      icon: "error",
-      iconColor: "text-red-500",
-      flag: true,
-    },
-    refunded: {
-      label: "已退款",
-      pill: "bg-slate-100 text-slate-500 border-slate-200",
-      icon: "undo",
-      iconColor: "text-slate-400",
-      flag: false,
-    },
-    cancelled: {
-      label: "已取消",
-      pill: "bg-slate-100 text-slate-500 border-slate-200",
-      icon: "cancel",
-      iconColor: "text-slate-400",
-      flag: false,
-    },
-    failed: {
-      label: "失敗",
-      pill: "bg-red-50 text-red-700 border-red-200",
-      icon: "error",
-      iconColor: "text-red-500",
-      flag: true,
-    },
-  };
-  return map[s] || {
-    label: status,
-    pill: "bg-slate-100 text-slate-600 border-slate-200",
-    icon: "help",
-    iconColor: "text-slate-400",
-    flag: false,
+  return {
+    label: STATUS_LABEL[s] || status,
+    tone: STATUS_TONE[s] || "neutral",
+    icon:
+      s === "completed"
+        ? "check_circle"
+        : s === "pending"
+          ? "schedule"
+          : s === "refund_pending" || s === "failed"
+            ? "error"
+            : s === "refunded"
+              ? "undo"
+              : "help",
+    flag: ["pending", "refund_pending", "failed"].includes(s),
   };
 }
 
@@ -155,130 +168,296 @@ function paymentLabel(info) {
   return info.payment_type || "待付款";
 }
 
+function orderShortId(id) {
+  return String(id || "").slice(0, 8).toUpperCase();
+}
+
+function SecondaryBtn({ children, onClick, href, disabled, className = "" }) {
+  const style = {
+    backgroundColor: "#fafafa",
+    color: "#303030",
+    border: "1px solid #8a8a8a",
+    borderRadius: "0.5rem",
+  };
+  const cls = `inline-flex items-center justify-center gap-1.5 h-8 px-3 text-[13px] font-semibold transition disabled:opacity-40 ${className}`;
+  if (href) {
+    return (
+      <Link href={href} className={cls} style={style}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cls}
+      style={style}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PrimaryBtn({ children, onClick, href, className = "" }) {
+  const style = {
+    backgroundColor: UI.dark,
+    borderRadius: "0.5rem",
+  };
+  const cls = `inline-flex items-center justify-center gap-1.5 h-8 px-3.5 text-[13px] font-semibold text-white transition ${className}`;
+  if (href) {
+    return (
+      <Link href={href} className={cls} style={style}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={cls} style={style}>
+      {children}
+    </button>
+  );
+}
+
+function Card({ children, className = "", style = {} }) {
+  return (
+    <div
+      className={className}
+      style={{
+        backgroundColor: UI.white,
+        border: `1px solid ${UI.border}`,
+        borderRadius: UI.radius,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ModalShell({ title, eyebrow, onClose, children, maxW = "max-w-md" }) {
+  return (
+    <div className={ACCOUNT_UI.modalOverlay}>
+      <div
+        className={`bg-white shadow-xl ${maxW} w-full max-h-[90vh] overflow-y-auto`}
+        style={{ borderRadius: "0.75rem" }}
+      >
+        <div
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: `1px solid ${UI.border}` }}
+        >
+          <div>
+            {eyebrow ? (
+              <p
+                className="text-[11px] font-bold uppercase tracking-wider"
+                style={{ color: SHOPIFY_BADGE.warning.text }}
+              >
+                {eyebrow}
+              </p>
+            ) : null}
+            <h3 className="font-black" style={{ color: UI.dark }}>
+              {title}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 inline-flex items-center justify-center transition"
+            style={{
+              borderRadius: UI.radiusSm,
+              color: UI.soft,
+              backgroundColor: UI.light,
+            }}
+            aria-label="關閉"
+          >
+            <MaterialIcon name="close" size={18} />
+          </button>
+        </div>
+        <div className="p-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 function PendingPaymentModal({ order, onClose }) {
   const pay = parsePaymentInfo(order);
   const code = pay?.code_no || pay?.payment_no || "";
   const isCvs = String(pay?.payment_type || "").toUpperCase() === "CVS";
 
   const copyCode = () => {
-    if (code && navigator.clipboard) {
-      navigator.clipboard.writeText(code);
-    }
+    if (code && navigator.clipboard) navigator.clipboard.writeText(code);
   };
 
   return (
-    <div className={ACCOUNT_UI.modalOverlay}>
-      <div className="bg-white rounded-sm shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <div>
-            <p className="text-xs font-bold text-amber-700 uppercase">待付款</p>
-            <h3 className="font-black text-[#1E4AD1]">訂單 #{order.id}</h3>
-          </div>
-          <button type="button" onClick={onClose} className="text-2xl text-slate-400 px-2">
-            ×
-          </button>
-        </div>
-        <div className="p-5 space-y-4">
-          <p className="text-sm text-slate-600">
-            {orderItemSummary(order)} · NT$ {formatNTD(order.total_amount)}
-          </p>
-
-          {pay ? (
-            <>
-              <div className="p-4 bg-amber-50 border border-amber-100 rounded-sm space-y-3">
-                <div className="flex items-center gap-2">
-                  <MaterialIcon name="store" size={22} className="text-amber-700" />
-                  <span className="font-bold text-amber-900">{paymentLabel(pay)}</span>
-                </div>
-                {isCvs && pay.store_type && (
-                  <p className="text-sm text-slate-700">
-                    <span className="text-slate-400">超商別：</span>
-                    {pay.store_type}
-                  </p>
-                )}
-                {code && (
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">繳費代碼</p>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 text-lg font-black tracking-wider bg-white border border-amber-200 rounded-sm px-3 py-2 text-[#1E4AD1]">
-                        {code}
-                      </code>
-                      <button
-                        type="button"
-                        onClick={copyCode}
-                        className="shrink-0 px-3 py-2 text-xs font-bold border border-[#0071EB] text-[#0071EB] rounded-sm hover:bg-blue-50"
-                      >
-                        複製
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {pay.expire_date && (
-                  <p className="text-sm text-red-600 font-medium">
-                    繳費期限：{pay.expire_date}
-                  </p>
-                )}
-                {pay.trade_no && (
-                  <p className="text-xs text-slate-400">交易序號：{pay.trade_no}</p>
-                )}
+    <ModalShell
+      title={`訂單 #${orderShortId(order.id)}`}
+      eyebrow="待付款"
+      onClose={onClose}
+    >
+      <div className="space-y-4">
+        <p className="text-sm" style={{ color: UI.mid }}>
+          {orderItemSummary(order)} · NT$ {formatNTD(order.total_amount)}
+        </p>
+        {pay ? (
+          <>
+            <div
+              className="p-4 space-y-3"
+              style={{
+                backgroundColor: "#fffbeb",
+                border: `1px solid ${SHOPIFY_BADGE.warning.bg}`,
+                borderRadius: UI.radius,
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <MaterialIcon
+                  name="store"
+                  size={22}
+                  style={{ color: SHOPIFY_BADGE.warning.dot }}
+                />
+                <span
+                  className="font-bold"
+                  style={{ color: SHOPIFY_BADGE.warning.text }}
+                >
+                  {paymentLabel(pay)}
+                </span>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                請至指定超商多媒體機台輸入代碼完成繳費。付款成功後 eSIM QR Code 將自動發送至您的 Email，並於此頁更新為「已發貨」。
-              </p>
-            </>
-          ) : (
-            <p className="text-sm text-slate-500 py-4 text-center">
-              尚未取得繳費代碼，請聯絡客服或重新下單。
+              {isCvs && pay.store_type ? (
+                <p className="text-sm" style={{ color: UI.mid }}>
+                  <span style={{ color: UI.soft }}>超商別：</span>
+                  {pay.store_type}
+                </p>
+              ) : null}
+              {code ? (
+                <div>
+                  <p className="text-xs mb-1" style={{ color: UI.soft }}>
+                    繳費代碼
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code
+                      className="flex-1 text-lg font-black tracking-wider px-3 py-2"
+                      style={{
+                        backgroundColor: UI.white,
+                        border: `1px solid ${UI.border}`,
+                        borderRadius: UI.radiusSm,
+                        color: UI.dark,
+                      }}
+                    >
+                      {code}
+                    </code>
+                    <SecondaryBtn onClick={copyCode}>複製</SecondaryBtn>
+                  </div>
+                </div>
+              ) : null}
+              {pay.expire_date ? (
+                <p
+                  className="text-sm font-medium"
+                  style={{ color: SHOPIFY_BADGE.critical.dot }}
+                >
+                  繳費期限：{pay.expire_date}
+                </p>
+              ) : null}
+              {pay.trade_no ? (
+                <p className="text-xs" style={{ color: UI.soft }}>
+                  交易序號：{pay.trade_no}
+                </p>
+              ) : null}
+            </div>
+            <p className="text-xs leading-relaxed" style={{ color: UI.soft }}>
+              請至指定超商多媒體機台輸入代碼完成繳費。付款成功後 eSIM QR Code
+              將自動發送至您的 Email，並於此頁更新為「已發貨」。
             </p>
-          )}
-        </div>
+          </>
+        ) : (
+          <p className="text-sm text-center py-4" style={{ color: UI.soft }}>
+            尚未取得繳費代碼，請聯絡客服或重新下單。
+          </p>
+        )}
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
 function QrModal({ order, onClose }) {
   const qrs = getEsimQRCodes(order);
   return (
-    <div className={ACCOUNT_UI.modalOverlay}>
-      <div className="bg-white rounded-sm shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h3 className="font-black text-[#1E4AD1]">訂單 #{order.id} · QR Code</h3>
-          <button type="button" onClick={onClose} className="text-2xl text-slate-400 px-2">
-            ×
-          </button>
-        </div>
-        <div className="p-5 space-y-4">
-          {qrs.length ? (
-            qrs.map((qr) => (
-              <div key={qr.src} className="text-center border border-slate-100 rounded-sm p-4">
-                <p className="text-sm font-bold text-slate-700 mb-3">{qr.name}</p>
-                <img
-                  src={qr.src}
-                  alt="eSIM QR Code"
-                  className="w-52 h-52 mx-auto object-contain border border-slate-200 rounded select-none"
-                  draggable={false}
-                />
-                <p className="text-[10px] text-slate-400 mt-2 font-mono">{qr.topupId}</p>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-slate-500 text-center py-6">QR Code 處理中，稍後請重新整理</p>
-          )}
-          <div className="bg-blue-50 border border-blue-100 rounded-sm p-3 text-xs text-slate-600 leading-relaxed space-y-1.5">
-            <p className="font-bold text-[#0071EB]">安裝方式</p>
-            <p>iPhone / iPad：長按上方 QR Code 圖片 → 選擇「加入 eSIM」或「加入行動方案」即可安裝。</p>
-            <p>或使用相機 App 對準此 QR Code 掃描。</p>
-            <p>Android：截圖後至「設定 → SIM 卡 → 下載 SIM 卡」掃描截圖中的 QR Code。</p>
-          </div>
+    <ModalShell
+      title={`訂單 #${orderShortId(order.id)} · QR Code`}
+      onClose={onClose}
+    >
+      <div className="space-y-4">
+        {qrs.length ? (
+          qrs.map((qr) => (
+            <div
+              key={qr.src}
+              className="text-center p-4"
+              style={{
+                border: `1px solid ${UI.border}`,
+                borderRadius: UI.radius,
+              }}
+            >
+              <p
+                className="text-sm font-bold mb-3"
+                style={{ color: UI.dark }}
+              >
+                {qr.name}
+              </p>
+              <img
+                src={qr.src}
+                alt="eSIM QR Code"
+                className="w-52 h-52 mx-auto object-contain select-none"
+                style={{
+                  border: `1px solid ${UI.border}`,
+                  borderRadius: UI.radiusSm,
+                }}
+                draggable={false}
+              />
+              <p
+                className="text-[10px] mt-2 font-mono"
+                style={{ color: UI.soft }}
+              >
+                {qr.topupId}
+              </p>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-center py-6" style={{ color: UI.soft }}>
+            QR Code 處理中，稍後請重新整理
+          </p>
+        )}
+        <div
+          className="p-3 text-xs leading-relaxed space-y-1.5"
+          style={{
+            backgroundColor: "#e0f0ff",
+            borderRadius: UI.radiusSm,
+            color: UI.mid,
+          }}
+        >
+          <p className="font-bold" style={{ color: UI.dark }}>
+            安裝方式
+          </p>
+          <p>
+            iPhone / iPad：長按上方 QR Code 圖片 → 選擇「加入 eSIM」或「加入行動方案」即可安裝。
+          </p>
+          <p>或使用相機 App 對準此 QR Code 掃描。</p>
+          <p>
+            Android：截圖後至「設定 → SIM 卡 → 下載 SIM 卡」掃描截圖中的 QR
+            Code。
+          </p>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
-/** 單筆訂單明細頁 */
-function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange }) {
+/** 單筆訂單明細 — 比照 Shopify 訂單詳情雙欄 */
+function OrderDetailView({
+  order,
+  onBack,
+  onRefresh,
+  getAuthHeaders,
+  onTabChange,
+}) {
   const meta = statusMeta(order.status);
   const qrs = getEsimQRCodes(order);
   const eligibility = getRefundEligibility(order);
@@ -291,243 +470,647 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
 
   let items = order?.item_details;
   if (typeof items === "string") {
-    try { items = JSON.parse(items); } catch { items = []; }
+    try {
+      items = JSON.parse(items);
+    } catch {
+      items = [];
+    }
   }
   if (!Array.isArray(items)) items = [];
 
   const iccidList = getEsimIccids(order);
+
+  const moreItems = [
+    {
+      id: "traffic",
+      label: "查詢流量",
+      icon: "speed",
+      onClick: () => onTabChange?.("traffic"),
+    },
+    {
+      id: "support",
+      label: "安裝與支援",
+      icon: "help_center",
+      onClick: () => onTabChange?.("support"),
+    },
+    { divider: true },
+    {
+      id: "buy",
+      label: "再次購買",
+      icon: "add_shopping_cart",
+      onClick: () => {
+        window.location.href = "/";
+      },
+    },
+  ];
 
   return (
     <AccountPageWrap>
       <button
         type="button"
         onClick={onBack}
-        className="flex items-center gap-1 text-sm font-bold text-[#0071EB] mb-4 hover:underline"
+        className="flex items-center gap-1 text-sm font-bold mb-4 hover:underline"
+        style={{ color: UI.dark }}
       >
         <MaterialIcon name="arrow_back" size={18} />
-        返回訂單列表
+        訂單
       </button>
 
-      <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
-        {/* 標題列 */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50/60">
-          <div className="flex items-center gap-3">
-            <MaterialIcon name={meta.icon} size={24} className={meta.iconColor} />
-            <div>
-              <h2 className="text-lg font-black text-[#1E4AD1]">訂單 #{order.id}</h2>
-              <p className="text-xs text-slate-500 mt-0.5">{formatDateFull(order.created_at)}</p>
-            </div>
-          </div>
-          <span className={`text-xs font-bold px-3 py-1 rounded-full border ${meta.pill}`}>
-            {meta.label}
-          </span>
-        </div>
-
-        {/* 訂單方案 */}
-        <div className="px-5 py-5 border-b border-slate-100">
-          <h3 className="text-xs font-bold text-slate-500 uppercase mb-3">方案內容</h3>
-          {items.length > 0 ? (
-            <div className="space-y-3">
-              {items.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-4 p-3 bg-slate-50 rounded-sm border border-slate-100">
-                  <div className="w-10 h-10 rounded-sm bg-[#1E4AD1]/10 flex items-center justify-center shrink-0">
-                    <MaterialIcon name="sim_card" size={22} className="text-[#1E4AD1]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-[#1E4AD1]">{item.name || item.productName || "eSIM 方案"}</p>
-                    {item.quantity && item.quantity > 1 && (
-                      <p className="text-xs text-slate-500">x{item.quantity}</p>
-                    )}
-                  </div>
-                  <p className="font-black text-sm text-[#1E4AD1]">
-                    NT$ {formatNTD(item.unit_price || item.price || order.total_amount)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-sm border border-slate-100">
-              <MaterialIcon name="sim_card" size={22} className="text-[#1E4AD1]" />
-              <p className="font-bold text-sm text-[#1E4AD1]">{orderItemSummary(order)}</p>
-            </div>
-          )}
-        </div>
-
-        {/* 金額與付款 */}
-        <div className="px-5 py-4 border-b border-slate-100">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-600">訂單總額</span>
-            <span className="text-lg font-black text-[#1E4AD1]">NT$ {formatNTD(order.total_amount)}</span>
-          </div>
-          {payInfo && (
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-sm text-slate-600">付款方式</span>
-              <span className="text-sm font-bold text-slate-700">{paymentLabel(payInfo)}</span>
-            </div>
-          )}
-          {order.customer_email && (
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-sm text-slate-600">Email</span>
-              <span className="text-sm text-slate-700">{order.customer_email}</span>
-            </div>
-          )}
-        </div>
-
-        {/* 待付款資訊 */}
-        {isPending && payInfo && (
-          <div className="px-5 py-4 border-b border-slate-100 bg-amber-50/50">
-            <h3 className="text-xs font-bold text-amber-700 uppercase mb-2">繳費資訊</h3>
-            {(payInfo.code_no || payInfo.payment_no) && (
-              <div className="flex items-center gap-3">
-                <code className="flex-1 text-base font-black tracking-wider bg-white border border-amber-200 rounded-sm px-3 py-2 text-[#1E4AD1]">
-                  {payInfo.code_no || payInfo.payment_no}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard?.writeText(payInfo.code_no || payInfo.payment_no)}
-                  className="px-3 py-2 text-xs font-bold border border-[#0071EB] text-[#0071EB] rounded-sm hover:bg-blue-50"
-                >
-                  複製
-                </button>
-              </div>
-            )}
-            {payInfo.expire_date && (
-              <p className="text-sm text-red-600 font-medium mt-2">繳費期限：{payInfo.expire_date}</p>
-            )}
-          </div>
-        )}
-
-        {/* QR Code 區塊 */}
-        {qrs.length > 0 && (
-          <div className="px-5 py-5 border-b border-slate-100">
-            <h3 className="text-xs font-bold text-slate-500 uppercase mb-3">eSIM QR Code</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {qrs.map((qr) => (
-                <div key={qr.src} className="text-center border border-slate-100 rounded-sm p-4 bg-slate-50/50">
-                  <p className="text-sm font-bold text-slate-700 mb-3">{qr.name}</p>
-                  <img
-                    src={qr.src}
-                    alt="eSIM QR Code"
-                    className="w-52 h-52 mx-auto object-contain border border-slate-200 rounded select-none"
-                    draggable={false}
-                  />
-                  <p className="text-[10px] text-slate-400 mt-2 font-mono">{qr.topupId}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 bg-blue-50 border border-blue-100 rounded-sm p-3 text-xs text-slate-600 leading-relaxed space-y-1.5">
-              <p className="font-bold text-[#0071EB]">安裝方式</p>
-              <p>iPhone / iPad：長按上方 QR Code 圖片 → 選擇「加入 eSIM」或「加入行動方案」即可安裝。</p>
-              <p>或使用相機 App 對準此 QR Code 掃描。</p>
-              <p>Android：截圖後至「設定 → SIM 卡 → 下載 SIM 卡」掃描截圖中的 QR Code。</p>
-            </div>
-          </div>
-        )}
-
-        {/* ICCID 與流量通知 */}
-        {(iccidList.length > 0 || qrs.length > 0) && (
-          <div className="px-5 py-5 border-b border-slate-100">
-            <h3 className="text-xs font-bold text-slate-500 uppercase mb-4">eSIM 識別碼 & 流量通知</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* ICCID 卡片 */}
-              <div className="flex flex-col items-center text-center p-4 bg-slate-50 border border-slate-100 rounded-sm">
-                <div className="w-12 h-12 rounded-full bg-[#0071EB]/10 flex items-center justify-center mb-3">
-                  <MaterialIcon name="sim_card" size={24} className="text-[#0071EB]" />
-                </div>
-                <p className="text-sm font-bold text-[#1E4AD1] mb-1">ICCID</p>
-                <p className="text-xs text-slate-500 mb-3">eSIM 唯一識別碼，用於綁定流量監控</p>
-                {iccidList.length > 0 ? (
-                  <div className="w-full space-y-1.5">
-                    {iccidList.map((item, idx) => (
-                      <div key={idx} className="bg-white border border-slate-200 rounded px-2.5 py-1.5">
-                        <p className="text-[10px] text-slate-400 truncate">{item.name}</p>
-                        <p className="text-xs font-mono font-bold text-[#1E4AD1] break-all">
-                          {item.iccid || `Topup: ${item.topupId}`}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-400 italic">系統將在綁定後顯示</p>
-                )}
-              </div>
-
-              {/* 綁定流量通知 */}
-              <div className="flex flex-col items-center text-center p-4 bg-slate-50 border border-slate-100 rounded-sm">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-3">
-                  <MaterialIcon name="notifications_active" size={24} className="text-emerald-700" />
-                </div>
-                <p className="text-sm font-bold text-[#1E4AD1] mb-1">流量提醒</p>
-                <p className="text-xs text-slate-500 mb-3">綁定 ICCID 後，流量偏低時自動推播通知您</p>
-                <button
-                  type="button"
-                  onClick={() => onTabChange?.("traffic")}
-                  className="mt-auto inline-flex items-center gap-1.5 px-4 py-2 bg-[#0071EB] text-white text-xs font-bold rounded-sm hover:bg-[#1E4AD1] transition"
-                >
-                  開啟流量通知
-                  <MaterialIcon name="arrow_forward" size={14} />
-                </button>
-              </div>
-
-              {/* 查詢流量 */}
-              <div className="flex flex-col items-center text-center p-4 bg-slate-50 border border-slate-100 rounded-sm">
-                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-3">
-                  <MaterialIcon name="speed" size={24} className="text-amber-700" />
-                </div>
-                <p className="text-sm font-bold text-[#1E4AD1] mb-1">查詢流量</p>
-                <p className="text-xs text-slate-500 mb-3">隨時查看剩餘流量及使用狀態</p>
-                <button
-                  type="button"
-                  onClick={() => onTabChange?.("traffic")}
-                  className="mt-auto inline-flex items-center gap-1.5 px-4 py-2 border border-[#0071EB] text-[#0071EB] text-xs font-bold rounded-sm hover:bg-blue-50 transition"
-                >
-                  前往查詢
-                  <MaterialIcon name="arrow_forward" size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 退款狀態 */}
-        {refundUi.badge && (
-          <div className="px-5 py-4 border-b border-slate-100">
-            <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">退款狀態</h3>
-            <div className="flex items-center gap-3">
-              <span className={`text-xs font-bold px-3 py-1 rounded-full border ${refundUi.badge.color}`}>
-                {refundUi.badge.label}
-              </span>
-              <button
-                type="button"
-                onClick={() => setRefundDetailOrder(order)}
-                className="text-xs font-bold text-[#0071EB] hover:underline"
-              >
-                查看退款詳情
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 操作列 */}
-        <div className="px-5 py-4 flex flex-wrap gap-2">
-          {eligibility.canApply && (
-            <button
-              type="button"
-              onClick={() => setRefundOrder(order)}
-              className="flex items-center gap-1 px-4 py-2.5 border border-red-200 text-red-700 text-sm font-bold rounded-sm hover:bg-red-50"
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1
+              className="text-xl sm:text-2xl font-black tracking-tight"
+              style={{ color: UI.dark }}
             >
+              #{orderShortId(order.id)}
+            </h1>
+            <AccountBadge tone={meta.tone}>{meta.label}</AccountBadge>
+            {refundUi.badge ? (
+              <AccountBadge tone="warning">{refundUi.badge.label}</AccountBadge>
+            ) : null}
+          </div>
+          <p className="text-xs mt-1.5" style={{ color: UI.soft }}>
+            {formatDateFull(order.created_at)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {eligibility.canApply ? (
+            <SecondaryBtn onClick={() => setRefundOrder(order)}>
               <MaterialIcon name="undo" size={16} />
               申請退款
-            </button>
-          )}
-          <Link
-            href="/"
-            className="flex items-center gap-1 px-4 py-2.5 bg-[#0071EB] text-white text-sm font-bold rounded-sm hover:bg-[#1E4AD1]"
-          >
-            <MaterialIcon name="add" size={16} />
-            再次購買
-          </Link>
+            </SecondaryBtn>
+          ) : null}
+          {qrs.length > 0 ? (
+            <SecondaryBtn
+              onClick={() => {
+                /* scroll handled by section */
+              }}
+              href="#esim-qr"
+            >
+              <MaterialIcon name="qr_code_2" size={16} />
+              QR Code
+            </SecondaryBtn>
+          ) : null}
+          <ShopifyDropdown label="更多操作" items={moreItems} />
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] gap-4">
+        <div className="space-y-4 min-w-0">
+          {/* 方案內容 — Fulfillment 風格 */}
+          <Card>
+            <div
+              className="px-4 sm:px-5 py-3.5 flex items-center justify-between gap-2"
+              style={{ borderBottom: `1px solid ${UI.border}` }}
+            >
+              <div className="flex items-center gap-2">
+                <MaterialIcon
+                  name="sim_card"
+                  size={18}
+                  style={{ color: UI.mid }}
+                />
+                <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                  方案內容
+                </h3>
+              </div>
+              <AccountBadge tone={meta.tone}>{meta.label}</AccountBadge>
+            </div>
+            <div className="p-4 sm:p-5 space-y-3">
+              {items.length > 0 ? (
+                items.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-4 p-3"
+                    style={{
+                      backgroundColor: UI.light,
+                      borderRadius: UI.radiusSm,
+                    }}
+                  >
+                    <div
+                      className="w-10 h-10 flex items-center justify-center shrink-0"
+                      style={{
+                        backgroundColor: UI.white,
+                        borderRadius: UI.radiusSm,
+                        border: `1px solid ${UI.border}`,
+                      }}
+                    >
+                      <MaterialIcon
+                        name="sim_card"
+                        size={22}
+                        style={{ color: UI.dark }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="font-bold text-sm"
+                        style={{ color: UI.dark }}
+                      >
+                        {item.name || item.productName || "eSIM 方案"}
+                      </p>
+                      {item.quantity && item.quantity > 1 ? (
+                        <p className="text-xs" style={{ color: UI.soft }}>
+                          x{item.quantity}
+                        </p>
+                      ) : null}
+                    </div>
+                    <p
+                      className="font-black text-sm"
+                      style={{ color: UI.dark }}
+                    >
+                      NT${" "}
+                      {formatNTD(
+                        item.unit_price || item.price || order.total_amount,
+                      )}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div
+                  className="flex items-center gap-3 p-3"
+                  style={{
+                    backgroundColor: UI.light,
+                    borderRadius: UI.radiusSm,
+                  }}
+                >
+                  <MaterialIcon
+                    name="sim_card"
+                    size={22}
+                    style={{ color: UI.dark }}
+                  />
+                  <p className="font-bold text-sm" style={{ color: UI.dark }}>
+                    {orderItemSummary(order)}
+                  </p>
+                </div>
+              )}
+
+              <div
+                className="flex flex-wrap items-center justify-end gap-2 pt-3"
+                style={{ borderTop: `1px solid ${UI.border}` }}
+              >
+                {qrs.length > 0 ? (
+                  <SecondaryBtn onClick={() => onTabChange?.("traffic")}>
+                    <MaterialIcon name="speed" size={16} />
+                    查詢流量
+                  </SecondaryBtn>
+                ) : null}
+                <PrimaryBtn href="/">再次購買</PrimaryBtn>
+              </div>
+            </div>
+          </Card>
+
+          {/* 付款摘要 */}
+          <Card>
+            <div
+              className="px-4 sm:px-5 py-3.5"
+              style={{ borderBottom: `1px solid ${UI.border}` }}
+            >
+              <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                付款
+              </h3>
+            </div>
+            <div className="p-4 sm:p-5 text-sm">
+              <dl className="space-y-0">
+                {[
+                  {
+                    label: "小計",
+                    value: `NT$ ${formatNTD(order.total_amount)}`,
+                  },
+                  payInfo
+                    ? {
+                        label: "付款方式",
+                        value: paymentLabel(payInfo),
+                      }
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .map((row) => (
+                    <div
+                      key={row.label}
+                      className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 items-baseline py-2"
+                      style={{ borderBottom: `1px solid ${UI.border}` }}
+                    >
+                      <dt style={{ color: UI.soft }}>{row.label}</dt>
+                      <dd
+                        className="text-right tabular-nums font-medium"
+                        style={{ color: UI.dark }}
+                      >
+                        {row.value}
+                      </dd>
+                    </div>
+                  ))}
+                <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 items-baseline py-2.5">
+                  <dt className="font-bold" style={{ color: UI.dark }}>
+                    總計
+                  </dt>
+                  <dd
+                    className="text-right tabular-nums font-black text-lg"
+                    style={{ color: UI.dark }}
+                  >
+                    NT$ {formatNTD(order.total_amount)}
+                  </dd>
+                </div>
+                <div
+                  className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 items-baseline py-2"
+                  style={{ borderTop: `1px solid ${UI.border}` }}
+                >
+                  <dt style={{ color: UI.soft }}>
+                    {isPending ? "待付款" : "已付款"}
+                  </dt>
+                  <dd
+                    className="text-right tabular-nums font-bold"
+                    style={{ color: UI.dark }}
+                  >
+                    {isPending
+                      ? "NT$ 0"
+                      : `NT$ ${formatNTD(order.total_amount)}`}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            {isPending && payInfo ? (
+              <div
+                className="px-4 sm:px-5 py-4"
+                style={{
+                  borderTop: `1px solid ${UI.border}`,
+                  backgroundColor: "#fffbeb",
+                }}
+              >
+                <p
+                  className="text-xs font-bold uppercase mb-2"
+                  style={{ color: SHOPIFY_BADGE.warning.text }}
+                >
+                  繳費資訊
+                </p>
+                {(payInfo.code_no || payInfo.payment_no) && (
+                  <div className="flex items-center gap-3">
+                    <code
+                      className="flex-1 text-base font-black tracking-wider px-3 py-2"
+                      style={{
+                        backgroundColor: UI.white,
+                        border: `1px solid ${UI.border}`,
+                        borderRadius: UI.radiusSm,
+                        color: UI.dark,
+                      }}
+                    >
+                      {payInfo.code_no || payInfo.payment_no}
+                    </code>
+                    <SecondaryBtn
+                      onClick={() =>
+                        navigator.clipboard?.writeText(
+                          payInfo.code_no || payInfo.payment_no,
+                        )
+                      }
+                    >
+                      複製
+                    </SecondaryBtn>
+                  </div>
+                )}
+                {payInfo.expire_date ? (
+                  <p
+                    className="text-sm font-medium mt-2"
+                    style={{ color: SHOPIFY_BADGE.critical.dot }}
+                  >
+                    繳費期限：{payInfo.expire_date}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </Card>
+
+          {/* QR Code */}
+          {qrs.length > 0 ? (
+            <Card>
+              <div
+                id="esim-qr"
+                className="px-4 sm:px-5 py-3.5"
+                style={{ borderBottom: `1px solid ${UI.border}` }}
+              >
+                <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                  eSIM QR Code
+                </h3>
+              </div>
+              <div className="p-4 sm:p-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {qrs.map((qr) => (
+                    <div
+                      key={qr.src}
+                      className="text-center p-4"
+                      style={{
+                        border: `1px solid ${UI.border}`,
+                        borderRadius: UI.radius,
+                        backgroundColor: UI.wash,
+                      }}
+                    >
+                      <p
+                        className="text-sm font-bold mb-3"
+                        style={{ color: UI.dark }}
+                      >
+                        {qr.name}
+                      </p>
+                      <img
+                        src={qr.src}
+                        alt="eSIM QR Code"
+                        className="w-52 h-52 mx-auto object-contain select-none"
+                        style={{
+                          border: `1px solid ${UI.border}`,
+                          borderRadius: UI.radiusSm,
+                          backgroundColor: UI.white,
+                        }}
+                        draggable={false}
+                      />
+                      <p
+                        className="text-[10px] mt-2 font-mono"
+                        style={{ color: UI.soft }}
+                      >
+                        {qr.topupId}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div
+                  className="mt-4 p-3 text-xs leading-relaxed space-y-1.5"
+                  style={{
+                    backgroundColor: "#e0f0ff",
+                    borderRadius: UI.radiusSm,
+                    color: UI.mid,
+                  }}
+                >
+                  <p className="font-bold" style={{ color: UI.dark }}>
+                    安裝方式
+                  </p>
+                  <p>
+                    iPhone / iPad：長按上方 QR Code 圖片 → 選擇「加入 eSIM」即可安裝。
+                  </p>
+                  <p>
+                    Android：截圖後至「設定 → SIM 卡 → 下載 SIM 卡」掃描截圖。
+                  </p>
+                </div>
+              </div>
+            </Card>
+          ) : null}
+
+          {/* ICCID / 流量 */}
+          {(iccidList.length > 0 || qrs.length > 0) && (
+            <Card>
+              <div
+                className="px-4 sm:px-5 py-3.5"
+                style={{ borderBottom: `1px solid ${UI.border}` }}
+              >
+                <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                  eSIM 識別碼 & 流量通知
+                </h3>
+              </div>
+              <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div
+                  className="flex flex-col items-center text-center p-4"
+                  style={{
+                    backgroundColor: UI.light,
+                    borderRadius: UI.radius,
+                  }}
+                >
+                  <div
+                    className="w-10 h-10 flex items-center justify-center mb-3"
+                    style={{
+                      backgroundColor: "#2c6ecb",
+                      borderRadius: UI.radiusSm,
+                    }}
+                  >
+                    <MaterialIcon
+                      name="sim_card"
+                      size={20}
+                      className="text-white"
+                    />
+                  </div>
+                  <p className="text-sm font-bold mb-1" style={{ color: UI.dark }}>
+                    ICCID
+                  </p>
+                  <p className="text-xs mb-3" style={{ color: UI.soft }}>
+                    eSIM 唯一識別碼
+                  </p>
+                  {iccidList.length > 0 ? (
+                    <div className="w-full space-y-1.5">
+                      {iccidList.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="px-2.5 py-1.5"
+                          style={{
+                            backgroundColor: UI.white,
+                            border: `1px solid ${UI.border}`,
+                            borderRadius: UI.radiusSm,
+                          }}
+                        >
+                          <p
+                            className="text-[10px] truncate"
+                            style={{ color: UI.soft }}
+                          >
+                            {item.name}
+                          </p>
+                          <p
+                            className="text-xs font-mono font-bold break-all"
+                            style={{ color: UI.dark }}
+                          >
+                            {item.iccid || `Topup: ${item.topupId}`}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs italic" style={{ color: UI.soft }}>
+                      系統將在綁定後顯示
+                    </p>
+                  )}
+                </div>
+
+                <div
+                  className="flex flex-col items-center text-center p-4"
+                  style={{
+                    backgroundColor: UI.light,
+                    borderRadius: UI.radius,
+                  }}
+                >
+                  <div
+                    className="w-10 h-10 flex items-center justify-center mb-3"
+                    style={{
+                      backgroundColor: "#008060",
+                      borderRadius: UI.radiusSm,
+                    }}
+                  >
+                    <MaterialIcon
+                      name="notifications_active"
+                      size={20}
+                      className="text-white"
+                    />
+                  </div>
+                  <p className="text-sm font-bold mb-1" style={{ color: UI.dark }}>
+                    流量提醒
+                  </p>
+                  <p className="text-xs mb-3" style={{ color: UI.soft }}>
+                    流量偏低時自動推播
+                  </p>
+                  <PrimaryBtn
+                    onClick={() => onTabChange?.("traffic")}
+                    className="mt-auto"
+                  >
+                    開啟流量通知
+                  </PrimaryBtn>
+                </div>
+
+                <div
+                  className="flex flex-col items-center text-center p-4"
+                  style={{
+                    backgroundColor: UI.light,
+                    borderRadius: UI.radius,
+                  }}
+                >
+                  <div
+                    className="w-10 h-10 flex items-center justify-center mb-3"
+                    style={{
+                      backgroundColor: "#eec200",
+                      borderRadius: UI.radiusSm,
+                    }}
+                  >
+                    <MaterialIcon
+                      name="speed"
+                      size={20}
+                      className="text-white"
+                    />
+                  </div>
+                  <p className="text-sm font-bold mb-1" style={{ color: UI.dark }}>
+                    查詢流量
+                  </p>
+                  <p className="text-xs mb-3" style={{ color: UI.soft }}>
+                    查看剩餘流量
+                  </p>
+                  <SecondaryBtn
+                    onClick={() => onTabChange?.("traffic")}
+                    className="mt-auto"
+                  >
+                    前往查詢
+                  </SecondaryBtn>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {refundUi.badge ? (
+            <Card className="p-4 sm:p-5">
+              <div className="flex items-center gap-3 flex-wrap">
+                <AccountBadge tone="warning">{refundUi.badge.label}</AccountBadge>
+                <button
+                  type="button"
+                  onClick={() => setRefundDetailOrder(order)}
+                  className="text-xs font-bold hover:underline"
+                  style={{ color: UI.dark }}
+                >
+                  查看退款詳情
+                </button>
+              </div>
+            </Card>
+          ) : null}
+        </div>
+
+        {/* 右側 — Customer / Notes */}
+        <aside className="space-y-4 min-w-0">
+          <NavyPanel title="顧客" icon="person">
+            <dl className="space-y-0 text-sm">
+              <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2 py-2 items-start">
+                <dt
+                  className="text-[11px] font-bold uppercase tracking-wider pt-0.5"
+                  style={{ color: UI.soft }}
+                >
+                  Email
+                </dt>
+                <dd
+                  className="break-all font-medium text-right sm:text-left"
+                  style={{ color: UI.dark }}
+                >
+                  {order.customer_email || "—"}
+                </dd>
+              </div>
+              <div
+                className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2 py-2 items-center"
+                style={{ borderTop: `1px solid ${UI.border}` }}
+              >
+                <dt
+                  className="text-[11px] font-bold uppercase tracking-wider"
+                  style={{ color: UI.soft }}
+                >
+                  狀態
+                </dt>
+                <dd className="flex justify-end sm:justify-start">
+                  <AccountBadge tone={meta.tone}>{meta.label}</AccountBadge>
+                </dd>
+              </div>
+              <div
+                className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2 py-2 items-baseline"
+                style={{ borderTop: `1px solid ${UI.border}` }}
+              >
+                <dt
+                  className="text-[11px] font-bold uppercase tracking-wider"
+                  style={{ color: UI.soft }}
+                >
+                  金額
+                </dt>
+                <dd
+                  className="font-bold tabular-nums text-right sm:text-left"
+                  style={{ color: UI.dark }}
+                >
+                  NT$ {formatNTD(order.total_amount)}
+                </dd>
+              </div>
+            </dl>
+          </NavyPanel>
+
+          <NavyPanel title="快捷操作" icon="bolt">
+            <div className="space-y-2">
+              {qrs.length > 0 ? (
+                <SecondaryBtn
+                  onClick={() => onTabChange?.("traffic")}
+                  className="w-full"
+                >
+                  <MaterialIcon name="speed" size={16} />
+                  查詢流量
+                </SecondaryBtn>
+              ) : null}
+              {eligibility.canApply ? (
+                <SecondaryBtn
+                  onClick={() => setRefundOrder(order)}
+                  className="w-full"
+                >
+                  <MaterialIcon name="undo" size={16} />
+                  申請退款
+                </SecondaryBtn>
+              ) : null}
+              <PrimaryBtn href="/" className="w-full">
+                <MaterialIcon name="add" size={16} />
+                再次購買
+              </PrimaryBtn>
+            </div>
+          </NavyPanel>
+
+          <NavyPanel title="需要協助？" icon="support_agent">
+            <div className="space-y-1 text-sm">
+              <Link
+                href="/faq"
+                className="flex items-center gap-2 p-2 rounded-md hover:bg-[#f6f6f7] font-medium"
+                style={{ color: UI.dark }}
+              >
+                <MaterialIcon name="menu_book" size={18} style={{ color: UI.mid }} />
+                eSIM 安裝指南
+              </Link>
+              <Link
+                href="/refund-policy"
+                className="flex items-center gap-2 p-2 rounded-md hover:bg-[#f6f6f7] font-medium"
+                style={{ color: UI.dark }}
+              >
+                <MaterialIcon name="policy" size={18} style={{ color: UI.mid }} />
+                退換貨政策
+              </Link>
+            </div>
+          </NavyPanel>
+        </aside>
       </div>
 
       {refundDetailOrder && (
@@ -552,7 +1135,6 @@ function OrderDetailView({ order, onBack, onRefresh, getAuthHeaders, onTabChange
   );
 }
 
-/** 圖 2 + 3：従業員レポート + 案件一覧 */
 export default function AccountOrdersView({
   orders,
   loading,
@@ -567,7 +1149,7 @@ export default function AccountOrdersView({
   const [statusFilter, setStatusFilter] = useState("");
   const [monthFilter, setMonthFilter] = useState("all");
   const [sort, setSort] = useState("newest");
-  const [selected, setSelected] = useState(new Set());
+  const [selected, setSelected] = useState(() => new Set());
   const [page, setPage] = useState(1);
   const [qrOrder, setQrOrder] = useState(null);
   const [refundOrder, setRefundOrder] = useState(null);
@@ -575,16 +1157,35 @@ export default function AccountOrdersView({
   const [pendingOrder, setPendingOrder] = useState(null);
   const [detailOrder, setDetailOrder] = useState(initialDetailOrder || null);
 
+  useEffect(() => {
+    if (initialDetailOrder) setDetailOrder(initialDetailOrder);
+  }, [initialDetailOrder]);
+
   const now = new Date();
   const thisMonth = monthKey(now);
-  const lastMonth = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const lastMonth = monthKey(
+    new Date(now.getFullYear(), now.getMonth() - 1, 1),
+  );
+
+  const counts = useMemo(() => {
+    const list = orders || [];
+    return {
+      all: list.length,
+      completed: list.filter((o) => o.status === "completed").length,
+      pending: list.filter((o) => o.status === "pending").length,
+      refund: list.filter((o) =>
+        ["refund_pending", "refunded"].includes(String(o.status).toLowerCase()),
+      ).length,
+    };
+  }, [orders]);
 
   const filtered = useMemo(() => {
     let list = [...(orders || [])];
     const q = search.trim().toLowerCase();
 
     if (tab === "completed") list = list.filter((o) => o.status === "completed");
-    else if (tab === "pending") list = list.filter((o) => o.status === "pending");
+    else if (tab === "pending")
+      list = list.filter((o) => o.status === "pending");
     else if (tab === "refund") {
       list = list.filter((o) =>
         ["refund_pending", "refunded"].includes(String(o.status).toLowerCase()),
@@ -611,13 +1212,33 @@ export default function AccountOrdersView({
     if (sort === "newest") {
       list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     } else if (sort === "amount") {
-      list.sort((a, b) => (Number(b.total_amount) || 0) - (Number(a.total_amount) || 0));
+      list.sort(
+        (a, b) => (Number(b.total_amount) || 0) - (Number(a.total_amount) || 0),
+      );
     }
     return list;
-  }, [orders, tab, search, statusFilter, monthFilter, sort, thisMonth, lastMonth]);
+  }, [
+    orders,
+    tab,
+    search,
+    statusFilter,
+    monthFilter,
+    sort,
+    thisMonth,
+    lastMonth,
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+
+  const allChecked =
+    paged.length > 0 && paged.every((o) => selected.has(o.id));
+  const someChecked =
+    paged.some((o) => selected.has(o.id)) && !allChecked;
 
   const toggleSelect = (id) => {
     setSelected((prev) => {
@@ -629,8 +1250,12 @@ export default function AccountOrdersView({
   };
 
   const toggleAll = () => {
-    if (selected.size === paged.length) setSelected(new Set());
-    else setSelected(new Set(paged.map((o) => o.id)));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allChecked) paged.forEach((o) => next.delete(o.id));
+      else paged.forEach((o) => next.add(o.id));
+      return next;
+    });
   };
 
   const clearFilters = () => {
@@ -675,420 +1300,623 @@ export default function AccountOrdersView({
     );
   }
 
+  const filterTabs = [
+    { id: "all", label: "全部", count: counts.all },
+    { id: "completed", label: "已發貨", count: counts.completed },
+    { id: "pending", label: "待付款", count: counts.pending },
+    { id: "refund", label: "退款相關", count: counts.refund },
+  ];
+
+  const moreMenu = [
+    {
+      id: "refresh",
+      label: "重新整理",
+      icon: "refresh",
+      onClick: () => onRefresh?.(),
+    },
+    {
+      id: "traffic",
+      label: "查詢流量",
+      icon: "speed",
+      onClick: () => onTabChange?.("traffic"),
+    },
+    { divider: true },
+    {
+      id: "buy",
+      label: "選購 eSIM",
+      icon: "add_shopping_cart",
+      onClick: () => {
+        window.location.href = "/";
+      },
+    },
+  ];
+
+  const inputStyle = {
+    border: `1px solid ${UI.border}`,
+    borderRadius: UI.radiusSm,
+    color: UI.dark,
+    backgroundColor: UI.white,
+  };
+
   return (
     <AccountPageWrap>
-      {/* 工具列 */}
-      <div className="flex justify-end mb-4">
-        <button
-          type="button"
-          onClick={exportCsv}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#0071EB] text-white text-sm font-bold rounded-sm hover:bg-[#1E4AD1] shrink-0"
-        >
-          <MaterialIcon name="download" size={18} />
-          匯出訂單 (.csv)
-        </button>
-      </div>
-
-      {/* 圖 2 圖例列 */}
-      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 mb-4 px-1">
-        <span className="flex items-center gap-1">
-          <MaterialIcon name="error" size={16} className="text-red-500" />
-          需處理
-        </span>
-        <span className="flex items-center gap-1">
-          <MaterialIcon name="flag" size={16} className="text-[#0071EB]" />
-          追蹤中
-        </span>
-        <span className="flex items-center gap-1">
-          <MaterialIcon name="check_circle" size={16} className="text-teal-500" />
-          已發貨
-        </span>
-      </div>
-
-      {/* 搜尋列 — 圖 2 */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-3">
-        <div className="flex-1 relative">
-          <MaterialIcon
-            name="search"
-            size={20}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-          />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            placeholder="關鍵字搜尋（訂單編號、方案、Email）"
-            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-sm text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0071EB]/30"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowAdvanced((v) => !v)}
-          className="flex items-center gap-1 text-sm font-bold text-[#0071EB] px-3 py-2 whitespace-nowrap"
-        >
-          <MaterialIcon name={showAdvanced ? "remove" : "add"} size={18} />
-          條件指定搜尋
-        </button>
-      </div>
-
-      {/* 圖 3 頂部分頁 tab */}
-      <div className="flex gap-6 border-b border-slate-200 mb-0 overflow-x-auto">
-        {[
-          { id: "all", label: "全部" },
-          { id: "completed", label: "已發貨" },
-          { id: "pending", label: "待付款" },
-          { id: "refund", label: "退款相關" },
-        ].map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => {
-              setTab(t.id);
-              setPage(1);
-            }}
-            className={`pb-3 text-sm font-bold whitespace-nowrap border-b-2 -mb-px transition ${
-              tab === t.id
-                ? "border-[#0071EB] text-[#0071EB]"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
+        <div>
+          <h1
+            className="text-xl font-black tracking-tight"
+            style={{ color: UI.dark }}
           >
-            {t.label}
-          </button>
-        ))}
+            我的 eSIM 訂單
+          </h1>
+          <p className="text-xs sm:text-sm mt-1" style={{ color: UI.mid }}>
+            查看發貨狀態、QR Code、繳費代碼與退款申請
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <SecondaryBtn onClick={exportCsv} disabled={!filtered.length}>
+            <MaterialIcon name="download" size={16} />
+            匯出 CSV
+          </SecondaryBtn>
+          <ShopifyDropdown label="更多操作" items={moreMenu} />
+        </div>
       </div>
 
-      {/* 圖 3 篩選面板 */}
-      {showAdvanced && (
-        <div className="border border-slate-200 border-t-0 bg-slate-50/80 p-4 space-y-4">
-          <div className="flex flex-wrap gap-3 items-end">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 mb-1">狀態</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPage(1);
-                }}
-                className="text-sm border border-slate-200 rounded-sm px-3 py-2 bg-white min-w-[140px]"
-              >
-                <option value="">全部狀態</option>
-                <option value="completed">已發貨</option>
-                <option value="pending">待付款</option>
-                <option value="refund_pending">退款審核中</option>
-                <option value="refunded">已退款</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 mb-1">排序</label>
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                className="text-sm border border-slate-200 rounded-sm px-3 py-2 bg-white"
-              >
-                <option value="newest">購買日（新→舊）</option>
-                <option value="amount">金額（高→低）</option>
-              </select>
-            </div>
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="text-xs text-slate-500 hover:text-[#0071EB] font-bold ml-auto"
-            >
-              清除搜尋條件
-            </button>
+      <Card className="overflow-hidden">
+        <div className="px-3 sm:px-4 pt-1 flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <ShopifyTabs
+              tabs={filterTabs}
+              value={tab}
+              onChange={(id) => {
+                setTab(id);
+                setPage(1);
+                setSelected(new Set());
+              }}
+            />
           </div>
+          {selected.size > 0 ? (
+            <span
+              className="hidden sm:inline-flex text-xs font-bold shrink-0 px-2.5 py-1"
+              style={{
+                backgroundColor: UI.light,
+                color: UI.dark,
+                borderRadius: UI.radiusSm,
+              }}
+            >
+              已選取 {selected.size}
+            </span>
+          ) : null}
+        </div>
 
-          <div>
-            <p className="text-[11px] font-bold text-slate-500 mb-2">購買月份</p>
-            <div className="flex flex-wrap gap-1">
-              {[
-                { id: "all", label: "全部" },
-                { id: "last", label: "上個月" },
-                { id: "this", label: "本月" },
-              ].map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => {
-                    setMonthFilter(m.id);
+        <div
+          className="px-3 sm:px-4 py-3 flex flex-col sm:flex-row gap-2"
+          style={{ borderTop: `1px solid ${UI.border}` }}
+        >
+          <div className="flex-1 relative">
+            <MaterialIcon
+              name="search"
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: UI.soft }}
+            />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="搜尋訂單編號、方案、Email"
+              className="w-full h-9 pl-10 pr-3 text-sm outline-none"
+              style={inputStyle}
+            />
+          </div>
+          <SecondaryBtn onClick={() => setShowAdvanced((v) => !v)}>
+            <MaterialIcon
+              name={showAdvanced ? "filter_list_off" : "filter_list"}
+              size={16}
+            />
+            篩選
+          </SecondaryBtn>
+          <SecondaryBtn onClick={onRefresh}>
+            <MaterialIcon name="refresh" size={16} />
+            重新整理
+          </SecondaryBtn>
+        </div>
+
+        {showAdvanced ? (
+          <div
+            className="px-3 sm:px-4 py-4 space-y-4"
+            style={{
+              backgroundColor: UI.wash,
+              borderTop: `1px solid ${UI.border}`,
+            }}
+          >
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <label
+                  className="block text-[11px] font-bold mb-1"
+                  style={{ color: UI.soft }}
+                >
+                  狀態
+                </label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
                     setPage(1);
                   }}
-                  className={`px-3 py-1.5 text-xs font-bold rounded border transition ${
-                    monthFilter === m.id
-                      ? "bg-[#1E4AD1] text-white border-[#1E4AD1]"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-[#0071EB]"
-                  }`}
+                  className="text-sm h-9 px-3 min-w-[140px] outline-none"
+                  style={inputStyle}
                 >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 批量操作列 — 圖 3 */}
-      <div className="bg-white border border-slate-200 border-t-0 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <p className="text-sm text-slate-600">
-          {selected.size > 0 ? (
-            <>
-              已選 <strong>{selected.size}</strong> 筆。
+                  <option value="">全部狀態</option>
+                  <option value="completed">已發貨</option>
+                  <option value="pending">待付款</option>
+                  <option value="refund_pending">退款審核中</option>
+                  <option value="refunded">已退款</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  className="block text-[11px] font-bold mb-1"
+                  style={{ color: UI.soft }}
+                >
+                  排序
+                </label>
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className="text-sm h-9 px-3 outline-none"
+                  style={inputStyle}
+                >
+                  <option value="newest">購買日（新→舊）</option>
+                  <option value="amount">金額（高→低）</option>
+                </select>
+              </div>
               <button
                 type="button"
-                onClick={() => setSelected(new Set(paged.map((o) => o.id)))}
-                className="text-[#0071EB] font-bold ml-1 hover:underline"
+                onClick={clearFilters}
+                className="text-xs font-bold ml-auto hover:underline"
+                style={{ color: UI.mid }}
               >
-                全選本頁 {paged.length} 筆
+                清除搜尋條件
               </button>
-            </>
-          ) : (
-            <>共 {filtered.length} 筆訂單</>
-          )}
-        </p>
-        <div className="flex gap-2">
-          {selected.size > 0 && (
-            <button
-              type="button"
-              onClick={() => onTabChange?.("traffic")}
-              className="flex items-center gap-1 px-4 py-2 bg-[#1E4AD1] text-white text-xs font-bold rounded-sm"
-            >
+            </div>
+
+            <div>
+              <p
+                className="text-[11px] font-bold mb-2"
+                style={{ color: UI.soft }}
+              >
+                購買月份
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { id: "all", label: "全部" },
+                  { id: "last", label: "上個月" },
+                  { id: "this", label: "本月" },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      setMonthFilter(m.id);
+                      setPage(1);
+                    }}
+                    className="px-3 py-1.5 text-xs font-bold transition"
+                    style={{
+                      backgroundColor:
+                        monthFilter === m.id ? UI.dark : UI.white,
+                      color: monthFilter === m.id ? "#fff" : UI.mid,
+                      border: `1px solid ${monthFilter === m.id ? UI.dark : UI.border}`,
+                      borderRadius: UI.radiusSm,
+                    }}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {selected.size > 0 ? (
+          <div
+            className="px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2"
+            style={{
+              backgroundColor: UI.light,
+              borderTop: `1px solid ${UI.border}`,
+            }}
+          >
+            <p className="text-sm" style={{ color: UI.mid }}>
+              已選 <strong style={{ color: UI.dark }}>{selected.size}</strong>{" "}
+              筆
+            </p>
+            <SecondaryBtn onClick={() => onTabChange?.("traffic")}>
               <MaterialIcon name="speed" size={16} />
               查詢所選流量
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="px-3 py-2 border border-slate-200 text-xs font-bold rounded-sm hover:bg-slate-50"
-          >
-            重新整理
-          </button>
-          <Link
-            href="/"
-            className="px-3 py-2 bg-[#0071EB] text-white text-xs font-bold rounded-sm"
-          >
-            + 選購 eSIM
-          </Link>
-        </div>
-      </div>
+            </SecondaryBtn>
+          </div>
+        ) : null}
 
-      {/* 表格 — 圖 2 豐富列 + 圖 3 狀態 pill */}
-      <div className="bg-white border border-slate-200 border-t-0 rounded-b-sm overflow-x-auto shadow-sm">
-        <table className="w-full text-sm min-w-[960px]">
-          <thead>
-            <tr className="text-[11px] text-slate-500 border-b border-slate-200 bg-slate-50/80">
-              <th className="px-3 py-3 w-10">
-                <input
-                  type="checkbox"
-                  checked={paged.length > 0 && selected.size === paged.length}
-                  onChange={toggleAll}
-                  className="accent-[#0071EB]"
-                />
-              </th>
-              <th className="px-3 py-3 font-bold text-left w-12">狀態</th>
-              <th className="px-3 py-3 font-bold text-left">訂單 / 方案</th>
-              <th className="px-3 py-3 font-bold text-left">方案摘要</th>
-              <th className="px-3 py-3 font-bold text-left">備註</th>
-              <th className="px-3 py-3 font-bold text-left">購買日</th>
-              <th className="px-3 py-3 font-bold text-right w-28">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="py-16 text-center text-slate-400">
-                  載入訂單中…
-                </td>
-              </tr>
-            ) : paged.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-16 text-center text-slate-400">
-                  尚無符合條件的訂單
-                  <Link href="/" className="block mt-2 text-[#0071EB] font-bold">
-                    前往選購 →
-                  </Link>
-                </td>
-              </tr>
-            ) : (
-              paged.map((order) => {
-                const meta = statusMeta(order.status);
-                const hasQr = getEsimQRCodes(order).length > 0;
-                const eligibility = getRefundEligibility(order);
-                const refundUi = getRefundUiState(order);
-                const payInfo = parsePaymentInfo(order);
-                const isPending = String(order.status).toLowerCase() === "pending";
-
-                return (
-                  <tr key={order.id} className="border-b border-slate-100 hover:bg-slate-50/60 align-top">
-                    <td className="px-3 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(order.id)}
-                        onChange={() => toggleSelect(order.id)}
-                        className="accent-[#0071EB]"
-                      />
-                    </td>
-                    <td className="px-3 py-4">
-                      <MaterialIcon name={meta.icon} size={20} className={meta.iconColor} />
-                    </td>
-                    <td className="px-3 py-4 min-w-[160px]">
-                      <p className="font-mono text-xs text-slate-400">#{order.id}</p>
-                      <button
-                        type="button"
-                        onClick={() => setDetailOrder(order)}
-                        className="font-bold text-[#0071EB] hover:underline text-left mt-0.5"
+        {/* 手機卡片 */}
+        <div
+          className="md:hidden"
+          style={{ borderTop: `1px solid ${UI.border}` }}
+        >
+          {loading ? (
+            <div
+              className="py-12 text-center text-sm"
+              style={{ color: UI.soft }}
+            >
+              載入訂單中…
+            </div>
+          ) : paged.length === 0 ? (
+            <div
+              className="py-12 text-center text-sm"
+              style={{ color: UI.soft }}
+            >
+              尚無符合條件的訂單
+              <Link
+                href="/"
+                className="block mt-2 font-bold hover:underline"
+                style={{ color: UI.dark }}
+              >
+                前往選購 →
+              </Link>
+            </div>
+          ) : (
+            paged.map((order) => {
+              const meta = statusMeta(order.status);
+              const hasQr = getEsimQRCodes(order).length > 0;
+              const isPending =
+                String(order.status).toLowerCase() === "pending";
+              const payInfo = parsePaymentInfo(order);
+              return (
+                <div
+                  key={order.id}
+                  className="p-4 space-y-3"
+                  style={{ borderTop: `1px solid ${UI.border}` }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p
+                        className="font-mono text-xs font-bold"
+                        style={{ color: UI.dark }}
+                      >
+                        #{orderShortId(order.id)}
+                      </p>
+                      <p
+                        className="text-sm font-bold mt-0.5 truncate"
+                        style={{ color: UI.dark }}
                       >
                         {orderItemSummary(order)}
-                      </button>
-                      <p className="text-[10px] text-slate-400 mt-1 truncate max-w-[180px]">
-                        {order.customer_email || "—"}
                       </p>
-                      <span
-                        className={`inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${meta.pill}`}
-                      >
-                        {meta.label}
-                      </span>
-                      {refundUi.badge && (
-                        <span
-                          className={`inline-block mt-1 ml-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${refundUi.badge.color}`}
-                        >
-                          {refundUi.badge.label}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="flex gap-1">
-                        {[
-                          { label: "金額", val: `NT$${formatNTD(order.total_amount)}` },
-                          {
-                            label: "QR",
-                            val: hasQr ? "有" : "—",
-                            isQr: true,
-                            clickable: hasQr,
-                          },
-                          { label: "退款", val: refundColumnLabel(order) },
-                        ].map((box) => (
-                          <div
-                            key={box.label}
-                            className={`w-16 text-center border border-slate-200 rounded py-1.5 bg-slate-50/50 ${box.clickable ? "cursor-pointer hover:border-[#0071EB] hover:bg-blue-50/50 transition-colors" : ""}`}
-                            onClick={box.clickable ? () => setQrOrder(order) : undefined}
-                            role={box.clickable ? "button" : undefined}
-                            tabIndex={box.clickable ? 0 : undefined}
-                            aria-label={box.clickable ? "檢視 QR Code" : undefined}
-                          >
-                            <p className="text-[9px] text-slate-400">{box.label}</p>
-                            {box.isQr && hasQr ? (
-                              <MaterialIcon name="qr_code_2" size={18} className="text-[#0071EB] mx-auto mt-0.5" />
-                            ) : (
-                              <p className="text-xs font-black text-[#1E4AD1] mt-0.5">{box.val}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-3 py-4 text-center">
+                      <p className="text-[11px] mt-0.5" style={{ color: UI.soft }}>
+                        {formatDateFull(order.created_at)}
+                      </p>
+                    </div>
+                    <AccountBadge tone={meta.tone}>{meta.label}</AccountBadge>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-black" style={{ color: UI.dark }}>
+                      NT$ {formatNTD(order.total_amount)}
+                    </p>
+                    <div className="flex items-center gap-1.5">
                       {isPending && payInfo ? (
-                        <button
-                          type="button"
-                          onClick={() => setPendingOrder(order)}
-                          className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-sm hover:bg-amber-100"
+                        <SecondaryBtn onClick={() => setPendingOrder(order)}>
+                          繳費
+                        </SecondaryBtn>
+                      ) : null}
+                      {hasQr ? (
+                        <SecondaryBtn onClick={() => setQrOrder(order)}>
+                          <MaterialIcon name="qr_code_2" size={16} />
+                        </SecondaryBtn>
+                      ) : null}
+                      <PrimaryBtn onClick={() => setDetailOrder(order)}>
+                        明細
+                      </PrimaryBtn>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* 桌面表格 — 固定欄寬垂直置中對齊 */}
+        <div className="hidden md:block overflow-x-auto">
+          <table
+            className="w-full text-sm table-fixed"
+            style={{ minWidth: 920 }}
+          >
+            <colgroup>
+              <col style={{ width: 44 }} />
+              <col style={{ width: "28%" }} />
+              <col style={{ width: 96 }} />
+              <col style={{ width: 112 }} />
+              <col style={{ width: 72 }} />
+              <col style={{ width: 88 }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: 128 }} />
+              <col style={{ width: 88 }} />
+            </colgroup>
+            <thead>
+              <tr
+                className="text-[10px] uppercase tracking-wider"
+                style={{ backgroundColor: UI.light, color: UI.soft }}
+              >
+                <th className="pl-4 pr-1 py-3 text-left align-middle">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded accent-black cursor-pointer block"
+                    checked={allChecked}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someChecked;
+                    }}
+                    onChange={toggleAll}
+                    aria-label="全選本頁"
+                  />
+                </th>
+                <th className="px-3 py-3 text-left font-bold align-middle">
+                  訂單 / 方案
+                </th>
+                <th className="px-3 py-3 text-left font-bold align-middle">
+                  狀態
+                </th>
+                <th className="px-3 py-3 text-right font-bold align-middle">
+                  金額
+                </th>
+                <th className="px-2 py-3 text-center font-bold align-middle">
+                  QR
+                </th>
+                <th className="px-2 py-3 text-center font-bold align-middle">
+                  退款
+                </th>
+                <th className="px-3 py-3 text-left font-bold align-middle">
+                  備註
+                </th>
+                <th className="px-3 py-3 text-left font-bold align-middle">
+                  購買日
+                </th>
+                <th className="px-3 py-3 text-center font-bold align-middle">
+                  操作
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={9}
+                    className="text-center py-14 text-sm"
+                    style={{ color: UI.soft }}
+                  >
+                    載入訂單中…
+                  </td>
+                </tr>
+              ) : paged.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={9}
+                    className="text-center py-14 text-sm"
+                    style={{ color: UI.soft }}
+                  >
+                    尚無符合條件的訂單
+                    <Link
+                      href="/"
+                      className="block mt-2 font-bold hover:underline"
+                      style={{ color: UI.dark }}
+                    >
+                      前往選購 →
+                    </Link>
+                  </td>
+                </tr>
+              ) : (
+                paged.map((order) => {
+                  const meta = statusMeta(order.status);
+                  const hasQr = getEsimQRCodes(order).length > 0;
+                  const refundUi = getRefundUiState(order);
+                  const payInfo = parsePaymentInfo(order);
+                  const isPending =
+                    String(order.status).toLowerCase() === "pending";
+                  const checked = selected.has(order.id);
+
+                  return (
+                    <tr
+                      key={order.id}
+                      style={{
+                        borderTop: `1px solid ${UI.border}`,
+                        backgroundColor: checked ? UI.light : undefined,
+                      }}
+                    >
+                      <td className="pl-4 pr-1 py-3.5 align-middle">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded accent-black cursor-pointer block"
+                          checked={checked}
+                          onChange={() => toggleSelect(order.id)}
+                          aria-label={`選取訂單 ${order.id}`}
+                        />
+                      </td>
+                      <td className="px-3 py-3.5 align-middle">
+                        <p
+                          className="font-mono text-[11px] font-bold leading-none"
+                          style={{ color: UI.soft }}
                         >
-                          {paymentLabel(payInfo)}
-                        </button>
-                      ) : refundUi.badge ? (
-                        <button
-                          type="button"
-                          onClick={() => setRefundDetailOrder(order)}
-                          className={`text-[10px] font-bold px-2 py-1 rounded-sm border max-w-[100px] leading-tight ${refundUi.badge.color} hover:opacity-90`}
-                        >
-                          {refundUi.badge.label}
-                        </button>
-                      ) : meta.flag ? (
-                        <MaterialIcon name="chat_bubble_outline" size={18} className="text-slate-300" />
-                      ) : (
-                        <span className="text-slate-200">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-4 text-xs text-slate-500 whitespace-nowrap">
-                      {formatDateFull(order.created_at)}
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="flex items-center justify-end gap-1">
-                        {hasQr && (
-                          <button
-                            type="button"
-                            onClick={() => setQrOrder(order)}
-                            title="QR Code"
-                            className="p-1.5 rounded hover:bg-slate-100 text-slate-400"
-                          >
-                            <MaterialIcon name="qr_code_2" size={18} />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => onTabChange?.("traffic")}
-                          title="查流量"
-                          className="p-1.5 rounded hover:bg-slate-100 text-slate-400"
-                        >
-                          <MaterialIcon name="speed" size={18} />
-                        </button>
+                          #{orderShortId(order.id)}
+                        </p>
                         <button
                           type="button"
                           onClick={() => setDetailOrder(order)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 bg-[#1E4AD1] text-white text-[11px] font-bold rounded hover:bg-[#163aab]"
+                          className="font-bold text-left text-sm leading-snug mt-1 hover:underline line-clamp-2 w-full"
+                          style={{ color: UI.dark }}
+                          title={orderItemSummary(order)}
                         >
-                          <MaterialIcon name="visibility" size={14} />
-                          明細
+                          {orderItemSummary(order)}
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-
-        {/* 分頁 — 圖 3 */}
-        <div className="px-4 py-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              className="p-1.5 rounded border border-slate-200 disabled:opacity-40"
-            >
-              <MaterialIcon name="chevron_left" size={20} />
-            </button>
-            <span className="text-sm font-bold text-[#0071EB] px-2">{page}</span>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="p-1.5 rounded border border-slate-200 disabled:opacity-40"
-            >
-              <MaterialIcon name="chevron_right" size={20} />
-            </button>
-          </div>
-          <p className="text-xs text-slate-400">
-            {PAGE_SIZE} 筆 / 頁 · 共 {filtered.length} 筆
-          </p>
+                        <p
+                          className="text-[11px] mt-0.5 truncate"
+                          style={{ color: UI.soft }}
+                          title={order.customer_email || ""}
+                        >
+                          {order.customer_email || "—"}
+                        </p>
+                      </td>
+                      <td className="px-3 py-3.5 align-middle">
+                        <div className="flex flex-col items-start gap-1">
+                          <AccountBadge tone={meta.tone}>
+                            {meta.label}
+                          </AccountBadge>
+                          {refundUi.badge ? (
+                            <AccountBadge tone="warning">
+                              {refundUi.badge.label}
+                            </AccountBadge>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td
+                        className="px-3 py-3.5 align-middle text-right tabular-nums font-bold whitespace-nowrap"
+                        style={{ color: UI.dark }}
+                      >
+                        NT$ {formatNTD(order.total_amount)}
+                      </td>
+                      <td className="px-2 py-3.5 align-middle text-center">
+                        {hasQr ? (
+                          <button
+                            type="button"
+                            onClick={() => setQrOrder(order)}
+                            title="檢視 QR Code"
+                            className="inline-flex items-center justify-center w-8 h-8 mx-auto transition"
+                            style={{
+                              borderRadius: UI.radiusSm,
+                              border: `1px solid ${UI.border}`,
+                              backgroundColor: UI.wash,
+                              color: UI.dark,
+                            }}
+                          >
+                            <MaterialIcon name="qr_code_2" size={16} />
+                          </button>
+                        ) : (
+                          <span style={{ color: UI.soft }}>—</span>
+                        )}
+                      </td>
+                      <td
+                        className="px-2 py-3.5 align-middle text-center text-xs font-bold tabular-nums"
+                        style={{ color: UI.mid }}
+                        title={refundColumnLabel(order)}
+                      >
+                        {refundColumnLabel(order)}
+                      </td>
+                      <td className="px-3 py-3.5 align-middle">
+                        {isPending && payInfo ? (
+                          <button
+                            type="button"
+                            onClick={() => setPendingOrder(order)}
+                            className="text-[11px] font-bold px-2 py-1 max-w-full truncate"
+                            style={{
+                              color: SHOPIFY_BADGE.warning.text,
+                              backgroundColor: SHOPIFY_BADGE.warning.bg,
+                              borderRadius: UI.radiusSm,
+                            }}
+                            title={paymentLabel(payInfo)}
+                          >
+                            {paymentLabel(payInfo)}
+                          </button>
+                        ) : refundUi.badge ? (
+                          <button
+                            type="button"
+                            onClick={() => setRefundDetailOrder(order)}
+                            className="text-[11px] font-bold px-2 py-1 max-w-full truncate"
+                            style={{
+                              color: SHOPIFY_BADGE.warning.text,
+                              backgroundColor: SHOPIFY_BADGE.warning.bg,
+                              borderRadius: UI.radiusSm,
+                            }}
+                          >
+                            {refundUi.badge.label}
+                          </button>
+                        ) : (
+                          <span style={{ color: UI.soft }}>—</span>
+                        )}
+                      </td>
+                      <td
+                        className="px-3 py-3.5 align-middle text-xs whitespace-nowrap"
+                        style={{ color: UI.soft }}
+                      >
+                        {formatDateFull(order.created_at)}
+                      </td>
+                      <td className="px-3 py-3.5 align-middle">
+                        <div className="flex items-center justify-center gap-1">
+                          {hasQr ? (
+                            <button
+                              type="button"
+                              onClick={() => setQrOrder(order)}
+                              title="QR Code"
+                              className="w-8 h-8 inline-flex items-center justify-center transition"
+                              style={{
+                                borderRadius: UI.radiusSm,
+                                border: `1px solid ${UI.border}`,
+                                backgroundColor: UI.light,
+                                color: UI.dark,
+                              }}
+                            >
+                              <MaterialIcon name="qr_code_2" size={16} />
+                            </button>
+                          ) : (
+                            <span className="w-8 h-8" aria-hidden />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setDetailOrder(order)}
+                            title="查看明細"
+                            className="w-8 h-8 inline-flex items-center justify-center transition"
+                            style={{
+                              borderRadius: UI.radiusSm,
+                              border: `1px solid ${UI.border}`,
+                              backgroundColor: UI.light,
+                              color: UI.dark,
+                            }}
+                          >
+                            <MaterialIcon name="edit" size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
-      </div>
 
-      <p className="text-xs text-slate-400 mt-3 px-1">
+        {!loading && filtered.length > 0 ? (
+          <ShopifyPagination
+            page={safePage}
+            pageSize={PAGE_SIZE}
+            total={filtered.length}
+            onChange={setPage}
+          />
+        ) : null}
+      </Card>
+
+      <p className="text-xs mt-3 px-1" style={{ color: UI.soft }}>
         未開通方案可於 7 日內申請全額退款。{" "}
-        <Link href="/refund-policy" className="text-[#0071EB] font-bold hover:underline">
+        <Link
+          href="/refund-policy"
+          className="font-bold underline underline-offset-2"
+          style={{ color: UI.dark }}
+        >
           退換貨政策
         </Link>
       </p>
 
       {qrOrder && <QrModal order={qrOrder} onClose={() => setQrOrder(null)} />}
       {pendingOrder && (
-        <PendingPaymentModal order={pendingOrder} onClose={() => setPendingOrder(null)} />
+        <PendingPaymentModal
+          order={pendingOrder}
+          onClose={() => setPendingOrder(null)}
+        />
       )}
       {refundDetailOrder && (
         <OrderRefundDetailModal

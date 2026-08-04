@@ -2,18 +2,45 @@
 
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import MaterialIcon from "@/components/MaterialIcon";
 import { extractEsimsFromOrders } from "@/lib/esimOrderExtract";
 import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
-import { detectPushSupport, getIosAddToHomeHint, isStandalonePWA } from "@/lib/pushSupport";
+import {
+  detectPushSupport,
+  getIosAddToHomeHint,
+  isStandalonePWA,
+} from "@/lib/pushSupport";
 import PushNotificationSection from "@/components/PushNotificationSection";
 import IosPwaPushGuide from "@/components/IosPwaPushGuide";
-import { QuickActionCard, NavyPanel, AccountPageWrap } from "./AccountShell";
+import {
+  AccountPageWrap,
+  AccountBadge,
+  MetricTile,
+  NavyPanel,
+  ShopifyDropdown,
+} from "./AccountShell";
+import { ACCOUNT_THEME, ACCOUNT_UI, SHOPIFY_BADGE } from "@/lib/accountUi";
+
+const UI = {
+  dark: ACCOUNT_THEME.dark,
+  mid: ACCOUNT_THEME.mid,
+  soft: ACCOUNT_THEME.soft,
+  border: ACCOUNT_THEME.border,
+  light: ACCOUNT_THEME.light,
+  wash: ACCOUNT_THEME.wash,
+  white: ACCOUNT_THEME.white,
+  radius: ACCOUNT_UI.radius,
+  radiusSm: ACCOUNT_UI.radiusSm,
+};
 
 const TrafficUsageCharts = dynamic(() => import("./TrafficUsageCharts"), {
   ssr: false,
   loading: () => (
-    <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
+    <div
+      className="h-48 flex items-center justify-center text-sm"
+      style={{ color: UI.soft }}
+    >
       圖表載入中…
     </div>
   ),
@@ -39,12 +66,78 @@ function formatDateShort(d) {
   });
 }
 
-function statusBadge(r) {
-  if (!r) return { label: "未查詢", cls: "bg-slate-100 text-slate-500" };
+function orderShortId(id) {
+  return String(id || "").slice(0, 8).toUpperCase();
+}
+
+function statusMeta(r) {
+  if (!r) return { label: "未查詢", tone: "neutral" };
   const pct = usagePercent(r.remainingMb, r.totalMb);
-  if (pct != null && pct <= 15) return { label: "流量偏低", cls: "bg-red-100 text-red-700" };
-  if (pct != null && pct <= 40) return { label: "用量正常", cls: "bg-amber-100 text-amber-800" };
-  return { label: "剩餘充足", cls: "bg-emerald-100 text-emerald-800" };
+  if (pct != null && pct <= 15)
+    return { label: "流量偏低", tone: "critical" };
+  if (pct != null && pct <= 40) return { label: "用量正常", tone: "warning" };
+  return { label: "剩餘充足", tone: "success" };
+}
+
+function SecondaryBtn({ children, onClick, href, disabled, className = "", type = "button" }) {
+  const style = {
+    backgroundColor: "#fafafa",
+    color: "#303030",
+    border: "1px solid #8a8a8a",
+    borderRadius: "0.5rem",
+  };
+  const cls = `inline-flex items-center justify-center gap-1.5 h-8 px-3 text-[13px] font-semibold transition disabled:opacity-40 ${className}`;
+  if (href) {
+    return (
+      <Link href={href} className={cls} style={style}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={cls}
+      style={style}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PrimaryBtn({ children, onClick, disabled, className = "", type = "button" }) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center gap-1.5 h-8 px-3.5 text-[13px] font-semibold text-white transition disabled:opacity-40 ${className}`}
+      style={{
+        backgroundColor: UI.dark,
+        borderRadius: "0.5rem",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Card({ children, className = "", style = {} }) {
+  return (
+    <div
+      className={className}
+      style={{
+        backgroundColor: UI.white,
+        border: `1px solid ${UI.border}`,
+        borderRadius: UI.radius,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 export default function AccountTrafficView({ orders, ordersLoading }) {
@@ -57,6 +150,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
   const [pushSupport, setPushSupport] = useState(null);
   const [standalone, setStandalone] = useState(false);
   const [showPush, setShowPush] = useState(false);
+  const [iosHintOpen, setIosHintOpen] = useState(true);
   const pushRef = useRef(null);
 
   useEffect(() => {
@@ -67,15 +161,6 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
   useEffect(() => {
     if (esims.length && !selectedId) setSelectedId(esims[0].topupId);
   }, [esims, selectedId]);
-
-  // Auto-query the first eSIM when member loads the page
-  const autoQueried = useRef(false);
-  useEffect(() => {
-    if (esims.length > 0 && !autoQueried.current && !results[esims[0].topupId]) {
-      autoQueried.current = true;
-      handleOneClick(esims[0]);
-    }
-  }, [esims]);
 
   const queryUsage = useCallback(async ({ topupId, iccid, key }) => {
     setError("");
@@ -100,13 +185,24 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
     }
   }, []);
 
-  const handleOneClick = (esim) => {
-    queryUsage({
-      topupId: esim.topupId,
-      iccid: esim.iccid,
-      key: esim.topupId,
-    });
-  };
+  const handleOneClick = useCallback(
+    (esim) => {
+      queryUsage({
+        topupId: esim.topupId,
+        iccid: esim.iccid,
+        key: esim.topupId,
+      });
+    },
+    [queryUsage],
+  );
+
+  const autoQueried = useRef(false);
+  useEffect(() => {
+    if (esims.length > 0 && !autoQueried.current && !results[esims[0].topupId]) {
+      autoQueried.current = true;
+      handleOneClick(esims[0]);
+    }
+  }, [esims, results, handleOneClick]);
 
   const handleQueryAll = async () => {
     for (const esim of esims) {
@@ -128,214 +224,490 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
   const showPwaHint = pushSupport?.needsPWA && !standalone;
   const chartLoading = !!loadingId;
 
+  const queriedCount = esims.filter((e) => results[e.topupId]).length;
+  const lowCount = esims.filter((e) => {
+    const r = results[e.topupId];
+    if (!r) return false;
+    const pct = usagePercent(r.remainingMb, r.totalMb);
+    return pct != null && pct <= 15;
+  }).length;
+
+  const moreMenu = [
+    {
+      id: "latest",
+      label: "查最新一筆",
+      icon: "bolt",
+      disabled: !esims.length || !!loadingId,
+      onClick: () => esims[0] && handleOneClick(esims[0]),
+    },
+    {
+      id: "all",
+      label: "全部更新",
+      icon: "sync",
+      disabled: !esims.length || !!loadingId,
+      onClick: handleQueryAll,
+    },
+    { divider: true },
+    {
+      id: "push",
+      label: "推播提醒設定",
+      icon: "notifications_active",
+      onClick: () => {
+        setShowPush(true);
+        setTimeout(() => {
+          pushRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 50);
+      },
+    },
+    {
+      id: "guide",
+      label: "用量指南",
+      icon: "help_outline",
+      onClick: () => {
+        window.location.href = "/data-query";
+      },
+    },
+  ];
+
+  const inputStyle = {
+    border: `1px solid ${UI.border}`,
+    borderRadius: UI.radiusSm,
+    color: UI.dark,
+    backgroundColor: UI.white,
+  };
+
   return (
-    <AccountPageWrap className="space-y-5">
-      {/* jinjer 四格快捷卡 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <QuickActionCard
-          icon="bolt"
-          title="一鍵查最新"
-          desc="查詢最近一筆 eSIM 剩餘流量"
-          onClick={() => esims[0] && handleOneClick(esims[0])}
+    <AccountPageWrap>
+      {/* 標題列 */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1
+              className="text-xl sm:text-2xl font-black tracking-tight"
+              style={{ color: UI.dark }}
+            >
+              查詢流量
+            </h1>
+            <AccountBadge tone="info">約 30 分鐘延遲</AccountBadge>
+            {lowCount > 0 ? (
+              <AccountBadge tone="critical">{lowCount} 筆偏低</AccountBadge>
+            ) : null}
+          </div>
+          <p className="text-xs sm:text-sm mt-1.5" style={{ color: UI.mid }}>
+            監控已購 eSIM 剩餘流量；可開啟偏低推播提醒
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <SecondaryBtn
+            disabled={!!loadingId || !esims.length}
+            onClick={handleQueryAll}
+          >
+            <MaterialIcon name="sync" size={16} />
+            全部更新
+          </SecondaryBtn>
+          <PrimaryBtn
+            disabled={!!loadingId || !esims.length}
+            onClick={() => esims[0] && handleOneClick(esims[0])}
+          >
+            <MaterialIcon name="bolt" size={16} />
+            查最新一筆
+          </PrimaryBtn>
+          <ShopifyDropdown label="更多操作" items={moreMenu} />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-3 mb-4">
+        <MetricTile
+          icon="sim_card"
+          label="可監控 eSIM"
+          value={ordersLoading ? "…" : esims.length}
+          variant="green"
         />
-        <QuickActionCard
-          icon="sync"
-          title="全部更新"
-          desc="依序查詢所有已購 eSIM"
-          onClick={handleQueryAll}
+        <MetricTile
+          icon="speed"
+          label="已查詢"
+          value={queriedCount}
+          sub={esims.length ? `共 ${esims.length} 筆` : undefined}
+          variant="sky"
         />
-        <QuickActionCard
+        <MetricTile
+          icon="warning"
+          label="流量偏低"
+          value={lowCount}
+          variant="yellow"
+        />
+        <MetricTile
           icon="notifications_active"
-          title="推播提醒"
-          desc="流量偏低時推播通知"
-          onClick={() => {
-            setShowPush(true);
-            pushRef.current?.scrollIntoView({ behavior: "smooth" });
-          }}
-        />
-        <QuickActionCard
-          icon="help_outline"
-          title="用量指南"
-          desc="eSIM 開通與查詢說明"
-          href="/data-query"
+          label="推播"
+          value={showPwaHint ? "需 PWA" : "可設定"}
+          variant="navy"
         />
       </div>
 
-      {showPwaHint && (
-        <div className="bg-amber-50 border border-amber-200 rounded-sm px-4 py-3 flex gap-3 items-start">
-          <MaterialIcon name="install_mobile" size={22} className="text-amber-600 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-bold text-amber-900">iPhone 請先安裝 PWA</p>
-            <p className="text-xs text-amber-800 mt-1">
-              {pushSupport?.hint ||
-                `${getIosAddToHomeHint()}，從主畫面開啟本站後才能使用推播。`}
-            </p>
-            <div className="mt-2">
-              <IosPwaPushGuide />
+      {showPwaHint && iosHintOpen ? (
+        <Card
+          className="p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4"
+          style={{
+            backgroundColor: "#fffbeb",
+            borderColor: SHOPIFY_BADGE.warning.bg,
+          }}
+        >
+          <div className="flex gap-3 min-w-0">
+            <div
+              className="w-9 h-9 flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: SHOPIFY_BADGE.warning.dot,
+                borderRadius: UI.radiusSm,
+              }}
+            >
+              <MaterialIcon
+                name="install_mobile"
+                size={18}
+                className="text-white"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p
+                className="text-sm font-bold"
+                style={{ color: SHOPIFY_BADGE.warning.text }}
+              >
+                iPhone 請先安裝 PWA
+              </p>
+              <p
+                className="text-xs mt-1 leading-relaxed"
+                style={{ color: "#78350f" }}
+              >
+                {pushSupport?.hint ||
+                  `${getIosAddToHomeHint()}，從主畫面開啟本站後才能使用推播。`}
+              </p>
+              <div className="mt-2">
+                <IosPwaPushGuide />
+              </div>
             </div>
           </div>
-        </div>
-      )}
+          <button
+            type="button"
+            onClick={() => setIosHintOpen(false)}
+            className="text-[13px] font-semibold shrink-0 h-8 px-3"
+            style={{ color: UI.mid, borderRadius: UI.radiusSm }}
+          >
+            關閉
+          </button>
+        </Card>
+      ) : null}
 
-      {/* 主區：左列表 + 右圖表 — 帳號一覧 + jinjer 側欄 */}
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(300px,400px)] gap-5 xl:gap-6">
-        <div className="bg-white border border-slate-200 rounded-sm shadow-sm">
-          <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] gap-4 xl:gap-5">
+        {/* 左：eSIM 列表 */}
+        <Card className="overflow-hidden min-w-0">
+          <div
+            className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            style={{ borderBottom: `1px solid ${UI.border}` }}
+          >
             <div>
-              <h3 className="font-black text-[#1E4AD1] text-base">eSIM 流量一覽</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                共 {ordersLoading ? "…" : esims.length} 筆可監控 · 資料約 30 分鐘延遲
+              <h2 className="text-sm font-black" style={{ color: UI.dark }}>
+                eSIM 流量一覽
+              </h2>
+              <p className="text-xs mt-0.5" style={{ color: UI.soft }}>
+                共 {ordersLoading ? "…" : esims.length} 筆可監控 · 點列即可查詢
               </p>
             </div>
-            <button
-              type="button"
+            <PrimaryBtn
               disabled={!!loadingId || !esims.length}
               onClick={() => esims[0] && handleOneClick(esims[0])}
-              className="text-xs font-bold text-white bg-[#0071EB] px-4 py-2 rounded hover:bg-[#1E4AD1] disabled:opacity-50 flex items-center gap-1 shrink-0"
             >
               <MaterialIcon name="speed" size={16} />
               查最新一筆
-            </button>
+            </PrimaryBtn>
           </div>
 
           {ordersLoading ? (
-            <p className="text-sm text-slate-400 py-12 text-center">載入訂單中…</p>
+            <p
+              className="text-sm py-12 text-center"
+              style={{ color: UI.soft }}
+            >
+              載入訂單中…
+            </p>
           ) : esims.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 text-sm px-4">
-              <MaterialIcon name="sim_card" size={40} className="text-slate-200 mx-auto mb-3" />
+            <div
+              className="text-center py-12 text-sm px-4"
+              style={{ color: UI.soft }}
+            >
+              <MaterialIcon
+                name="sim_card"
+                size={40}
+                className="mx-auto mb-3 opacity-30"
+              />
               <p>尚無可查詢的 eSIM</p>
-              <p className="text-xs mt-2 text-slate-400">需已完成付款且含 topup 單號</p>
+              <p className="text-xs mt-2">需已完成付款且含 topup 單號</p>
+              <SecondaryBtn href="/" className="mt-4">
+                前往選購
+              </SecondaryBtn>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <ul>
               {esims.map((esim) => {
                 const r = results[esim.topupId];
-                const badge = statusBadge(r);
+                const badge = statusMeta(r);
                 const pct = r ? usagePercent(r.remainingMb, r.totalMb) : null;
                 const isSelected = selectedId === esim.topupId;
+                const isLoading = loadingId === esim.topupId;
 
                 return (
-                  <div
+                  <li
                     key={esim.topupId}
-                    onClick={() => handleOneClick(esim)}
-                    role="button"
-                    tabIndex={0}
-                    className={`px-5 py-4 flex flex-col lg:flex-row lg:items-center gap-4 transition cursor-pointer ${
-                      isSelected ? "bg-blue-50/40 border-l-4 border-l-[#0071EB]" : "hover:bg-slate-50/60"
-                    }`}
+                    style={{
+                      borderTop: `1px solid ${UI.border}`,
+                      backgroundColor: isSelected ? UI.light : undefined,
+                    }}
                   >
-                    <div className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                      <div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">方案</p>
-                        <p className="font-black text-[#1E4AD1] truncate">{esim.productName}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">訂單</p>
-                        <p className="font-mono text-xs text-slate-600">#{esim.orderId}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Topup ID</p>
-                        <p className="font-mono text-[10px] text-slate-500 truncate">{esim.topupId}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">剩餘流量</p>
-                        {r ? (
-                          <p className="font-bold text-[#1E4AD1] tabular-nums">
-                            {formatMb(r.remainingMb)}
-                            <span className="text-slate-400 font-normal text-xs">
-                              {" "}
-                              / {formatMb(r.totalMb)}
-                            </span>
-                          </p>
-                        ) : (
-                          <p className="text-slate-400 text-xs">尚未查詢</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
-                      <span
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${badge.cls}`}
-                      >
-                        {badge.label}
-                      </span>
-                      {pct != null && (
-                        <div className="w-20 h-1.5 bg-slate-100 rounded overflow-hidden hidden sm:block">
-                          <div
-                            className="h-full bg-[#0071EB] rounded"
-                            style={{ width: `${pct}%` }}
-                          />
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleOneClick(esim)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleOneClick(esim);
+                        }
+                      }}
+                      className="px-4 sm:px-5 py-4 cursor-pointer transition hover:bg-[#fafafa]"
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
+                        <div className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 text-sm">
+                          <div className="min-w-0">
+                            <p
+                              className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
+                              style={{ color: UI.soft }}
+                            >
+                              方案
+                            </p>
+                            <p
+                              className="font-bold truncate"
+                              style={{ color: UI.dark }}
+                              title={esim.productName}
+                            >
+                              {esim.productName}
+                            </p>
+                          </div>
+                          <div className="min-w-0">
+                            <p
+                              className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
+                              style={{ color: UI.soft }}
+                            >
+                              訂單
+                            </p>
+                            <p
+                              className="font-mono text-xs"
+                              style={{ color: UI.mid }}
+                            >
+                              #{orderShortId(esim.orderId)}
+                            </p>
+                          </div>
+                          <div className="min-w-0">
+                            <p
+                              className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
+                              style={{ color: UI.soft }}
+                            >
+                              Topup ID
+                            </p>
+                            <p
+                              className="font-mono text-[10px] truncate"
+                              style={{ color: UI.soft }}
+                              title={esim.topupId}
+                            >
+                              {esim.topupId}
+                            </p>
+                          </div>
+                          <div className="min-w-0">
+                            <p
+                              className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
+                              style={{ color: UI.soft }}
+                            >
+                              剩餘流量
+                            </p>
+                            {r ? (
+                              <p
+                                className="font-bold tabular-nums"
+                                style={{ color: UI.dark }}
+                              >
+                                {formatMb(r.remainingMb)}
+                                <span
+                                  className="font-normal text-xs"
+                                  style={{ color: UI.soft }}
+                                >
+                                  {" "}
+                                  / {formatMb(r.totalMb)}
+                                </span>
+                              </p>
+                            ) : (
+                              <p className="text-xs" style={{ color: UI.soft }}>
+                                尚未查詢
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      <button
-                        type="button"
-                        disabled={loadingId === esim.topupId}
-                        onClick={() => handleOneClick(esim)}
-                        className="text-xs font-bold text-[#0071EB] border border-[#0071EB] px-3 py-1.5 rounded hover:bg-blue-50 disabled:opacity-50"
-                      >
-                        {loadingId === esim.topupId ? "查詢中…" : "查詢流量"}
-                      </button>
-                    </div>
 
-                    {r && (
-                      <p className="text-[10px] text-slate-400 lg:w-full lg:col-span-full -mt-2 lg:mt-0">
-                        更新 {formatDate(r.updatedAt || r.queriedAt || new Date())}
-                        {r.expiresAt && ` · 到期 ${formatDateShort(r.expiresAt)}`}
-                      </p>
-                    )}
-                  </div>
+                        <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+                          <AccountBadge tone={badge.tone}>
+                            {badge.label}
+                          </AccountBadge>
+                          {pct != null ? (
+                            <div
+                              className="w-20 h-1.5 overflow-hidden hidden sm:block"
+                              style={{
+                                backgroundColor: UI.light,
+                                borderRadius: "999px",
+                              }}
+                              title={`剩餘 ${pct}%`}
+                            >
+                              <div
+                                className="h-full"
+                                style={{
+                                  width: `${pct}%`,
+                                  backgroundColor:
+                                    pct <= 15
+                                      ? SHOPIFY_BADGE.critical.dot
+                                      : pct <= 40
+                                        ? SHOPIFY_BADGE.warning.dot
+                                        : SHOPIFY_BADGE.success.dot,
+                                  borderRadius: "999px",
+                                }}
+                              />
+                            </div>
+                          ) : null}
+                          <SecondaryBtn
+                            disabled={isLoading}
+                            onClick={(e) => {
+                              e?.stopPropagation?.();
+                              handleOneClick(esim);
+                            }}
+                          >
+                            {isLoading ? "查詢中…" : "查詢流量"}
+                          </SecondaryBtn>
+                        </div>
+                      </div>
+
+                      {r ? (
+                        <p
+                          className="text-[10px] mt-2"
+                          style={{ color: UI.soft }}
+                        >
+                          更新 {formatDate(r.updatedAt || r.queriedAt || new Date())}
+                          {r.expiresAt
+                            ? ` · 到期 ${formatDateShort(r.expiresAt)}`
+                            : ""}
+                        </p>
+                      ) : null}
+                    </div>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
 
-          {error && (
-            <div className="px-5 py-3 bg-red-50 border-t border-red-100 text-sm text-red-600 flex items-center gap-1">
+          {error ? (
+            <div
+              className="px-4 sm:px-5 py-3 text-sm flex items-center gap-1.5"
+              style={{
+                backgroundColor: "#fef2f2",
+                borderTop: `1px solid ${SHOPIFY_BADGE.critical.bg}`,
+                color: SHOPIFY_BADGE.critical.dot,
+              }}
+            >
               <MaterialIcon name="error" size={16} />
               {error}
             </div>
-          )}
-        </div>
+          ) : null}
+        </Card>
 
-        {/* 右側圖表 — jinjer 側欄風 */}
-        <aside className="space-y-4">
-          <TrafficUsageCharts
-            esims={esims}
-            results={results}
-            selectedId={selectedId}
-            loading={chartLoading}
-          />
-
-          <div className="bg-white border border-slate-200 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-black text-[#1E4AD1]">手動 ICCID</h4>
-              <MaterialIcon name="dialpad" size={18} className="text-slate-400" />
+        {/* 右欄 */}
+        <aside className="space-y-4 min-w-0">
+          <Card className="p-4 overflow-hidden">
+            <div className="flex items-center gap-2 mb-3">
+              <MaterialIcon
+                name="donut_large"
+                size={18}
+                style={{ color: UI.mid }}
+              />
+              <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                用量圖表
+              </h3>
             </div>
+            <TrafficUsageCharts
+              esims={esims}
+              results={results}
+              selectedId={selectedId}
+              loading={chartLoading}
+            />
+          </Card>
+
+          <NavyPanel title="手動 ICCID" icon="dialpad">
             <form onSubmit={handleManual} className="space-y-2">
               <input
                 type="text"
                 value={manualIccid}
                 onChange={(e) => setManualIccid(e.target.value)}
                 placeholder="19～20 碼 ICCID"
-                className="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#0071EB]/30"
+                className="w-full h-9 px-3 text-sm outline-none"
+                style={inputStyle}
               />
-              <button
+              <PrimaryBtn
                 type="submit"
                 disabled={!!loadingId}
-                className="w-full py-2 bg-[#1E4AD1] text-white text-xs font-bold rounded disabled:opacity-50"
+                className="w-full"
               >
                 查詢
-              </button>
+              </PrimaryBtn>
             </form>
-            <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
+            <p
+              className="text-[10px] mt-2 leading-relaxed"
+              style={{ color: UI.soft }}
+            >
               非本站購買的 eSIM 可能無法取得完整用量
             </p>
-          </div>
+          </NavyPanel>
+
+          <NavyPanel title="快捷操作" icon="bolt">
+            <div className="space-y-2">
+              <SecondaryBtn
+                className="w-full"
+                disabled={!!loadingId || !esims.length}
+                onClick={() => esims[0] && handleOneClick(esims[0])}
+              >
+                <MaterialIcon name="bolt" size={16} />
+                一鍵查最新
+              </SecondaryBtn>
+              <SecondaryBtn
+                className="w-full"
+                disabled={!!loadingId || !esims.length}
+                onClick={handleQueryAll}
+              >
+                <MaterialIcon name="sync" size={16} />
+                全部更新
+              </SecondaryBtn>
+              <SecondaryBtn
+                className="w-full"
+                onClick={() => {
+                  setShowPush(true);
+                  setTimeout(() => {
+                    pushRef.current?.scrollIntoView({ behavior: "smooth" });
+                  }, 50);
+                }}
+              >
+                <MaterialIcon name="notifications_active" size={16} />
+                推播提醒
+              </SecondaryBtn>
+              <SecondaryBtn href="/data-query" className="w-full">
+                <MaterialIcon name="help_outline" size={16} />
+                用量指南
+              </SecondaryBtn>
+            </div>
+          </NavyPanel>
         </aside>
       </div>
 
-      {/* 推播區 — 可展開 */}
-      <div ref={pushRef}>
+      {/* 推播區 */}
+      <div ref={pushRef} className="mt-4">
         <NavyPanel
           title="流量偏低推播提醒"
           icon="notifications_active"
@@ -343,15 +715,16 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
             <button
               type="button"
               onClick={() => setShowPush((v) => !v)}
-              className="text-xs font-bold text-[#0071EB]"
+              className="text-xs font-bold hover:underline"
+              style={{ color: UI.dark }}
             >
               {showPush ? "收合" : "展開設定"}
             </button>
           }
         >
-          {showPush && (
+          {showPush ? (
             <>
-              <p className="text-sm text-slate-600 mb-4">
+              <p className="text-sm mb-4 leading-relaxed" style={{ color: UI.mid }}>
                 開啟後系統會在剩餘流量偏低時推播通知（瀏覽器 + 可選 LINE）。
                 {showPwaHint
                   ? " iPhone 請先將本站加入主畫面，再開啟推播。"
@@ -359,9 +732,10 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
               </p>
               <PushNotificationSection />
             </>
-          )}
-          {!showPush && (
-            <p className="text-sm text-slate-500">點「展開設定」以開啟推播提醒</p>
+          ) : (
+            <p className="text-sm" style={{ color: UI.soft }}>
+              點「展開設定」以開啟推播提醒
+            </p>
           )}
         </NavyPanel>
       </div>

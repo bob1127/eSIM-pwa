@@ -9,6 +9,7 @@ import KKdayTicketSection from "./KKdayTicketSection";
 import KlookTicketSection from "./KlookTicketSection";
 import JekoRecommendSection from "./JekoRecommendSection";
 import ServiceSection from "./ServiceSection";
+import MaterialIcon from "@/components/MaterialIcon";
 
 const LINE_OA_URL =
   process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn";
@@ -68,7 +69,9 @@ const NEWS_ITEMS = [
     tag: "購買流程",
     title: "Jeko eSIM 的購買流程到使用方式",
     link: "#",
-    color: "bg-sky-100 text-sky-600",
+    icon: "shopping_bag",
+    iconBg: "#e0f2fe",
+    iconColor: "#0284c7",
   },
   {
     id: 2,
@@ -76,15 +79,19 @@ const NEWS_ITEMS = [
     tag: "實體辦公",
     title: "目前有實體辦公處，有問題或合作意願可親洽或聯絡我們",
     link: "#",
-    color: "bg-emerald-100 text-emerald-600",
+    icon: "storefront",
+    iconBg: "#d1fae5",
+    iconColor: "#059669",
   },
   {
     id: 3,
     date: "2025.03.27",
     tag: "退貨政策",
     title: "eSIM 無法安裝/使用？請參考退貨說明",
-    link: "#",
-    color: "bg-orange-100 text-orange-600",
+    link: "/refund-policy",
+    icon: "undo",
+    iconBg: "#ffedd5",
+    iconColor: "#ea580c",
   },
   {
     id: 4,
@@ -92,7 +99,9 @@ const NEWS_ITEMS = [
     tag: "支付方式",
     title: "提供街口支付、LINE Pay 等主流付款方式",
     link: "#",
-    color: "bg-purple-100 text-purple-600",
+    icon: "payments",
+    iconBg: "#ede9fe",
+    iconColor: "#7c3aed",
   },
 ];
 
@@ -102,24 +111,30 @@ const PROMO_NEWS = [
     date: "2025.10.01",
     tag: "限時優惠",
     title: "【秋季旅展】日本 eSIM 買一送一，限時 3 天！",
-    link: "#",
-    color: "bg-red-100 text-red-500",
+    link: "/promo",
+    icon: "local_offer",
+    iconBg: "#fee2e2",
+    iconColor: "#dc2626",
   },
   {
     id: 102,
     date: "2025.09.15",
     tag: "會員專屬",
     title: "加入官方 LINE 好友，即刻領取 $50 折扣碼",
-    link: "#",
-    color: "bg-green-100 text-green-600",
+    link: LINE_OA_URL,
+    icon: "loyalty",
+    iconBg: "#dcfce7",
+    iconColor: "#16a34a",
   },
   {
     id: 103,
     date: "2025.08.30",
     tag: "新品上市",
     title: "歐洲 33 國通用 eSIM 全新上線，早鳥優惠中",
-    link: "#",
-    color: "bg-indigo-100 text-indigo-600",
+    link: "/product",
+    icon: "new_releases",
+    iconBg: "#e0e7ff",
+    iconColor: "#4f46e5",
   },
 ];
 
@@ -308,14 +323,54 @@ export default function MobileHomePage() {
         </div>
       </div>
 
-      {/* ═══ 4. 最新消息 / 優惠公告 ═══ */}
+      {/* ═══ 4. 連線方案（原生卡／日韓東南亞）═══ */}
       <div className="mt-3">
+        <ServiceSection />
+      </div>
+
+      {/* ═══ 5. 精選 eSIM 方案 ═══ */}
+      <div className="mt-3">
+        <SectionHeader title="精選 eSIM 方案" link="/product" />
+        <div className="[&>section]:!bg-transparent [&>section]:!pt-0">
+          <JekoRecommendSection />
+        </div>
+      </div>
+
+      {/* ═══ 6. 租車包車 ═══ */}
+      <div className="mt-3" id="car-rental-charter">
+        <SectionHeader title="租車包車" />
+        <div className="[&>section]:!bg-transparent [&>section]:!pt-0 [&>section_.flex.flex-wrap.items-baseline]:!hidden">
+          <CarRentalCharterSection />
+        </div>
+      </div>
+
+      {/* ═══ 7. 住宿推薦 ═══ */}
+      <div className="mt-3" id="accommodation-section">
+        <SectionHeader title="住宿推薦" />
+        <AccommodationRecommendSection />
+      </div>
+
+      {/* ═══ 8. 景點門票 KKday ═══ */}
+      <div className="mt-3" id="kkday-section">
+        <SectionHeader title="景點門票 · KKday" />
+        <KKdayTicketSection />
+      </div>
+
+      {/* ═══ 9. 景點體驗 Klook ═══ */}
+      <div className="mt-3">
+        <SectionHeader title="景點體驗 · Klook" />
+        <KlookTicketSection />
+      </div>
+
+      {/* ═══ 10. 最新消息 / 特價優惠（倒數第二：快速導覽上方）═══ */}
+      <div className="mt-4">
         <div className="bg-white">
           <div className="flex items-center justify-between px-4 pt-4 pb-0">
             <div className="flex gap-0 border-b border-gray-100 w-full">
               {["最新消息/公告", "特價/優惠"].map((tab, i) => (
                 <button
                   key={tab}
+                  type="button"
                   onClick={() => setActiveNewsTab(i)}
                   className={`flex-1 py-2.5 text-[13px] font-bold transition-all ${
                     activeNewsTab === i
@@ -337,11 +392,14 @@ export default function MobileHomePage() {
                 className="flex items-center gap-3 py-3.5 active:bg-gray-50 transition-colors"
               >
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${item.color}`}
+                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: item.iconBg }}
                 >
-                  <span className="text-[10px] font-black">
-                    {item.tag.slice(0, 2)}
-                  </span>
+                  <MaterialIcon
+                    name={item.icon}
+                    size={20}
+                    style={{ color: item.iconColor }}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-semibold text-gray-800 line-clamp-2 leading-snug">
@@ -361,6 +419,7 @@ export default function MobileHomePage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className="shrink-0"
+                  aria-hidden
                 >
                   <path d="M9 18l6-6-6-6" />
                 </svg>
@@ -368,45 +427,6 @@ export default function MobileHomePage() {
             ))}
           </div>
         </div>
-      </div>
-
-      {/* ═══ 5. 連線方案（原生卡／日韓東南亞）═══ */}
-      <div className="mt-3">
-        <ServiceSection />
-      </div>
-
-      {/* ═══ 6. 精選 eSIM 方案 ═══ */}
-      <div className="mt-3">
-        <SectionHeader title="精選 eSIM 方案" link="/product" />
-        <div className="[&>section]:!bg-transparent [&>section]:!pt-0">
-          <JekoRecommendSection />
-        </div>
-      </div>
-
-      {/* ═══ 7. 租車包車 ═══ */}
-      <div className="mt-3" id="car-rental-charter">
-        <SectionHeader title="租車包車" />
-        <div className="[&>section]:!bg-transparent [&>section]:!pt-0 [&>section_.flex.flex-wrap.items-baseline]:!hidden">
-          <CarRentalCharterSection />
-        </div>
-      </div>
-
-      {/* ═══ 8. 住宿推薦 ═══ */}
-      <div className="mt-3" id="accommodation-section">
-        <SectionHeader title="住宿推薦" />
-        <AccommodationRecommendSection />
-      </div>
-
-      {/* ═══ 9. 景點門票 KKday ═══ */}
-      <div className="mt-3" id="kkday-section">
-        <SectionHeader title="景點門票 · KKday" />
-        <KKdayTicketSection />
-      </div>
-
-      {/* ═══ 10. 景點體驗 Klook ═══ */}
-      <div className="mt-3">
-        <SectionHeader title="景點體驗 · Klook" />
-        <KlookTicketSection />
       </div>
 
       {/* ═══ 11. 快速導覽 — 藍底資訊卡風格 ═══ */}

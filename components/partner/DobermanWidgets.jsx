@@ -1,6 +1,7 @@
 import { useState } from "react";
 import MaterialIcon from "@/components/MaterialIcon";
 import { PARTNER_UI } from "@/lib/partnerUi";
+import { SHOPIFY_UI } from "@/lib/shopifyUi";
 
 export const fmt = (n) => `NT$${Math.round(Number(n) || 0).toLocaleString()}`;
 
@@ -601,15 +602,26 @@ export function DobermanFooter({ notice }) {
 
   return (
     <footer
-      className="text-white min-h-10 flex items-center px-4 gap-3 shrink-0 text-xs relative py-2"
-      style={{ backgroundColor: PARTNER_UI.navy }}
+      className="min-h-10 flex items-center px-4 gap-3 shrink-0 text-xs py-2"
+      style={{
+        backgroundColor: SHOPIFY_UI.sidebarBg,
+        borderTop: `1px solid ${SHOPIFY_UI.sidebarBorder}`,
+      }}
     >
+      <span
+        className="font-mono shrink-0"
+        style={{ color: SHOPIFY_UI.textTertiary }}
+      >
+        {today}
+      </span>
       <div
-        className="absolute top-0 left-0 right-0 h-[2px]"
-        style={{ backgroundColor: PARTNER_UI.yellow }}
-      />
-      <span className="font-mono text-blue-100 shrink-0">{today}</span>
-      <div className="flex-1 border border-white/20 px-3 py-1.5 text-blue-50 truncate rounded-sm">
+        className="flex-1 border px-3 py-1.5 truncate rounded-md"
+        style={{
+          borderColor: SHOPIFY_UI.divider,
+          color: SHOPIFY_UI.textSecondary,
+          backgroundColor: SHOPIFY_UI.canvasBg,
+        }}
+      >
         {notice || "系統運作正常，分潤資料即時更新中。"}
       </div>
     </footer>

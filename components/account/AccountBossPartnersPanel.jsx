@@ -193,7 +193,7 @@ export default function AccountBossPartnersPanel() {
                   <th className="px-4 py-3 font-bold">夥伴 / Email</th>
                   <th className="px-4 py-3 font-bold">合作類型</th>
                   <th className="px-4 py-3 font-bold">Slug</th>
-                  <th className="px-4 py-3 font-bold">分潤／折扣</th>
+                  <th className="px-4 py-3 font-bold">折扣碼</th>
                   <th className="px-4 py-3 font-bold">狀態</th>
                   <th className="px-4 py-3 font-bold">文章加值</th>
                   <th className="px-4 py-3 font-bold text-right">操作</th>
@@ -240,12 +240,12 @@ export default function AccountBossPartnersPanel() {
                       {p.cooperation_model === "referral" ? (
                         <div className="text-[11px] leading-relaxed">
                           <span className="font-bold text-slate-700">
-                            {Number(p.referral_rate) || 25}% 分潤
+                            依商品電信商
                           </span>
                           <br />
                           {p.referral_discount_enabled !== false ? (
                             <span className="text-emerald-600 font-bold">
-                              {Number(p.referral_discount_percent) || 10}% off
+                              折扣碼開啟
                             </span>
                           ) : (
                             <span className="text-slate-400">未開放折扣</span>

@@ -697,7 +697,7 @@ export default function EsimBottomSheet() {
   const collapsedH = isProductRoute ? COLLAPSED_H_PRODUCT : COLLAPSED_H;
 
   const [expanded, setExpanded] = useState(false);
-  const [panel, setPanel] = useState("qr"); // qr | usage | member | install | promo
+  const [panel, setPanel] = useState("qr"); // qr | usage | install | promo | jbao
   const [dragY, setDragY] = useState(0);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   const startY = useRef(0);
@@ -715,6 +715,7 @@ export default function EsimBottomSheet() {
   const [promoCoupons, setPromoCoupons] = useState([]);
   const [promoPoints, setPromoPoints] = useState(0);
   const [promoLoading, setPromoLoading] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const memberEmail = useMemo(
     () =>
@@ -1043,6 +1044,15 @@ export default function EsimBottomSheet() {
   })();
 
   const openPanel = (id) => {
+    if (id === "jbao") {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent(chatOpen ? "jeko:close-ai-chat" : "jeko:open-ai-chat"),
+        );
+      }
+      setExpanded(false);
+      return;
+    }
     setPanel(id);
     setExpanded(true);
   };
@@ -1081,6 +1091,12 @@ export default function EsimBottomSheet() {
     };
   }, [expanded]);
 
+  useEffect(() => {
+    const onVis = (e) => setChatOpen(Boolean(e?.detail?.open));
+    window.addEventListener("jeko:ai-chat-visibility", onVis);
+    return () => window.removeEventListener("jeko:ai-chat-visibility", onVis);
+  }, []);
+
   const expandedPx =
     typeof window !== "undefined"
       ? (window.innerHeight * EXPANDED_VH) / 100
@@ -1090,9 +1106,6 @@ export default function EsimBottomSheet() {
 
   const navItems = [
     { id: "usage", label: "剩餘用量", Icon: IconUsage },
-    { id: "member", label: "會員", Icon: IconMember },
-    { id: "qr", label: "QR Code", center: true, Icon: IconQr },
-    { id: "install", label: "下載 APP", Icon: IconInstall },
     {
       id: "promo",
       label: "優惠活動",
@@ -1100,10 +1113,23 @@ export default function EsimBottomSheet() {
         <MaterialIcon name="local_activity" size={22} {...props} />
       ),
     },
+    { id: "qr", label: "QR Code", center: true, Icon: IconQr },
+    { id: "install", label: "下載 APP", Icon: IconInstall },
+    {
+      id: "jbao",
+      label: "J寶客服",
+      Icon: (props) => (
+        <MaterialIcon name="smart_toy" size={22} {...props} />
+      ),
+    },
   ];
 
-  /** 收合時維持 QR 為品牌藍 CTA；展開時跟隨目前功能 */
-  const activeNavId = expanded ? panel || "qr" : "qr";
+  /** 收合時維持 QR 為品牌藍 CTA；展開時跟隨目前功能；聊天開啟時亮 J寶 */
+  const activeNavId = chatOpen
+    ? "jbao"
+    : expanded
+      ? panel || "qr"
+      : "qr";
 
   const displayName =
     supabaseUser?.user_metadata?.full_name ||
@@ -1324,12 +1350,6 @@ export default function EsimBottomSheet() {
                   setActiveIdx={setActiveIdx}
                   usageMap={usageMap}
                   usageLoading={usageLoading}
-                />
-              ) : panel === "member" ? (
-                <MemberPanel
-                  userName={displayName}
-                  email={memberEmail}
-                  onAccount={() => router.push("/account")}
                 />
               ) : panel === "install" ? (
                 <InstallPanel
