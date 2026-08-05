@@ -153,7 +153,7 @@ export default function PickUpJobsSection() {
           title: "日本原生卡",
           desc: "採用 Docomo／KDDI／IIJ 等當地電信線路，日本本地 IP、低延遲，適合訂餐廳、電子支付與多數日本限定服務。",
           tags: ["日本IP", "低延遲", "原生線路"],
-          link: "/product/japan/japan-unlimited-esim?telecom=AU%28KDDI%29&days=5&data_amount=無限流量",
+          link: "/product/japan/japan-unlimited-esim?telecom=au-kddi&days=5&data_amount=unlimited",
         },
         {
           hotSale: true,
@@ -164,7 +164,7 @@ export default function PickUpJobsSection() {
           title: "韓國原生卡",
           desc: "走 SKT／KT／LGU+ 當地網路，韓國本地 IP，追星搶票、直播視訊與本地 App 體驗更接近在地用戶。",
           tags: ["韓國IP", "極速飆網", "原生線路"],
-          link: "/product/korea/korea-unlimited-esim?telecom=SK電信（韓國IP）&days=5&data_amount=無限流量",
+          link: "/product/korea/korea-unlimited-esim?telecom=sk-native&days=5&data_amount=unlimited",
         },
         {
           hotSale: true,
@@ -175,7 +175,7 @@ export default function PickUpJobsSection() {
           title: "泰國原生卡",
           desc: "對應 Truemove H 當地號碼／True Dtac 本地線路，泰國本地 IP，曼谷、清邁、普吉等熱門旅遊地訊號覆蓋更穩定。",
           tags: ["泰國IP", "本地電信", "原生線路"],
-          link: "/product/tailand/thailand-unlimited-esim?telecom=Truemove%20H%20%E7%95%B6%E5%9C%B0%E8%99%9F%E7%A2%BC&days=8&data_amount=%E7%84%A1%E9%99%90%E6%B5%81%E9%87%8F",
+          link: "/product/tailand/thailand-unlimited-esim?telecom=truemove&days=8&data_amount=unlimited",
         },
         {
           hotSale: true,
@@ -198,7 +198,7 @@ export default function PickUpJobsSection() {
           title: "日本 Docomo/Softbank 雙網",
           desc: "採用日本最大電信商線路，東京、京都、廣島、關東、長崎、大阪等日本各城市及旅遊目的地訊號全覆蓋。真正的無限流量吃到飽，不降速。",
           tags: ["電信業者：KDDI", "日本ＩＰ", "熱點功能", "4G / LTE / 5G"],
-          link: "/product/japan/japan-unlimited-esim/?days=5&telecom=AU%28KDDI%29", // 🔗 請替換成真實的產品網址
+          link: "/product/japan/japan-unlimited-esim?telecom=au-kddi&days=5", // 🔗 請替換成真實的產品網址
         },
         {
           pills: [
@@ -230,7 +230,7 @@ export default function PickUpJobsSection() {
           title: "韓國 SKT 原生線路",
           desc: "與韓國當地人使用相同網路，享受超低延遲與極速飆網體驗。追星搶票、直播視訊完全不卡頓。",
           tags: ["韓國第一", "低延遲", "原生IP"],
-          link: "/product/korea/korea-unlimited-esim?telecom=SK電信（韓國IP）&days=5&data_amount=無限流量",
+          link: "/product/korea/korea-unlimited-esim?telecom=sk-native&days=5&data_amount=unlimited",
         },
         {
           pills: [
@@ -240,7 +240,7 @@ export default function PickUpJobsSection() {
           title: "LG U+ / SK 流量吃到飽",
           desc: "新加坡IP漫遊：每日1GB高速，用完後維持約10Mbps吃到飽；LG U+／SK雙電信覆蓋，適合一般旅遊上網。",
           tags: ["新加坡IP", "每日1GB", "10Mbps吃到飽"],
-          link: "/product/korea/korea-unlimited-esim?telecom=LG%20U%2B%20%2F%20SK電信&days=5&data_amount=無限流量",
+          link: "/product/korea/korea-unlimited-esim?telecom=lg-sk&days=5&data_amount=unlimited",
         },
         {
           pills: [
@@ -250,7 +250,7 @@ export default function PickUpJobsSection() {
           title: "含通話 / 簡訊收發功能",
           desc: "附帶韓國 +82 手機號碼，可註冊外送 App、預約餐廳排隊或接收認證碼。",
           tags: ["可通話", "外送預約", "實名認證"],
-          link: "/product/korea/korea-unlimited-esim?telecom=SK電信（韓國IP）&days=5&data_amount=無限流量",
+          link: "/product/korea/korea-unlimited-esim?telecom=sk-native&days=5&data_amount=unlimited",
         },
       ],
       sea: [

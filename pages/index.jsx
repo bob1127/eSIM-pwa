@@ -370,7 +370,7 @@ export default function Home() {
       </div>
 
       {/* ══ 桌機版：原有完整首頁（>= md）══ */}
-      <div ref={containerRef} className="hidden md:block bg-[#f6f6f6] pb-20">
+      <div ref={containerRef} className="hidden md:block">
         <style jsx global>{`
           @import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
 
@@ -619,7 +619,7 @@ export default function Home() {
           <div className="jesko-hero-header"></div>
         </section> */}
 
-        <section className="rounded-br-[60px] mt-20 rounded-bl-[60px] lg:rounded-br-[130px] lg:rounded-bl-[130px] pb-10 overflow-hidden">
+        <section className="bg-white rounded-br-[60px] mt-20 rounded-bl-[60px] lg:rounded-br-[130px] lg:rounded-bl-[130px] pb-10 overflow-hidden">
           <div className="flex flex-col gap-5 pt-4 lg:gap-0 lg:flex-row max-w-[1250px] mx-auto justify-between px-5 sm:px-6 lg:px-0">
             <div className="txt min-w-0 w-full lg:max-w-[62%]">
               <MaskText blockColor="#0A6CD0">
@@ -1206,9 +1206,6 @@ export default function Home() {
             </Link>
           </div>
         </section>
-        <div className="relative">
-          <div className="absolute w-[300px] h-[400px]"></div>
-        </div>
       </div>
 
       {imageLightbox && (

@@ -464,12 +464,14 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
     else if (apn.includes("mobile.three.com.hk")) carrier = "3HK 漫遊";
   }
 
-  // IP & App Support（原生：日／韓／泰／越）
+  // IP & App Support（原生：日／韓／泰／越／馬）
   let isNative = false;
   let ipRegion = "當地 IP";
 
   const networksBlob = String(p.networks || p.operator || "").toLowerCase();
-  const planNameRaw = String(p.name || p.channel_dataplan_name || "");
+  const planNameRaw = String(
+    p.name || p.channel_dataplan_name || p.sku || "",
+  );
   const isLocalNamed = /\blocal\b/i.test(planNameRaw);
 
   // 優先用 ip 欄位，避免 networks 等字串誤判成 gateway
@@ -486,7 +488,7 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
     label: string;
     apnHints: string[];
     netHints: string[];
-    /** 韓／泰／越：需 Local 名稱（或極明確本地 APN）；日本可僅靠 APN／電信 */
+    /** 韓／泰／越／馬：需 Local 名稱（或極明確本地 APN）；日本可僅靠 APN／電信 */
     requireLocalName: boolean;
   }> = [
     {
@@ -517,6 +519,13 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
       netHints: ["viettel", "mobifone", "vinaphone", "wintel"],
       requireLocalName: true,
     },
+    {
+      code: "MY",
+      label: "🇲🇾 馬來西亞原生 IP",
+      apnHints: ["my3g"],
+      netHints: ["umobile", "u mobile"],
+      requireLocalName: true,
+    },
   ];
 
   const matchNativeRule = (rule: (typeof NATIVE_REGION_RULES)[number]) => {
@@ -526,10 +535,11 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
     const gwHit = rawGateway === rule.code;
 
     if (rule.requireLocalName) {
-      // 韓／泰／越：名稱含 Local + 當地單一 IP（且非漫遊 APN）
+      // 韓／泰／越／馬：名稱含 Local + 當地單一 IP（且非漫遊 APN）
       if (gwHit && isLocalNamed) return true;
-      // 無 Local 字樣但 APN 極明確本地時也接受
+      // 無 Local 字樣但 APN 極明確本地時也接受（如 UMobile my3g + MY IP）
       if (gwHit && apnHit) return true;
+      if (gwHit && netHit && rule.code === "MY") return true;
       return false;
     }
 
@@ -547,6 +557,7 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
       if (g === "KR") return "🇰🇷 韓國";
       if (g === "TH") return "🇹🇭 泰國";
       if (g === "VN") return "🇻🇳 越南";
+      if (g === "MY") return "🇲🇾 馬來西亞";
       return g;
     });
 

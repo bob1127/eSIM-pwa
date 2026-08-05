@@ -1,39 +1,72 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import MobileCardCarousel from "./MobileCardCarousel";
 
+const NATIVE_IP_TAG = "/images/原生ip-tag.png";
+const NATIVE_IP_SLIDES = new Set(["/images/九州01.png", "/images/韓國01.png"]);
+
+const KYUSHU_HREF =
+  "/product/japan/japan-unlimited-esim?telecom=au-kddi&days=5";
+const KOREA_HREF =
+  "/product/korea/korea-unlimited-esim?telecom=sk-native&days=5";
+
 const RECOMMEND_SLIDES = [
-  "/images/九州01.png",
-  "/images/中國.png",
-  "/images/優惠banner04.png",
-  "/images/韓國01.png",
-  "/images/九州01.png",
-  "/images/中國.png",
-  "/images/韓國01.png",
+  { src: "/images/九州01.png", href: KYUSHU_HREF },
+  { src: "/images/中國.png" },
+  {
+    src: "/images/加入會員_加入line官方_優惠-Jeko eSIM_多國旅遊eSIM.png",
+  },
+  { src: "/images/韓國01.png", href: KOREA_HREF },
+  { src: "/images/九州01.png", href: KYUSHU_HREF },
+  { src: "/images/中國.png" },
+  { src: "/images/韓國01.png", href: KOREA_HREF },
 ];
 
-function RecommendSlide({ src, index, sizes }) {
-  return (
-    <div className="relative w-full aspect-[16/9] sm:aspect-[16/8] overflow-hidden rounded-[15px] bg-black">
-      <Image
-        src={src}
-        alt={`Jeko 推薦 ${index + 1}`}
-        fill
-        className="object-cover object-center"
-        sizes={sizes}
-        priority={index < 2}
-      />
+function RecommendSlide({ src, href, index, sizes }) {
+  const showNativeIpTag = NATIVE_IP_SLIDES.has(src);
+
+  const inner = (
+    <div className="relative w-full pt-6 sm:pt-8">
+      <div className="relative w-full aspect-[16/9] sm:aspect-[16/8] overflow-hidden rounded-[15px] bg-black">
+        <Image
+          src={src}
+          alt={`Jeko 推薦 ${index + 1}`}
+          fill
+          className="object-cover object-center"
+          sizes={sizes}
+          priority={index < 2}
+        />
+      </div>
+      {showNativeIpTag && (
+        <Image
+          src={NATIVE_IP_TAG}
+          alt="原生IP推薦"
+          width={160}
+          height={80}
+          className="pointer-events-none absolute top-0 right-2 sm:right-3 w-[88px] sm:w-[110px] h-auto drop-shadow-md z-10"
+        />
+      )}
     </div>
+  );
+
+  if (!href) return inner;
+
+  return (
+    <Link href={href} className="block w-full group">
+      {inner}
+    </Link>
   );
 }
 
 export default function JekoRecommendSection() {
   const renderSlides = () =>
-    RECOMMEND_SLIDES.map((src, index) => (
+    RECOMMEND_SLIDES.map((slide, index) => (
       <RecommendSlide
         key={`recommend-${index}`}
-        src={src}
+        src={slide.src}
+        href={slide.href}
         index={index}
         sizes="(max-width: 768px) 88vw, 50vw"
       />

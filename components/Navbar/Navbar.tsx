@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 import FeaturedCountryCard, {
   type FeaturedCountry,
+  resolveCategoryImageSrc,
 } from "./FeaturedCountryCard";
 import SocialIconLinks, { SocialIconLinksMobile } from "./SocialIconLinks";
 import NavbarSiteSearch from "./NavbarSiteSearch";
@@ -96,7 +97,10 @@ function buildFeaturedCountries(
         name: cat.name || "未命名",
         slug: cat.handle || "/",
         description: cat.description || meta.subtitle || "",
-        imageSrc: meta.image_url || meta.image || null,
+        imageSrc: resolveCategoryImageSrc(
+          cat.handle || "",
+          meta.image_url || meta.image || null,
+        ),
         productCount: stats.count,
         minPrice: stats.minPrice,
         regionLabel: meta.region_label || meta.region || meta.location || "",

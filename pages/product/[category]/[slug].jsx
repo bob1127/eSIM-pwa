@@ -77,6 +77,11 @@ import {
   parseHotSaleTelecoms,
   isHotSaleTelecom,
 } from "../../../lib/productHotSale";
+import {
+  resolveProductOptionQuery,
+  sanitizeProductQueryForUrl,
+  buildProductOptionQuery,
+} from "../../../lib/telecomQueryAlias";
 import DataEstimatorModal, {
   getEstimatorDestinationLabel,
   compareDataAmountsAsc,
@@ -397,6 +402,44 @@ const CARRIER_INFO_MAP = {
       note: "注意：越南原生當地 IP，建議抵達後再安裝 eSIM。",
     },
     summaryPrefix: "Wintel",
+  },
+  "UMobile 5G 當地": {
+    badges: [{ text: "UMobile", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "每日 1GB 高速，用完後維持約 10Mbps 吃到飽。",
+      note: "注意：此線路為馬來西亞 IP 原生。",
+    },
+    summaryPrefix: "UMobile 5G 當地",
+  },
+  /** @deprecated 已改名 UMobile 5G 當地 */
+  "UMobile 5G": {
+    badges: [{ text: "UMobile", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "每日 1GB 高速，用完後維持約 10Mbps 吃到飽。",
+      note: "注意：此線路為馬來西亞 IP 原生。",
+    },
+    summaryPrefix: "UMobile 5G 當地",
+  },
+  "Maxis / Celcom / Digi": {
+    badges: [
+      { text: "Maxis", type: "5G" },
+      { text: "Celcom", type: "5G" },
+      { text: "Digi", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "每日 1GB 高速，用完後維持約 10Mbps 吃到飽。",
+      note: "注意：我們建議您抵達當地後再安裝 eSIM。",
+    },
+    summaryPrefix: "Maxis / Celcom / Digi",
   },
   default: {
     badges: [],
@@ -2004,31 +2047,73 @@ export default function ProductPage({
       .catch(() => {});
   }, [initialProduct?.slug]);
 
-  // 1. 初始化網址參數與「預設選取」
+  // 1. 初始化網址參數與「預設選取」（相容舊中文 URL，內部用完整名稱）
   useEffect(() => {
     if (router.isReady && variations.length > 0) {
-      const initialAttrs = {};
-      ["telecom", "days", "data_amount"].forEach((key) => {
-        if (router.query[key]) initialAttrs[key] = router.query[key];
+      const carriers = [
+        ...new Set(
+          variations
+            .map((v) => getVariationOptionAttrs(v).telecom)
+            .filter(Boolean),
+        ),
+      ];
+      const daysList = [
+        ...new Set(
+          variations
+            .map((v) => getVariationOptionAttrs(v).days)
+            .filter(Boolean),
+        ),
+      ];
+      const amounts = [
+        ...new Set(
+          variations
+            .map((v) => getVariationOptionAttrs(v).data_amount)
+            .filter(Boolean),
+        ),
+      ].sort(compareDataAmountsAsc);
+
+      const initialAttrs = resolveProductOptionQuery(router.query, {
+        telecoms: carriers,
+        days: daysList,
+        dataAmounts: amounts,
       });
 
       if (Object.keys(initialAttrs).length === 0) {
-        const firstTelecom = [
-          ...new Set(
-            variations.map((v) => v.attributes?.telecom).filter(Boolean),
-          ),
-        ][0];
-        if (firstTelecom) initialAttrs["telecom"] = firstTelecom;
-
-        const dataAmounts = [
-          ...new Set(
-            variations.map((v) => v.attributes?.data_amount).filter(Boolean),
-          ),
-        ].sort(compareDataAmountsAsc);
-        if (dataAmounts[0]) initialAttrs["data_amount"] = dataAmounts[0];
+        const firstTelecom = carriers[0];
+        if (firstTelecom) initialAttrs.telecom = firstTelecom;
+        if (amounts[0]) initialAttrs.data_amount = amounts[0];
       }
 
       setSelectedAttributes(initialAttrs);
+
+      // 僅在網址已有規格參數時，改寫成安全別名（方便複製分享）
+      const hadOptionQuery =
+        router.query.telecom != null ||
+        router.query.days != null ||
+        router.query.data_amount != null;
+      if (hadOptionQuery) {
+        const safeQuery = sanitizeProductQueryForUrl({
+          ...router.query,
+          ...(initialAttrs.telecom ? { telecom: initialAttrs.telecom } : {}),
+          ...(initialAttrs.days ? { days: initialAttrs.days } : {}),
+          ...(initialAttrs.data_amount
+            ? { data_amount: initialAttrs.data_amount }
+            : {}),
+        });
+        const same =
+          String(router.query.telecom || "") ===
+            String(safeQuery.telecom || "") &&
+          String(router.query.days || "") === String(safeQuery.days || "") &&
+          String(router.query.data_amount || "") ===
+            String(safeQuery.data_amount || "");
+        if (!same) {
+          router.replace(
+            { pathname: router.pathname, query: safeQuery },
+            undefined,
+            { shallow: true },
+          );
+        }
+      }
     }
   }, [router.isReady, variations]);
 
@@ -2107,7 +2192,10 @@ export default function ProductPage({
 
   const handleAttributeSelect = (name, option) => {
     let newAttrs = { ...selectedAttributes, [name]: option };
-    let newQuery = { ...router.query, [name]: option };
+    let newQuery = sanitizeProductQueryForUrl({
+      ...router.query,
+      [name]: option,
+    });
 
     setSelectedAttributes(newAttrs);
     router.push({ pathname: router.pathname, query: newQuery }, undefined, {
@@ -2139,11 +2227,7 @@ export default function ProductPage({
 
     if (!sameProduct) {
       const cat = planCategory || router.query.category || "china";
-      const q = new URLSearchParams(
-        Object.fromEntries(
-          Object.entries(patch).map(([k, v]) => [k, String(v)]),
-        ),
-      ).toString();
+      const q = buildProductOptionQuery(patch);
 
       const href =
         isPartnerShell && store?.domain
@@ -2157,7 +2241,10 @@ export default function ProductPage({
     }
 
     const newAttrs = { ...selectedAttributes, ...patch };
-    const newQuery = { ...router.query, ...patch };
+    const newQuery = sanitizeProductQueryForUrl({
+      ...router.query,
+      ...patch,
+    });
     setSelectedAttributes(newAttrs);
     router.push({ pathname: router.pathname, query: newQuery }, undefined, {
       shallow: true,
@@ -2317,9 +2404,10 @@ export default function ProductPage({
     if (/\(\s*CMCC\s*\)/i.test(s) || /\(\s*CUCC\s*\)/i.test(s)) return s;
     if (/中國移動|CMCC/i.test(s)) return `${s} (CMCC)`;
     if (/中國聯通|CUCC|Unicom/i.test(s)) return `${s} (CUCC)`;
-    // 電信商按鈕不顯示 4G/5G（速度改在重點特色徽章呈現）
+    // 僅去掉尾端／「雙切換」前的 4G/5G（保留「UMobile 5G 當地」這類名稱內的 5G）
     return s
-      .replace(/\s*[45]G(?:\s*\/\s*[45]G)?/gi, "")
+      .replace(/\s*[45]G(?:\s*\/\s*[45]G)?(?=\s*雙切換\s*$)/gi, "")
+      .replace(/\s*[45]G(?:\s*\/\s*[45]G)?\s*$/gi, "")
       .replace(/\s{2,}/g, " ")
       .trim();
   };

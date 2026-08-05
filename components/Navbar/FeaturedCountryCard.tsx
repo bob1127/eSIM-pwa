@@ -1,6 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+
+/** Medusa 分類 metadata 圖常連到外部 Storage；失效時改用本地圖 */
+export const CATEGORY_IMAGE_FALLBACKS: Record<string, string> = {
+  japan: "/images/分類eSIM-日本.png",
+  korea: "/images/分類eSIM-韓國.png",
+  china: "/images/分類eSIM-中國.png",
+  kongkong: "/images/分類eSIM-中港澳.png",
+  hongkong: "/images/分類eSIM-中港澳.png",
+  tailand: "/images/分類eSIM-泰國.png",
+  thailand: "/images/分類eSIM-泰國.png",
+  malaysia: "/images/分類eSIM-馬來西亞.png",
+  singapore: "/images/分類eSIM-新馬.png",
+  vietnam: "/images/分類eSIM-越南.png",
+  "us-ca": "/images/分類eSIM-美加.png",
+};
+
+export function resolveCategoryImageSrc(
+  slug: string,
+  remoteSrc?: string | null,
+) {
+  const local = CATEGORY_IMAGE_FALLBACKS[slug] || "/images/jeko-esim.png";
+  // 外部 Storage 目前回 402，精選卡優先用本地圖
+  if (remoteSrc && !/supabase\.co\/storage/i.test(remoteSrc)) {
+    return remoteSrc;
+  }
+  return local;
+}
 
 export interface FeaturedCountry {
   id: string | number;
@@ -29,6 +57,10 @@ export default function FeaturedCountryCard({
   compact?: boolean;
   onNavigate?: () => void;
 }) {
+  const fallbackSrc = resolveCategoryImageSrc(country.slug, null);
+  const [imgSrc, setImgSrc] = useState(
+    () => resolveCategoryImageSrc(country.slug, country.imageSrc),
+  );
   const priceText = country.minPrice ? formatPrice(country.minPrice) : null;
   const regionTag = country.regionLabel || country.name;
   const subtitle =
@@ -51,19 +83,14 @@ export default function FeaturedCountryCard({
     >
       {/* 圖片區 */}
       <div className="relative aspect-[4/3] bg-slate-50 overflow-hidden">
-        {country.imageSrc ? (
-          <img
-            src={country.imageSrc}
-            alt={country.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-            <span className="text-3xl font-black text-slate-300">
-              {country.name.slice(0, 1)}
-            </span>
-          </div>
-        )}
+        <img
+          src={imgSrc}
+          alt={country.name}
+          className="w-full h-full object-cover"
+          onError={() => {
+            if (imgSrc !== fallbackSrc) setImgSrc(fallbackSrc);
+          }}
+        />
 
         <span className="absolute top-2.5 left-2.5 rounded-md bg-black/85 px-2 py-0.5 text-[10px] font-bold text-white tracking-wide">
           {regionTag}

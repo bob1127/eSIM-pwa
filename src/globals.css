@@ -1196,6 +1196,17 @@ img {
     color: #212121;
     font-weight: 400;
   }
+  /* 瀏覽器擴充（Plasmo）偶發注入的 DOM clone，會在 footer 下方多出空白 */
+  [id^="__plasmo"],
+  [id*="__plasmo_clone"] {
+    display: none !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Roboto', 'Noto Sans TC', -apple-system, BlinkMacSystemFont,
       'Segoe UI', 'Helvetica Neue', Arial, sans-serif;

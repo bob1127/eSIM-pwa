@@ -33,9 +33,15 @@ export default function HeroCountryPlanPicker() {
           ...(publishableKey && { "x-publishable-api-key": publishableKey }),
         };
 
-        const [catRes, prodRes] = await Promise.all([
+        const productFields =
+          "+metadata,*categories,*variants,*variants.calculated_price,*variants.prices";
+        const [catRes, prodRes, ranksRes] = await Promise.all([
           fetch(`${backendUrl}/store/product-categories`, { headers }),
-          fetch(`${backendUrl}/store/products?limit=100`, { headers }),
+          fetch(
+            `${backendUrl}/store/products?limit=100&fields=${encodeURIComponent(productFields)}`,
+            { headers },
+          ),
+          fetch("/api/hero-product-ranks").catch(() => null),
         ]);
 
         if (!catRes.ok) throw new Error("categories fetch failed");
@@ -44,12 +50,17 @@ export default function HeroCountryPlanPicker() {
         const prodData = prodRes.ok
           ? await prodRes.json()
           : { products: [] };
+        const ranksData =
+          ranksRes && ranksRes.ok
+            ? await ranksRes.json()
+            : { byHandle: {}, byName: {} };
 
         if (cancelled) return;
 
         const merged = buildHeroCountries(
           catData.product_categories || [],
           prodData.products || [],
+          ranksData,
         );
 
         if (merged.length > 0) {
