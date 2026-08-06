@@ -128,7 +128,7 @@ function isHomePath(path: string | null | undefined) {
 // --- 2. 導覽列資料 (桌面版) ---
 const navLinks = [
   { key: "categories", label: "精選eSIM", href: "/product", hasMega: true },
-  { key: "shop", label: "Jeko 商城", href: "/shop", comingSoon: true },
+  { key: "shop", label: "3C / 旅遊用品", href: "/shop", comingSoon: true },
   { key: "blog", label: "旅遊須知", href: "/blog" },
   { key: "tutorial", label: "啟用教學", href: "/operation-shopee" },
   { key: "about", label: "關於Jeko", href: "/about" },
@@ -246,45 +246,21 @@ export default function Navbar({ className }: NavbarProps) {
   const userImage =
     supabaseUser?.user_metadata?.avatar_url || session?.user?.image || null;
 
-  // 抓取 Medusa 分類
+  // 抓取 Medusa 分類（同源 API 代理，避免 :3001 CORS 被擋）
   useEffect(() => {
     const fetchCategoriesFromMedusa = async () => {
       try {
         setLoadingCats(true);
-        const backendUrl =
-          process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
-        const publishableKey =
-          process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
+        const res = await fetch("/api/medusa/navbar-categories");
+        if (!res.ok) throw new Error("無法取得 Medusa 分類資料");
 
-        const headers = {
-          "Content-Type": "application/json",
-          ...(publishableKey && { "x-publishable-api-key": publishableKey }),
-        };
-
-        const [catRes, prodRes] = await Promise.all([
-          fetch(`${backendUrl}/store/product-categories`, {
-            method: "GET",
-            headers,
-          }),
-          fetch(`${backendUrl}/store/products?limit=100`, {
-            method: "GET",
-            headers,
-          }),
-        ]);
-
-        if (!catRes.ok) throw new Error("無法取得 Medusa 分類資料");
-
-        const catData = await catRes.json();
-        const prodData = prodRes.ok ? await prodRes.json() : { products: [] };
-
-        if (catData.product_categories) {
-          setFeaturedCountries(
-            buildFeaturedCountries(
-              catData.product_categories,
-              prodData.products || [],
-            ),
-          );
-        }
+        const data = await res.json();
+        setFeaturedCountries(
+          buildFeaturedCountries(
+            data.product_categories || [],
+            data.products || [],
+          ),
+        );
       } catch (error) {
         console.error("❌ Navbar 抓取 Medusa 分類失敗:", error);
       } finally {
@@ -642,9 +618,9 @@ export default function Navbar({ className }: NavbarProps) {
                 />
                 <MobileSimpleNavItem
                   icon={<ShoppingBagIcon className="w-5 h-5" />}
-                  label="Jeko 商城"
+                  label="3C / 旅遊用品"
                   comingSoon
-                  onClick={() => showComingSoon("Jeko 商城")}
+                  onClick={() => showComingSoon("3C / 旅遊用品")}
                 />
               </div>
 

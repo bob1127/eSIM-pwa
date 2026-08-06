@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
+import Copy from "@/components/MaskText";
 
 const DEFAULT_ITEMS = [
   {
@@ -498,33 +499,66 @@ export default function ThreeHorizontalSlider({
                 exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               >
-                <p
-                  className={`max-w-[980px] text-[18px] font-semibold tracking-[0.12em] md:text-[26px] ${titleClass}`}
-                >
-                  {activeContent?.eyebrow || "全球旅遊必備神器！免換實體卡"}
-                </p>
-                <p
-                  className={`mt-3 text-[52px] font-extrabold tracking-[0.08em] md:text-[88px] md:tracking-[0.14em] ${headingClass}`}
-                >
-                  {activeContent?.title || "eSIM"}
-                </p>
-                <p
-                  className={`mt-4 max-w-[620px] text-[11px] leading-relaxed md:text-[12px] ${subClass}`}
-                >
-                  {activeContent?.lines ? (
-                    <>
-                      {activeContent.lines[0]}
-                      <br className="hidden md:block" />
-                      {activeContent.lines[1]}
-                    </>
-                  ) : (
-                    <>
+                {tabs ? (
+                  <>
+                    <Copy
+                      key={`eyebrow-${activeContent?.id}`}
+                      blockColor="#1E4AD1"
+                      animateOnScroll={false}
+                    >
+                      <p
+                        className={`max-w-[980px] text-[18px] font-semibold tracking-[0.12em] md:text-[26px] ${titleClass}`}
+                      >
+                        {activeContent?.eyebrow}
+                      </p>
+                    </Copy>
+                    <Copy
+                      key={`title-${activeContent?.id}`}
+                      blockColor="#1E4AD1"
+                      animateOnScroll={false}
+                    >
+                      <p
+                        className={`mt-3 text-[52px] font-extrabold tracking-[0.08em] md:text-[88px] md:tracking-[0.14em] ${headingClass}`}
+                      >
+                        {activeContent?.title}
+                      </p>
+                    </Copy>
+                    <Copy
+                      key={`lines-${activeContent?.id}`}
+                      blockColor="#1E4AD1"
+                      animateOnScroll={false}
+                      stagger={0.12}
+                    >
+                      <p
+                        className={`mt-4 max-w-[620px] text-[11px] leading-relaxed md:text-[12px] ${subClass}`}
+                      >
+                        {activeContent?.lines?.[0]}
+                        <br className="hidden md:block" />
+                        {activeContent?.lines?.[1]}
+                      </p>
+                    </Copy>
+                  </>
+                ) : (
+                  <>
+                    <p
+                      className={`max-w-[980px] text-[18px] font-semibold tracking-[0.12em] md:text-[26px] ${titleClass}`}
+                    >
+                      全球旅遊必備神器！免換實體卡
+                    </p>
+                    <p
+                      className={`mt-3 text-[52px] font-extrabold tracking-[0.08em] md:text-[88px] md:tracking-[0.14em] ${headingClass}`}
+                    >
+                      eSIM
+                    </p>
+                    <p
+                      className={`mt-4 max-w-[620px] text-[11px] leading-relaxed md:text-[12px] ${subClass}`}
+                    >
                       掃描 QR Code 即刻開通高速網路
                       <br className="hidden md:block" />
                       快速找到您想去的旅遊目的地的 eSIM 卡
-                    </>
-                  )}
-                </p>
+                    </p>
+                  </>
+                )}
               </motion.div>
             </AnimatePresence>
           </div>

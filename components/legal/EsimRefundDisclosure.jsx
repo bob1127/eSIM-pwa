@@ -6,25 +6,32 @@ import MaterialIcon from "@/components/MaterialIcon";
 
 const LINE_OA_URL = "https://line.me/R/ti/p/@391huuts";
 
-const SUMMARY_ITEMS = [
+const ROAMING_ITEMS = [
   {
-    title: "掃描 QR Code 即視為開通",
-    text: "掃描或安裝 eSIM 後，即代表數位商品已交付使用。",
+    label: "a.",
+    text: "如 eSIM 未安裝，我們將全額退款。",
   },
   {
-    title: "開通後原則不退款",
-    text: "已開通之 eSIM 原則不提供退款（詳見例外情形）。",
+    label: "b.",
+    text: "如 eSIM 已安裝但未激活，我們將全額退款。",
   },
   {
-    title: "未開通可申請退款",
-    text: "QR Code 尚未掃描、且 eSIM 尚未啟用，可於 7 日內申請全額退款。",
+    label: "c.",
+    text: "如 eSIM 已激活，則不予退款。",
+  },
+  {
+    label: "d.",
+    text: "如果您遇到任何連線問題，請聯絡我們的客戶支援。我們將協助您進行故障排除，並根據具體情況提供更換 eSIM 或部分退款。",
   },
 ];
 
 /**
  * 結帳／商品頁可展開的 eSIM 退換貨條款摘要
  */
-export default function EsimRefundDisclosure({ defaultOpen = false }) {
+export default function EsimRefundDisclosure({
+  defaultOpen = false,
+  compact = false,
+}) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
@@ -36,7 +43,9 @@ export default function EsimRefundDisclosure({ defaultOpen = false }) {
         aria-expanded={open}
       >
         <span className="text-xs text-slate-500 group-hover:text-slate-700 transition leading-snug">
-          數位 eSIM 商品說明：掃描開通後即無法退款
+          {compact
+            ? "退換貨：非原生可退；原生 eSIM 售出後不退不換"
+            : "數位 eSIM 退換貨說明（原生／非原生不同）"}
         </span>
         <MaterialIcon
           name={open ? "expand_less" : "expand_more"}
@@ -47,21 +56,34 @@ export default function EsimRefundDisclosure({ defaultOpen = false }) {
 
       {open && (
         <div className="pb-3 space-y-3 border-t border-slate-100 pt-3">
-          <p className="text-xs text-slate-500 leading-relaxed">
-            eSIM 為數位商品，付款成功後將 Email 寄送 QR Code。請確認手機支援 eSIM 且已解除電信鎖。
-          </p>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-slate-700">
+              非原生／漫遊 eSIM
+            </p>
+            <ul className="space-y-2">
+              {ROAMING_ITEMS.map((item) => (
+                <li
+                  key={item.label}
+                  className="text-xs leading-relaxed text-slate-500 flex gap-1.5"
+                >
+                  <span className="font-semibold text-slate-600 shrink-0">
+                    {item.label}
+                  </span>
+                  <span>{item.text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          <ul className="space-y-2.5">
-            {SUMMARY_ITEMS.map((item) => (
-              <li key={item.title} className="text-xs leading-relaxed">
-                <span className="text-slate-700 font-medium">{item.title}</span>
-                <span className="text-slate-400"> — {item.text}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-1.5 rounded-lg bg-slate-50 px-3 py-2.5">
+            <p className="text-xs font-semibold text-slate-700">原生 eSIM</p>
+            <p className="text-xs leading-relaxed text-slate-500">
+              售出後概不退款或換貨。
+            </p>
+          </div>
 
           <p className="text-xs text-slate-400 leading-relaxed">
-            例外：重複扣款、錯誤出貨、經查證之系統或供應商故障等，依
+            完整說明請見
             <Link
               href="/refund-policy"
               target="_blank"
@@ -69,11 +91,7 @@ export default function EsimRefundDisclosure({ defaultOpen = false }) {
             >
               退換貨政策
             </Link>
-            個案審核。
-          </p>
-
-          <p className="text-xs text-slate-400 leading-relaxed">
-            若您尚未加入會員，請先
+            。若尚未加入會員，請先
             <a
               href={LINE_OA_URL}
               target="_blank"

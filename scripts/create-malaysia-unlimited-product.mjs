@@ -11,7 +11,10 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { UMOBILE_KEY_FEATURES } from "../content/product-detailed/umobile-local-key-features.js";
+import {
+  umobileKeyFeatures,
+  maxisCelcomDigiKeyFeatures,
+} from "../content/product-detailed/malaysia-key-features.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -279,14 +282,8 @@ async function main() {
       },
     },
     key_features_by_carrier: {
-      [TELECOM_UMOBILE]: UMOBILE_KEY_FEATURES,
-      [TELECOM_DUAL]: [
-        "吃到飽",
-        "Maxis / Celcom / Digi",
-        "5G 三網",
-        "每日1GB高速後10Mbps",
-        "支援熱點／ChatGPT",
-      ],
+      [TELECOM_UMOBILE]: umobileKeyFeatures("unlimited"),
+      [TELECOM_DUAL]: maxisCelcomDigiKeyFeatures("unlimited"),
     },
     overview_notices_by_carrier: {
       [TELECOM_UMOBILE]: {

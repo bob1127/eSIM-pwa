@@ -225,8 +225,8 @@ export default function MemberOrdersPanel({
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-500 leading-relaxed">
-        未開通方案可於購買後 7 日內申請全額退款；已開通或逾 7
-        日者請提交售後爭議表單（個案審核）。詳見{" "}
+        非原生／漫遊：未安裝或已安裝未激活可全額退款；已激活不予退款。原生
+        eSIM：售出後概不退款或換貨。詳見{" "}
         <Link href="/refund-policy" className="text-sky-600 font-bold hover:underline">
           退換貨政策
         </Link>

@@ -19,6 +19,15 @@ import {
 import { useProductAdmin } from "../../../hooks/useProductAdmin";
 import ProductReviewsSection from "../../../components/product/ProductReviewsSection";
 import ProductPromoOfferBanner from "../../../components/product/ProductPromoOfferBanner";
+import NetworkCoverageSection from "../../../components/product/NetworkCoverageSection";
+import { resolveCoverageCountry } from "../../../lib/networkCoverageCountries";
+import CoveragePromptModal, {
+  hasCoverageAck,
+  markCoverageAck,
+} from "../../../components/product/CoveragePromptModal";
+import IijApnReminderModal, {
+  isIijDocomoTelecom,
+} from "../../../components/product/IijApnReminderModal";
 import MaterialIcon from "../../../components/MaterialIcon";
 import MediaGalleryLightbox from "../../../components/MediaGalleryLightbox";
 import {
@@ -68,6 +77,16 @@ import {
   resolveIntroBullets,
   resolveActualExperience,
 } from "../../../lib/productKeyFeatures";
+import { parseSubtitleByCarrier } from "../../../lib/productSubtitleByCarrier";
+import {
+  SpeedScenarioProvider,
+  SpeedInfoChip,
+  SpeedAwareText,
+  useSpeedScenario,
+  wrapSpeedMentionsInHtml,
+  handleSpeedHtmlClick,
+} from "../../../components/product/SpeedScenarioPopup";
+import { resolveSpeedScenarioId } from "../../../lib/speedScenarioInfo";
 import {
   parseCarrierSpecsByCarrier,
   resolveCarrierSpecs,
@@ -463,6 +482,18 @@ const CARRIER_INFO_MAP = {
     },
     summaryPrefix: "Truemove H 當地號碼",
   },
+  "TRRE 電信": {
+    badges: [{ text: "TRUE", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "10 Mbps的無限流量，實際速度可能有所變動。",
+      note: "注意：我們建議您抵達泰國後再安裝 eSIM。",
+    },
+    summaryPrefix: "TRRE 電信",
+  },
+  // 舊顯示名相容（若快取／舊變體尚未重建）
   "True Dtac": {
     badges: [{ text: "TRUE", type: "5G" }],
     marketingBox: {
@@ -472,7 +503,73 @@ const CARRIER_INFO_MAP = {
       policyDesc: "10 Mbps的無限流量，實際速度可能有所變動。",
       note: "注意：我們建議您抵達泰國後再安裝 eSIM。",
     },
-    summaryPrefix: "True Dtac",
+    summaryPrefix: "TRRE 電信",
+  },
+  "短天數｜中國電信／CSL／澳門電信": {
+    badges: [
+      { text: "免VPN", type: "info" },
+      { text: "中國電信", type: "5G" },
+      { text: "CSL", type: "5G" },
+      { text: "澳門電信", type: "4G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-slate-50",
+      borderColor: "border-slate-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "無限流量，實際速度依位置及網路環境而定。",
+      note: "出網為香港 IP，一般可免 VPN 使用 LINE／IG／FB。建議抵達後再安裝。",
+    },
+    summaryPrefix: "短天數｜中國電信／CSL／澳門電信",
+  },
+  "短天數｜中國移動／香港移動／澳門電訊": {
+    badges: [
+      { text: "免VPN", type: "info" },
+      { text: "中國電信", type: "5G" },
+      { text: "CSL", type: "5G" },
+      { text: "澳門電信", type: "4G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-slate-50",
+      borderColor: "border-slate-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "無限流量，實際速度依位置及網路環境而定。",
+      note: "出網為香港 IP，一般可免 VPN 使用 LINE／IG／FB。建議抵達後再安裝。",
+    },
+    summaryPrefix: "短天數｜中國電信／CSL／澳門電信",
+  },
+  "長天數｜中國電信／聯通／CSL／澳門電訊": {
+    badges: [
+      { text: "免VPN", type: "info" },
+      { text: "中國電信", type: "5G" },
+      { text: "聯通", type: "5G" },
+      { text: "CSL", type: "5G" },
+      { text: "CTM", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-slate-50",
+      borderColor: "border-slate-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "約 10 Mbps 的無限流量，實際速度可能有所變動。",
+      note: "出網為新加坡 IP，一般可免 VPN 使用 LINE／IG／FB，並支援 TikTok。建議抵達後再安裝。",
+    },
+    summaryPrefix: "長天數｜中國電信／聯通／CSL／澳門電訊",
+  },
+  "中國電信／聯通／CSL／澳門電訊": {
+    badges: [
+      { text: "免VPN", type: "info" },
+      { text: "中國電信", type: "5G" },
+      { text: "聯通", type: "5G" },
+      { text: "CSL", type: "5G" },
+      { text: "CTM", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-slate-50",
+      borderColor: "border-slate-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "每日高速額度用完後降速至約 128 kbps；另有約 5Mbps 續航選項。",
+      note: "出網為新加坡 IP，一般可免 VPN 使用 LINE／IG／FB，並支援 ChatGPT／TikTok／Gemini。建議抵達後再安裝。",
+    },
+    summaryPrefix: "中國電信／聯通／CSL／澳門電訊",
   },
 };
 
@@ -549,14 +646,15 @@ function CarrierSpeedChips({ chips }) {
 }
 
 function FeatureBulletText({ children, className = "" }) {
+  const { openSpeed } = useSpeedScenario();
   const chips = useMemo(
     () => parseCarrierSpeedChips(children),
     [children],
   );
-  const html = useMemo(
-    () => (chips ? "" : formatFeatureBulletHtml(children)),
-    [children, chips],
-  );
+  const html = useMemo(() => {
+    if (chips) return "";
+    return wrapSpeedMentionsInHtml(formatFeatureBulletHtml(children));
+  }, [children, chips]);
 
   if (chips) {
     return (
@@ -569,6 +667,7 @@ function FeatureBulletText({ children, className = "" }) {
   return (
     <div
       className={`feature-bullet-text ${className}`}
+      onClick={(e) => handleSpeedHtmlClick(e, openSpeed)}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
@@ -599,6 +698,7 @@ function ProductOverviewNotices({
   product,
   carrier,
   onProductUpdate,
+  onOpenInstall,
 }) {
   const { isAdmin, adminChecked, authHeaders } = useProductAdmin();
   const [isEditing, setIsEditing] = useState(false);
@@ -606,11 +706,20 @@ function ProductOverviewNotices({
   const [activationDraft, setActivationDraft] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  const fupText =
+  const fupTextRaw =
     notices?.fup_notice ||
     (carrierFallback?.policyTitle && carrierFallback?.policyDesc
       ? `${carrierFallback.policyTitle} ${carrierFallback.policyDesc}`
-      : "");
+      : carrierFallback?.policyDesc || "");
+  /** 方案說明一律帶「公平使用政策 (FUP):」前綴 */
+  const fupText = (() => {
+    const raw = String(fupTextRaw || "").trim();
+    if (!raw) return "";
+    const body = raw
+      .replace(/^公平使用政策\s*\(?\s*FUP\s*\)?\s*[:：]?\s*/i, "")
+      .trim();
+    return body ? `公平使用政策 (FUP): ${body}` : "公平使用政策 (FUP):";
+  })();
   const activationText =
     notices?.activation_notice || carrierFallback?.note || "";
 
@@ -658,6 +767,8 @@ function ProductOverviewNotices({
     !isEditing && !fupText && !activationText && adminChecked && isAdmin;
 
   if (!showDisplay && !isEditing && !showEmptyAdmin) return null;
+
+  const noticeCount = [fupText, activationText].filter(Boolean).length;
 
   return (
     <div className="mt-4 space-y-3">
@@ -724,28 +835,88 @@ function ProductOverviewNotices({
         </div>
       ) : (
         <>
-          {fupText && (
-            <div className="flex gap-3 rounded-lg border border-slate-200 bg-sky-50/80 px-4 py-3.5 text-sm text-slate-700 leading-relaxed border-l-4 border-l-sky-500">
-              <MaterialIcon
-                name="info"
-                size={20}
-                className="text-sky-600 shrink-0 mt-0.5"
-              />
-              <FeatureBulletText className="flex-1 min-w-0">
-                {fupText}
-              </FeatureBulletText>
-            </div>
-          )}
-          {activationText && (
-            <div className="flex gap-3 rounded-lg border border-slate-200 bg-amber-50/90 px-4 py-3.5 text-sm text-slate-700 leading-relaxed border-l-4 border-l-amber-400">
-              <MaterialIcon
-                name="warning"
-                size={20}
-                className="text-amber-600 shrink-0 mt-0.5"
-              />
-              <FeatureBulletText className="flex-1 min-w-0">
-                {activationText}
-              </FeatureBulletText>
+          {(fupText || activationText) && (
+            <div className="relative pl-7">
+              {noticeCount > 1 ? (
+                <div
+                  className="pointer-events-none absolute left-[7px] top-5 bottom-5 w-px bg-slate-200"
+                  aria-hidden
+                />
+              ) : null}
+
+              {fupText ? (
+                <div className={`relative ${activationText ? "mb-3" : ""}`}>
+                  <span
+                    className="absolute -left-7 top-5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-[3px] border-[#0A6CD0] bg-[#0A6CD0]"
+                    aria-hidden
+                  />
+                  <article className="rounded-2xl border border-slate-200 bg-[#0A6CD0] px-4 py-3.5 text-white">
+                    <div className="flex items-start justify-between gap-3">
+                      <h4 className="text-[15px] font-bold leading-snug">
+                        方案說明
+                      </h4>
+                      <span className="shrink-0 text-[12px] font-medium text-white/70">
+                        FUP
+                      </span>
+                    </div>
+                    <FeatureBulletText className="mt-1.5 text-[13px] leading-relaxed text-white/90 [&_a]:text-white [&_a]:underline [&_button]:text-white [&_button]:underline">
+                      {fupText}
+                    </FeatureBulletText>
+                    <div className="mt-3.5 flex items-center justify-between gap-3">
+                      <div className="flex items-center -space-x-1.5" aria-hidden>
+                        {["wifi", "signal_cellular_alt", "sim_card"].map(
+                          (icon) => (
+                            <span
+                              key={icon}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0A6CD0] bg-white/95 text-[#0A6CD0]"
+                            >
+                              <MaterialIcon name={icon} size={14} />
+                            </span>
+                          ),
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof onOpenInstall === "function") {
+                            onOpenInstall();
+                            return;
+                          }
+                          document
+                            .getElementById("product-tabs")
+                            ?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#0A6CD0] transition hover:bg-white/90"
+                        aria-label="查看安裝說明"
+                      >
+                        <MaterialIcon name="arrow_forward" size={18} />
+                      </button>
+                    </div>
+                  </article>
+                </div>
+              ) : null}
+
+              {activationText ? (
+                <div className="relative">
+                  <span
+                    className="absolute -left-7 top-5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-slate-300 bg-white"
+                    aria-hidden
+                  />
+                  <article className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <h4 className="text-[15px] font-bold text-slate-900 leading-snug">
+                        啟用提醒
+                      </h4>
+                      <span className="shrink-0 text-[12px] font-medium text-slate-400">
+                        注意
+                      </span>
+                    </div>
+                    <FeatureBulletText className="mt-1.5 text-[13px] leading-relaxed text-slate-500">
+                      {activationText}
+                    </FeatureBulletText>
+                  </article>
+                </div>
+              ) : null}
             </div>
           )}
           {showEmptyAdmin && (
@@ -780,7 +951,7 @@ function ServiceBenefits() {
     {
       icon: "assignment_return",
       title: "安心購買",
-      desc: "未開通可退款；開通後依退換貨政策",
+      desc: "非原生依安裝／激活狀態；原生售出後不退不換",
       href: "/refund-policy",
     },
     {
@@ -1754,6 +1925,12 @@ export async function getStaticProps({ params }) {
     delete publicMetadata.carrier_partner_rate_by_carrier;
     delete publicMetadata.carrier_referral_discount_by_carrier;
 
+    const parsedSubtitleByCarrier = parseSubtitleByCarrier(
+      product.metadata?.subtitle_by_carrier,
+    );
+    // product-content 以 JSON 字串寫入；未解析就 spread 會變成 "0"→"{" 並被模糊比對誤中
+    publicMetadata.subtitle_by_carrier = parsedSubtitleByCarrier;
+
     const formattedProduct = {
       id: product.id,
       name: product.title,
@@ -1761,11 +1938,7 @@ export async function getStaticProps({ params }) {
       slug: product.handle,
       description: product.description || "",
       metadata: publicMetadata,
-      subtitle_by_carrier:
-        product.metadata?.subtitle_by_carrier &&
-        typeof product.metadata.subtitle_by_carrier === "object"
-          ? product.metadata.subtitle_by_carrier
-          : {},
+      subtitle_by_carrier: parsedSubtitleByCarrier,
       detailed_content: product.metadata?.detailed_content || "",
       detailed_content_by_carrier:
         parseDetailedContentByCarrier(rawDetailedByCarrier),
@@ -1972,6 +2145,10 @@ export default function ProductPage({
   const [featuresOpen, setFeaturesOpen] = useState(true);
   const [mediaTab, setMediaTab] = useState("overview");
   const [showStickyBuy, setShowStickyBuy] = useState(false);
+  const [coveragePromptOpen, setCoveragePromptOpen] = useState(false);
+  const [pendingPurchaseAction, setPendingPurchaseAction] = useState(null);
+  const [coverageContinueAction, setCoverageContinueAction] = useState(null);
+  const [iijApnPromptOpen, setIijApnPromptOpen] = useState(false);
   const isPartnerShell = shell === "shop" && store;
   const productAdmin = useProductAdmin();
   const isAdmin = isPartnerShell ? false : productAdmin.isAdmin;
@@ -1999,6 +2176,10 @@ export default function ProductPage({
 
   useEffect(() => {
     setProduct(initialProduct);
+    setCoverageContinueAction(null);
+    setCoveragePromptOpen(false);
+    setPendingPurchaseAction(null);
+    setIijApnPromptOpen(false);
   }, [initialProduct]);
 
   // 進頁即時拉最新 metadata（後台儲存後不用等 ISR）
@@ -2138,6 +2319,8 @@ export default function ProductPage({
     selectedAttributes.days &&
     selectedAttributes.data_amount
   );
+  const canPurchase =
+    isAllOptionsSelected && currentVariation && currentVariation.price > 0;
 
   const availableCarriers = useMemo(
     () => [
@@ -2297,6 +2480,79 @@ export default function ProductPage({
     window.dispatchEvent(new Event("open-cart-sidebar"));
   };
 
+  const performBuyNow = () => {
+    handleAddToCart();
+    if (isPartnerShell) {
+      router.push(`/p/${store.domain}/cart/`);
+    } else {
+      router.push("/Cart");
+    }
+  };
+
+  const finalizePurchaseAction = (action) => {
+    setCoverageContinueAction(null);
+    setCoveragePromptOpen(false);
+    setIijApnPromptOpen(false);
+    setPendingPurchaseAction(null);
+    if (action === "buy") performBuyNow();
+    else handleAddToCart();
+  };
+
+  /** 涵蓋確認後／略過涵蓋後：若為 IIJ Docomo 再跳 APN 提醒 */
+  const continueAfterCoverageOrDirect = (action) => {
+    const telecom = selectedAttributes?.telecom;
+    if (isIijDocomoTelecom(telecom)) {
+      setPendingPurchaseAction(action);
+      setIijApnPromptOpen(true);
+      return;
+    }
+    finalizePurchaseAction(action);
+  };
+
+  const executePurchaseAction = (action) => {
+    if (product?.id) markCoverageAck(product.id);
+    setCoverageContinueAction(null);
+    setCoveragePromptOpen(false);
+    continueAfterCoverageOrDirect(action);
+  };
+
+  const requestPurchase = (action) => {
+    if (!canPurchase) return;
+    const coverageCountry = resolveCoverageCountry(
+      product,
+      router.query.category ||
+        product?.category_slug ||
+        product?.categories?.[0]?.handle ||
+        "",
+    );
+    if (!coverageCountry || hasCoverageAck(product?.id)) {
+      continueAfterCoverageOrDirect(action);
+      return;
+    }
+    setPendingPurchaseAction(action);
+    setCoveragePromptOpen(true);
+  };
+
+  const handleBuyNow = () => {
+    requestPurchase("buy");
+  };
+
+  const handleAddToCartClick = () => {
+    requestPurchase("cart");
+  };
+
+  const handleViewCoverageFromPrompt = () => {
+    const action = pendingPurchaseAction;
+    setCoveragePromptOpen(false);
+    setPendingPurchaseAction(null);
+    if (action) setCoverageContinueAction(action);
+    requestAnimationFrame(() => {
+      document
+        .getElementById("network-coverage")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   const carrierName = selectedAttributes["telecom"] || "default";
   const activeCarrierInfo =
     CARRIER_INFO_MAP[carrierName] || CARRIER_INFO_MAP.default;
@@ -2331,14 +2587,15 @@ export default function ProductPage({
     if (!telecom) return null;
 
     const byCarrier = {
-      ...(product?.metadata?.subtitle_by_carrier || {}),
-      ...(product?.subtitle_by_carrier || {}),
+      ...parseSubtitleByCarrier(product?.metadata?.subtitle_by_carrier),
+      ...parseSubtitleByCarrier(product?.subtitle_by_carrier),
     };
 
     if (byCarrier[telecom]) return stripRoamingLabel(byCarrier[telecom]);
 
-    // URL／選項括號全半形差異時模糊比對
+    // URL／選項括號全半形差異時模糊比對（略過單一字元／純數字 key，避免 JSON 字串被 spread 後 "0"→"{"）
     const hit = Object.entries(byCarrier).find(([key]) => {
+      if (!key || key.length < 2 || /^\d+$/.test(key)) return false;
       const norm = (s) =>
         String(s)
           .replace(/[（）]/g, (c) => (c === "（" ? "(" : ")"))
@@ -2366,9 +2623,7 @@ export default function ProductPage({
     const attrs = currentVariation?.attributes || {};
     if (attrs.gpt === true && attrs.tiktok === true) {
       return stripRoamingLabel(
-        product?.subtitle_by_carrier?.[telecom] ||
-          product?.metadata?.subtitle_by_carrier?.[telecom] ||
-          "支援 TikTok 與 ChatGPT",
+        byCarrier[telecom] || "支援 TikTok 與 ChatGPT",
       );
     }
     if (/50-70|70Mbps|常規速度/i.test(telecom)) {
@@ -2419,9 +2674,13 @@ export default function ProductPage({
     return (
       <span className="flex items-center justify-between gap-2 w-full">
         <span>{main}</span>
-        <span className="shrink-0 rounded-md bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+        <SpeedInfoChip
+          speedId="5mbps"
+          label="5Mbps"
+          className="shrink-0 rounded-md bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+        >
           5Mbps續航
-        </span>
+        </SpeedInfoChip>
       </span>
     );
   };
@@ -2466,19 +2725,6 @@ export default function ProductPage({
       ? currentVariation.price
       : null;
   const displayTotal = displayPrice != null ? displayPrice * quantity : null;
-
-  const handleBuyNow = () => {
-    if (!canPurchase) return;
-    handleAddToCart();
-    if (isPartnerShell) {
-      router.push(`/p/${store.domain}/cart/`);
-    } else {
-      router.push("/Cart");
-    }
-  };
-
-  const canPurchase =
-    isAllOptionsSelected && currentVariation && currentVariation.price > 0;
 
   // 滾過頁內購買區後才顯示底部固定規格／購買列
   useEffect(() => {
@@ -2549,6 +2795,11 @@ export default function ProductPage({
     product,
     breadcrumbCategorySlug,
   );
+  const coverageCountry = resolveCoverageCountry(
+    product,
+    breadcrumbCategorySlug,
+  );
+  const showNetworkCoverage = Boolean(coverageCountry);
 
   const documentTitle =
     pageSeo?.title ||
@@ -2576,6 +2827,7 @@ export default function ProductPage({
   }
 
   return (
+    <SpeedScenarioProvider>
     <>
       <PageShell {...shellProps}>
         <CompatibilityModal
@@ -2594,6 +2846,30 @@ export default function ProductPage({
           comparablePlans={comparablePlans}
           preferredTelecom={selectedAttributes?.telecom || ""}
           onSelectVariant={handleEstimatorSelectVariant}
+        />
+        <CoveragePromptModal
+          isOpen={coveragePromptOpen}
+          country={coverageCountry}
+          purchaseAction={pendingPurchaseAction || "cart"}
+          onClose={() => {
+            setCoveragePromptOpen(false);
+            setPendingPurchaseAction(null);
+          }}
+          onViewCoverage={handleViewCoverageFromPrompt}
+          onContinuePurchase={() =>
+            executePurchaseAction(pendingPurchaseAction || "cart")
+          }
+        />
+        <IijApnReminderModal
+          isOpen={iijApnPromptOpen}
+          purchaseAction={pendingPurchaseAction || "cart"}
+          onClose={() => {
+            setIijApnPromptOpen(false);
+            setPendingPurchaseAction(null);
+          }}
+          onContinuePurchase={() =>
+            finalizePurchaseAction(pendingPurchaseAction || "cart")
+          }
         />
 
         <div className="bg-white">
@@ -2868,6 +3144,12 @@ export default function ProductPage({
                     onProductUpdate={(patch) =>
                       setProduct((prev) => ({ ...prev, ...patch }))
                     }
+                    onOpenInstall={() => {
+                      setMediaTab("specs");
+                      document
+                        .getElementById("product-tabs")
+                        ?.scrollIntoView({ behavior: "smooth" });
+                    }}
                   />
                 )}
               </div>
@@ -2938,19 +3220,43 @@ export default function ProductPage({
                     <span className="inline-block bg-sky-50 text-[#0A6CD0] text-[11px] font-bold px-2.5 py-1 rounded-md">
                       eSIM
                     </span>
-                    {activeCarrierInfo.badges?.map((b, i) => (
-                      <span
-                        key={i}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700"
-                      >
-                        <span>{b.text}</span>
-                        {b.type ? (
-                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold leading-none text-slate-600">
-                            {b.type}
-                          </span>
-                        ) : null}
-                      </span>
-                    ))}
+                    {activeCarrierInfo.badges?.map((b, i) => {
+                      const speedId = resolveSpeedScenarioId(b.text);
+                      const typeSpeedId = resolveSpeedScenarioId(b.type);
+                      return (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700"
+                        >
+                          {speedId ? (
+                            <SpeedInfoChip
+                              speedId={speedId}
+                              label={b.text}
+                              className="text-[11px] font-bold text-slate-700"
+                            >
+                              {b.text}
+                            </SpeedInfoChip>
+                          ) : (
+                            <span>{b.text}</span>
+                          )}
+                          {b.type ? (
+                            typeSpeedId || speedId ? (
+                              <SpeedInfoChip
+                                speedId={typeSpeedId || speedId}
+                                label={b.type === "FUP" ? b.text : b.type}
+                                className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold leading-none text-slate-600"
+                              >
+                                {b.type}
+                              </SpeedInfoChip>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold leading-none text-slate-600">
+                                {b.type}
+                              </span>
+                            )
+                          ) : null}
+                        </span>
+                      );
+                    })}
                     <button
                       type="button"
                       onClick={() => setIsCompatOpen(true)}
@@ -3168,7 +3474,11 @@ export default function ProductPage({
                                 className="text-slate-500 shrink-0"
                               />
                               <span className="font-semibold text-slate-700">
-                                {item.text}
+                                {item.key === "speed_rule" ? (
+                                  <SpeedAwareText text={item.text} />
+                                ) : (
+                                  item.text
+                                )}
                               </span>
                             </div>
                           ))}
@@ -3284,7 +3594,7 @@ export default function ProductPage({
                   <div data-product-buy-cta>
                     <button
                       type="button"
-                      onClick={handleAddToCart}
+                      onClick={handleAddToCartClick}
                       disabled={!canPurchase}
                       className={`w-full h-[52px] font-bold rounded-full text-[15px] text-white transition-all inline-flex items-center justify-center gap-2 mb-3 ${
                         canPurchase
@@ -3372,19 +3682,43 @@ export default function ProductPage({
                       <span className="inline-block bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-md">
                         eSIM
                       </span>
-                      {activeCarrierInfo.badges?.map((b, i) => (
-                        <span
-                          key={i}
-                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700"
-                        >
-                          <span>{b.text}</span>
-                          {b.type ? (
-                            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold leading-none text-slate-600">
-                              {b.type}
-                            </span>
-                          ) : null}
-                        </span>
-                      ))}
+                      {activeCarrierInfo.badges?.map((b, i) => {
+                        const speedId = resolveSpeedScenarioId(b.text);
+                        const typeSpeedId = resolveSpeedScenarioId(b.type);
+                        return (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700"
+                          >
+                            {speedId ? (
+                              <SpeedInfoChip
+                                speedId={speedId}
+                                label={b.text}
+                                className="text-[11px] font-bold text-slate-700"
+                              >
+                                {b.text}
+                              </SpeedInfoChip>
+                            ) : (
+                              <span>{b.text}</span>
+                            )}
+                            {b.type ? (
+                              typeSpeedId || speedId ? (
+                                <SpeedInfoChip
+                                  speedId={typeSpeedId || speedId}
+                                  label={b.type === "FUP" ? b.text : b.type}
+                                  className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold leading-none text-slate-600"
+                                >
+                                  {b.type}
+                                </SpeedInfoChip>
+                              ) : (
+                                <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold leading-none text-slate-600">
+                                  {b.type}
+                                </span>
+                              )
+                            ) : null}
+                          </span>
+                        );
+                      })}
                     </div>
                     <button
                       type="button"
@@ -3740,7 +4074,11 @@ export default function ProductPage({
                                 className="text-slate-500 shrink-0"
                               />
                               <span className="font-semibold text-slate-700">
-                                {item.text}
+                                {item.key === "speed_rule" ? (
+                                  <SpeedAwareText text={item.text} />
+                                ) : (
+                                  item.text
+                                )}
                               </span>
                             </div>
                           ))}
@@ -3881,7 +4219,7 @@ export default function ProductPage({
                   <div className="grid grid-cols-2 gap-3" data-product-buy-cta>
                     <button
                       type="button"
-                      onClick={handleAddToCart}
+                      onClick={handleAddToCartClick}
                       disabled={!canPurchase}
                       className={`h-[52px] font-bold rounded-lg text-[15px] border-2 transition-all ${
                         canPurchase
@@ -3927,6 +4265,22 @@ export default function ProductPage({
                 </div>
               )}
             </section>
+
+            {showNetworkCoverage ? (
+              <NetworkCoverageSection
+                country={coverageCountry}
+                continuePurchase={
+                  coverageContinueAction
+                    ? {
+                        action: coverageContinueAction,
+                        onContinue: () =>
+                          executePurchaseAction(coverageContinueAction),
+                        onDismiss: () => setCoverageContinueAction(null),
+                      }
+                    : null
+                }
+              />
+            ) : null}
 
             <ProductTabs
               product={product}
@@ -4064,5 +4418,6 @@ export default function ProductPage({
         aria-hidden
       />
     </>
+    </SpeedScenarioProvider>
   );
 }

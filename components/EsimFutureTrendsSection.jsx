@@ -14,6 +14,7 @@
  * 註：台灣公開管道幾乎無「旅遊 eSIM 產值億美元」；全球數字僅作對照。
  */
 import { motion } from "framer-motion";
+import Copy from "@/components/MaskText";
 
 /* ---------- 曲線參數（指數成長曲線，與 PikFun 相同） ---------- */
 const X0 = 60;
@@ -198,13 +199,17 @@ export default function EsimFutureTrendsSection() {
               eSIM Trends in Taiwan
             </span>
           </div>
-          <h2 className="text-2xl md:text-3xl lg:text-[32px] font-bold text-gray-900 leading-[1.6] tracking-wide mb-8">
-            台灣旅遊 eSIM 近年發展趨勢
-          </h2>
-          <p className="text-gray-600 leading-[2.2] text-[14px] md:text-[15px] text-justify max-w-[760px] mb-4">
-            台灣公開資料以旅客調查與出境動能為主；全球則有研究機構對旅遊 eSIM
-            產值的預估。以下並排對照——左側看台灣採用率，右側看全球商機規模——協助夥伴掌握市場方向。
-          </p>
+          <Copy blockColor="#1E4AD1">
+            <h2 className="text-2xl md:text-3xl lg:text-[32px] font-bold text-gray-900 leading-[1.6] tracking-wide mb-8">
+              台灣旅遊 eSIM 近年發展趨勢
+            </h2>
+          </Copy>
+          <Copy blockColor="#1E4AD1" stagger={0.12}>
+            <p className="text-gray-600 leading-[2.2] text-[14px] md:text-[15px] text-justify max-w-[760px] mb-4">
+              台灣公開資料以旅客調查與出境動能為主；全球則有研究機構對旅遊 eSIM
+              產值的預估。以下並排對照——左側看台灣採用率，右側看全球商機規模——協助夥伴掌握市場方向。
+            </p>
+          </Copy>
         </motion.div>
 
         {/* ---------- 台灣調查 ％ ｜ 全球產值 並排 ---------- */}

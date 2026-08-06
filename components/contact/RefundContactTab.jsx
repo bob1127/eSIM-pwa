@@ -156,7 +156,7 @@ function GuestRefundForm() {
       <div className="px-4 sm:px-6 py-5 bg-white border-t border-slate-200 space-y-4">
         <div className="p-3 bg-slate-50 border border-slate-100 rounded-sm text-xs text-slate-600 leading-relaxed">
           <p className="font-bold text-slate-700 mb-1">退換款政策摘要</p>
-          <p>未開通 eSIM 於購買 7 日內可申請全額退款；已開通者依個案審核，不保證退款。</p>
+          <p>非原生／漫遊：未安裝或已安裝未激活可全額退款；已激活不予退款。原生 eSIM：售出後概不退款或換貨。</p>
           <Link href="/refund-policy" target="_blank" className="text-[#2563eb] font-bold hover:underline mt-1 inline-block">
             閱讀完整政策 →
           </Link>

@@ -16,6 +16,7 @@ import {
   fetchAffiliateCards,
 } from "../../lib/chatAffiliate";
 import { fetchShopKnowledge, fetchShopCards } from "../../lib/chatShop";
+import { fetchNetworkCoverageKnowledge } from "../../lib/chatNetworkCoverage";
 
 export const config = {
   api: {
@@ -33,12 +34,13 @@ const BASE_SYSTEM_PROMPT = `你是 Jeko eSIM 的專屬 AI 旅行小幫手【J寶
 1. 參考「對話歷史」提供連貫的回答。
 2. 知識來源階層（必須遵守，禁止用訓練記憶瞎編名單／規定）：
    A. 【商品資料庫】→ 方案、價格、國家 eSIM
-   B. 【Jeko 商城推薦｜/shop】→ 充電配件、旅行用品、3C 周邊；引導點聊天室卡片加入購物車或購買
-   C. 【Jeko 聯盟推薦｜Klook／KKday】→ 門票、交通票券、住宿飯店；必須使用列出的「購買連結」（已含分潤參數），可一併推薦
-   D. 【Jeko官網WP知識】→ 有強相關摘錄／FAQ 時，優先依此作答並附官網閱讀連結
-   E. 【網路資料】→ 僅當官網／聯盟／商城皆無強相關、且有提供網路來源時，才可依來源摘要作答並附來源網址
-   F. 若以上都沒有可用依據：明確說尚無法確認；禁止憑印象列出飯店或票券名單
-   G. 有商城或聯盟推薦時，回答結尾可簡短引導點卡片（Jeko 商城／合作夥伴）
+   B. 【原生 eSIM 收訊／熱點涵蓋】→ 日本／韓國／中國／泰國／越南收訊、覆蓋、電信商熱點圖；必須依此作答並可附列出的地圖網址
+   C. 【Jeko 商城推薦｜/shop】→ 充電配件、旅行用品、3C 周邊；引導點聊天室卡片加入購物車或購買
+   D. 【Jeko 聯盟推薦｜Klook／KKday】→ 僅當使用者明確提到住宿／門票／交通票券／活動／Klook／KKday 等關鍵詞，且知識庫有列出對應商品時才推薦；必須使用「購買連結」。沒有對應關鍵詞時禁止主動推聯盟商品
+   E. 【Jeko官網WP知識】→ 有強相關摘錄／FAQ 時，優先依此作答並附官網閱讀連結
+   F. 【網路資料】→ 僅當官網／聯盟／商城皆無強相關、且有提供網路來源時，才可依來源摘要作答並附來源網址
+   G. 若以上都沒有可用依據：明確說尚無法確認；禁止憑印象列出飯店或票券名單
+   H. 有商城或聯盟推薦時，回答結尾可簡短引導點卡片（Jeko 商城／合作夥伴）
 3. 專業優先：針對旅行問題提供具體建議（如：日本通關提 Visit Japan Web 的 QR Code）。
 4. 若使用者提供截圖或影片，先描述你看到的關鍵畫面（設定頁、錯誤訊息、訊號、QR 等），再逐步說明如何排除。
 5. 【導購語氣｜極重要｜先幫再說】
@@ -60,9 +62,10 @@ const BASE_SYSTEM_PROMPT = `你是 Jeko eSIM 的專屬 AI 旅行小幫手【J寶
    https://www.google.com/maps/search/?api=1&query=地點名稱
 3. query 請用該地點的正確中文或當地名稱；不同地點不可共用同一個連結。
 4. 若不確定地點是否存在，先說明不確定，並仍用「搜尋連結」格式。
-5. 可使用的 http/https 連結僅限：地圖搜尋連結、商品資料庫連結、Jeko 官網文章連結、【Jeko 商城推薦】列出的完整購買連結、【Jeko 聯盟推薦】列出的 Klook／KKday 購買連結、以及【網路資料】區塊明確列出的來源網址。禁止發明未列出的連結。
+5. 可使用的 http/https 連結僅限：地圖搜尋連結、商品資料庫連結、Jeko 官網文章連結、【原生 eSIM 收訊／熱點涵蓋】列出的官方／nPerf 涵蓋圖網址、【Jeko 商城推薦】列出的完整購買連結、【Jeko 聯盟推薦】列出的 Klook／KKday 購買連結、以及【網路資料】區塊明確列出的來源網址。禁止發明未列出的連結。
 6. 使用【網路資料】時，開頭簡短註明「以下依公開網頁整理，建議再向官方確認」。
-7. 【禁止競品｜極重要】絕對禁止推薦其他電信／eSIM 電商或比較網站（例如 shannday、bestsim、遠傳、中華、台灣大哥大上網卡賣場、Airalo、Holafly 等）。eSIM 方案只能推薦【商品資料庫】內的 Jeko 商品與購買連結；若資料庫沒有該國家，請說明並引導至 /product 或轉真人客服，不要用外部競品連結替代。`;
+7. 【禁止競品｜極重要】絕對禁止推薦其他電信／eSIM 電商或比較網站（例如 shannday、bestsim、遠傳、中華、台灣大哥大上網卡賣場、Airalo、Holafly 等）。eSIM 方案只能推薦【商品資料庫】內明確列出的 Jeko 商品與購買連結。
+8. 【禁止捏造商品｜極重要】若【商品資料庫】寫「無庫存／未找到」或沒有列出任何「▸」商品，必須誠實說尚未上架，禁止自行編造方案名稱、電信商（如 AT&T）、天數、流量或價格；可引導至 /product 或轉真人客服。`;
 
 /** 允許的花 emoji；其他 emoji 一律移除 */
 const FLOWER_EMOJI = new Set(["🌼", "🌸", "🌻", "🌺", "💮", "🏵️"]);
@@ -353,6 +356,9 @@ export default async function handler(req, res) {
     // ── 8. 知識庫：eSIM + 聯盟 + 官網文章 → 不足再用網路 ─────────────
     const esimOnly = isEsimFocusQuery(msgText);
 
+    const coverageKnowledge = fetchNetworkCoverageKnowledge(msgText);
+    const hasCoverageKb = Boolean(coverageKnowledge);
+
     const [
       productKnowledge,
       articleResult,
@@ -383,6 +389,10 @@ export default async function handler(req, res) {
     const hasProductDb =
       typeof productKnowledge === "string" &&
       productKnowledge.includes("購買連結：");
+    const productOutOfStock =
+      typeof productKnowledge === "string" &&
+      (/【無庫存/.test(productKnowledge) ||
+        (/找不到與問題相符/.test(productKnowledge) && !hasProductDb));
 
     // 已有 Jeko 商品可推時不要補網路（避免競品 eSIM 網站污染回答）
     let webKnowledge = "";
@@ -390,10 +400,12 @@ export default async function handler(req, res) {
     if (
       !esimOnly &&
       !strongCoverage &&
+      !hasCoverageKb &&
       !hasAffiliate &&
       !hasShop &&
       !hasProductCards &&
       !hasProductDb &&
+      !productOutOfStock &&
       msgText
     ) {
       try {
@@ -413,24 +425,34 @@ export default async function handler(req, res) {
     const systemPrompt = [
       BASE_SYSTEM_PROMPT,
       productKnowledge,
+      coverageKnowledge,
       esimOnly ? "" : shopKnowledge,
       esimOnly ? "" : affiliateKnowledge,
       // eSIM 專問時文章可留作安裝／注意事項，但仍以商品庫為主
       articleKnowledge,
       webKnowledge,
+      hasCoverageKb
+        ? "【收訊／熱點｜必須遵守】若使用者問收訊、覆蓋、熱點圖或電信商訊號，優先依【原生 eSIM 收訊／熱點涵蓋】回答，並附上該國／該電信商列出的地圖連結；可提醒實際以商品標示電信商為準。"
+        : "",
       esimOnly
-        ? "【本次來源｜eSIM 專推】使用者只要 eSIM 上網方案。只能依【商品資料庫】推薦 1～2 個 Jeko eSIM；聊天室會顯示 eSIM 商品卡。禁止提及或推薦 Jeko 商城配件、Klook／KKday 聯盟商品、門票、鐵路周遊券、住宿。\n" +
-          "【HOT SALE 優先｜一律遵守】若商品標註 HOT SALE 電信（例如日本總量型的 AU(KDDI)、KDDI / SoftBank），推薦時一律以該電信商方案為主推；說明時可點出這是熱銷／推薦線路。不要主推非 HOT SALE 電信（如 IIJ(DOCOMO)），除非使用者明確指定。\n" +
-          "【用量緩衝設計｜極重要｜避免客訴】可推 1～2 個：第 1 優先吃到飽／高容量；第 2 可推「明顯留餘裕」的總量型，禁止用「總量÷天數剛好夠」當理由。\n" +
-          "依使用習慣的「建議最低總量」（約等於 天數 × 下列每日下限，再往上取商品庫現有檔）：\n" +
-          "- 輕量（地圖／訊息）：每日至少約 1.5GB → 例 10 天至少約 15GB；或吃到飽。禁止推每日均攤＜1GB 的總量。\n" +
-          "- 社群／拍照：每日至少約 2.5GB → 例 10 天至少約 25GB；優先吃到飽，其次高總量。\n" +
-          "- 影音吃到飽：第 1 必推吃到飽；第 2 若推總量，每日至少約 5GB（10 天≥50GB），否則不要硬推總量。\n" +
-          "- 工作視訊／會議雲端：第 1 必推吃到飽；第 2 若推總量，每日至少約 3～4GB（10 天至少約 30～40GB）。禁止推「10天10GB≈每日1GB」這類對視訊明顯不足的方案，並可明說視訊耗流大、總量要預留很多。\n" +
-          "- 說明時寫「預留緩衝，避免旅遊中不夠用」；兩個方案都要合理，不要為了湊數推不夠用的第二個。"
+        ? productOutOfStock || !hasProductDb
+          ? "【本次來源｜eSIM 專推｜無庫存】商品資料庫沒有符合的方案。必須清楚告知尚未上架／找不到；禁止捏造任何 eSIM 方案名稱、電信商、天數、流量、價格或購買連結。可引導至 /product 看其他國家，或請改選目的地／轉真人客服。禁止推薦競品電商。"
+          : "【本次來源｜eSIM 專推】使用者只要 eSIM 上網方案。只能依【商品資料庫】列出的商品推薦 1～2 個 Jeko eSIM；聊天室會顯示 eSIM 商品卡。禁止提及或推薦 Jeko 商城配件、Klook／KKday 聯盟商品、門票、鐵路周遊券、住宿。禁止推薦資料庫未列出的方案。\n" +
+            "【HOT SALE 優先｜一律遵守】若商品標註 HOT SALE 電信（例如日本總量型的 AU(KDDI)、KDDI / SoftBank），推薦時一律以該電信商方案為主推；說明時可點出這是熱銷／推薦線路。不要主推非 HOT SALE 電信（如 IIJ(DOCOMO)），除非使用者明確指定。\n" +
+            "【用量緩衝設計｜極重要｜避免客訴】可推 1～2 個：第 1 優先吃到飽／高容量；第 2 可推「明顯留餘裕」的總量型，禁止用「總量÷天數剛好夠」當理由。\n" +
+            "依使用習慣的「建議最低總量」（約等於 天數 × 下列每日下限，再往上取商品庫現有檔）：\n" +
+            "- 輕量（地圖／訊息）：每日至少約 1.5GB → 例 10 天至少約 15GB；或吃到飽。禁止推每日均攤＜1GB 的總量。\n" +
+            "- 社群／拍照：每日至少約 2.5GB → 例 10 天至少約 25GB；優先吃到飽，其次高總量。\n" +
+            "- 影音吃到飽：第 1 必推吃到飽；第 2 若推總量，每日至少約 5GB（10 天≥50GB），否則不要硬推總量。\n" +
+            "- 工作視訊／會議雲端：第 1 必推吃到飽；第 2 若推總量，每日至少約 3～4GB（10 天至少約 30～40GB）。禁止推「10天10GB≈每日1GB」這類對視訊明顯不足的方案，並可明說視訊耗流大、總量要預留很多。\n" +
+            "- 說明時寫「預留緩衝，避免旅遊中不夠用」；兩個方案都要合理，不要為了湊數推不夠用的第二個。"
+        : productOutOfStock
+        ? "【本次來源｜無庫存】商品資料庫沒有符合方案。誠實告知尚未上架；禁止捏造商品。可引導 /product 或轉客服。"
         : hasProductCards || hasProductDb
-        ? "【本次來源】已提供 Jeko 商品資料庫與／或推薦卡。請依資料庫推薦，並引導點下方商品卡；禁止推薦外部競品 eSIM／電信網站。" +
+        ? "【本次來源】已提供 Jeko 商品資料庫與／或推薦卡。請只依資料庫列出的商品推薦，並引導點下方商品卡；禁止推薦未列出的方案或外部競品 eSIM／電信網站。" +
           "【HOT SALE】若知識庫標了 HOT SALE 電信，一律優先推薦該電信商方案。"
+        : hasCoverageKb
+        ? "【本次來源】已提供原生 eSIM 收訊／熱點涵蓋資料；請依此說明並附地圖連結，勿臆測未列出的覆蓋細節。"
         : strongCoverage
         ? "【本次來源】以 Jeko 官網文章為主；不要改用訓練記憶補充名單。"
         : hasShop && hasAffiliate
@@ -438,9 +460,9 @@ export default async function handler(req, res) {
           : hasShop
             ? "【本次來源】已提供 Jeko 商城商品，聊天室會顯示輪播卡。請先寫基本實用說明，結尾輕提可參考下方卡片；勿在文字寫「購買：/路徑」「售價：NT$」硬推格式。若附連結只用知識庫完整 https 購買連結。"
             : hasAffiliate
-              ? "【本次來源】已提供 Klook／KKday 聯盟商品；請優先推薦並列出購買連結（可計分潤）。聊天室會顯示同款卡片，請引導使用者點「查看詳情」。"
+              ? "【本次來源】已提供 Klook／KKday 聯盟商品（因使用者問題含對應關鍵詞）。請只推薦列出項目並列出購買連結；聊天室會顯示卡片。勿另推未列出的聯盟商品。"
               : webMeta.usedWeb
-                ? "【本次來源】官網／聯盟／商城／商品庫無強相關，已提供【網路資料】；只能引用所列來源，並提醒向官方確認。仍禁止推薦競品 eSIM 電商。"
+                ? "【本次來源】官網／聯盟／商城／商品庫無強相關，已提供【網路資料】；只能引用所列來源，並提醒向官方確認。仍禁止推薦競品 eSIM 電商，禁止捏造 Jeko eSIM 方案。"
                 : "【本次來源】官網／聯盟／商城無強相關且網路資料不足；請誠實說明無法確認，勿編造。",
     ]
       .filter(Boolean)
@@ -471,6 +493,7 @@ export default async function handler(req, res) {
       shopCards: Array.isArray(shopCards) ? shopCards : [],
       knowledge: {
         siteStrong: strongCoverage,
+        coverageUsed: hasCoverageKb,
         affiliateUsed: hasAffiliate,
         shopUsed: hasShop,
         webUsed: webMeta.usedWeb,

@@ -1,8 +1,8 @@
 {
-  "note": "TrueMove H／True Dtac 吃到飽僅保留 TRUE 真．不限速兩檔：8天、15天（Thailand-Local-unlimited-*-D0）。不含限速 10Mbps 方案。",
-  "source": "local /api/esim/list",
-  "generated_at": "2026-08-03T15:02:51.591Z",
-  "plans": [
+  "note": "truemove_high_speed=Unlimited High Speed (8/15天) @80%; trre_10mbps=unlimited 10mbps 多天數 @110%",
+  "source": "api/esim/list",
+  "fetched_at": "2026-08-06T08:05:03.980Z",
+  "truemove_high_speed": [
     {
       "sku": "Thailand-Local-unlimited-8-D0",
       "plan_id": "8fc30995228b432e9a573278d2a9accc",
@@ -12,9 +12,10 @@
       "rule_desc": "Unlimited High Speed",
       "speed_desc": "the time starts from the installation.\n\nFree incoming calls and SMS reception\n\neSIMs from Thailand cannot be inserted or installed in non-covered areas, otherwise the plan will become invalid and unusable.\n\nDial for data usage：*900#\nDial for phone No.：*833#\nDial for balance：*123#",
       "apn": "internet",
-      "ip": "TH",
+      "ip": "TH ",
       "special_desc": "the time starts from the installation.\n\nFree incoming calls and SMS reception\n\neSIMs from Thailand cannot be inserted or installed in non-covered areas, otherwise the plan will become invalid and unusable.\n\nDial for data usage：*900#\nDial for phone No.：*833#\nDial for balance：*123#",
-      "speed_rule": "真．不限速（Unlimited High Speed）"
+      "speed_rule": "真．不限速（Unlimited High Speed）",
+      "throttle_kind": "unlimited"
     },
     {
       "sku": "Thailand-Local-unlimited-15-D0",
@@ -25,10 +26,152 @@
       "rule_desc": "Unlimited High Speed",
       "speed_desc": "the time starts from the installation.\n\nFree incoming calls and SMS reception\n\neSIMs from Thailand cannot be inserted or installed in non-covered areas, otherwise the plan will become invalid and unusable.\n\nDial for data usage：*900#\nDial for phone No.：*833#\nDial for balance：*123#",
       "apn": "internet",
-      "ip": "TH",
+      "ip": "TH ",
       "special_desc": "the time starts from the installation.\n\nFree incoming calls and SMS reception\n\neSIMs from Thailand cannot be inserted or installed in non-covered areas, otherwise the plan will become invalid and unusable.\n\nDial for data usage：*900#\nDial for phone No.：*833#\nDial for balance：*123#",
-      "speed_rule": "真．不限速（Unlimited High Speed）"
+      "speed_rule": "真．不限速（Unlimited High Speed）",
+      "throttle_kind": "unlimited"
     }
   ],
-  "updated_at": "2026-08-03T15:07:40.358Z"
+  "trre_10mbps": [
+    {
+      "sku": "Thailand-Local-unlimited-1-D0",
+      "plan_id": "34e1579db0c447da803afa63e88c8d04",
+      "day": 1,
+      "price_hkd": 6.96,
+      "networks": "TH:TURE[4G;5G]|",
+      "rule_desc": "unlimited 10mbps",
+      "speed_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "apn": "internet",
+      "ip": "TH ",
+      "special_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "speed_rule": "公平使用政策 (FUP): 10 Mbps的無限流量，實際速度可能有所變動。",
+      "throttle_kind": "10mbps"
+    },
+    {
+      "sku": "Thailand-Local-unlimited-3-D0",
+      "plan_id": "af46fab9b918439f85eb2df9632acd6b",
+      "day": 3,
+      "price_hkd": 22.01,
+      "networks": "TH:TURE[4G;5G]|",
+      "rule_desc": "unlimited 10mbps",
+      "speed_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "apn": "internet",
+      "ip": "TH ",
+      "special_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "speed_rule": "公平使用政策 (FUP): 10 Mbps的無限流量，實際速度可能有所變動。",
+      "throttle_kind": "10mbps"
+    },
+    {
+      "sku": "Thailand-Local-unlimited-4-D0",
+      "plan_id": "828abfd204e846439d7d0d1b886cf93d",
+      "day": 4,
+      "price_hkd": 28.68,
+      "networks": "TH:TURE[4G;5G]|",
+      "rule_desc": "unlimited 10mbps",
+      "speed_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "apn": "internet",
+      "ip": "TH ",
+      "special_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "speed_rule": "公平使用政策 (FUP): 10 Mbps的無限流量，實際速度可能有所變動。",
+      "throttle_kind": "10mbps"
+    },
+    {
+      "sku": "Thailand-Local-unlimited-5-D0",
+      "plan_id": "911588e535814534b929f48642c69a58",
+      "day": 5,
+      "price_hkd": 35.63,
+      "networks": "TH:TURE[4G;5G]|",
+      "rule_desc": "unlimited 10mbps",
+      "speed_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "apn": "internet",
+      "ip": "TH ",
+      "special_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "speed_rule": "公平使用政策 (FUP): 10 Mbps的無限流量，實際速度可能有所變動。",
+      "throttle_kind": "10mbps"
+    },
+    {
+      "sku": "Thailand-Local-unlimited-6-D0",
+      "plan_id": "c56d2289448a429ba95c14316023b247",
+      "day": 6,
+      "price_hkd": 40.85,
+      "networks": "TH:TURE[4G;5G]|",
+      "rule_desc": "unlimited 10mbps",
+      "speed_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "apn": "internet",
+      "ip": "TH ",
+      "special_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "speed_rule": "公平使用政策 (FUP): 10 Mbps的無限流量，實際速度可能有所變動。",
+      "throttle_kind": "10mbps"
+    },
+    {
+      "sku": "Thailand-Local-unlimited-7-D0",
+      "plan_id": "fb092020538446b48fcad30b567ce3e1",
+      "day": 7,
+      "price_hkd": 47.79,
+      "networks": "TH:TURE[4G;5G]|",
+      "rule_desc": "unlimited 10mbps",
+      "speed_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "apn": "internet",
+      "ip": "TH ",
+      "special_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "speed_rule": "公平使用政策 (FUP): 10 Mbps的無限流量，實際速度可能有所變動。",
+      "throttle_kind": "10mbps"
+    },
+    {
+      "sku": "Thailand-Local-unlimited-10-D0",
+      "plan_id": "ba873d9265bc43ad9a82cbd498c48b75",
+      "day": 10,
+      "price_hkd": 68.07,
+      "networks": "TH:TURE[4G;5G]|",
+      "rule_desc": "unlimited 10mbps",
+      "speed_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "apn": "internet",
+      "ip": "TH ",
+      "special_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "speed_rule": "公平使用政策 (FUP): 10 Mbps的無限流量，實際速度可能有所變動。",
+      "throttle_kind": "10mbps"
+    },
+    {
+      "sku": "Thailand-Local-unlimited-15-D1",
+      "plan_id": "40dd92cf1fb641c2a6c871ab296c7ff4",
+      "day": 15,
+      "price_hkd": 100.81,
+      "networks": "TH:TURE[4G;5G]|",
+      "rule_desc": "unlimited 10mbps",
+      "speed_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "apn": "internet",
+      "ip": "TH ",
+      "special_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "speed_rule": "公平使用政策 (FUP): 10 Mbps的無限流量，實際速度可能有所變動。",
+      "throttle_kind": "10mbps"
+    },
+    {
+      "sku": "Thailand-Local-unlimited-20-D0",
+      "plan_id": "1c5e07d5219b463290a2d2a8c57a219d",
+      "day": 20,
+      "price_hkd": 133.54,
+      "networks": "TH:TURE[4G;5G]|",
+      "rule_desc": "unlimited 10mbps",
+      "speed_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "apn": "internet",
+      "ip": "TH ",
+      "special_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "speed_rule": "公平使用政策 (FUP): 10 Mbps的無限流量，實際速度可能有所變動。",
+      "throttle_kind": "10mbps"
+    },
+    {
+      "sku": "Thailand-Local-unlimited-30-D0",
+      "plan_id": "b2764486992c44658b77c449f9a5cb2e",
+      "day": 30,
+      "price_hkd": 199.01,
+      "networks": "TH:TURE[4G;5G]|",
+      "rule_desc": "unlimited 10mbps",
+      "speed_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "apn": "internet",
+      "ip": "TH ",
+      "special_desc": "Unlimited 10mbps | Activation requires connecting to a network upon arrival at the destination",
+      "speed_rule": "公平使用政策 (FUP): 10 Mbps的無限流量，實際速度可能有所變動。",
+      "throttle_kind": "10mbps"
+    }
+  ]
 }

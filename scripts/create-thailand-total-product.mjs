@@ -12,6 +12,10 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import {
+  aisKeyFeatures,
+  trueLocalTotalKeyFeatures,
+} from "../content/product-detailed/thailand-key-features.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -341,20 +345,8 @@ async function main() {
       },
     },
     key_features_by_carrier: {
-      [TELECOM_AIS]: [
-        "總量型",
-        "3～50GB",
-        "AIS Thailand",
-        "新加坡IP漫遊",
-        "用完降速 128kbps",
-      ],
-      [TELECOM_TRUE]: [
-        "總量型",
-        "15GB／50GB",
-        "TRUE",
-        "泰國當地IP",
-        "原生eSIM",
-      ],
+      [TELECOM_AIS]: aisKeyFeatures(),
+      [TELECOM_TRUE]: trueLocalTotalKeyFeatures(),
     },
     overview_notices_by_carrier: {
       [TELECOM_AIS]: {

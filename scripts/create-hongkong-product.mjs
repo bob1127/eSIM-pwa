@@ -1,11 +1,16 @@
 /**
- * 建立／更新「香港 eSIM」
+ * [已拆分] 香港 eSIM 請改用三種獨立商品腳本：
+ *   HKD_TO_TWD=4.5 node scripts/create-hongkong-daily-product.mjs --rebuild
+ *   HKD_TO_TWD=4.5 node scripts/create-hongkong-total-product.mjs --rebuild
+ *   HKD_TO_TWD=4.5 node scripts/create-hongkong-unlimited-product.mjs --rebuild
+ *
+ * 本檔保留舊合併商品 hongkong-esim 的建立邏輯（不建議再用）。
  * 三種電信（對齊選品神器圈選利潤）：
  *   1) CSL / China Telecom HK ← Hong Kong-unlimited*（HK IP，吃到飽 10Mbps）— 利潤 75%・HOT SALE
  *   2) CSL / SmarTone（總量型）← Hong Kong(T+C)-Total*（SG IP）— 利潤 60%
  *   3) CSL / SmarTone（每日型）← Hong Kong(T+C)-Daily*（SG IP）— 利潤 75%
  *
- * 用法：
+ * 用法（舊）：
  *   HKD_TO_TWD=4.5 node scripts/create-hongkong-product.mjs --rebuild
  */
 import fs from "fs";

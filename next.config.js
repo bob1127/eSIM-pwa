@@ -107,6 +107,35 @@ const nextConfig = {
     ];
   },
 
+  async redirects() {
+    const countries = [
+      "japan",
+      "jp",
+      "korea",
+      "kr",
+      "china",
+      "cn",
+      "thailand",
+      "th",
+      "vietnam",
+      "vn",
+      "malaysia",
+      "my",
+    ];
+    return countries.flatMap((slug) => [
+      {
+        source: `/${slug}`,
+        destination: `/product/${slug}/`,
+        permanent: false,
+      },
+      {
+        source: `/${slug}/`,
+        destination: `/product/${slug}/`,
+        permanent: false,
+      },
+    ]);
+  },
+
   async headers() {
     const storefront =
       process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";

@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import EsimFutureTrendsSection from "../components/EsimFutureTrendsSection";
 import CooperationInfoModal from "../components/cooperation/CooperationInfoModal";
+import Copy from "@/components/MaskText";
 
 /** 下方區塊文案：隨專屬連結 / 專屬商店切換（版型不變） */
 const MODE_COPY = {
@@ -223,23 +224,22 @@ export default function Home() {
         {/* --- 主標題區塊 --- */}
         <div className="relative z-20 flex flex-col items-center text-center mt-[-60px]">
           <h2 className="text-[18px] md:text-[24px] font-bold text-[#111] mb-2 md:mb-4 tracking-widest">
-            你最專業的夥伴
-          </h2>
+              你最專業的夥伴
+            </h2>
           <h1
-            className="text-[64px] md:text-[110px] font-black text-[#111] leading-none mb-6 tracking-tight"
-            style={{ fontFamily: "Arial, sans-serif" }}
-          >
-            Jeko eSIM
-          </h1>
+              className="text-[64px] md:text-[110px] font-black text-[#111] leading-none mb-6 tracking-tight"
+              style={{ fontFamily: "Arial, sans-serif" }}
+            >
+              Jeko eSIM
+            </h1>
           <div className="flex items-center text-[11px] md:text-[13px] text-[#888] font-bold tracking-widest bg-white/50 px-4 py-1.5 rounded-full backdrop-blur-sm">
-            <span>給您提供多方案的旅遊連線新選擇</span>
-            <span className="mx-3 text-[#ccc]">|</span>
-            <span>from 接口eSIM</span>
-            {/* 小黃色 Logo 圓點 */}
-            <span className="ml-2 flex items-center justify-center w-[16px] h-[16px] md:w-[18px] md:h-[18px] bg-[#FADE2B] rounded-full text-white text-[8px] font-bold leading-none">
-              ツ
-            </span>
-          </div>
+              <span>給您提供多方案的旅遊連線新選擇</span>
+              <span className="mx-3 text-[#ccc]">|</span>
+              <span>from 接口eSIM</span>
+              <span className="ml-2 flex items-center justify-center w-[16px] h-[16px] md:w-[18px] md:h-[18px] bg-[#FADE2B] rounded-full text-white text-[8px] font-bold leading-none">
+                ツ
+              </span>
+            </div>
         </div>
 
         {/* --- 🎯 右下角浮動懸浮窗 (完美還原設計圖 UI) --- */}
@@ -321,12 +321,12 @@ export default function Home() {
               {/* 內容區塊 (垂直置中) */}
               <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
                 <h3 className="text-white text-[24px] md:text-[32px] font-bold mb-4 tracking-wider drop-shadow-md">
-                  立即申請合作
-                </h3>
+                    立即申請合作
+                  </h3>
                 <p className="text-white/90 text-[14px] md:text-[15px] leading-[1.8] mb-8 max-w-[90%] md:max-w-[80%] font-medium drop-shadow-md">
-                  提供日本、韓國、泰國、美國等多國 eSIM 方案
-                  快速開通、免寄卡、合作簡單、即時分潤
-                </p>
+                    提供日本、韓國、泰國、美國等多國 eSIM 方案
+                    快速開通、免寄卡、合作簡單、即時分潤
+                  </p>
                 {/* 藍色藥丸按鈕 */}
                 <Link
                   href={registerHref}
@@ -365,11 +365,11 @@ export default function Home() {
               {/* 內容區塊 (垂直置中) */}
               <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
                 <h3 className="text-white text-[24px] md:text-[32px] font-bold mb-4 tracking-wider drop-shadow-md">
-                  隨時隨地開啟你的eSIM生活{" "}
-                </h3>
+                    隨時隨地開啟你的eSIM生活{" "}
+                  </h3>
                 <p className="text-white/90 text-[14px] md:text-[15px] leading-[1.8] mb-8 max-w-[90%] md:max-w-[85%] font-medium drop-shadow-md">
-                  不受時間地點限制，只要你有手機電腦。即可開始販售您的eSIM
-                </p>
+                    不受時間地點限制，只要你有手機電腦。即可開始販售您的eSIM
+                  </p>
                 {/* 藍色藥丸按鈕 */}
                 <Link
                   href={registerStoreHref}
@@ -415,13 +415,13 @@ export default function Home() {
             <div className="flex-1 pt-6 md:pt-0 px-4 md:px-10 flex flex-col md:flex-row items-start md:items-center justify-between w-full">
               <div className="flex-1 pr-0 md:pr-12">
                 <h3 className="text-white text-[22px] md:text-[26px] font-bold mb-3 tracking-wider">
-                  我們正在尋找這些合作夥伴
-                </h3>
+                    我們正在尋找這些合作夥伴
+                  </h3>
                 <p className="text-white/80 text-[14px] md:text-[15px] leading-[1.8] font-medium">
-                  旅遊包車業者、民宿 / 飯店、旅行社、{" "}
-                  <br className="hidden md:block" />
-                  KOL / 旅遊部落客、機場接送 / 司機服務、電商 / 旅遊網站
-                </p>
+                    旅遊包車業者、民宿 / 飯店、旅行社、{" "}
+                    <br className="hidden md:block" />
+                    KOL / 旅遊部落客、機場接送 / 司機服務、電商 / 旅遊網站
+                  </p>
               </div>
 
               {/* 右側箭頭 Icon */}
@@ -494,17 +494,21 @@ export default function Home() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="text-[#1E4AD1] font-bold text-[14px] md:text-[16px] mb-2 tracking-widest flex items-center gap-2">
-                {copy.tags.map((t) => (
-                  <span key={t}>{t}</span>
-                ))}
-              </div>
-              <h2 className="text-[28px] md:text-[36px] font-black text-[#333] mb-12 tracking-wider">
-                {copy.advantageTitleBefore}
-                <span className="text-[#1E4AD1]">
-                  {copy.advantageTitleHighlight}
-                </span>
-              </h2>
+              <Copy blockColor="#1E4AD1">
+                <div className="text-[#1E4AD1] font-bold text-[14px] md:text-[16px] mb-2 tracking-widest flex items-center gap-2">
+                  {copy.tags.map((t) => (
+                    <span key={t}>{t}</span>
+                  ))}
+                </div>
+              </Copy>
+              <Copy blockColor="#1E4AD1">
+                <h2 className="text-[28px] md:text-[36px] font-black text-[#333] mb-12 tracking-wider">
+                  {copy.advantageTitleBefore}
+                  <span className="text-[#1E4AD1]">
+                    {copy.advantageTitleHighlight}
+                  </span>
+                </h2>
+              </Copy>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-10">
                 {copy.cards.map((card, i) => (
@@ -513,10 +517,10 @@ export default function Home() {
                     className="bg-white border-[2px] border-[#1E4AD1] rounded-lg p-8 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow"
                   >
                     <h3 className="text-[#1E4AD1] font-bold text-[15px] md:text-[16px] leading-relaxed h-[48px] flex items-center justify-center">
-                      {card.title[0]}
-                      <br />
-                      {card.title[1]}
-                    </h3>
+                        {card.title[0]}
+                        <br />
+                        {card.title[1]}
+                      </h3>
                     {card.big ? (
                       <div className="text-[54px] font-black text-[#333] my-4 leading-none">
                         {card.big.num}
@@ -553,10 +557,10 @@ export default function Home() {
                       </div>
                     )}
                     <p className="text-[13px] text-[#333] font-medium leading-relaxed">
-                      {card.desc[0]}
-                      <br />
-                      {card.desc[1]}
-                    </p>
+                        {card.desc[0]}
+                        <br />
+                        {card.desc[1]}
+                      </p>
                   </div>
                 ))}
               </div>
@@ -567,11 +571,11 @@ export default function Home() {
                 </div>
 
                 <div className="bg-[#1E4AD1] text-white py-3 px-6 md:px-16 text-center font-bold text-[16px] md:text-[18px] tracking-widest pl-12">
-                  <span className="text-[#FADE2B] font-black">
-                    {copy.banner.lead}
-                  </span>
-                  {copy.banner.rest}
-                </div>
+                    <span className="text-[#FADE2B] font-black">
+                      {copy.banner.lead}
+                    </span>
+                    {copy.banner.rest}
+                  </div>
                 {copy.banner.variant === "referralSimple" ? (
                   <div className="py-8 px-4 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
                     <div className="flex flex-col items-center">
@@ -676,8 +680,8 @@ export default function Home() {
                   </div>
                 )}
                 <div className="w-full text-center text-[11px] text-slate-500 pb-3 px-4">
-                  {copy.banner.note}
-                </div>
+                    {copy.banner.note}
+                  </div>
               </div>
             </motion.div>
           </AnimatePresence>
@@ -695,16 +699,16 @@ export default function Home() {
       <section className="relative w-full bg-white pb-16 pt-10 z-20 border-t border-slate-100">
         <div className="mx-auto max-w-[800px] w-[92%] flex flex-col items-center">
           <div className="text-[#333] font-bold text-[15px] md:text-[18px] mb-3 flex items-center gap-2 text-center flex-wrap justify-center">
-            <span className="text-xl text-[#FADE2B]">\</span>
-            <span className="border-b-2 border-[#1E4AD1] pb-0.5">
-              {copy.ctaTitle.before}
-              <span className="text-[#1E4AD1] font-black tracking-wide">
-                {copy.ctaTitle.highlight}
+              <span className="text-xl text-[#FADE2B]">\</span>
+              <span className="border-b-2 border-[#1E4AD1] pb-0.5">
+                {copy.ctaTitle.before}
+                <span className="text-[#1E4AD1] font-black tracking-wide">
+                  {copy.ctaTitle.highlight}
+                </span>
+                {copy.ctaTitle.after}
               </span>
-              {copy.ctaTitle.after}
-            </span>
-            <span className="text-xl text-[#FADE2B]">/</span>
-          </div>
+              <span className="text-xl text-[#FADE2B]">/</span>
+            </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
             <Link
@@ -745,15 +749,21 @@ export default function Home() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             >
-              <h3 className="text-[16px] md:text-[18px] font-bold text-[#333] mb-2 tracking-widest">
-                {copy.flow.sub}
-              </h3>
-              <h2 className="text-[26px] md:text-[34px] font-black text-[#1E4AD1] mb-6 tracking-wider text-center">
-                {copy.flow.title}
-              </h2>
-              <p className="text-[14px] text-[#333] font-medium mb-12 text-center">
-                {copy.flow.desc}
-              </p>
+              <Copy blockColor="#1E4AD1">
+                <h3 className="text-[16px] md:text-[18px] font-bold text-[#333] mb-2 tracking-widest">
+                  {copy.flow.sub}
+                </h3>
+              </Copy>
+              <Copy blockColor="#1E4AD1">
+                <h2 className="text-[26px] md:text-[34px] font-black text-[#1E4AD1] mb-6 tracking-wider text-center">
+                  {copy.flow.title}
+                </h2>
+              </Copy>
+              <Copy blockColor="#1E4AD1">
+                <p className="text-[14px] text-[#333] font-medium mb-12 text-center">
+                  {copy.flow.desc}
+                </p>
+              </Copy>
 
               <div className="w-full max-w-[800px] relative">
                 <div className="flex justify-between items-end mb-4 px-4 md:px-32 relative z-10">
@@ -872,10 +882,10 @@ export default function Home() {
                   </div>
                 </div>
                 <p className="mt-4 text-center text-[12px] md:text-[13px] text-[#5B7382] font-medium max-w-[720px] mx-auto leading-relaxed">
-                  請於夥伴後台「結算與提領」申請提領：最低 NT$3,000、訂單滿 10
-                  天；每月第 1 次免手續費，第 2 次起每次扣 NT$15；核准後目標於
-                  10 個工作天內匯款。
-                </p>
+                    請於夥伴後台「結算與提領」申請提領：最低 NT$3,000、訂單滿 10
+                    天；每月第 1 次免手續費，第 2 次起每次扣 NT$15；核准後目標於
+                    10 個工作天內匯款。
+                  </p>
               </div>
             </motion.div>
           </AnimatePresence>
@@ -885,9 +895,11 @@ export default function Home() {
       <section className="bg-[#F6F8F9] py-20 font-sans">
         <div className="max-w-[1100px] mx-auto px-4 md:px-8">
           {/* 標題 */}
-          <h2 className="text-[28px] md:text-[32px] font-black text-[#111] mb-8 tracking-wider">
-            合作夥伴召集
-          </h2>
+          <Copy blockColor="#1E4AD1">
+            <h2 className="text-[28px] md:text-[32px] font-black text-[#111] mb-8 tracking-wider">
+              合作夥伴召集
+            </h2>
+          </Copy>
 
           {/* 兩欄式網格佈局 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
@@ -929,10 +941,10 @@ export default function Home() {
                 {/* 中間大字標題 */}
                 <div className="relative z-10 text-center mt-4">
                   <h3 className="text-[42px] md:text-[48px] font-black text-[#111] leading-[1.2] tracking-widest">
-                    夥伴募集
-                    <br />
-                    開始
-                  </h3>
+                      夥伴募集
+                      <br />
+                      開始
+                    </h3>
                 </div>
 
                 {/* 底部黃色區塊 */}
@@ -944,15 +956,15 @@ export default function Home() {
               {/* 下半部：新聞資訊 */}
               <div className="p-6 md:p-8">
                 <h4 className="text-[16px] md:text-[18px] font-bold text-[#111] mb-5 tracking-wide group-hover:text-[#0071EB] transition-colors">
-                  尋找合作夥伴，分潤機制
-                </h4>
+                    尋找合作夥伴，分潤機制
+                  </h4>
                 <div className="flex items-center text-[13px] font-medium text-[#111]">
-                  <span>2024.01.04</span>
-                  <span className="text-[#FADE2B] mx-3 text-[14px] font-black">
-                    #
-                  </span>
-                  <span>可以自由決定您的利潤</span>
-                </div>
+                    <span>2024.01.04</span>
+                    <span className="text-[#FADE2B] mx-3 text-[14px] font-black">
+                      #
+                    </span>
+                    <span>可以自由決定您的利潤</span>
+                  </div>
               </div>
             </Link>
 
@@ -989,8 +1001,8 @@ export default function Home() {
                   {/* 資訊區域 */}
                   <div className="flex-1 p-4 md:p-6 flex flex-col justify-center">
                     <h4 className="text-[14px] md:text-[15px] font-bold text-[#111] mb-3 md:mb-4 leading-[1.6] line-clamp-2 group-hover:text-[#0071EB] transition-colors">
-                      {news.title}
-                    </h4>
+                        {news.title}
+                      </h4>
                     <div className="flex items-center text-[12px] md:text-[13px] font-medium text-[#111]">
                       <span>{news.date}</span>
                       <span className="text-[#FADE2B] mx-2 font-black">#</span>

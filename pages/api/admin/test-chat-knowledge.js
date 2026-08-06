@@ -9,6 +9,7 @@ import {
   clearArticleKnowledgeCache,
   getArticleKnowledgeCacheInfo,
 } from "../../../lib/chatArticles";
+import { fetchNetworkCoverageKnowledge } from "../../../lib/chatNetworkCoverage";
 
 export default async function handler(req, res) {
   const secret = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
@@ -90,6 +91,20 @@ export default async function handler(req, res) {
     };
   } catch (e) {
     result.wordpressArticles = { error: e.message };
+  }
+
+  // ── 4. 原生 eSIM 收訊／熱點涵蓋 ─────────────────────────────────────
+  try {
+    const q = String(req.query.q || "日本收訊").trim();
+    const text = fetchNetworkCoverageKnowledge(q);
+    result.networkCoverage = {
+      sampleQuery: q,
+      used: Boolean(text),
+      samplePreview: String(text || "").slice(0, 1500),
+      sampleLength: String(text || "").length,
+    };
+  } catch (e) {
+    result.networkCoverage = { error: e.message };
   }
 
   return res.status(200).json(result);

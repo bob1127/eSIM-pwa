@@ -46,10 +46,10 @@ const MICROESIM_WA =
 
 const WELCOME_TEXT =
   "🌼 嗨！我是 J寶，Jeko 的旅行小幫手～\n" +
-  "不論 eSIM 上網、住宿、包車，還是景點行程推薦，都可以問我；" +
-  "店裡也有 3C 與旅行用品可以一起搭配。需要什麼直接跟我說～";
+  "目前最拿手的是 eSIM 上網與景點行程相關問題，需要什麼直接跟我說～\n" +
+  "（備註：住宿、包車、3C 與旅行用品即將上線，敬請期待。）";
 
-const WELCOME_TEXT_VERSION = 2; // 變更歡迎詞時 +1，自動替換快取中的舊歡迎詞
+const WELCOME_TEXT_VERSION = 3; // 變更歡迎詞時 +1，自動替換快取中的舊歡迎詞
 
 /** 歡迎詞下方的優惠／活動輪播（圖卡，可之後改成 API） */
 const WELCOME_PROMO_CARDS = [
@@ -1195,10 +1195,16 @@ export default function AiChatWidget() {
     }
   };
 
-  const processChat = async (text, mediaOverride = null) => {
+  const processChat = async (text, mediaOverride = null, options = {}) => {
     const media = mediaOverride || pendingMedia;
     const trimmed = (text || "").trim();
     if ((!trimmed && !media) || isLoading) return;
+
+    const displayContent =
+      typeof options.displayContent === "string" && options.displayContent.trim()
+        ? options.displayContent.trim()
+        : trimmed ||
+          (media?.kind === "video" ? "（已上傳影片）" : "（已上傳截圖）");
 
     stickToBottomRef.current = true;
 
@@ -1207,9 +1213,9 @@ export default function AiChatWidget() {
       {
         id: Date.now(),
         role: "user",
-        content:
-          trimmed ||
-          (media?.kind === "video" ? "（已上傳影片）" : "（已上傳截圖）"),
+        content: displayContent,
+        // 給 AI／後續 history 用的完整指令（不顯示在氣泡）
+        apiContent: trimmed || displayContent,
         mediaPreview: media?.kind === "image" ? media.dataUrl : null,
         mediaKind: media?.kind || null,
       },
@@ -1232,7 +1238,7 @@ export default function AiChatWidget() {
         userId: user?.id || null,
         guestId: guestIdRef.current,
         messages: [
-          { role: "user", content: trimmed, provider: "preset" },
+          { role: "user", content: displayContent, provider: "preset" },
           { role: "ai", content: presetReply, provider: "preset" },
         ],
       });
@@ -1244,12 +1250,12 @@ export default function AiChatWidget() {
       .slice(-10)
       .map((msg) => ({
         role: msg.role === "ai" ? "assistant" : "user",
-        content: msg.content,
+        content: msg.apiContent || msg.content,
       }));
 
     try {
       const payload = {
-        message: trimmed,
+        message: trimmed || displayContent,
         history,
       };
       if (media?.kind === "image") payload.image = media.dataUrl;
@@ -1288,9 +1294,7 @@ export default function AiChatWidget() {
         messages: [
           {
             role: "user",
-            content:
-              trimmed ||
-              (media?.kind === "video" ? "（已上傳影片）" : "（已上傳截圖）"),
+            content: displayContent,
           },
           { role: "ai", content: aiReply, provider: data.provider || null },
         ],
@@ -1330,7 +1334,16 @@ export default function AiChatWidget() {
             ? { perDay: 2.5, label: "社群約每日 2.5GB 起" }
             : { perDay: 1.5, label: "輕量約每日 1.5GB 起" };
     const minTotal = n > 0 ? Math.ceil(n * usageFloor.perDay) : 0;
-    const prompt =
+
+    // 使用者氣泡只顯示需求摘要
+    const displayContent =
+      `請幫我推薦適合的 eSIM：\n` +
+      `· 旅遊地點：${destination}\n` +
+      `· 天數：${days} 天\n` +
+      `· 使用習慣：${usageLabel}（${usageDesc}）`;
+
+    // 完整指令只送 AI，不顯示在聊天室
+    const apiPrompt =
       `【eSIM專推】請依我的旅遊需求推薦適合的 eSIM 方案（請附上商品推薦）：\n` +
       `· 旅遊地點：${destination}\n` +
       `· 天數：${days} 天\n` +
@@ -1339,7 +1352,8 @@ export default function AiChatWidget() {
       `推薦原則：第 1 優先吃到飽；第 2 可推總量型，但總量至少約 ${minTotal || "（天數×每日下限）"}GB` +
       `（${usageFloor.label} × ${days} 天），禁止推剛好均攤、也不要為湊數推不夠用的方案。` +
       `並簡短說明為什麼適合我。`;
-    processChat(prompt);
+
+    processChat(apiPrompt, null, { displayContent });
   };
 
   return (
