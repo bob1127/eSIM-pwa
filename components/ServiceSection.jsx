@@ -193,12 +193,12 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "熱門主推", color: "#FF5252" },
-            { text: "無限量網路吃到飽", color: "#3BC7A8" },
+            { text: "原生 AU(KDDI)", color: "#3BC7A8" },
           ],
-          title: "日本 Docomo/Softbank 雙網",
-          desc: "採用日本最大電信商線路，東京、京都、廣島、關東、長崎、大阪等日本各城市及旅遊目的地訊號全覆蓋。真正的無限流量吃到飽，不降速。",
-          tags: ["電信業者：KDDI", "日本ＩＰ", "熱點功能", "4G / LTE / 5G"],
-          link: "/product/japan/japan-unlimited-esim?telecom=au-kddi&days=5", // 🔗 請替換成真實的產品網址
+          title: "日本 AU(KDDI) 原生卡",
+          desc: "走日本三大電信之一 AU（KDDI）當地網路與日本本地 IP，東京、大阪、京都與各大旅遊城市覆蓋穩定，適合導航、電子支付與熱點分享。",
+          tags: ["電信業者：AU(KDDI)", "日本ＩＰ", "熱點功能", "4G / LTE / 5G"],
+          link: "/product/japan/japan-unlimited-esim?telecom=au-kddi&days=5",
         },
         {
           pills: [

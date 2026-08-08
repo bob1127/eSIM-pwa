@@ -55,7 +55,7 @@ export default function CoveragePromptModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-900/60 z-[90] backdrop-blur-sm"
+            className="fixed inset-0 bg-slate-900/60 z-[11000] backdrop-blur-sm"
             aria-hidden
           />
           <motion.div
@@ -66,7 +66,7 @@ export default function CoveragePromptModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none"
+            className="fixed inset-0 z-[11010] flex items-center justify-center p-4 pointer-events-none"
           >
             <div className="pointer-events-auto w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
               <div className="px-5 py-4 md:px-6" style={{ background: ACCENT }}>

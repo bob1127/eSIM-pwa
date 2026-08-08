@@ -198,9 +198,9 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
         `}
       </style>
 
-      <div className="main-title relative flex flex-col  w-screen pl-3   ">
-        <div className="big-txt absolute z-10 left-0 bottom-[-55%]">
-          <p className="font-extrabold text-[220px] text-white/10 tracking-normal">
+      <div className="main-title relative flex flex-col w-full max-w-[100vw] pl-3 overflow-hidden">
+        <div className="big-txt absolute z-10 left-0 bottom-[-20%] md:bottom-[-55%] pointer-events-none">
+          <p className="font-extrabold text-[64px] sm:text-[120px] md:text-[220px] text-white/10 tracking-normal whitespace-nowrap">
             JEKO NOTE
           </p>
         </div>

@@ -32,6 +32,7 @@ import { useAuth } from "../hooks/useAuth";
 import AffiliateChatOffers from "./affiliate/AffiliateChatOffers";
 import ShopChatOffers from "./Shop/ShopChatOffers";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
+import { useRouter } from "next/router";
 
 /** LINE OA Basic ID（含 @），用於 oaMessage 預填文字 */
 const LINE_OA_ID = process.env.NEXT_PUBLIC_LINE_OA_ID || "@593gvyzn";
@@ -366,6 +367,50 @@ const JEKO_LOGO = "/images/Logo/logo-no-bg.png";
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 10 * 1024 * 1024;
 
+/** 手機版聊天室為全螢幕（與 Tailwind md 斷點對齊） */
+function isMobileChatViewport() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 767px)").matches;
+}
+
+function isProductPagePath(pathOrUrl) {
+  if (!pathOrUrl) return false;
+  try {
+    const pathname = /^https?:\/\//i.test(pathOrUrl)
+      ? new URL(pathOrUrl).pathname
+      : String(pathOrUrl).split("?")[0];
+    return /^\/product(\/|$)/.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
+/** 寫入關閉狀態，避免跳轉商品頁後又從 IndexedDB 還原成開啟 */
+async function forceChatUiClosed() {
+  try {
+    sessionStorage.setItem("jeko_ai_chat_force_closed", "1");
+  } catch {
+    /* ignore */
+  }
+  try {
+    const saved = await loadChatUiState();
+    if (saved) {
+      await saveChatUiState({ ...saved, isOpen: false });
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function closeAiChatForMobileProductNav(href) {
+  if (!isMobileChatViewport()) return;
+  if (href && !isProductPagePath(href)) return;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("jeko:close-ai-chat"));
+  }
+  forceChatUiClosed();
+}
+
 const PRESET_ANSWERS = {
   "怎麼安裝 eSIM？": `安裝步驟：\n1. Email 接收 QR Code。\n2. 手機設定 > 行動服務 > 加入 eSIM。\n3. 掃描 QR Code 即可。\n教學：${SITE}/operation-shopee/`,
   "我的手機支援嗎？": `請檢查：\n- iPhone：設定 > 一般 > 關於本機，查看是否有 EID。\n- Android：撥號輸入 *#06# 查看 EID。\n清單：${SITE}/compatibility`,
@@ -455,6 +500,9 @@ function ProductCard({ card }) {
       href={href}
       target={openExternal ? "_blank" : undefined}
       rel={openExternal ? "noopener noreferrer" : undefined}
+      onClick={() => {
+        if (!openExternal) closeAiChatForMobileProductNav(href);
+      }}
       className="flex-shrink-0 w-[168px] rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
     >
       <div className="relative h-[108px] bg-gradient-to-br from-slate-50 to-blue-50/60 flex items-center justify-center overflow-hidden">
@@ -778,6 +826,9 @@ function PromoCardCarousel({ cards }) {
                 href={href}
                 target={isExternal ? "_blank" : undefined}
                 rel={isExternal ? "noopener noreferrer" : undefined}
+                onClick={() => {
+                  if (!isExternal) closeAiChatForMobileProductNav(href);
+                }}
                 className="snap-start flex-shrink-0 w-[210px] rounded-xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-shadow group bg-white"
               >
                 <div className="relative h-[100px] bg-slate-100 overflow-hidden">
@@ -883,6 +934,7 @@ async function compressImageFile(file, maxEdge = 1280, quality = 0.78) {
 }
 
 export default function AiChatWidget() {
+  const router = useRouter();
   const { user, session, isLoggedIn } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -931,7 +983,33 @@ export default function AiChatWidget() {
           ];
         }
         setMessages(restored);
-        if (saved.isOpen) setIsOpen(true);
+        let shouldOpen = Boolean(saved.isOpen);
+        try {
+          if (sessionStorage.getItem("jeko_ai_chat_force_closed") === "1") {
+            shouldOpen = false;
+            sessionStorage.removeItem("jeko_ai_chat_force_closed");
+          }
+        } catch {
+          /* ignore */
+        }
+        // 手機全螢幕：進入商品頁時不要自動打開 J寶
+        if (
+          shouldOpen &&
+          isMobileChatViewport() &&
+          isProductPagePath(window.location.pathname)
+        ) {
+          shouldOpen = false;
+        }
+        if (shouldOpen) setIsOpen(true);
+        else if (saved.isOpen) {
+          // 寫回關閉，避免下次回跳又開
+          saveChatUiState({
+            sessionId: saved.sessionId,
+            isOpen: false,
+            messages: restored,
+            pendingMedia: saved.pendingMedia,
+          });
+        }
         if (saved.pendingMedia) setPendingMedia(saved.pendingMedia);
       }
       setChatHydrated(true);
@@ -1085,6 +1163,21 @@ export default function AiChatWidget() {
     };
   }, []);
 
+  // 客戶端路由切到商品頁時（手機）：自動關閉全螢幕聊天室
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleRoute = (url) => {
+      if (!isMobileChatViewport()) return;
+      if (!isProductPagePath(url)) return;
+      setIsOpen(false);
+      forceChatUiClosed();
+    };
+    router.events.on("routeChangeStart", handleRoute);
+    return () => {
+      router.events.off("routeChangeStart", handleRoute);
+    };
+  }, [router.events]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.dispatchEvent(
@@ -1114,12 +1207,16 @@ export default function AiChatWidget() {
           ? part
           : `${typeof window !== "undefined" ? window.location.origin : ""}${part}`;
         const label = part.length > 64 ? `${part.slice(0, 48)}…` : part;
+        const isExternal = part.startsWith("http");
         return (
           <a
             key={index}
             href={href}
-            target={part.startsWith("http") ? "_blank" : undefined}
-            rel={part.startsWith("http") ? "noopener noreferrer" : undefined}
+            target={isExternal ? "_blank" : undefined}
+            rel={isExternal ? "noopener noreferrer" : undefined}
+            onClick={() => {
+              if (!isExternal) closeAiChatForMobileProductNav(part);
+            }}
             className="text-blue-500 underline hover:text-blue-700 break-all font-bold mx-0.5"
           >
             {label}

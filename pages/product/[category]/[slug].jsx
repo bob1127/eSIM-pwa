@@ -28,6 +28,9 @@ import CoveragePromptModal, {
 import IijApnReminderModal, {
   isIijDocomoTelecom,
 } from "../../../components/product/IijApnReminderModal";
+import AuKddiApnReminderModal, {
+  needsAuKddiManualApnReminder,
+} from "../../../components/product/AuKddiApnReminderModal";
 import MaterialIcon from "../../../components/MaterialIcon";
 import MediaGalleryLightbox from "../../../components/MediaGalleryLightbox";
 import {
@@ -257,6 +260,36 @@ const COMPATIBLE_DEVICES = [
 ];
 
 const CARRIER_INFO_MAP = {
+  SoftBank: {
+    badges: [
+      { text: "SoftBank", type: "5G" },
+      { text: "原生", type: "IP" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc:
+        "每日高速額度用完後降速至約 128 kbps，隔日重置。",
+      note: "注意：Android 手機通常需另外手動設定 APN（plus.4g）。iPhone 多半會自動設定。",
+    },
+    summaryPrefix: "SoftBank",
+  },
+  "SoftBank（注意：Android 通常需手動 APN）": {
+    badges: [
+      { text: "SoftBank", type: "5G" },
+      { text: "原生", type: "IP" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc:
+        "每日高速額度用完後降速至約 128 kbps，隔日重置。",
+      note: "注意：Android 手機通常需另外手動設定 APN（plus.4g）。iPhone 多半會自動設定。",
+    },
+    summaryPrefix: "SoftBank",
+  },
   "SoftBank / KDDI": {
     badges: [
       { text: "KDDI", type: "5G" },
@@ -266,8 +299,9 @@ const CARRIER_INFO_MAP = {
       bgColor: "bg-cyan-50",
       borderColor: "border-cyan-100",
       policyTitle: "公平使用政策 (FUP):",
-      policyDesc: "無限流量，典型速度為8~20Mbps，實際速度可能有所變動。",
-      note: "注意：我們建議您抵達當地後再安裝 eSIM。",
+      policyDesc:
+        "每日高速額度用完後降速至約 128 kbps，隔日重置。雙網自動切換（KDDI／SoftBank）。",
+      note: "注意：此線路為新加坡 IP 漫遊；建議抵達當地後再安裝 eSIM。",
     },
     summaryPrefix: "SoftBank / KDDI",
   },
@@ -292,10 +326,52 @@ const CARRIER_INFO_MAP = {
       bgColor: "bg-cyan-50",
       borderColor: "border-cyan-100",
       policyTitle: "公平使用政策 (FUP):",
-      policyDesc: "無限高速數據，實際速度取決於您的位置及網路環境。",
-      note: "注意：我們建議您抵達後再新增 eSIM。查看啟用政策。",
+      policyDesc: "高速數據吃到飽，實際速度取決於位置及網路環境（真・不限速）。",
+      note: "注意：此線路為日本原生 IP；部分方案需手動設定 APN。建議抵達後再安裝 eSIM。",
     },
     summaryPrefix: "AU(KDDI)",
+  },
+  "AU(KDDI) 高速數據": {
+    badges: [
+      { text: "AU (KDDI)", type: "5G" },
+      { text: "高速", type: "FUP" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "高速數據吃到飽，實際速度取決於位置及網路環境（真・不限速）。",
+      note: "注意：此線路為日本原生 IP；部分方案需手動設定 APN。建議抵達後再安裝 eSIM。",
+    },
+    summaryPrefix: "AU(KDDI) 高速數據",
+  },
+  "AU(KDDI) 10Mbps": {
+    badges: [
+      { text: "AU (KDDI)", type: "5G" },
+      { text: "10Mbps", type: "FUP" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "限速約 10 Mbps 吃到飽，實際速度依位置與網路環境變動。",
+      note: "注意：此線路為日本原生 IP（AU/KDDI）。建議抵達後再安裝 eSIM。",
+    },
+    summaryPrefix: "AU(KDDI) 10Mbps",
+  },
+  "AU KDDI 10Mbps": {
+    badges: [
+      { text: "AU (KDDI)", type: "5G" },
+      { text: "10Mbps", type: "FUP" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "限速約 10 Mbps 吃到飽，實際速度依位置與網路環境變動。",
+      note: "注意：此線路為日本原生 IP（AU/KDDI）。建議抵達後再安裝 eSIM。",
+    },
+    summaryPrefix: "AU KDDI 10Mbps",
   },
   "IIJ Docomo": {
     badges: [{ text: "Docomo", type: "4G/LTE" }],
@@ -303,8 +379,21 @@ const CARRIER_INFO_MAP = {
       bgColor: "bg-red-50",
       borderColor: "border-red-100",
       policyTitle: "公平使用政策 (FUP):",
-      policyDesc: "無限高速數據，實際速度取決於您的位置及網路環境。",
-      note: "注意：此線路為日本 IP。",
+      policyDesc:
+        "每日高速額度（每日3GB）用完後降速至約 256 kbps，隔日重置。",
+      note: "注意：需手動設定 APN（vmobile.jp）。此線路為日本原生 IP（DOCOMO）。",
+    },
+    summaryPrefix: "IIJ Docomo",
+  },
+  "IIJ Docomo（注意：需手動設定 APN）": {
+    badges: [{ text: "Docomo", type: "4G/LTE" }],
+    marketingBox: {
+      bgColor: "bg-red-50",
+      borderColor: "border-red-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc:
+        "每日高速額度（每日3GB）用完後降速至約 256 kbps，隔日重置。",
+      note: "注意：需手動設定 APN（vmobile.jp）。此線路為日本原生 IP（DOCOMO）。",
     },
     summaryPrefix: "IIJ Docomo",
   },
@@ -2149,6 +2238,7 @@ export default function ProductPage({
   const [pendingPurchaseAction, setPendingPurchaseAction] = useState(null);
   const [coverageContinueAction, setCoverageContinueAction] = useState(null);
   const [iijApnPromptOpen, setIijApnPromptOpen] = useState(false);
+  const [auApnPromptOpen, setAuApnPromptOpen] = useState(false);
   const isPartnerShell = shell === "shop" && store;
   const productAdmin = useProductAdmin();
   const isAdmin = isPartnerShell ? false : productAdmin.isAdmin;
@@ -2180,6 +2270,7 @@ export default function ProductPage({
     setCoveragePromptOpen(false);
     setPendingPurchaseAction(null);
     setIijApnPromptOpen(false);
+    setAuApnPromptOpen(false);
   }, [initialProduct]);
 
   // 進頁即時拉最新 metadata（後台儲存後不用等 ISR）
@@ -2493,6 +2584,7 @@ export default function ProductPage({
     setCoverageContinueAction(null);
     setCoveragePromptOpen(false);
     setIijApnPromptOpen(false);
+    setAuApnPromptOpen(false);
     setPendingPurchaseAction(null);
     if (action === "buy") performBuyNow();
     else handleAddToCart();
@@ -2518,6 +2610,16 @@ export default function ProductPage({
 
   const requestPurchase = (action) => {
     if (!canPurchase) return;
+    const telecom = selectedAttributes?.telecom;
+    const days = selectedAttributes?.days;
+
+    // AU(KDDI) 真不限速、≥10 天：跳過訊號地圖，改彈 APN 提醒
+    if (needsAuKddiManualApnReminder(telecom, days)) {
+      setPendingPurchaseAction(action);
+      setAuApnPromptOpen(true);
+      return;
+    }
+
     const coverageCountry = resolveCoverageCountry(
       product,
       router.query.category ||
@@ -2865,6 +2967,17 @@ export default function ProductPage({
           purchaseAction={pendingPurchaseAction || "cart"}
           onClose={() => {
             setIijApnPromptOpen(false);
+            setPendingPurchaseAction(null);
+          }}
+          onContinuePurchase={() =>
+            finalizePurchaseAction(pendingPurchaseAction || "cart")
+          }
+        />
+        <AuKddiApnReminderModal
+          isOpen={auApnPromptOpen}
+          purchaseAction={pendingPurchaseAction || "cart"}
+          onClose={() => {
+            setAuApnPromptOpen(false);
             setPendingPurchaseAction(null);
           }}
           onContinuePurchase={() =>

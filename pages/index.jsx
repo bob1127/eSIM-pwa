@@ -151,13 +151,7 @@ export default function Home() {
       title: "Jeko eSIM 的購買流程到使用方式",
       link: "#",
     },
-    {
-      id: 2,
-      date: "2025.04.16",
-      tag: "實體辦公處",
-      title: "目前有實體辦公處，有問題或者合作意願可親洽或者聯絡我們",
-      link: "#",
-    },
+
     {
       id: 3,
       date: "2025.03.27",
@@ -170,14 +164,6 @@ export default function Home() {
       date: "2025.02.23",
       tag: "支付方式",
       title: "Jeko 提供街口支付、Line pay  等等主流付款方式 ",
-      link: "#",
-    },
-    {
-      id: 5,
-      date: "2025.02.11",
-      tag: "新着情報",
-      title:
-        "（採用）LINE公式アカウント・Lステップ構築の制作実績を追加しました。",
       link: "#",
     },
   ];
@@ -662,67 +648,13 @@ export default function Home() {
         <AccommodationRecommendSection />
         <KKdayTicketSection />
         <KlookTicketSection />
-        {/*       
-        <section className="relative w-full     overflow-hidden ">
-          <div className="z-[9999] relative ">
-            <div className="max-w-[1400px]   w-full mx-auto   relative z-[9999] overflow-hidden px-4 md:px-0 pb-10">
-              <div
-                className="flex slider-track"
-                style={{
-                  "--current-index": currentIndex,
-                  transition: isTransitioning
-                    ? "transform 0.5s ease-in-out"
-                    : "none",
-                }}
-                onTransitionEnd={handleTransitionEnd}
-              >
-                {loopedBanners.map((src, index) => (
-                  <div
-                    key={index}
-                    
-                    className="relative shrink-0 w-full md:w-[33.333333%] px-2 lg:px-4 group cursor-pointer"
-                  >
-                    <div className="relative w-full aspect-[1920/790] rounded-[8px] lg:rounded-[9px] overflow-hidden shadow-lg border border-slate-100/50">
-                      <Image
-                        src={src}
-                        alt={`活動 Banner ${index + 1}`}
-                        fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        priority={index < 3}
-                      />
-                      <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-300"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      </div>
+      {/* ══ 以上桌機專屬；以下區塊手機＋桌機共用顯示 ══ */}
 
-      
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-3 z-20">
-                {bannerImages.map((_, dotIndex) => (
-                  <button
-                    key={dotIndex}
-                    onClick={() => {
-                      setIsTransitioning(true);
-                      setCurrentIndex(dotIndex);
-                    }}
-                    aria-label={`切換至第 ${dotIndex + 1} 張輪播圖`}
-                    className={`h-2 md:h-2.5 rounded-full transition-all duration-300 shadow-sm ${
-                      currentIndex % bannerImages.length === dotIndex
-                        ? "bg-[#0BAFD7] w-8 md:w-10"
-                        : "bg-gray-300 w-2 md:w-2.5 hover:bg-gray-400"
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <FeatureCarousel />
-          </div>
- 
-        </section> */}
-
-        <section className="relative rounded-[32px] z-[99] bg-white/40 border border-white/30 backdrop-blur-[25px] shadow-[0_30px_80px_rgba(36,57,69,0.15)] px-4 sm:px-10 mx-auto mt-[50px] w-[95%] lg:w-[96%] pt-[30px] lg:py-[100px]">
+        <section
+          id="how-to-install"
+          className="relative rounded-[32px] z-[99] bg-white/40 border border-white/30 backdrop-blur-[25px] shadow-[0_30px_80px_rgba(36,57,69,0.15)] px-4 sm:px-10 mx-auto mt-[50px] w-[95%] lg:w-[96%] pt-[30px] lg:py-[100px]"
+        >
           <MaskText blockColor="#0A6CD0">
             <div className="main-title max-w-[1000px] mx-auto flex justify-center flex-col items-center text-center">
               <h2 className="text-3xl lg:text-5xl font-bold">如何使用 eSIM?</h2>
@@ -1057,11 +989,11 @@ export default function Home() {
         <img
           src="https://storage.googleapis.com/studio-design-asset-files/projects/8dO8NkVvan/s-1300x100_2d2c9e2f-293f-4f46-8b79-fed8dc5fa5bb.svg"
           alt=""
-          className="w-full relative  mt-[-130px] z-10"
+          className="w-full relative mt-[-48px] md:mt-[-130px] z-10"
         />
 
-        <section className="bg-[#147AD7] w-full overflow-hidden py-2 sm:py-20">
-          <div className="mt-8 lg:mt-5">
+        <section className="bg-[#147AD7] w-full overflow-hidden py-8 sm:py-20">
+          <div className="mt-4 lg:mt-5">
             <Carousel />
           </div>
           <section className="relative h-auto">
@@ -1074,11 +1006,11 @@ export default function Home() {
           className="w-full rotate-180 mt-[0px] relative z-10"
         />
 
-        <section className="pt-[60px] max-w-[1450px]    w-[93%]  mx-auto  lg:pt-[150px] rounded-[32px] bg-white/40 border border-white/30 backdrop-blur-[25px] shadow-[0_30px_80px_rgba(36,57,69,0.15)] px-4 sm:px-10 mx-auto mt-[-80px] lg:mt-[-220px]  lg:w-[96%] py-[60px] lg:py-[100px] relative z-20 overflow-hidden">
+        <section className="pt-[48px] max-w-[1450px] w-[93%] mx-auto lg:pt-[150px] rounded-[32px] bg-white/40 border border-white/30 backdrop-blur-[25px] shadow-[0_30px_80px_rgba(36,57,69,0.15)] px-4 sm:px-10 mt-[-48px] lg:mt-[-220px] lg:w-[96%] py-[48px] lg:py-[100px] relative z-20 overflow-hidden">
           <div className="flex flex-col max-w-[1450px] mx-auto lg:flex-row gap-12 lg:gap-20">
             <div className="w-full lg:w-1/4 flex flex-col justify-between">
               <div>
-                <h2 className="text-6xl font-serif font-bold text-[#0F356B] mb-10 tracking-wide">
+                <h2 className="text-4xl md:text-6xl font-serif font-bold text-[#0F356B] mb-8 md:mb-10 tracking-wide">
                   Notification
                 </h2>
                 <ul className="space-y-5 mb-10">
@@ -1206,7 +1138,6 @@ export default function Home() {
             </Link>
           </div>
         </section>
-      </div>
 
       {imageLightbox && (
         <div

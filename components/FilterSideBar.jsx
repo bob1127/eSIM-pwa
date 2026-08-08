@@ -101,13 +101,35 @@ const FILTER_GROUPS = [
       {
         label: "AU (KDDI)",
         value: "AU(KDDI)",
-        match: (t) => /AU\s*\(?\s*KDDI\s*\)?/i.test(t) || /^au$/i.test(t),
+        match: (t) =>
+          /AU\s*\(?\s*KDDI\s*\)?/i.test(t) ||
+          (/^au$/i.test(t) && !/10\s*Mbps/i.test(t)),
+      },
+      {
+        label: "AU(KDDI) 高速數據",
+        value: "AU(KDDI) 高速數據",
+        match: (t) => /AU.*高速|高速數據/i.test(t),
+      },
+      {
+        label: "AU(KDDI) 10Mbps",
+        value: "AU(KDDI) 10Mbps",
+        match: (t) => /AU.*KDDI/i.test(t) && /10\s*Mbps/i.test(t),
+      },
+      {
+        label: "SoftBank",
+        value: "SoftBank",
+        match: (t) =>
+          /SoftBank/i.test(t) &&
+          !/KDDI/i.test(t) &&
+          !/10\s*Mbps/i.test(t),
       },
       {
         label: "SoftBank / KDDI",
         value: "SoftBank / KDDI",
         match: (t) =>
-          /SoftBank/i.test(t) && !/10\s*Mbps/i.test(t),
+          /SoftBank/i.test(t) &&
+          /KDDI/i.test(t) &&
+          !/10\s*Mbps/i.test(t),
       },
       {
         label: "SoftBank / KDDI 10Mbps",

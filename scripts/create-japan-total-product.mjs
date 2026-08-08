@@ -2,8 +2,8 @@
  * 建立／更新「日本 eSIM 總量型」
  * 三種電信（對齊選品神器）：
  *   1) IIJ(DOCOMO) ← Japan-IIJ-Total*（原生 JP IP，用完降速 200kbps）— 利潤 60%
- *   2) AU(KDDI) ← Japan-Local-Total* au-net（原生 JP IP，用完降速 128kbps）— 利潤 60%
- *   3) KDDI / SoftBank ← Japan(KDDI+SB)(T+C)-Total*（漫遊 SG IP，128kbps）— 利潤 50%（HOT SALE）
+ *   2) AU(KDDI) ← Japan-Local-Total* au-net（原生 JP IP，用完降速 128kbps）— 利潤 95%
+ *   3) KDDI / SoftBank ← Japan(KDDI+SB)(T+C)-Total*（漫遊 SG IP，128kbps）— 利潤 60%（HOT SALE）
  *
  * 用法：
  *   HKD_TO_TWD=4.5 node scripts/create-japan-total-product.mjs --rebuild
@@ -63,7 +63,7 @@ const DATA_ORDER = [
   "50GB",
 ];
 /** 原生 60%／漫遊雙網 50% */
-const PROFIT_BY_KIND = { iij: 60, kddi: 60, dual: 50 };
+const PROFIT_BY_KIND = { iij: 60, kddi: 95, dual: 60 };
 const HKD_TO_TWD_ENV = process.env.HKD_TO_TWD
   ? Number(process.env.HKD_TO_TWD)
   : null;
@@ -425,7 +425,7 @@ async function main() {
   const nKddi = rows.filter((r) => r.telecom === TELECOM_KDDI).length;
   const nDual = rows.filter((r) => r.telecom === TELECOM_DUAL).length;
   console.log(
-    `📦 方案 ${rows.length} 筆（IIJ ${nIij} + AU(KDDI) ${nKddi} + 雙網 ${nDual}）・原生 60%／雙網 50%・HOT SALE=${TELECOM_KDDI} + ${TELECOM_DUAL}`,
+    `📦 方案 ${rows.length} 筆（IIJ ${nIij} + AU(KDDI) ${nKddi} + 雙網 ${nDual}）・IIJ 60%／AU(KDDI) 95%／雙網 60%・HOT SALE=${TELECOM_KDDI} + ${TELECOM_DUAL}`,
   );
   console.log(`數據量選項: ${dataValues.join(" | ")}`);
   console.log(`天數選項: ${dayValues.join(" | ")}`);

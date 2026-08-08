@@ -9,7 +9,6 @@ import KKdayTicketSection from "./KKdayTicketSection";
 import KlookTicketSection from "./KlookTicketSection";
 import JekoRecommendSection from "./JekoRecommendSection";
 import ServiceSection from "./ServiceSection";
-import MaterialIcon from "@/components/MaterialIcon";
 
 const LINE_OA_URL =
   process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn";
@@ -60,82 +59,6 @@ const PROMO_BANNERS = [
   { src: "/images/優惠折扣.png", alt: "優惠折扣活動" },
   { src: "/images/出國必備.png", alt: "出國必備清單" },
   { src: "/images/立即租車.png", alt: "立即租車包車" },
-];
-
-const NEWS_ITEMS = [
-  {
-    id: 1,
-    date: "2025.09.26",
-    tag: "購買流程",
-    title: "Jeko eSIM 的購買流程到使用方式",
-    link: "#",
-    icon: "shopping_bag",
-    iconBg: "#e0f2fe",
-    iconColor: "#0284c7",
-  },
-  {
-    id: 2,
-    date: "2025.04.16",
-    tag: "實體辦公",
-    title: "目前有實體辦公處，有問題或合作意願可親洽或聯絡我們",
-    link: "#",
-    icon: "storefront",
-    iconBg: "#d1fae5",
-    iconColor: "#059669",
-  },
-  {
-    id: 3,
-    date: "2025.03.27",
-    tag: "退貨政策",
-    title: "eSIM 無法安裝/使用？請參考退貨說明",
-    link: "/refund-policy",
-    icon: "undo",
-    iconBg: "#ffedd5",
-    iconColor: "#ea580c",
-  },
-  {
-    id: 4,
-    date: "2025.02.23",
-    tag: "支付方式",
-    title: "提供街口支付、LINE Pay 等主流付款方式",
-    link: "#",
-    icon: "payments",
-    iconBg: "#ede9fe",
-    iconColor: "#7c3aed",
-  },
-];
-
-const PROMO_NEWS = [
-  {
-    id: 101,
-    date: "2025.10.01",
-    tag: "限時優惠",
-    title: "【秋季旅展】日本 eSIM 買一送一，限時 3 天！",
-    link: "/promo",
-    icon: "local_offer",
-    iconBg: "#fee2e2",
-    iconColor: "#dc2626",
-  },
-  {
-    id: 102,
-    date: "2025.09.15",
-    tag: "會員專屬",
-    title: "加入官方 LINE 好友，即刻領取 $50 折扣碼",
-    link: LINE_OA_URL,
-    icon: "loyalty",
-    iconBg: "#dcfce7",
-    iconColor: "#16a34a",
-  },
-  {
-    id: 103,
-    date: "2025.08.30",
-    tag: "新品上市",
-    title: "歐洲 33 國通用 eSIM 全新上線，早鳥優惠中",
-    link: "/product",
-    icon: "new_releases",
-    iconBg: "#e0e7ff",
-    iconColor: "#4f46e5",
-  },
 ];
 
 function SectionHeader({ title, link }) {
@@ -263,9 +186,6 @@ function MobileHeroCarousel() {
 }
 
 export default function MobileHomePage() {
-  const [activeNewsTab, setActiveNewsTab] = useState(0);
-  const displayNews = activeNewsTab === 0 ? NEWS_ITEMS : PROMO_NEWS;
-
   return (
     <div className="bg-[#f2f3f5] min-h-screen pb-4">
       {/* ═══ 1. 原本主頁圖片輪播 ═══ */}
@@ -362,74 +282,7 @@ export default function MobileHomePage() {
         <KlookTicketSection />
       </div>
 
-      {/* ═══ 10. 最新消息 / 特價優惠（倒數第二：快速導覽上方）═══ */}
-      <div className="mt-4">
-        <div className="bg-white">
-          <div className="flex items-center justify-between px-4 pt-4 pb-0">
-            <div className="flex gap-0 border-b border-gray-100 w-full">
-              {["最新消息/公告", "特價/優惠"].map((tab, i) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveNewsTab(i)}
-                  className={`flex-1 py-2.5 text-[13px] font-bold transition-all ${
-                    activeNewsTab === i
-                      ? "text-[#0284c7] border-b-2 border-[#0284c7]"
-                      : "text-gray-400"
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="divide-y divide-gray-50 px-4">
-            {displayNews.map((item) => (
-              <Link
-                key={item.id}
-                href={item.link}
-                className="flex items-center gap-3 py-3.5 active:bg-gray-50 transition-colors"
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: item.iconBg }}
-                >
-                  <MaterialIcon
-                    name={item.icon}
-                    size={20}
-                    style={{ color: item.iconColor }}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-gray-800 line-clamp-2 leading-snug">
-                    {item.title}
-                  </p>
-                  <p className="text-[11px] text-gray-400 mt-1">
-                    {item.date} · {item.tag}
-                  </p>
-                </div>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#d1d5db"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="shrink-0"
-                  aria-hidden
-                >
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ═══ 11. 快速導覽 — 藍底資訊卡風格 ═══ */}
+      {/* ═══ 10. 快速導覽 — 藍底資訊卡風格 ═══ */}
       <div className="mt-4 mx-4 mb-2 rounded-[20px] bg-[#2F5CFF] px-5 pt-5 pb-4 text-white shadow-[0_10px_28px_rgba(47,92,255,0.28)]">
         <div className="flex items-center gap-2 mb-4">
           <svg

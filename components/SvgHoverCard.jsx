@@ -240,13 +240,19 @@ export default function SVGCardCarousel() {
         .carousel-wrapper {
           font-family: "Google Sans", sans-serif;
           width: 100%;
-           margin-bottom: 180px;
+           margin-bottom: 48px;
       
       
           color: black;
           display: flex;
           flex-direction: column;
           overflow-x: hidden; 
+        }
+
+        @media (min-width: 768px) {
+          .carousel-wrapper {
+            margin-bottom: 180px;
+          }
         }
 
         .carousel-wrapper header,
@@ -278,7 +284,13 @@ export default function SVGCardCarousel() {
           width: 100%;
           max-width: 1920px;
           margin: 0 auto;
-          padding: 0 2rem;
+          padding: 0 1rem;
+        }
+
+        @media (min-width: 640px) {
+          .swiper-container-box {
+            padding: 0 2rem;
+          }
         }
 
         /* --- 卡片樣式 --- */
@@ -317,11 +329,18 @@ export default function SVGCardCarousel() {
 
         .card-title {
           position: absolute;
-          bottom: 2rem;
-          left: 2rem;
+          bottom: 1rem;
+          left: 1rem;
           color: var(--card-copy);
           z-index: 10;
           pointer-events: none;
+        }
+
+        @media (min-width: 768px) {
+          .card-title {
+            bottom: 2rem;
+            left: 2rem;
+          }
         }
 
         .swiper-pagination-bullet {

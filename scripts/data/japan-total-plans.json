@@ -1,7 +1,7 @@
 {
   "source": "api/esim/list",
   "fetched_at": "2026-08-03T06:57:52.027Z",
-  "note": "iij: Japan-IIJ-Total* 原生60%; kddi: Japan-Local-Total KDDI au 原生60%; dual: Japan(KDDI+SB)(T+C)-Total* 漫遊50%",
+  "note": "iij: Japan-IIJ-Total* 原生60%; kddi: Japan-Local-Total KDDI au 原生95%; dual: Japan(KDDI+SB)(T+C)-Total* 漫遊60%",
   "count_iij": 48,
   "count_kddi": 3,
   "count_dual": 48,
