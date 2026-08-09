@@ -66,9 +66,16 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   },
 });
 
-// 一律 unoptimized：不走 Vercel /_next/image（避免 402）。
-// Cloudflare 優化改由 SafeImage / cfImageLoader 把 src 改寫成 /cdn-cgi/image/。
+// 圖片策略（避免再打爆 Vercel Image Optimization → 402、圖全掛）：
+// - Vercel／正式站：一律 images.unoptimized，禁止走 /_next/image
+// - 正式站壓縮改走 SafeImage → Cloudflare /cdn-cgi/image（format=auto）
+// - 僅本機 `next dev` 開 Next Image Optimization（用量不計 Vercel）
 // （Next 13.4 + next-pwa 下 images.loader:"custom" 在 SSG 常漏掛 → missing loader）
+const disableVercelImageOptimization =
+  process.env.NODE_ENV === "production" ||
+  process.env.VERCEL === "1" ||
+  Boolean(process.env.VERCEL_ENV);
+
 const nextConfig = {
   reactStrictMode: true, 
   trailingSlash: true,
@@ -78,7 +85,7 @@ const nextConfig = {
   staticPageGenerationTimeout: 180,
 
   images: {
-    unoptimized: true,
+    unoptimized: disableVercelImageOptimization,
     deviceSizes: [360, 640, 960, 1280],
     imageSizes: [64, 128, 256, 360],
     formats: ["image/avif", "image/webp"],

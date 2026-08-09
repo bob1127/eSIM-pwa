@@ -129,7 +129,16 @@ const FILTER_GROUPS = [
         match: (t) =>
           /SoftBank/i.test(t) &&
           /KDDI/i.test(t) &&
+          !/Docomo|DOCOMO|三網/i.test(t) &&
           !/10\s*Mbps/i.test(t),
+      },
+      {
+        label: "KDDI / SoftBank / Docomo +",
+        value: "KDDI / SoftBank / Docomo +",
+        match: (t) =>
+          /KDDI/i.test(t) &&
+          /SoftBank/i.test(t) &&
+          /Docomo|DOCOMO/i.test(t),
       },
       {
         label: "SoftBank / KDDI 10Mbps",
@@ -139,7 +148,7 @@ const FILTER_GROUPS = [
       {
         label: "IIJ Docomo",
         value: "IIJ Docomo",
-        match: (t) => /IIJ|Docomo|NTT/i.test(t),
+        match: (t) => /IIJ/i.test(t) || (/Docomo|NTT/i.test(t) && !/SoftBank|KDDI/i.test(t)),
       },
       {
         label: "其他／全球",

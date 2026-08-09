@@ -4,7 +4,9 @@
  * 與舊中國商品不同：同一個商品用「電信商」選項承載三種方案類型：
  *   - 每日型  → 利潤 60%  ← CN,HK,MO(T+C)-Daily*
  *   - 總量型  → 利潤 60%  ← CN,HK,MO(T+C)-Total*
- *   - 吃到飽  → 利潤 75%  ← CN,HK,MO(T+C)-unlimited*
+ *   - 吃到飽  → 利潤 70%
+ *        · 1–10 天 ← CNHKMO-unlimited-*-A0（短天數・香港 IP・ctexcel）
+ *        · 11–30 天 ← CN,HK,MO(T+C)-unlimited-*-A0（長天數・約 10Mbps）
  *
  * 用法：
  *   node scripts/create-cnhkmo-tc-product.mjs
@@ -13,6 +15,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { cnhkmoTcKeyFeaturesByCarrier } from "../content/product-detailed/cnhkmo-tc-key-features.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -56,7 +59,7 @@ const TYPE_UNLIM = "吃到飽";
 const PROFIT = {
   [TYPE_DAILY]: 60,
   [TYPE_TOTAL]: 60,
-  [TYPE_UNLIM]: 75,
+  [TYPE_UNLIM]: 70,
 };
 
 const DATA_ORDER_DAILY = [
@@ -88,7 +91,7 @@ const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 
 const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
-const CATEGORY_IDS = ["pcat_01KZJNBVVHY3ZHNJ4MPS9ZZVFG"]; // china
+const CATEGORY_IDS = ["pcat_01KZJNBW76333EH5XBG62QJEHW"]; // kongkong 中港澳（勿掛 china）
 const THUMB =
   process.env.CNHKMO_PRODUCT_THUMB ||
   process.env.CHINA_PRODUCT_THUMB ||
@@ -135,13 +138,14 @@ function loadPlans(hkdToTwd) {
   const file = path.join(__dirname, "data", "cnhkmo-tc-plans.json");
   const raw = JSON.parse(fs.readFileSync(file, "utf8"));
   const rows = [];
-  const push = (list, planType) => {
+  const push = (list, planType, extras = {}) => {
     const profit = PROFIT[planType];
     for (const p of list || []) {
       const hkd = Number(p.price_hkd) || 0;
       const cost = Math.ceil(hkd * hkdToTwd);
       rows.push({
         ...p,
+        ...extras,
         telecom: planType,
         plan_kind:
           planType === TYPE_DAILY
@@ -159,7 +163,32 @@ function loadPlans(hkdToTwd) {
   };
   push(raw.daily, TYPE_DAILY);
   push(raw.total, TYPE_TOTAL);
-  push(raw.unlimited, TYPE_UNLIM);
+
+  // 吃到飽：1–10 天用短天數 CNHKMO；11–30 天用長天數 T+C
+  let shortSrc = [];
+  try {
+    const unlimFile = path.join(
+      __dirname,
+      "data",
+      "cnhkmo-unlimited-plans.json",
+    );
+    const unlimRaw = JSON.parse(fs.readFileSync(unlimFile, "utf8"));
+    shortSrc = (unlimRaw.short_ct || unlimRaw.short_cmcc || []).filter(
+      (p) => Number(p.day) >= 1 && Number(p.day) <= 10,
+    );
+  } catch {
+    /* optional */
+  }
+  push(shortSrc, TYPE_UNLIM, {
+    unlim_line: "short",
+    data_amount: "吃到飽",
+  });
+  push(
+    (raw.unlimited || []).filter((p) => Number(p.day) >= 11),
+    TYPE_UNLIM,
+    { unlim_line: "long" },
+  );
+
   return rows.sort(
     (a, b) =>
       typeRank(a.telecom) - typeRank(b.telecom) ||
@@ -218,13 +247,17 @@ function toVariant(row) {
     row.throttle_kind === "5mbps" || /5Mbps續航/.test(row.data_amount || "");
   const is10Mbps =
     row.throttle_kind === "10mbps" || /10Mbps/.test(row.data_amount || "");
+  const isShortUnlim =
+    row.unlim_line === "short" || /^CNHKMO-unlimited/i.test(row.sku || "");
   const speedRule =
     row.speed_rule ||
     row.rule_desc ||
     (row.plan_kind === "unlimited"
-      ? is10Mbps
-        ? "高速吃到飽，約限速 10 Mbps"
-        : "吃到飽（依供應商 FUP／限速條款）"
+      ? isShortUnlim
+        ? "公平使用政策 (FUP)：無限流量，實際速度依網路環境而定。"
+        : is10Mbps
+          ? "高速吃到飽，約限速 10 Mbps"
+          : "吃到飽（依供應商 FUP／限速條款）"
       : row.plan_kind === "total"
         ? "總量高速用完後降速至約 128 kbps"
         : is5Mbps
@@ -248,6 +281,7 @@ function toVariant(row) {
       type: "esim",
       carrier: row.telecom,
       plan_kind: row.plan_kind,
+      unlim_line: isShortUnlim ? "short" : row.plan_kind === "unlimited" ? "long" : "",
       data: row.data_amount,
       data_amount: row.data_amount,
       days: String(row.day),
@@ -256,25 +290,27 @@ function toVariant(row) {
       profit_rate: `${profit}%`,
       profit_percent: profit,
       margin,
-      apn: row.apn || "e-ideas",
+      apn: row.apn || (isShortUnlim ? "ctexcel" : "e-ideas"),
       networks: row.networks || "",
       rule_desc: row.rule_desc || "",
       speed_desc: row.speed_desc || "",
       throttle_kind: row.throttle_kind || "",
-      ip: "CN,HK,MO",
+      ip: row.ip || (isShortUnlim ? "HK" : "SG"),
       attributes: {
         days: row.day,
         data: row.data_amount,
         data_amount: row.data_amount,
         telecom: row.telecom,
         line: LINE,
-        network: "中國聯通／電信 + 香港 CSL + 澳門 CTM（5G/4G）",
-        ip_type: "中港澳 T+C",
+        network: isShortUnlim
+          ? "中國電信／香港 CSL・中國電信香港／澳門電信"
+          : "中國聯通／電信 + 香港 CSL + 澳門 CTM（5G/4G）",
+        ip_type: isShortUnlim ? "香港 IP" : "新加坡 IP",
         route_type: LINE,
         hotspot: true,
-        gpt: true,
-        tiktok: true,
-        gemini: true,
+        gpt: !isShortUnlim,
+        tiktok: !isShortUnlim,
+        gemini: !isShortUnlim,
         speed_rule: speedRule,
         coverage: "中國大陸、香港、澳門",
       },
@@ -368,17 +404,17 @@ async function main() {
         coverage: "中國大陸、香港、澳門",
       },
     },
-    key_features_by_carrier: {
-      [TYPE_DAILY]: [
-        "每日型",
-        "中港澳三地",
-        "5G/4G",
-        "可選 5Mbps 續航",
-        "支援 TikTok",
-      ],
-      [TYPE_TOTAL]: ["總量型", "中港澳三地", "5G/4G", "預留流量緩衝", "支援 TikTok"],
-      [TYPE_UNLIM]: ["吃到飽", "中港澳三地", "5G/4G", "優先推薦", "支援 TikTok"],
-    },
+    key_features_by_carrier: (() => {
+      const src = cnhkmoTcKeyFeaturesByCarrier();
+      const out = {};
+      for (const [k, entry] of Object.entries(src)) {
+        out[k] = {
+          bullets: entry.bullets || [],
+          actual_experience: entry.actual_experience || "",
+        };
+      }
+      return out;
+    })(),
     overview_notices_by_carrier: {
       [TYPE_DAILY]: {
         fup_notice:
@@ -392,7 +428,7 @@ async function main() {
       },
       [TYPE_UNLIM]: {
         fup_notice:
-          "吃到飽方案適合社群／影音需求；實際速度依供應商 FUP／限速（常見約 10 Mbps）。覆蓋中國大陸、香港、澳門。",
+          "吃到飽：1–10 天為短天數線路（香港 IP・中國電信／CSL）；11 天起為長天數線路（約 10Mbps・電信／聯通／CSL／CTM）。覆蓋中國大陸、香港、澳門。",
         activation_notice: "建議抵達目的地後再安裝／啟用 eSIM",
       },
     },
@@ -503,7 +539,7 @@ async function main() {
   );
   console.log("\n======= 完成 =======");
   console.log(`標題: ${check.product?.title}`);
-  console.log(`前台: /product/china/${HANDLE}`);
+  console.log(`前台: /product/kongkong/${HANDLE}`);
   console.log(`變體數: ${vs.length}`);
   console.log(
     "方案類型（電信商選項）:",

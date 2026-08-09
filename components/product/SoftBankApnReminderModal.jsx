@@ -1,26 +1,41 @@
 /**
- * 日本 IIJ Docomo：購買前提醒需手動設定 APN
+ * 日本 SoftBank 單網每日型（漫遊／日本 IP）：購買前提醒 Android 通常需手動設定 APN（plus.4g）
  */
 import { AnimatePresence, motion } from "framer-motion";
 import MaterialIcon from "../MaterialIcon";
 
 const ACCENT = "#0A6CD0";
-export const IIJ_DOCOMO_APN = "vmobile.jp";
 
-export function isIijDocomoTelecom(telecom) {
-  const t = String(telecom || "");
-  // 供應商特殊說明：Need manually set APN to "vmobile.jp"
-  return /IIJ/i.test(t);
+export const SOFTBANK_APN = "plus.4g";
+export const SOFTBANK_APN_USER = "plus";
+export const SOFTBANK_APN_PASS = "4g";
+export const SOFTBANK_APN_AUTH = "CHAP";
+
+/** SoftBank 單網（非 SoftBank／KDDI 雙網）：購買前提醒 Android 通常需手動 APN */
+export function isSoftBankManualApnTelecom(telecom) {
+  const t = String(telecom || "").trim();
+  if (!t) return false;
+  if (/SoftBank\s*\/\s*KDDI|KDDI\s*\/\s*SoftBank/i.test(t)) return false;
+  return /^SoftBank\b/i.test(t);
 }
 
-export default function IijApnReminderModal({
+export default function SoftBankApnReminderModal({
   isOpen,
   onClose,
   onContinuePurchase,
   purchaseAction = "cart",
 }) {
   const continueLabel =
-    purchaseAction === "buy" ? "我知道了，繼續立即購買" : "我知道了，繼續加入購物車";
+    purchaseAction === "buy"
+      ? "我知道了，繼續立即購買"
+      : "我知道了，繼續加入購物車";
+
+  const rows = [
+    { k: "APN", v: SOFTBANK_APN },
+    { k: "用戶名", v: SOFTBANK_APN_USER },
+    { k: "密碼", v: SOFTBANK_APN_PASS },
+    { k: "身份驗證類型", v: SOFTBANK_APN_AUTH },
+  ];
 
   return (
     <AnimatePresence>
@@ -37,7 +52,7 @@ export default function IijApnReminderModal({
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-labelledby="iij-apn-prompt-title"
+            aria-labelledby="softbank-apn-prompt-title"
             initial={{ opacity: 0, scale: 0.96, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
@@ -48,10 +63,10 @@ export default function IijApnReminderModal({
               <div className="px-5 py-4 md:px-6" style={{ background: ACCENT }}>
                 <div className="flex items-start justify-between gap-3">
                   <h3
-                    id="iij-apn-prompt-title"
+                    id="softbank-apn-prompt-title"
                     className="text-[17px] md:text-lg font-bold text-white leading-snug pr-2"
                   >
-                    重要：IIJ Docomo 需手動設定 APN
+                    重要：SoftBank 通常需手動設定 APN
                   </h3>
                   <button
                     type="button"
@@ -63,22 +78,34 @@ export default function IijApnReminderModal({
                   </button>
                 </div>
                 <p className="mt-2 text-[13px] text-white/80 leading-relaxed">
-                  供應商標示需手動將 APN 設為「vmobile.jp」。抵達日本後，連上網路時才會啟用；未設 APN
-                  常見有訊號但無法上網。
+                  Android 手機安裝後多半需手動設定 APN 才能上網；iPhone
+                  多數會自動帶入，若無法上網也可依下列設定檢查。
                 </p>
               </div>
 
               <div className="px-5 py-4 md:px-6 space-y-4">
                 <div className="rounded-xl border border-[#0A6CD0]/20 bg-[#eef5fc] px-4 py-3.5">
                   <p className="text-[12px] font-bold text-slate-500 tracking-wide">
-                    APN 設定值
+                    APN 設定值（需手動設定）
                   </p>
-                  <p className="mt-1 text-xl font-black text-[#0A6CD0] tracking-wide select-all">
-                    {IIJ_DOCOMO_APN}
-                  </p>
+                  <dl className="mt-2 space-y-1.5">
+                    {rows.map((r) => (
+                      <div
+                        key={r.k}
+                        className="flex items-baseline justify-between gap-3"
+                      >
+                        <dt className="text-[12px] text-slate-500 shrink-0">
+                          {r.k}
+                        </dt>
+                        <dd className="text-[14px] font-bold text-[#0A6CD0] select-all text-right">
+                          {r.v}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
                   <p className="mt-2 text-[12px] text-slate-600 leading-relaxed">
-                    安裝 eSIM 後，請到手機「行動數據／蜂巢式」網路設定中新增或修改
-                    APN，名稱可自訂，APN 欄位填入上方值後再啟用此線路。
+                    安裝 eSIM 後，請到手機「行動數據／蜂巢式」網路設定新增或修改
+                    APN，填入上方欄位後再啟用此線路。
                   </p>
                 </div>
 
@@ -90,7 +117,8 @@ export default function IijApnReminderModal({
                       className="shrink-0 text-[#0A6CD0] mt-0.5"
                     />
                     <span>
-                      若不想手動設定 APN，可改選其他日本電信商方案（如 SoftBank／KDDI、AU）。
+                      若不想手動設定 APN，可改選 SoftBank／KDDI
+                      雙網（APN 自動）或其他日本方案。
                     </span>
                   </li>
                 </ul>

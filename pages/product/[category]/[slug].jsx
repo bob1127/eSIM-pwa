@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCart } from "../../../components/context/CartContext";
 import Layout from "../../Layout";
@@ -31,6 +32,12 @@ import IijApnReminderModal, {
 import AuKddiApnReminderModal, {
   needsAuKddiManualApnReminder,
 } from "../../../components/product/AuKddiApnReminderModal";
+import SoftBankApnReminderModal, {
+  isSoftBankManualApnTelecom,
+} from "../../../components/product/SoftBankApnReminderModal";
+import DataExhaustReminderModal, {
+  isDataExhaustTerminateVariant,
+} from "../../../components/product/DataExhaustReminderModal";
 import MaterialIcon from "../../../components/MaterialIcon";
 import MediaGalleryLightbox from "../../../components/MediaGalleryLightbox";
 import {
@@ -60,7 +67,6 @@ import {
 } from "../../../lib/resolveMedusaImageUrl";
 import EsimRefundDisclosure from "../../../components/legal/EsimRefundDisclosure";
 import Image from "next/image";
-import Link from "next/link";
 import SafeImage from "../../../components/SafeImage";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
@@ -151,12 +157,15 @@ function ProductMediaSlide({
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <SafeImage
       src={item.src}
       alt={item.alt || "product"}
+      width={1200}
+      height={1200}
+      sizes="(max-width: 1024px) 100vw, 55vw"
       className={className}
-      draggable={false}
+      priority={priority}
+      unoptimized={shouldBypassImageOptimization(item.src)}
     />
   );
 }
@@ -263,7 +272,7 @@ const CARRIER_INFO_MAP = {
   SoftBank: {
     badges: [
       { text: "SoftBank", type: "5G" },
-      { text: "原生", type: "IP" },
+      { text: "日本", type: "IP" },
     ],
     marketingBox: {
       bgColor: "bg-cyan-50",
@@ -271,14 +280,14 @@ const CARRIER_INFO_MAP = {
       policyTitle: "公平使用政策 (FUP):",
       policyDesc:
         "每日高速額度用完後降速至約 128 kbps，隔日重置。",
-      note: "注意：Android 手機通常需另外手動設定 APN（plus.4g）。iPhone 多半會自動設定。",
+      note: "注意：此為漫遊 eSIM，出網為日本 IP。大部分 Android 手機通常需另外手動設定 APN（plus.4g）；iPhone 多半會自動設定。",
     },
     summaryPrefix: "SoftBank",
   },
   "SoftBank（注意：Android 通常需手動 APN）": {
     badges: [
       { text: "SoftBank", type: "5G" },
-      { text: "原生", type: "IP" },
+      { text: "日本", type: "IP" },
     ],
     marketingBox: {
       bgColor: "bg-cyan-50",
@@ -286,7 +295,7 @@ const CARRIER_INFO_MAP = {
       policyTitle: "公平使用政策 (FUP):",
       policyDesc:
         "每日高速額度用完後降速至約 128 kbps，隔日重置。",
-      note: "注意：Android 手機通常需另外手動設定 APN（plus.4g）。iPhone 多半會自動設定。",
+      note: "注意：此為漫遊 eSIM，出網為日本 IP。大部分 Android 手機通常需另外手動設定 APN（plus.4g）；iPhone 多半會自動設定。",
     },
     summaryPrefix: "SoftBank",
   },
@@ -304,6 +313,22 @@ const CARRIER_INFO_MAP = {
       note: "注意：此線路為新加坡 IP 漫遊；建議抵達當地後再安裝 eSIM。",
     },
     summaryPrefix: "SoftBank / KDDI",
+  },
+  "KDDI / SoftBank / Docomo +": {
+    badges: [
+      { text: "KDDI", type: "5G" },
+      { text: "SoftBank", type: "5G" },
+      { text: "Docomo", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc:
+        "每日高速額度用完後降速至約 128 kbps，隔日重置。三網自動切換（KDDI／SoftBank／Docomo）。",
+      note: "注意：此線路為香港 IP 漫遊；APN mobile.three.com.hk 自動設定。建議抵達當地後再安裝 eSIM。",
+    },
+    summaryPrefix: "KDDI / SoftBank / Docomo +",
   },
   "SoftBank / KDDI 10Mbps": {
     badges: [
@@ -380,8 +405,8 @@ const CARRIER_INFO_MAP = {
       borderColor: "border-red-100",
       policyTitle: "公平使用政策 (FUP):",
       policyDesc:
-        "每日高速額度（每日3GB）用完後降速至約 256 kbps，隔日重置。",
-      note: "注意：需手動設定 APN（vmobile.jp）。此線路為日本原生 IP（DOCOMO）。",
+        "每日高速額度用完後降速至約 200／256 kbps（依方案），隔日重置。",
+      note: "注意：需手動設定 APN（vmobile.jp）。抵達日本後連上網路時啟用。此線路為日本原生 IP（DOCOMO）。",
     },
     summaryPrefix: "IIJ Docomo",
   },
@@ -392,8 +417,8 @@ const CARRIER_INFO_MAP = {
       borderColor: "border-red-100",
       policyTitle: "公平使用政策 (FUP):",
       policyDesc:
-        "每日高速額度（每日3GB）用完後降速至約 256 kbps，隔日重置。",
-      note: "注意：需手動設定 APN（vmobile.jp）。此線路為日本原生 IP（DOCOMO）。",
+        "每日高速額度用完後降速至約 200／256 kbps（依方案），隔日重置。",
+      note: "注意：需手動設定 APN（vmobile.jp）。抵達日本後連上網路時啟用。此線路為日本原生 IP（DOCOMO）。",
     },
     summaryPrefix: "IIJ Docomo",
   },
@@ -660,6 +685,60 @@ const CARRIER_INFO_MAP = {
     },
     summaryPrefix: "中國電信／聯通／CSL／澳門電訊",
   },
+  // cnhkmo-tc-esim：方案類型選項，底層同 T+C 電信
+  每日型: {
+    badges: [
+      { text: "免VPN", type: "info" },
+      { text: "中國電信 China Telecom", type: "5G" },
+      { text: "聯通 China Unicom", type: "5G" },
+      { text: "CSL", type: "5G" },
+      { text: "CTM 澳門電訊", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-slate-50",
+      borderColor: "border-slate-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc:
+        "每日高速額度用完後降速至約 128 kbps；選「5Mbps續航」則用完後約 5 Mbps。",
+      note: "電信：中國電信／聯通／CSL／澳門電訊（China Telecom / China Unicom / CSL / CTM）。新加坡 IP，一般可免 VPN 用 LINE／IG／FB。",
+    },
+    summaryPrefix: "每日型｜中國電信／聯通／CSL／澳門電訊",
+  },
+  總量型: {
+    badges: [
+      { text: "免VPN", type: "info" },
+      { text: "中國電信 China Telecom", type: "5G" },
+      { text: "聯通 China Unicom", type: "5G" },
+      { text: "CSL", type: "5G" },
+      { text: "CTM 澳門電訊", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-slate-50",
+      borderColor: "border-slate-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "總量高速用完後降速至約 128 kbps，請預留流量緩衝。",
+      note: "電信：中國電信／聯通／CSL／澳門電訊（China Telecom / China Unicom / CSL / CTM）。新加坡 IP，一般可免 VPN 用 LINE／IG／FB。",
+    },
+    summaryPrefix: "總量型｜中國電信／聯通／CSL／澳門電訊",
+  },
+  吃到飽: {
+    badges: [
+      { text: "免VPN", type: "info" },
+      { text: "中國電信 China Telecom", type: "5G" },
+      { text: "聯通 China Unicom", type: "5G" },
+      { text: "CSL", type: "5G" },
+      { text: "CTM 澳門電訊", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-slate-50",
+      borderColor: "border-slate-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc:
+        "11 天起約 10 Mbps 吃到飽；1–10 天為短天數線路（香港 IP・中國電信／CSL）。",
+      note: "長天數電信：中國電信／聯通／CSL／澳門電訊（China Telecom / China Unicom / CSL / CTM）。",
+    },
+    summaryPrefix: "吃到飽｜中國電信／聯通／CSL／澳門電訊",
+  },
 };
 
 const stripHtml = (html) =>
@@ -781,13 +860,16 @@ function ProductActualExperience({ text }) {
 }
 
 /** 概覽分頁：FUP 資訊 + 啟用注意（管理者可前台編輯） */
+const ACTIVATION_TUTORIAL_HREF = "/operation-shopee";
+const DEFAULT_ACTIVATION_NOTICE =
+  "建議在台灣機場先安裝設定好／抵達當地啟用 eSIM";
+
 function ProductOverviewNotices({
   notices,
   carrierFallback,
   product,
   carrier,
   onProductUpdate,
-  onOpenInstall,
 }) {
   const { isAdmin, adminChecked, authHeaders } = useProductAdmin();
   const [isEditing, setIsEditing] = useState(false);
@@ -809,13 +891,22 @@ function ProductOverviewNotices({
       .trim();
     return body ? `公平使用政策 (FUP): ${body}` : "公平使用政策 (FUP):";
   })();
-  const activationText =
-    notices?.activation_notice || carrierFallback?.note || "";
+  const activationExtra = String(
+    notices?.activation_notice || "",
+  ).trim();
+  /** 啟用提醒固定文案；額外注意事項（如 APN）另列 */
+  const activationText = DEFAULT_ACTIVATION_NOTICE;
+  const showActivationExtra =
+    activationExtra &&
+    activationExtra !== DEFAULT_ACTIVATION_NOTICE &&
+    !/^建議抵達|^建議您抵達|建議.*後再安裝/.test(activationExtra);
 
   useEffect(() => {
     if (!isEditing) {
       setFupDraft(notices?.fup_notice || "");
-      setActivationDraft(notices?.activation_notice || "");
+      setActivationDraft(
+        notices?.activation_notice || DEFAULT_ACTIVATION_NOTICE,
+      );
     }
   }, [notices, isEditing]);
 
@@ -872,7 +963,9 @@ function ProductOverviewNotices({
               }
               if (!isEditing) {
                 setFupDraft(notices?.fup_notice || "");
-                setActivationDraft(notices?.activation_notice || "");
+                setActivationDraft(
+                  notices?.activation_notice || DEFAULT_ACTIVATION_NOTICE,
+                );
               }
               setIsEditing(!isEditing);
             }}
@@ -910,7 +1003,7 @@ function ProductOverviewNotices({
               onChange={(e) => setActivationDraft(e.target.value)}
               rows={3}
               className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2"
-              placeholder="例：注意：此線路為日本 IP。"
+              placeholder={DEFAULT_ACTIVATION_NOTICE}
             />
           </div>
           <button
@@ -964,22 +1057,14 @@ function ProductOverviewNotices({
                           ),
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (typeof onOpenInstall === "function") {
-                            onOpenInstall();
-                            return;
-                          }
-                          document
-                            .getElementById("product-tabs")
-                            ?.scrollIntoView({ behavior: "smooth" });
-                        }}
+                      <Link
+                        href={ACTIVATION_TUTORIAL_HREF}
                         className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#0A6CD0] transition hover:bg-white/90"
-                        aria-label="查看安裝說明"
+                        aria-label="查看啟用教學"
+                        title="啟用教學"
                       >
                         <MaterialIcon name="arrow_forward" size={18} />
-                      </button>
+                      </Link>
                     </div>
                   </article>
                 </div>
@@ -1000,9 +1085,30 @@ function ProductOverviewNotices({
                         注意
                       </span>
                     </div>
-                    <FeatureBulletText className="mt-1.5 text-[13px] leading-relaxed text-slate-500">
-                      {activationText}
-                    </FeatureBulletText>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">
+                      建議在台灣機場先
+                      <Link
+                        href={ACTIVATION_TUTORIAL_HREF}
+                        className="mx-0.5 font-semibold text-[#0A6CD0] underline underline-offset-2 hover:text-[#0856a8]"
+                      >
+                        安裝設定
+                      </Link>
+                      好／抵達當地啟用 eSIM
+                    </p>
+                    {showActivationExtra ? (
+                      <FeatureBulletText className="mt-2 text-[13px] leading-relaxed text-slate-500">
+                        {activationExtra}
+                      </FeatureBulletText>
+                    ) : null}
+                    <div className="mt-3">
+                      <Link
+                        href={ACTIVATION_TUTORIAL_HREF}
+                        className="inline-flex items-center gap-1 text-[12px] font-bold text-[#0A6CD0] hover:underline"
+                      >
+                        查看啟用教學
+                        <MaterialIcon name="arrow_forward" size={14} />
+                      </Link>
+                    </div>
                   </article>
                 </div>
               ) : null}
@@ -2248,6 +2354,8 @@ export default function ProductPage({
   const [coverageContinueAction, setCoverageContinueAction] = useState(null);
   const [iijApnPromptOpen, setIijApnPromptOpen] = useState(false);
   const [auApnPromptOpen, setAuApnPromptOpen] = useState(false);
+  const [softbankApnPromptOpen, setSoftbankApnPromptOpen] = useState(false);
+  const [dataExhaustPromptOpen, setDataExhaustPromptOpen] = useState(false);
   const isPartnerShell = shell === "shop" && store;
   const productAdmin = useProductAdmin();
   const isAdmin = isPartnerShell ? false : productAdmin.isAdmin;
@@ -2280,6 +2388,7 @@ export default function ProductPage({
     setPendingPurchaseAction(null);
     setIijApnPromptOpen(false);
     setAuApnPromptOpen(false);
+    setSoftbankApnPromptOpen(false);
   }, [initialProduct]);
 
   // 進頁即時拉最新 metadata（後台儲存後不用等 ISR）
@@ -2594,17 +2703,23 @@ export default function ProductPage({
     setCoveragePromptOpen(false);
     setIijApnPromptOpen(false);
     setAuApnPromptOpen(false);
+    setSoftbankApnPromptOpen(false);
     setPendingPurchaseAction(null);
     if (action === "buy") performBuyNow();
     else handleAddToCart();
   };
 
-  /** 涵蓋確認後／略過涵蓋後：若為 IIJ Docomo 再跳 APN 提醒 */
+  /** 涵蓋確認後／略過涵蓋後：IIJ / SoftBank 手動 APN 再跳提醒 */
   const continueAfterCoverageOrDirect = (action) => {
     const telecom = selectedAttributes?.telecom;
     if (isIijDocomoTelecom(telecom)) {
       setPendingPurchaseAction(action);
       setIijApnPromptOpen(true);
+      return;
+    }
+    if (isSoftBankManualApnTelecom(telecom)) {
+      setPendingPurchaseAction(action);
+      setSoftbankApnPromptOpen(true);
       return;
     }
     finalizePurchaseAction(action);
@@ -2622,10 +2737,27 @@ export default function ProductPage({
     const telecom = selectedAttributes?.telecom;
     const days = selectedAttributes?.days;
 
-    // AU(KDDI) 真不限速、≥10 天：跳過訊號地圖，改彈 APN 提醒
+    // 總量「用完斷網」：加入購物車／購買前必顯示提示
+    if (isDataExhaustTerminateVariant(currentVariation)) {
+      setPendingPurchaseAction(action);
+      setDataExhaustPromptOpen(true);
+      return;
+    }
+
+    // 需手動 APN：略過收訊熱點圖 popup，改彈 APN 提醒
     if (needsAuKddiManualApnReminder(telecom, days)) {
       setPendingPurchaseAction(action);
       setAuApnPromptOpen(true);
+      return;
+    }
+    if (isIijDocomoTelecom(telecom)) {
+      setPendingPurchaseAction(action);
+      setIijApnPromptOpen(true);
+      return;
+    }
+    if (isSoftBankManualApnTelecom(telecom)) {
+      setPendingPurchaseAction(action);
+      setSoftbankApnPromptOpen(true);
       return;
     }
 
@@ -2766,10 +2898,43 @@ export default function ProductPage({
   const formatTelecomLabel = (opt) => {
     const s = String(opt || "").trim();
     if (!s) return s;
+    // 中港澳 T+C：方案類型按鈕標中英文電信商
+    const cnhkmoTc = {
+      每日型: true,
+      總量型: true,
+      吃到飽: true,
+    };
+    if (cnhkmoTc[s]) {
+      return (
+        <span className="flex flex-col gap-0.5 text-left">
+          <span className="font-semibold leading-snug">
+            {s}｜中國電信／聯通／CSL／澳門電訊
+          </span>
+          <span className="text-[11px] font-normal leading-snug text-slate-500">
+            China Telecom / China Unicom / CSL / CTM
+          </span>
+        </span>
+      );
+    }
+    if (s === "中國電信／聯通／CSL／澳門電訊") {
+      return (
+        <span className="flex flex-col gap-0.5 text-left">
+          <span className="font-semibold leading-snug">{s}</span>
+          <span className="text-[11px] font-normal leading-snug text-slate-500">
+            China Telecom / China Unicom / CSL / CTM
+          </span>
+        </span>
+      );
+    }
     if (/Tiktok\+ChatGPT|常規速度|50-70|GPT\s*\+\s*TikTok/i.test(s)) return s;
-    if (/\(\s*CMCC\s*\)/i.test(s) || /\(\s*CUCC\s*\)/i.test(s)) return s;
-    if (/中國移動|CMCC/i.test(s)) return `${s} (CMCC)`;
-    if (/中國聯通|CUCC|Unicom/i.test(s)) return `${s} (CUCC)`;
+    // 括號內改中文電信商名（勿顯示 CMCC／CUCC 英文代號給客人）
+    if (/\(\s*CMCC\s*\+?\s*\)/i.test(s))
+      return s.replace(/\(\s*CMCC\s*\+?\s*\)/i, "(中國移動)");
+    if (/\(\s*CUCC\s*\+?\s*\)/i.test(s))
+      return s.replace(/\(\s*CUCC\s*\+?\s*\)/i, "(中國聯通)");
+    if (/\(\s*中國移動\s*\)/.test(s) || /\(\s*中國聯通\s*\)/.test(s)) return s;
+    if (/中國移動|CMCC/i.test(s)) return `${s} (中國移動)`;
+    if (/中國聯通|CUCC|Unicom/i.test(s)) return `${s} (中國聯通)`;
     // 僅去掉尾端／「雙切換」前的 4G/5G（保留「UMobile 5G 當地」這類名稱內的 5G）
     return s
       .replace(/\s*[45]G(?:\s*\/\s*[45]G)?(?=\s*雙切換\s*$)/gi, "")
@@ -2802,19 +2967,26 @@ export default function ProductPage({
   const telecomSectionHint = (() => {
     const tags = [];
     if (availableCarriers.some((c) => /中國移動|CMCC/i.test(String(c)))) {
-      tags.push("CMCC");
+      tags.push("中國移動");
     }
     if (
       availableCarriers.some((c) => /中國聯通|CUCC|Unicom/i.test(String(c)))
     ) {
-      tags.push("CUCC");
+      tags.push("中國聯通");
     }
     return tags.length ? ` ( ${tags.join(" / ")} )` : "";
   })();
 
   const choiceSummary = [
     selectedAttributes.telecom
-      ? formatTelecomLabel(selectedAttributes.telecom)
+      ? (() => {
+          const t = String(selectedAttributes.telecom);
+          if (t === "每日型" || t === "總量型" || t === "吃到飽") {
+            return `${t}｜中國電信／聯通／CSL／澳門電訊`;
+          }
+          const label = formatTelecomLabel(t);
+          return typeof label === "string" ? label : t;
+        })()
       : null,
     selectedAttributes.days ? `${selectedAttributes.days}天` : null,
     selectedAttributes.data_amount,
@@ -2992,6 +3164,34 @@ export default function ProductPage({
           onContinuePurchase={() =>
             finalizePurchaseAction(pendingPurchaseAction || "cart")
           }
+        />
+        <SoftBankApnReminderModal
+          isOpen={softbankApnPromptOpen}
+          purchaseAction={pendingPurchaseAction || "cart"}
+          onClose={() => {
+            setSoftbankApnPromptOpen(false);
+            setPendingPurchaseAction(null);
+          }}
+          onContinuePurchase={() =>
+            finalizePurchaseAction(pendingPurchaseAction || "cart")
+          }
+        />
+        <DataExhaustReminderModal
+          isOpen={dataExhaustPromptOpen}
+          purchaseAction={pendingPurchaseAction || "cart"}
+          dataLabel={
+            selectedAttributes?.data_amount
+              ? `${selectedAttributes.telecom || ""} · ${selectedAttributes.days || ""} · ${selectedAttributes.data_amount}`
+              : ""
+          }
+          onClose={() => {
+            setDataExhaustPromptOpen(false);
+            setPendingPurchaseAction(null);
+          }}
+          onContinuePurchase={() => {
+            setDataExhaustPromptOpen(false);
+            finalizePurchaseAction(pendingPurchaseAction || "cart");
+          }}
         />
 
         <div className="bg-white">
@@ -3266,12 +3466,6 @@ export default function ProductPage({
                     onProductUpdate={(patch) =>
                       setProduct((prev) => ({ ...prev, ...patch }))
                     }
-                    onOpenInstall={() => {
-                      setMediaTab("specs");
-                      document
-                        .getElementById("product-tabs")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }}
                   />
                 )}
               </div>

@@ -11,6 +11,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { koreaUnlimitedKeyFeaturesByCarrier } from "../content/product-detailed/korea-key-features.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,9 +32,23 @@ const REBUILD = process.argv.includes("--rebuild");
 
 const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const CATEGORY_IDS = ["pcat_01KZJNBVGMVYJ9W659MWQB1E3Q"]; // korea
-const THUMB =
-  process.env.KOREA_PRODUCT_THUMB ||
-  "https://www.jeko-esim.com.tw/images/korea-esim-banner.jpg";
+// 韓國三產品共用同一組商品圖（SK電信吃到飽為基準）
+const KOREA_GALLERY = [
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDD41493R26CQSJP8CS.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDFBNK845TJDWA4697M.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDGVRBHVSY5D1FJ15SJ.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDHWCH8R57ZRQ7RP7YT.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDJYA8R20W94NW2909F.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDKK0YTH870CH7NADWV.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDMPPGMMZARAKC8DA1C.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDM5YYGWR08PQZAWQFK.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDNPW4F3C7BV41G6RR0.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDNRGMJZBZZ7MKT2VAW.png",
+  "https://www.jeko-esim.com.tw/images/korea-esim-banner.jpg",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDPMD9WFX666FPG8P8J.jpg",
+];
+const THUMB = process.env.KOREA_PRODUCT_THUMB || KOREA_GALLERY[0];
+const PRODUCT_IMAGES = KOREA_GALLERY.map((url) => ({ url }));
 
 function retailFromCost(costTwd) {
   return Math.ceil((costTwd * MARGIN) / 10) * 10 - 1;
@@ -237,6 +252,7 @@ async function main() {
         activation_notice: "建議抵達韓國後再安裝／啟用 eSIM",
       },
     },
+    key_features_by_carrier: koreaUnlimitedKeyFeaturesByCarrier(),
   };
 
   const payloadBase = {
@@ -248,7 +264,7 @@ async function main() {
     status: "published",
     discountable: true,
     thumbnail: THUMB,
-    images: [{ url: THUMB }],
+    images: PRODUCT_IMAGES,
     metadata: productMeta,
     options: [
       { title: "使用天數", values: dayValues },

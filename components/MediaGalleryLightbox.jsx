@@ -48,12 +48,15 @@ function MediaSlide({ item, fill = false, className = "", priority = false }) {
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <SafeImage
       src={item.src}
       alt={item.alt || "media"}
+      width={1200}
+      height={1200}
+      sizes="(max-width: 1024px) 100vw, 55vw"
       className={className}
-      draggable={false}
+      priority={priority}
+      unoptimized={shouldBypassImageOptimization(item.src)}
     />
   );
 }

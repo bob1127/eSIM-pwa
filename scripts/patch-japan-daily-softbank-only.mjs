@@ -185,7 +185,7 @@ function toVariant(r) {
         telecom: TELECOM,
         network: "SoftBank 4G/5G",
         ip_type: "日本 IP",
-        route_type: "原生eSIM",
+        route_type: "漫遊eSIM",
         hotspot: true,
         speed_rule: FUP,
         fup: FUP,

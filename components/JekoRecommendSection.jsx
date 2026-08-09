@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import SafeImage from "./SafeImage";
 import MobileCardCarousel from "./MobileCardCarousel";
 
 const NATIVE_IP_TAG = "/images/原生ip-tag.png";
@@ -30,7 +30,7 @@ function RecommendSlide({ src, href, index, sizes }) {
   const inner = (
     <div className="relative w-full pt-6 sm:pt-8">
       <div className="relative w-full aspect-[16/9] sm:aspect-[16/8] overflow-hidden rounded-[15px] bg-black">
-        <Image
+        <SafeImage
           src={src}
           alt={`Jeko 推薦 ${index + 1}`}
           fill
@@ -40,7 +40,7 @@ function RecommendSlide({ src, href, index, sizes }) {
         />
       </div>
       {showNativeIpTag && (
-        <Image
+        <SafeImage
           src={NATIVE_IP_TAG}
           alt="原生IP推薦"
           width={160}

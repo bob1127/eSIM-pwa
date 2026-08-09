@@ -77,9 +77,22 @@ const REBUILD = process.argv.includes("--rebuild");
 
 const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const CATEGORY_IDS = ["pcat_01KZJNBVVHY3ZHNJ4MPS9ZZVFG"]; // china
-const THUMB =
-  process.env.CHINA_PRODUCT_THUMB ||
-  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KYBQ3HHZADQNWFGG6F02YKSP.png";
+// 中國每日／吃到飽／總量型共用同一組商品圖（每日型為基準）
+const CHINA_GALLERY = [
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KYBQ3HHZADQNWFGG6F02YKSP.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK7PKZC1M2RHG9FSSJ2MSA2.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK7PKZF9FN2EBHG0VWQZYE4.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK7PKZHTR543PGYNDFCWZ4P.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK7PKZKDF8KNBEG5E6AN6FZ.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK7PKZMD55C80GTZT5AQ3J1.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK7PKZPY1MSRTSRJFAV1TDE.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK7PKZQ6J4G2W5T7ST73922.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK7PKZRTNQSN4J0N42DP5FW.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK7PKZTSBEM0042MDCPPKFP.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK7PKZV4V5W95ECE4A9EYAA.jpg",
+];
+const THUMB = process.env.CHINA_PRODUCT_THUMB || CHINA_GALLERY[0];
+const PRODUCT_IMAGES = CHINA_GALLERY.map((url) => ({ url }));
 
 function retailFromCost(costTwd) {
   return Math.ceil((costTwd * MARGIN) / 10) * 10 - 1;
@@ -362,7 +375,7 @@ async function main() {
     status: "published",
     discountable: true,
     thumbnail: THUMB,
-    images: [{ url: THUMB }],
+    images: PRODUCT_IMAGES,
     metadata: productMeta,
     options: [
       { title: "使用天數", values: dayValues },

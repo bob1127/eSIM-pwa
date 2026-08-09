@@ -33,7 +33,7 @@ export function cnhkmoShortCmccKeyFeatures() {
 export function cnhkmoLongTcKeyFeatures() {
   return pack(
     [
-      "本線路走中國電信、中國聯通、香港 CSL、澳門電訊（CTM），出網為**新加坡 IP**，天數選擇最齊（最長可至約 30 天），適合較長行程。",
+      "本線路走中國電信、中國聯通、香港 CSL、澳門電訊（CTM），出網為**新加坡 IP**，天數自 **11 天起**（最長約 30 天），適合較長行程。",
       "**為什麼選擇長天數・中國電信線路？**",
       "**免 VPN 社群**：新加坡出口 IP，一般可直接使用 LINE、Instagram、Facebook（實際依當下路由；非保證每位用戶／每個時段）。",
       "**約 10Mbps 吃到飽**：公平使用政策為約 10 Mbps 無限流量，實際速度可能波動。",

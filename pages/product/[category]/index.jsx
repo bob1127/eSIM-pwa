@@ -71,9 +71,28 @@ export async function getStaticProps({ params }) {
       return { notFound: true, revalidate: 60 };
     }
 
-    const prodUrl = `${backendUrl}/store/products?category_id[]=${currentCategory.id}&fields=+metadata,*tags,*options,*variants,*variants.options,*variants.prices,*variants.calculated_price&limit=100`;
+    // calculated_price 必須帶 region_id，否則 Medusa 回 invalid_data，products 變空陣列
+    const regionRes = await fetch(`${backendUrl}/store/regions`, { headers });
+    const regionData = regionRes.ok ? await regionRes.json() : { regions: [] };
+    const region =
+      regionData.regions?.find(
+        (r) => r.currency_code?.toLowerCase() === "twd",
+      ) || regionData.regions?.[0];
+
+    const prodQuery = new URLSearchParams({
+      "category_id[]": currentCategory.id,
+      fields:
+        "+metadata,*tags,*options,*variants,*variants.options,*variants.prices,*variants.calculated_price",
+      limit: "100",
+    });
+    if (region?.id) prodQuery.set("region_id", region.id);
+
+    const prodUrl = `${backendUrl}/store/products?${prodQuery}`;
     const prodRes = await fetch(prodUrl, { headers });
     const prodData = await prodRes.json();
+    if (!prodRes.ok || !Array.isArray(prodData.products)) {
+      console.error("❌ Medusa products 失敗：", prodData?.type, prodData?.message);
+    }
 
     const allCatRes = await fetch(`${backendUrl}/store/product-categories`, {
       headers,
@@ -154,7 +173,7 @@ export async function getStaticProps({ params }) {
         categories: formattedAllCategories,
         initialProducts: formattedProducts,
       },
-      revalidate: 3600,
+      revalidate: 60,
     };
   } catch (e) {
     console.error("❌ Medusa getStaticProps 發生致命錯誤：", e);

@@ -1,8 +1,8 @@
 /**
  * 建立／更新「韓國 eSIM 總量型」
  * 兩種電信 × 各總量／天數（利潤皆 50%）：
- *   1) LG U+ / SKT 5G 雙切換 ← South Korea(T+C)-Total*（128kbps，排除 terminate）
- *   2) SKT 5G ← South Korea-Total*-B0（用完斷網）
+ *   1) LG U+ / SK電信 5G 雙切換 ← South Korea(T+C)-Total*（128kbps，排除 terminate）
+ *   2) SK電信 5G ← South Korea-Total*-B0（用完斷網）
  *
  * 用法：
  *   HKD_TO_TWD=4.5 node scripts/create-korea-total-product.mjs --rebuild
@@ -10,6 +10,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { koreaTotalKeyFeaturesByCarrier } from "../content/product-detailed/korea-key-features.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -46,8 +47,8 @@ const EMAIL = process.env.MEDUSA_ADMIN_EMAIL || "script@esim.local";
 const PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "ScriptImport2026!";
 
 const HANDLE = "korea-total-esim";
-const TELECOM_TC = "LG U+ / SKT 5G 雙切換";
-const TELECOM_SKT = "SKT 5G";
+const TELECOM_TC = "LG U+ / SK電信 5G 雙切換";
+const TELECOM_SKT = "SK電信 5G";
 const LINE = "漫遊線路";
 const DATA_ORDER = ["1GB", "3GB", "5GB", "10GB", "20GB", "30GB", "50GB"];
 /** 雙切換／SKT 皆 50% */
@@ -61,9 +62,23 @@ const REBUILD = process.argv.includes("--rebuild");
 
 const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const CATEGORY_IDS = ["pcat_01KZJNBVGMVYJ9W659MWQB1E3Q"]; // korea
-const THUMB =
-  process.env.KOREA_PRODUCT_THUMB ||
-  "https://www.jeko-esim.com.tw/images/korea-esim-banner.jpg";
+// 與 korea-unlimited-esim（SK電信吃到飽）同一組商品圖
+const KOREA_GALLERY = [
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDD41493R26CQSJP8CS.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDFBNK845TJDWA4697M.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDGVRBHVSY5D1FJ15SJ.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDHWCH8R57ZRQ7RP7YT.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDJYA8R20W94NW2909F.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDKK0YTH870CH7NADWV.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDMPPGMMZARAKC8DA1C.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDM5YYGWR08PQZAWQFK.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDNPW4F3C7BV41G6RR0.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDNRGMJZBZZ7MKT2VAW.png",
+  "https://www.jeko-esim.com.tw/images/korea-esim-banner.jpg",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK87FDPMD9WFX666FPG8P8J.jpg",
+];
+const THUMB = process.env.KOREA_PRODUCT_THUMB || KOREA_GALLERY[0];
+const PRODUCT_IMAGES = KOREA_GALLERY.map((url) => ({ url }));
 
 function retailFromCost(costTwd, profitPercent) {
   const margin = 1 + profitPercent / 100;
@@ -281,21 +296,21 @@ async function main() {
       [TELECOM_SKT]: PROFIT_BY_KIND.skt,
     },
     seo_title:
-      "韓國 eSIM 總量型｜LG U+/SKT 雙切換・SKT 5G・1～50GB｜Jeko eSIM",
+      "韓國 eSIM 總量型｜LG U+/SK電信 雙切換・SK電信 5G・1～50GB｜Jeko eSIM",
     seo_description:
-      "韓國總量型 eSIM：LG U+ / SKT 5G 雙電信切換（用完降速 128kbps），或純 SKT 5G（用完斷網）。依天數與總量選購，支援熱點分享。",
+      "韓國總量型 eSIM：LG U+ / SK電信 5G 雙電信切換（用完降速 128kbps），或純 SK電信 5G（用完斷網）。依天數與總量選購，支援熱點分享。",
     seo_keywords:
-      "韓國eSIM,總量型eSIM,LG U+,SKT,雙電信切換,總量流量,5G,旅遊eSIM,Jeko eSIM",
+      "韓國eSIM,總量型eSIM,LG U+,SK電信,雙電信切換,總量流量,5G,旅遊eSIM,Jeko eSIM",
     subtitle_by_carrier: {
       [TELECOM_TC]:
-        "總量型・LG U+ / SKT 5G 雙切換・高速用完後降速 128kbps",
-      [TELECOM_SKT]: "總量型・SKT 5G・流量用完即斷網",
+        "總量型・LG U+ / SK電信 5G 雙切換・高速用完後降速 128kbps",
+      [TELECOM_SKT]: "總量型・SK電信 5G・流量用完即斷網",
     },
     carrier_specs_by_carrier: {
       [TELECOM_TC]: {
         ip_type: "新加坡IP",
         route_type: "漫遊",
-        network: "LG U+ / SKT 5G/4G 雙電信切換",
+        network: "LG U+ / SK電信 5G/4G 雙電信切換",
         speed_rule: "方案總量高速用完後降速至約 128 kbps（可持續使用）",
         apps: "熱點分享,ChatGPT,TikTok,Gemini",
         apn: "e-ideas",
@@ -303,36 +318,21 @@ async function main() {
       [TELECOM_SKT]: {
         ip_type: "香港IP",
         route_type: "漫遊",
-        network: "SKT 5G/4G",
+        network: "SK電信 5G/4G",
         speed_rule: "方案總量用完即斷網（terminate）",
         apn: "cmhk",
       },
     },
-    key_features_by_carrier: {
-      [TELECOM_TC]: [
-        "總量型",
-        "3～50GB",
-        "LG U+ / SKT 5G 雙切換",
-        "用完降速 128kbps",
-        "支援 TikTok／ChatGPT",
-      ],
-      [TELECOM_SKT]: [
-        "總量型",
-        "1～50GB",
-        "SKT 5G",
-        "用完即斷網",
-        "香港IP",
-      ],
-    },
+    key_features_by_carrier: koreaTotalKeyFeaturesByCarrier(),
     overview_notices_by_carrier: {
       [TELECOM_TC]: {
         fup_notice:
-          "依所選方案提供總量高速流量（3GB～50GB）。高速用完後降速至約 128 kbps 可持續使用。LG U+ 與 SKT 5G 雙電信自動切換。",
+          "依所選方案提供總量高速流量（3GB～50GB）。高速用完後降速至約 128 kbps 可持續使用。LG U+ 與 SK電信 5G 雙電信自動切換。",
         activation_notice: "建議抵達韓國後再安裝／啟用 eSIM",
       },
       [TELECOM_SKT]: {
         fup_notice:
-          "依所選方案提供總量高速流量（1GB～50GB）。流量用完即斷網，無法繼續使用。純 SKT 5G 網路。",
+          "依所選方案提供總量高速流量（1GB～50GB）。流量用完即斷網，無法繼續使用。純 SK電信 5G 網路。",
         activation_notice: "建議抵達韓國後再安裝／啟用 eSIM",
       },
     },
@@ -341,14 +341,14 @@ async function main() {
   const payloadBase = {
     title: "韓國 eSIM 總量型",
     subtitle:
-      "兩種電信可選：LG U+/SKT 5G 雙切換・SKT 5G・1～50GB",
+      "兩種電信可選：LG U+/SK電信 5G 雙切換・SK電信 5G・1～50GB",
     handle: HANDLE,
     description:
-      "韓國 eSIM 總量型，兩種電信：LG U+ / SKT 5G 雙電信切換（新加坡 IP，用完降速 128kbps）、純 SKT 5G（香港 IP，用完斷網）。提供 1GB～50GB 總量方案，依天數選購。",
+      "韓國 eSIM 總量型，兩種電信：LG U+ / SK電信 5G 雙電信切換（新加坡 IP，用完降速 128kbps）、純 SK電信 5G（香港 IP，用完斷網）。提供 1GB～50GB 總量方案，依天數選購。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,
-    images: [{ url: THUMB }],
+    images: PRODUCT_IMAGES,
     metadata: productMeta,
     options: [
       { title: "使用天數", values: dayValues },

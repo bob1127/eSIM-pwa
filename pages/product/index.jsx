@@ -59,12 +59,32 @@ async function fetchAllMedusaProducts() {
   const fields =
     "+metadata,*tags,*categories,*variants.prices,*variants.calculated_price,thumbnail,title,handle";
 
+  // calculated_price 需要 region_id，否則 API 回 invalid_data、列表變空
+  let regionId = "";
+  try {
+    const regionRes = await fetch(`${backendUrl}/store/regions`, {
+      headers,
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (regionRes.ok) {
+      const regionData = await regionRes.json();
+      const region =
+        regionData.regions?.find(
+          (r) => r.currency_code?.toLowerCase() === "twd",
+        ) || regionData.regions?.[0];
+      regionId = region?.id || "";
+    }
+  } catch {
+    /* 沒 region 時下面仍可用 prices 欄位 */
+  }
+
   while (true) {
     const query = new URLSearchParams({
       limit: String(limit),
       offset: String(offset),
       fields,
     });
+    if (regionId) query.set("region_id", regionId);
     const res = await fetch(`${backendUrl}/store/products?${query}`, {
       headers,
       signal: AbortSignal.timeout(25_000),
@@ -73,6 +93,11 @@ async function fetchAllMedusaProducts() {
       throw new Error(`Medusa products ${res.status}`);
     }
     const data = await res.json();
+    if (!Array.isArray(data.products)) {
+      throw new Error(
+        `Medusa products invalid: ${data?.type || ""} ${data?.message || ""}`,
+      );
+    }
     const batch = data.products || [];
     all.push(...batch);
     if (batch.length < limit) break;
