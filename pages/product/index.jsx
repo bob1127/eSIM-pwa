@@ -54,9 +54,10 @@ async function fetchAllMedusaProducts() {
   const headers = getMedusaHeaders();
   const all = [];
   let offset = 0;
-  const limit = 100;
+  const limit = 50;
+  // 列表頁只要最低價／縮圖／標籤，勿拉全變體選項（日本無限流量等會拖垮 Vercel build）
   const fields =
-    "+metadata,*tags,*categories,*options,*variants,*variants.options,*variants.prices,*variants.calculated_price";
+    "+metadata,*tags,*categories,*variants.prices,*variants.calculated_price,thumbnail,title,handle";
 
   while (true) {
     const query = new URLSearchParams({
@@ -66,6 +67,7 @@ async function fetchAllMedusaProducts() {
     });
     const res = await fetch(`${backendUrl}/store/products?${query}`, {
       headers,
+      signal: AbortSignal.timeout(25_000),
     });
     if (!res.ok) {
       throw new Error(`Medusa products ${res.status}`);
@@ -75,7 +77,7 @@ async function fetchAllMedusaProducts() {
     all.push(...batch);
     if (batch.length < limit) break;
     offset += limit;
-    if (offset > 500) break;
+    if (offset > 300) break;
   }
 
   return all.filter(isVisibleOnMainSite);

@@ -74,6 +74,8 @@ const nextConfig = {
   trailingSlash: true,
   // NextAuth OAuth callback 不可被 308 改成尾斜線，否則 state 失效會變成 error=undefined
   skipTrailingSlashRedirect: true,
+  // 商品頁變體多／Medusa 慢時，預設 60s 易在 Vercel 觸發 page-data-collection-timeout
+  staticPageGenerationTimeout: 180,
 
   images: {
     unoptimized: true,

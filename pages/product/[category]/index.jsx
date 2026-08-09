@@ -35,13 +35,19 @@ const backendUrl =
 // 🚀 1. getStaticPaths
 // ==========================================
 export async function getStaticPaths() {
+  // Vercel build 不預建全部分類頁，避免 Medusa 慢查拖垮 collect page data
+  if (process.env.VERCEL || process.env.SKIP_PRODUCT_SSG === "1") {
+    return { paths: [], fallback: "blocking" };
+  }
+
   try {
     const res = await fetch(`${backendUrl}/store/product-categories`, {
       headers: getMedusaHeaders(),
+      signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) throw new Error("無法取得 Medusa 分類路徑");
     const { product_categories } = await res.json();
-    const paths = product_categories.map((cat) => ({
+    const paths = (product_categories || []).map((cat) => ({
       params: { category: cat.handle },
     }));
     return { paths, fallback: "blocking" };

@@ -1141,6 +1141,11 @@ export default function PostPage({
 }
 
 export async function getStaticPaths() {
+  // Vercel build 略過大量文章預渲染，避免 WP／逾時拖垮 build
+  if (process.env.VERCEL || process.env.SKIP_PRODUCT_SSG === "1") {
+    return { paths: [], fallback: "blocking" };
+  }
+
   try {
     const posts = await fetchWpPosts({ per_page: 100 });
     return {

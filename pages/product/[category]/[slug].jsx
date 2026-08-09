@@ -1932,15 +1932,22 @@ const backendUrl =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
 
 export async function getStaticPaths() {
+  // Vercel／CI build：不預渲染全部商品（日本無限流量等變體極多，會卡 >60s 導致
+  // page-data-collection-timeout）。改由 fallback:blocking 首訪／ISR 生成。
+  if (process.env.VERCEL || process.env.SKIP_PRODUCT_SSG === "1") {
+    return { paths: [], fallback: "blocking" };
+  }
+
   try {
-    const res = await fetch(`${backendUrl}/store/products`, {
+    const res = await fetch(`${backendUrl}/store/products?limit=100`, {
       headers: getMedusaHeaders(),
+      signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) throw new Error("無法取得 Medusa 商品");
 
     const { products } = await res.json();
 
-    const paths = products.map((p) => {
+    const paths = (products || []).map((p) => {
       const categoryHandle = p.categories?.[0]?.handle || "uncategorized";
       return {
         params: { category: categoryHandle, slug: p.handle },

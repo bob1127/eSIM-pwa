@@ -27,6 +27,10 @@ const getWooCommerceUrl = (endpoint, params = {}) => {
 // 修改 pages/category/[slug].js 的 getStaticPaths 區塊
 
 export async function getStaticPaths() {
+  if (process.env.VERCEL || process.env.SKIP_PRODUCT_SSG === "1") {
+    return { paths: [], fallback: "blocking" };
+  }
+
   try {
     const apiUrl = getWooCommerceUrl("products/categories", { per_page: 100 });
     const res = await fetch(apiUrl);
