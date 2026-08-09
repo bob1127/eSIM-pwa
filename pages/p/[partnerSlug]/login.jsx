@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
 import { fetchActiveStoreByDomain } from "@/lib/partnerStorefront";
+import { validatePassword, PASSWORD_HINT } from "@/lib/passwordPolicy";
 import { useSession, signIn, signOut } from "next-auth/react";
 import PartnerShopLayout from "@/components/Shop/PartnerShopLayout";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
@@ -95,21 +96,27 @@ const RegisterForm = ({ onSuccess, storeDomain }) => {
     e.preventDefault();
     if (registering) return;
     if (!isCodeVerified) return setMessage("請先完成 Email 驗證");
-    if (form.password.length < 6) return setMessage("密碼長度至少需 6 位");
+    const passwordError = validatePassword(form.password);
+    if (passwordError) return setMessage(passwordError);
 
     setRegistering(true);
     setMessage("建立帳號中...");
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: { data: { full_name: form.username } },
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          fullName: form.username,
+        }),
       });
-      if (error) throw error;
-      if (data.user) {
-        setMessage("");
-        onSuccess?.("註冊成功！請直接登入");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "註冊失敗");
       }
+      setMessage("");
+      onSuccess?.("註冊成功！請直接登入");
     } catch (err) {
       setMessage(err.message || "註冊失敗");
     } finally {
@@ -215,7 +222,7 @@ const RegisterForm = ({ onSuccess, storeDomain }) => {
             value={form.password}
             onChange={handleChange}
             className="mt-1 block w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white focus:bg-white/20 transition-all placeholder:text-white/40"
-            placeholder="請輸入密碼 (至少 6 位)"
+            placeholder={`請輸入密碼 (${PASSWORD_HINT})`}
           />
         </div>
         <button
@@ -385,18 +392,34 @@ export default function PartnerLoginRegisterPage({ store }) {
     setMessage("登入中...");
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: form.email,
-        password: form.password,
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email, password: form.password }),
       });
-      if (error) throw error;
-      if (data?.user) setMessage("登入成功！");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(
+          data.message ||
+            (res.status === 429 ? "登入嘗試過多，請稍候再試" : "登入失敗，請稍後再試"),
+        );
+      }
+      const { access_token, refresh_token } = data.session || {};
+      if (!access_token || !refresh_token) {
+        throw new Error("登入回應異常，請重新嘗試");
+      }
+      const { error: setSessionError } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+      if (setSessionError) throw setSessionError;
+      setMessage("登入成功！");
     } catch (err) {
       if (err.message === "Invalid login credentials")
         setMessage("帳號或密碼錯誤");
-      else if (err.message.includes("Email not confirmed"))
+      else if (String(err.message || "").includes("Email not confirmed"))
         setMessage("請先前往信箱點擊驗證連結，才能正式登入喔！");
-      else setMessage("登入失敗，請稍後再試");
+      else setMessage(err.message || "登入失敗，請稍後再試");
     } finally {
       setLoggingIn(false);
     }

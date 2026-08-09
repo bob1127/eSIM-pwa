@@ -7,6 +7,7 @@ import ConfettiButton from "@/components/ConfettiButton/ConfettiButton";
 import MaterialIcon from "@/components/MaterialIcon";
 import { fireCelebrationConfettiFromElement } from "@/lib/fireCelebrationConfetti";
 import { supabase } from "../lib/supabaseClient";
+import { validatePassword, PASSWORD_HINT, isPasswordValid } from "@/lib/passwordPolicy";
 import CooperationAgreementModal from "@/components/cooperation/CooperationAgreementModal";
 
 const FIELD_INPUT_CLASS =
@@ -1080,7 +1081,8 @@ export default function RegisterDistributor() {
         return "Email 格式不正確";
       if (!isEmailVerified) return "請先完成 Email 驗證後才能繼續";
       if (!form.password) return "請設定夥伴後台登入密碼";
-      if (form.password.length < 6) return "密碼至少需 6 位";
+      const passwordError = validatePassword(form.password);
+      if (passwordError) return passwordError;
       if (form.password !== form.confirmPassword) return "兩次輸入的密碼不一致";
       if (!form.phone.trim()) return "請填寫聯絡電話";
       const phoneDigits = form.phone.replace(/\D/g, "");
@@ -1319,7 +1321,7 @@ export default function RegisterDistributor() {
           !!form.email.trim() &&
           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) &&
           isEmailVerified &&
-          form.password.length >= 6 &&
+          isPasswordValid(form.password) &&
           form.password === form.confirmPassword &&
           !!form.phone.trim() &&
           form.phone.replace(/\D/g, "").length >= 8
@@ -1549,7 +1551,7 @@ export default function RegisterDistributor() {
                     <PasswordRevealField
                       label="夥伴後台登入密碼"
                       required
-                      hint="審核通過後，以此密碼登入 /partner/login（至少 6 位）"
+                      hint={`審核通過後，以此密碼登入 /partner/login（${PASSWORD_HINT}）`}
                       value={form.password}
                       onChange={(e) => set("password", e.target.value)}
                       placeholder="設定登入密碼"

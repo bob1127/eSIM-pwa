@@ -29,8 +29,8 @@ const HKD_TO_TWD = Number(process.env.HKD_TO_TWD || 4.1);
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 
-const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
-const CATEGORY_IDS = ["pcat_01KPJQK4EMGDM5TTXZHJ272YT2"]; // korea
+const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
+const CATEGORY_IDS = ["pcat_01KZJNBVGMVYJ9W659MWQB1E3Q"]; // korea
 const THUMB =
   process.env.KOREA_PRODUCT_THUMB ||
   "https://www.jeko-esim.com.tw/images/korea-esim-banner.jpg";

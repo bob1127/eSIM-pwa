@@ -145,23 +145,46 @@ const LoginRegisterPage = () => {
     return () => clearTimeout(timer);
   }, [isLoggedIn, redirectTo, router]);
 
-  // 一般 Email 登入
+  // 一般 Email 登入：透過 /api/auth/login 代理（伺服器端限流，防暴力破解）
   const handleLogin = async (e) => {
     e.preventDefault();
     if (loggingIn) return;
     setLoggingIn(true);
+    setMessage("");
     addLog("開始執行 Email 登入...");
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: form.email,
-        password: form.password,
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email, password: form.password }),
       });
-      if (error) throw error;
-      if (data?.user) addLog("✅ Email 登入成功！");
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        throw new Error(
+          data.message ||
+            (res.status === 429
+              ? "登入嘗試過多，請稍候再試"
+              : "登入失敗，請檢查帳號密碼"),
+        );
+      }
+
+      const { access_token, refresh_token } = data.session || {};
+      if (!access_token || !refresh_token) {
+        throw new Error("登入回應異常，請重新嘗試");
+      }
+
+      const { error: setSessionError } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+      if (setSessionError) throw setSessionError;
+
+      addLog("✅ Email 登入成功！");
     } catch (err) {
       addLog(`❌ 登入錯誤: ${err.message}`);
-      setMessage("登入失敗，請檢查帳號密碼");
+      setMessage(err.message || "登入失敗，請檢查帳號密碼");
     } finally {
       setLoggingIn(false);
     }

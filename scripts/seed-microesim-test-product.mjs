@@ -16,10 +16,10 @@ const COST_HKD = 13.88;
 const HKD_TO_TWD = Number(process.env.HKD_TO_TWD || 4.1);
 const RETAIL_TWD = Number(process.env.ESIM_TEST_RETAIL_TWD || 5); // 小額真金流測試用，正式再改回公式價
 
-const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
+const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 /** 掛在日本分類（首頁主要入口）；全球方案也會出現在商品列表 */
 const CATEGORY_IDS = [
-  "pcat_01KPJN0F8RYEENWHMS7D5WT7QR", // japan
+  "pcat_01KZJNBV5DAJTWWG22KSHC7FTN", // japan
   "pcat_01KW4FPRB879RVH7SQT35SZQJ4", // us-ca
 ];
 

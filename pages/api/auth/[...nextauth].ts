@@ -45,12 +45,19 @@ function isDuplicateUserError(message = "") {
   );
 }
 
+const isProd = process.env.NODE_ENV === "production";
+const useSecureCookies =
+  isProd && !!process.env.NEXTAUTH_URL?.startsWith("https://");
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
     LineProvider({
       clientId: process.env.LINE_CLIENT_ID as string,
       clientSecret: process.env.LINE_CLIENT_SECRET as string,
+      // LINE 會驗證登入時回傳的 email 屬於該帳號本人，信任程度與 Google OAuth 相近，
+      // 因此允許與既有同 email 帳號連結（讓會員可用 Email／Google／LINE 交替登入同一帳號）。
       allowDangerousEmailAccountLinking: true,
       // 登入時可一併加官方帳號（需在 LINE Developers 把 OA 連結到 Login 頻道）
       authorization: {
@@ -62,6 +69,36 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+  },
+  // 顯式設定 cookie 屬性：httpOnly + sameSite=lax + 正式環境強制 Secure（__Secure- 前綴）
+  cookies: {
+    sessionToken: {
+      name: `${cookiePrefix}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+    callbackUrl: {
+      name: `${cookiePrefix}next-auth.callback-url`,
+      options: {
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+    csrfToken: {
+      // CSRF token 前端需讀取比對，不能設 httpOnly
+      name: `${useSecureCookies ? "__Host-" : ""}next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
   },
   // 只設 signIn：OAuthCallback 會變成 /login?error=OAuthCallback
   // 不要設 error→/login，否則打到 /api/auth/error（無參數）會變成 ?error=undefined

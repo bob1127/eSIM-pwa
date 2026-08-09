@@ -54,7 +54,7 @@ const TELECOM_IIJ = "IIJ Docomo（注意：需手動設定 APN）";
 const PROFIT_SB = 80;
 const PROFIT_IIJ = 95;
 
-const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
+const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const FUP_DEFAULT =
   "公平使用政策 (FUP)：每日高速額度用完後降速至約 256 kbps（或方案標示速度），隔日重置。";
 

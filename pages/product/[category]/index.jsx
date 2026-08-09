@@ -67,7 +67,8 @@ export async function getStaticProps({ params }) {
     const currentCategory = catData.product_categories?.[0];
 
     if (!currentCategory) {
-      return { notFound: true };
+      // 不設 revalidate 的話，Medusa 一次暫時性失敗就會被永久快取成 404
+      return { notFound: true, revalidate: 60 };
     }
 
     const prodUrl = `${backendUrl}/store/products?category_id[]=${currentCategory.id}&fields=+metadata,*tags,*options,*variants,*variants.options,*variants.prices,*variants.calculated_price&limit=100`;
@@ -157,7 +158,7 @@ export async function getStaticProps({ params }) {
     };
   } catch (e) {
     console.error("❌ Medusa getStaticProps 發生致命錯誤：", e);
-    return { notFound: true };
+    return { notFound: true, revalidate: 60 };
   }
 }
 

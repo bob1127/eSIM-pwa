@@ -71,8 +71,8 @@ const HKD_TO_TWD_FALLBACK = 4.5;
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 
-const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
-const CATEGORY_IDS = ["pcat_01KPJN0F8RYEENWHMS7D5WT7QR"]; // japan
+const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
+const CATEGORY_IDS = ["pcat_01KZJNBV5DAJTWWG22KSHC7FTN"]; // japan
 const THUMB =
   process.env.JAPAN_PRODUCT_THUMB ||
   "https://www.jeko-esim.com.tw/images/japan-esim-banner.jpg";

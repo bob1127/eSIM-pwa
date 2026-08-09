@@ -5,14 +5,8 @@ import {
 } from "../../../lib/partnerBind";
 import { getAuthUserFromBearer, getSupabaseAdmin } from "../../../lib/partnerServer";
 import { normalizePartnerEmail } from "../../../lib/partnerUtils";
-
-function isEmailVerifiedForApplication(email) {
-  global.verificationCodes = global.verificationCodes || {};
-  const record = global.verificationCodes[email];
-  if (!record?.verified) return false;
-  const now = Date.now();
-  return now <= (record.applicationExpires || record.expires || 0);
-}
+import { validatePassword } from "../../../lib/passwordPolicy";
+import { isEmailVerifiedForRegistration } from "../../../lib/emailVerification";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end("Method Not Allowed");
@@ -23,10 +17,11 @@ export default async function handler(req, res) {
   if (!email || !password) {
     return res.status(400).json({ success: false, message: "缺少參數" });
   }
-  if (password.length < 6) {
-    return res.status(400).json({ success: false, message: "密碼至少需 6 位" });
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return res.status(400).json({ success: false, message: passwordError });
   }
-  if (!isEmailVerifiedForApplication(email)) {
+  if (!isEmailVerifiedForRegistration(email)) {
     return res
       .status(400)
       .json({ success: false, message: "請先完成 Email 驗證，或驗證已過期請重新驗證" });

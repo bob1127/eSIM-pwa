@@ -4,6 +4,7 @@ import Link from "next/link";
 import Head from "next/head";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { supabase } from "@/lib/supabaseClient";
+import { validatePassword, PASSWORD_HINT } from "@/lib/passwordPolicy";
 
 const INPUT_CLASS =
   "w-full bg-white/10 border border-white/30 rounded-xl px-4 py-3 pr-11 text-white placeholder:text-blue-300 text-sm outline-none focus:bg-white/20 focus:border-white/60 transition";
@@ -20,7 +21,7 @@ function PasswordField({ label, value, onChange, show, onToggleShow }) {
           type={show ? "text" : "password"}
           value={value}
           onChange={onChange}
-          placeholder="至少 6 位"
+          placeholder={PASSWORD_HINT}
           autoComplete="new-password"
           className={INPUT_CLASS}
         />
@@ -126,8 +127,9 @@ export default function PartnerResetPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password.length < 6) {
-      setMsg("密碼至少需 6 位");
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setMsg(passwordError);
       return;
     }
     if (password !== confirm) {
@@ -179,7 +181,7 @@ export default function PartnerResetPassword() {
             設定新密碼
           </h1>
           <p className="text-blue-100 text-sm leading-relaxed mb-8">
-            請輸入您的新登入密碼（至少 6 位），完成後即可使用新密碼登入夥伴後台。
+            請輸入您的新登入密碼（{PASSWORD_HINT}），完成後即可使用新密碼登入夥伴後台。
           </p>
 
           {!ready ? (

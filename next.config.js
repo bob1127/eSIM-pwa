@@ -146,7 +146,33 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
       "http://localhost:9000";
 
+    // 全站基本資安 Header。刻意不加全站 Content-Security-Policy（script-src 等）：
+    // 站上有大量第三方嵌入（GTM/GA/Meta Pixel、LINE、Klook/KKday、地圖、聊天客服…），
+    // 未經完整盤點就套用嚴格 CSP 很容易在正式站悄悄壞掉某個第三方功能。
+    // /admin-boss 需被 Medusa 後台 iframe 嵌入：現代瀏覽器在 CSP frame-ancestors
+    // 存在時會以它為準、忽略 X-Frame-Options，所以下面的全站 X-Frame-Options
+    // 不會擋到 /admin-boss 的 CSP 設定。
+    const securityHeaders = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "X-Frame-Options", value: "SAMEORIGIN" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      {
+        key: "Permissions-Policy",
+        value: "camera=(), microphone=(), geolocation=(), usb=(), payment=(self)",
+      },
+      // 不加 includeSubDomains / preload：未確認所有子網域都已強制 HTTPS 前，
+      // 這兩個選項一旦被瀏覽器記住就很難撤銷，先用保守設定。
+      {
+        key: "Strict-Transport-Security",
+        value: "max-age=31536000",
+      },
+    ];
+
     return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
       {
         source: "/admin-boss",
         headers: [

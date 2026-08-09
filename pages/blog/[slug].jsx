@@ -1173,7 +1173,7 @@ export async function getStaticProps({ params }) {
       fromPartner = !!post;
     }
     if (!post) {
-      return { notFound: true };
+      return { notFound: true, revalidate: 60 };
     }
 
     if (fromPartner) {
@@ -1225,6 +1225,6 @@ export async function getStaticProps({ params }) {
     };
   } catch (error) {
     console.error("getStaticProps (blog):", error);
-    return { notFound: true };
+    return { notFound: true, revalidate: 60 };
   }
 }

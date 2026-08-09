@@ -33,8 +33,8 @@ function retailFromCost(costTwd) {
   return Math.ceil((costTwd * MARGIN) / 10) * 10 - 1;
 }
 
-const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
-const CATEGORY_IDS = ["pcat_01KY70EGV51W6NNHWBFGX3VZ1F"]; // china
+const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
+const CATEGORY_IDS = ["pcat_01KZJNBVVHY3ZHNJ4MPS9ZZVFG"]; // china
 const THUMB =
   process.env.CHINA_PRODUCT_THUMB ||
   "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KYBQ3HHZADQNWFGG6F02YKSP.png";

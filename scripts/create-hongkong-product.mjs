@@ -85,7 +85,7 @@ const HKD_TO_TWD_FALLBACK = 4.5;
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 
-const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
+const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const THUMB =
   process.env.HONGKONG_PRODUCT_THUMB ||
   "https://www.jeko-esim.com.tw/images/about-marquee/hongkong.png";

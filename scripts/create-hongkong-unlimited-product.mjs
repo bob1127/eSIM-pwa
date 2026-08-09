@@ -46,7 +46,7 @@ const HANDLE = "hongkong-unlimited-esim";
 const TELECOM = "CSL / China Telecom HK";
 const DATA_AMOUNT = "無限流量 10Mbps";
 const PROFIT = 75;
-const CATEGORY_ID = "pcat_01KZ6KK3WPP52RRDERHH43PKCV";
+const CATEGORY_ID = "pcat_01KZJNBWGZ6FH1B2DRGNFMNMT3";
 
 const HKD_TO_TWD_ENV = process.env.HKD_TO_TWD
   ? Number(process.env.HKD_TO_TWD)
@@ -54,7 +54,7 @@ const HKD_TO_TWD_ENV = process.env.HKD_TO_TWD
 const HKD_TO_TWD_FALLBACK = 4.5;
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
-const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
+const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const THUMB =
   process.env.HONGKONG_PRODUCT_THUMB ||
   "https://www.jeko-esim.com.tw/images/about-marquee/hongkong.png";

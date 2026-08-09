@@ -87,8 +87,8 @@ const HKD_TO_TWD_FALLBACK = 4.12;
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 
-const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
-const CATEGORY_IDS = ["pcat_01KY70EGV51W6NNHWBFGX3VZ1F"]; // china
+const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
+const CATEGORY_IDS = ["pcat_01KZJNBVVHY3ZHNJ4MPS9ZZVFG"]; // china
 const THUMB =
   process.env.CNHKMO_PRODUCT_THUMB ||
   process.env.CHINA_PRODUCT_THUMB ||

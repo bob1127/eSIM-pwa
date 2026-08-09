@@ -3,8 +3,6 @@ import '../src/globals.css'; // 確保路徑正確
 import Head from 'next/head'; 
 import { NextUIProvider } from '@nextui-org/react'; 
 import { SessionProvider } from "next-auth/react"; // 🌟 引入 NextAuth 的 SessionProvider
-// 如果你原本的 UserProvider 和 AuthProvider 還有綁定其他 Supabase 邏輯，可以先保留
-import { AuthProvider } from '../components/AuthProvider';
 import { CartProvider } from "../components/context/CartContext"; 
 import { UserProvider } from "../components/context/UserContext"; 
 import { PWA_LOGO, PWA_APP_NAME, SITE_FAVICON, SITE_APPLE_TOUCH_ICON } from "../lib/pwaConfig";
@@ -32,17 +30,15 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
       {/* 🌟 用 SessionProvider 包覆全站，讓所有組件都能抓到 LINE 登入狀態 */}
       <SessionProvider session={session}>
         <UserProvider>
-          <AuthProvider>
-            <NextUIProvider>
-              <CartProvider>
-                <PWARegister />
-                <ReferralCapture />
-                <PartnerRecoveryRedirect />
-                <SupabaseOAuthRedirect />
-                <Component {...pageProps} />
-              </CartProvider>
-            </NextUIProvider>
-          </AuthProvider>
+          <NextUIProvider>
+            <CartProvider>
+              <PWARegister />
+              <ReferralCapture />
+              <PartnerRecoveryRedirect />
+              <SupabaseOAuthRedirect />
+              <Component {...pageProps} />
+            </CartProvider>
+          </NextUIProvider>
         </UserProvider>
       </SessionProvider>
     </>

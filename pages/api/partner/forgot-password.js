@@ -4,8 +4,7 @@ import {
   sendPartnerResetPasswordEmail,
   mailErrorMessage,
 } from "../../../lib/partnerResetPasswordEmail";
-
-const COOLDOWN_MS = 60 * 1000;
+import { guardAuthRateLimit, getClientIp } from "../../../lib/authRateLimit";
 
 const supabaseAdmin =
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -58,14 +57,6 @@ function fixRecoveryRedirectLink(actionLink, redirectTo) {
   }
 }
 
-function getCooldownRemainSec(email) {
-  global.partnerResetCooldown = global.partnerResetCooldown || {};
-  const last = global.partnerResetCooldown[email];
-  if (!last) return 0;
-  const remain = COOLDOWN_MS - (Date.now() - last);
-  return remain > 0 ? Math.ceil(remain / 1000) : 0;
-}
-
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end("Method Not Allowed");
 
@@ -78,15 +69,24 @@ export default async function handler(req, res) {
     });
   }
 
-  const cooldownSec = getCooldownRemainSec(email);
-  if (cooldownSec > 0) {
+  const ip = getClientIp(req);
+  const rl = await guardAuthRateLimit({
+    action: "partner-forgot-password",
+    identifier: email,
+    ip,
+    windowMs: 5 * 60 * 1000,
+    maxAttempts: 3,
+    countAll: true,
+  });
+  if (rl.limited) {
     return res.status(429).json({
       success: false,
       code: "RATE_LIMIT",
-      message: `請稍候 ${cooldownSec} 秒後再試`,
-      retryAfter: cooldownSec,
+      message: `請稍候 ${rl.retryAfterSec} 秒後再試`,
+      retryAfter: rl.retryAfterSec,
     });
   }
+  await rl.record(true);
 
   if (!supabaseAdmin) {
     return res.status(500).json({
@@ -168,9 +168,6 @@ export default async function handler(req, res) {
       message: mailErrorMessage(err),
     });
   }
-
-  global.partnerResetCooldown = global.partnerResetCooldown || {};
-  global.partnerResetCooldown[email] = Date.now();
 
   return res.status(200).json({
     success: true,

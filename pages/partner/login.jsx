@@ -425,13 +425,38 @@ export default function PartnerLogin() {
     setError("");
     setLoading(true);
 
-    const { error: authErr } = await supabase.auth.signInWithPassword({
-      email: form.email.trim(),
-      password: form.password,
-    });
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email.trim(),
+          password: form.password,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
 
-    if (authErr) {
-      setError("登入失敗：" + authErr.message);
+      if (!res.ok || !data.success) {
+        throw new Error(
+          data.message ||
+            (res.status === 429
+              ? "登入嘗試過多，請稍候再試"
+              : "登入失敗，請確認帳號密碼"),
+        );
+      }
+
+      const { access_token, refresh_token } = data.session || {};
+      if (!access_token || !refresh_token) {
+        throw new Error("登入回應異常，請重新嘗試");
+      }
+
+      const { error: setSessionError } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+      if (setSessionError) throw setSessionError;
+    } catch (err) {
+      setError("登入失敗：" + err.message);
       setLoading(false);
       return;
     }

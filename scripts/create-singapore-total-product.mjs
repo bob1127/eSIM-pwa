@@ -56,8 +56,8 @@ const HKD_TO_TWD_FALLBACK = 4.5;
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 
-const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
-const CATEGORY_IDS = ["pcat_01KW4FR5A0ES0TFPKPXXCG51N2"]; // singapore
+const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
+const CATEGORY_IDS = ["pcat_01KZJNBXZCA6X5PRVYMW5ZAZ0F"]; // singapore
 const THUMB =
   process.env.SINGAPORE_PRODUCT_THUMB ||
   "https://www.jeko-esim.com.tw/images/malaysia-esim-banner.jpg";

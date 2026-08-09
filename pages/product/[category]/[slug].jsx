@@ -1995,13 +1995,15 @@ export async function getStaticProps({ params }) {
     const prodData = await prodRes.json();
 
     if (!prodRes.ok) {
-      return { notFound: true };
+      // 60 秒後允許重新嘗試：若是 Medusa 暫時無回應／逾時，
+      // 不應該把這次的失敗永久快取成 404（否則要等下次部署才會恢復）。
+      return { notFound: true, revalidate: 60 };
     }
 
     const product = prodData.products?.[0];
 
     if (!product) {
-      return { notFound: true };
+      return { notFound: true, revalidate: 60 };
     }
 
     const rawKeyFeatures = product.metadata?.key_features_by_carrier;
@@ -2210,7 +2212,7 @@ export async function getStaticProps({ params }) {
     };
   } catch (e) {
     console.error("Medusa getStaticProps error:", e);
-    return { notFound: true };
+    return { notFound: true, revalidate: 60 };
   }
 }
 

@@ -9,6 +9,7 @@ import {
   startLineLoginWithFormPost,
 } from "../lib/authDebug";
 import { sanitizeRedirect } from "../lib/authRedirect";
+import { validatePassword, PASSWORD_HINT } from "../lib/passwordPolicy";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
 const RESEND_WAIT_SECONDS = 60;
@@ -109,32 +110,36 @@ const RegisterForm = ({ onSuccess, redirectTo = "/account" }) => {
     }
   };
 
-  /* ====== 3. 傳統信箱註冊 (Supabase Auth) ====== */
+  /* ====== 3. 傳統信箱註冊（伺服器端建立帳號，避免前端繞過 Email 驗證） ====== */
   const handleRegister = async (e) => {
     e.preventDefault();
     if (registering) return;
     if (!isCodeVerified) return setMessage("請先完成 Email 驗證");
-    if (form.password.length < 6) return setMessage("密碼長度至少需 6 位");
+    const passwordError = validatePassword(form.password);
+    if (passwordError) return setMessage(passwordError);
 
     setRegistering(true);
     setMessage("建立帳號中...");
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          data: { full_name: form.username, phone: "" },
-        },
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          fullName: form.username,
+        }),
       });
+      const data = await res.json().catch(() => ({}));
 
-      if (error) throw error;
-
-      if (data.user) {
-        setShowSuccessPopup(true);
-        setMessage("");
-        onSuccess?.("註冊成功！請直接登入");
-        setTimeout(() => setShowSuccessPopup(false), 3000);
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "註冊失敗");
       }
+
+      setShowSuccessPopup(true);
+      setMessage("");
+      onSuccess?.("註冊成功！請直接登入");
+      setTimeout(() => setShowSuccessPopup(false), 3000);
     } catch (err) {
       console.error("Register Error:", err.message);
       setMessage(err.message || "註冊失敗");
@@ -276,7 +281,7 @@ const RegisterForm = ({ onSuccess, redirectTo = "/account" }) => {
             value={form.password}
             onChange={handleChange}
             className="mt-1 block w-full bg-transparent border-0 border-b border-white/70 py-2 text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-0"
-            placeholder="請輸入密碼 (至少 6 位)"
+            placeholder={`請輸入密碼 (${PASSWORD_HINT})`}
           />
         </div>
 

@@ -6,3 +6,6 @@ node_modules/
 .env*
 .DS_Store
 .vercel
+
+# local medusa bootstrap ids (contains publishable key)
+scripts/.medusa-jeko-ids.json

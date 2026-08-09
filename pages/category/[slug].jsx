@@ -76,8 +76,8 @@ export async function getStaticProps({ params }) {
     // 2. 找到當前 Slug 對應的分類 ID
     const matchedCategory = categories.find((cat) => cat.slug === params.slug);
 
-    // 如果找不到分類，回傳 404
-    if (!matchedCategory) return { notFound: true };
+    // 如果找不到分類，回傳 404（設 revalidate 避免暫時性失敗被永久快取）
+    if (!matchedCategory) return { notFound: true, revalidate: 60 };
 
     // 3. 根據分類 ID 抓取產品
     const productUrl = getWooCommerceUrl("products", {
@@ -98,7 +98,7 @@ export async function getStaticProps({ params }) {
     };
   } catch (e) {
     console.error("❌ getStaticProps 錯誤：", e);
-    return { notFound: true };
+    return { notFound: true, revalidate: 60 };
   }
 }
 

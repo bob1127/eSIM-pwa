@@ -78,8 +78,8 @@ const HKD_TO_TWD_FALLBACK = 4.5;
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 
-const SALES_CHANNEL_ID = "sc_01KPJKQCG9X3ZGDM5156KFW8HD";
-const CATEGORY_IDS = ["pcat_01KPJQMCSXZBEEB5TVAFFAM5SD"]; // kongkong 中港澳
+const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
+const CATEGORY_IDS = ["pcat_01KZJNBW76333EH5XBG62QJEHW"]; // kongkong 中港澳
 const THUMB =
   process.env.CNHKMO_DAILY_THUMB ||
   process.env.CNHKMO_UNLIMITED_THUMB ||
