@@ -4,7 +4,8 @@ import { useCart } from "../components/context/CartContext";
 import Layout from "./Layout";
 import Link from "next/link";
 import SwiperCard from "../components/SwiperCarousel/AnotherProduct";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Stepper from "@mui/material/Stepper";
 import Step from "@mui/material/Step";
@@ -16,6 +17,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/components/context/UserContext";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import { PENDING_COUPON_KEY } from "@/lib/partnerReferralDiscount";
+import { useLineBind } from "@/hooks/useLineBind";
+import { maybeMarkWelcomeGiftOnFirstClaim } from "@/lib/welcomeGiftPopup";
+
+const CART_STEP_KEY = "jeko_cart_active_step";
+
+function clampCartStep(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return 0;
+  return Math.max(0, Math.min(2, Math.trunc(v)));
+}
 
 // --- Icons ---
 const TruckIcon = () => (
@@ -81,11 +92,13 @@ const CartPage = () => {
   const displayItems = esimItems || [];
   const displayTotal = esimTotal || 0;
   const { user, token } = useUser();
+  const router = useRouter();
   const { data: nextAuthSession, status: nextAuthStatus } = useSession();
   const isLoggedIn = Boolean(user || nextAuthSession?.user);
   const authReady = nextAuthStatus !== "loading";
 
   const [activeStep, setActiveStep] = useState(0);
+  const [stepReady, setStepReady] = useState(false);
   // 🌟 已修正：移除 <number | null> 型別標註
   const [removingIndex, setRemovingIndex] = useState(null);
 
@@ -103,8 +116,146 @@ const CartPage = () => {
 
   const payableTotal = Math.max(0, Number(displayTotal || 0) - Number(discount || 0));
 
-  const handleNext = () => setActiveStep((prev) => prev + 1);
-  const handleBack = () => setActiveStep((prev) => prev - 1);
+  // 三步驟都在同一 /Cart：用 URL ?step= 與 sessionStorage 記住進度
+  // （LINE 授權重載頁面後才能回到「填寫資料」）
+  const goToStep = useCallback(
+    (step) => {
+      const next = clampCartStep(step);
+      setActiveStep(next);
+      try {
+        sessionStorage.setItem(CART_STEP_KEY, String(next));
+      } catch {
+        /* ignore */
+      }
+      if (!router.isReady) return;
+      const q = { ...router.query };
+      if (next <= 0) delete q.step;
+      else q.step = String(next);
+      router.replace({ pathname: router.pathname, query: q }, undefined, {
+        shallow: true,
+      });
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    let next = 0;
+    if (router.query.step != null) {
+      next = clampCartStep(router.query.step);
+    } else {
+      try {
+        next = clampCartStep(sessionStorage.getItem(CART_STEP_KEY));
+      } catch {
+        next = 0;
+      }
+    }
+    // 有 line_bind 回呼時，強制至少在結帳步驟
+    if (router.query.line_bind && next < 1) next = 1;
+    setActiveStep(next);
+    setStepReady(true);
+    try {
+      sessionStorage.setItem(CART_STEP_KEY, String(next));
+    } catch {
+      /* ignore */
+    }
+  }, [router.isReady]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!stepReady) return;
+    try {
+      sessionStorage.setItem(CART_STEP_KEY, String(activeStep));
+    } catch {
+      /* ignore */
+    }
+  }, [activeStep, stepReady]);
+
+  const recheckWelcomeAfterLineBind = useCallback(async () => {
+    setIsApplyingCoupon(true);
+    setCouponMessage("");
+    try {
+      const res = await fetch("/api/promo/member-coupons", {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.line_oa_url) setLineOaUrl(data.line_oa_url);
+
+      const code = data.welcome_coupon?.code || coupon.trim();
+      if (code) {
+        setCoupon(code);
+        setWelcomeHint(code);
+      }
+
+      if (data.need_line_for_welcome) {
+        setNeedLineFriend(true);
+        setCouponMessage(
+          data.line_friend
+            ? "已綁定 LINE，但尚未確認官方帳號好友。請先加入官方 LINE 後再按「套用」。"
+            : "請先連結 LINE，並加入官方帳號後才能使用折扣。",
+        );
+        return;
+      }
+
+      setNeedLineFriend(false);
+      if (!data.can_use_welcome || !code || !cartId) {
+        setCouponMessage("已連結 LINE，請點「套用」使用折扣碼。");
+        return;
+      }
+
+      const applyRes = await fetch("/api/checkout/promotion", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({ cartId, code, action: "apply" }),
+      });
+      const applyData = await applyRes.json().catch(() => ({}));
+      if (applyData.need_line_friend) {
+        setNeedLineFriend(true);
+        if (applyData.line_oa_url) setLineOaUrl(applyData.line_oa_url);
+        setCouponMessage(
+          applyData.error ||
+            "尚未確認官方 LINE 好友。請加入後再試，或到會員中心按「連結 LINE 並啟用優惠」。",
+        );
+        return;
+      }
+      if (applyRes.ok && applyData.success) {
+        const raw = Number(applyData.discount_total || 0);
+        const asYen = raw >= 1000 ? Math.round(raw / 100) : raw;
+        setDiscount(asYen);
+        setAppliedCode(applyData.code || code);
+        setCouponMessage(`已自動套用新會員折價券 ${applyData.code || code}`);
+      } else {
+        setCouponMessage(
+          applyData.error || "已連結 LINE，請點「套用」使用折扣碼。",
+        );
+      }
+    } catch (e) {
+      setCouponMessage(e.message || "重新檢查失敗");
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  }, [token, coupon, cartId]);
+
+  const {
+    status: lineBindStatus,
+    message: lineBindMessage,
+    bind: bindLine,
+  } = useLineBind({
+    onSuccess: () => {
+      // OAuth 回來後務必回到結帳步驟（填寫資料），不要掉回購物車列表
+      goToStep(1);
+      recheckWelcomeAfterLineBind();
+    },
+  });
+
+  const handleNext = () => goToStep(activeStep + 1);
+  const handleBack = () => goToStep(activeStep - 1);
 
   // 專屬折扣碼連結：從 sessionStorage 自動套用（優先於歡迎禮）
   useEffect(() => {
@@ -222,6 +373,7 @@ const CartPage = () => {
         }
 
         if (data.line_oa_url) setLineOaUrl(data.line_oa_url);
+        if (data.welcome) maybeMarkWelcomeGiftOnFirstClaim(data.welcome);
 
         const welcomeCode = data.welcome_coupon?.code;
         if (welcomeCode) {
@@ -334,7 +486,7 @@ const CartPage = () => {
         if (data.line_oa_url) setLineOaUrl(data.line_oa_url);
         setCouponMessage(
           data.error ||
-            "尚未確認官方 LINE 好友。請加入後點「我已加入，重新檢查」；若仍失敗請登出再以 LINE 重新登入。",
+            "尚未確認官方 LINE 好友。請先按「連結 LINE 並啟用優惠」，並確認已加官方帳號後再試。",
         );
         return;
       }
@@ -748,163 +900,73 @@ const CartPage = () => {
                               {needLineFriend && (
                                 <div className="rounded-xl border border-[#06C755]/35 bg-[#06C755]/10 px-3.5 py-3">
                                   <p className="text-[13px] font-bold text-slate-800 leading-snug">
-                                    還未加入官方 LINE？
+                                    需連結 LINE 才能使用折扣
                                   </p>
                                   <p className="mt-1 text-[12px] text-slate-600 leading-relaxed">
-                                    加入官方 LINE 即可立即使用新會員 50
-                                    元優惠折扣
+                                    您目前是 Google／Email
+                                    登入。僅「加好友」還不夠，請先按下方按鈕連結
+                                    LINE（不會登出目前帳號），並確認已加入官方帳號。
                                     {welcomeHint
                                       ? `（已入帳：${welcomeHint}）`
                                       : ""}
                                   </p>
                                   <div className="mt-2.5 flex flex-col gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={bindLine}
+                                      disabled={
+                                        lineBindStatus === "loading" ||
+                                        isApplyingCoupon
+                                      }
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2 disabled:opacity-60"
+                                    >
+                                      <LineIconSvg className="w-3.5 h-3.5" />
+                                      {lineBindStatus === "loading"
+                                        ? "連結中…"
+                                        : "連結 LINE 並啟用優惠"}
+                                    </button>
                                     <a
                                       href={lineOaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#06C755] bg-white text-[#06C755] text-[12px] font-bold px-4 py-2"
                                     >
-                                      <LineIconSvg className="w-3.5 h-3.5" />
-                                      加入官方 LINE 立即使用優惠折扣
+                                      尚未加好友？點此加入官方 LINE
                                     </a>
                                     <button
                                       type="button"
-                                      onClick={async () => {
-                                        setIsApplyingCoupon(true);
-                                        setCouponMessage("");
-                                        try {
-                                          const res = await fetch(
-                                            "/api/promo/member-coupons",
-                                            {
-                                              headers: {
-                                                ...(token
-                                                  ? {
-                                                      Authorization: `Bearer ${token}`,
-                                                    }
-                                                  : {}),
-                                              },
-                                              credentials: "include",
-                                            },
-                                          );
-                                          const data = await res
-                                            .json()
-                                            .catch(() => ({}));
-                                          if (data.line_oa_url) {
-                                            setLineOaUrl(data.line_oa_url);
-                                          }
-                                          if (data.need_line_for_welcome) {
-                                            setNeedLineFriend(true);
-                                            setCouponMessage(
-                                              data.line_check_reason ===
-                                                "no_login_bot_linked"
-                                                ? "系統無法驗證好友：LINE Login 頻道尚未在 Developers 後台連結官方帳號。請到 LINE Developers → LINE Login → Linked LINE Official Account 連結同一個官方帳號後再試。"
-                                                : "尚未偵測到官方 LINE 好友。請確認已加好友，並以 LINE 登入本站後再試。",
-                                            );
-                                            return;
-                                          }
-                                          setNeedLineFriend(false);
-                                          const code =
-                                            data.welcome_coupon?.code ||
-                                            coupon.trim();
-                                          if (code) {
-                                            setCoupon(code);
-                                            setWelcomeHint(code);
-                                          }
-                                          if (
-                                            data.can_use_welcome &&
-                                            code &&
-                                            cartId
-                                          ) {
-                                            const applyRes = await fetch(
-                                              "/api/checkout/promotion",
-                                              {
-                                                method: "POST",
-                                                headers: {
-                                                  "Content-Type":
-                                                    "application/json",
-                                                  ...(token
-                                                    ? {
-                                                        Authorization: `Bearer ${token}`,
-                                                      }
-                                                    : {}),
-                                                },
-                                                credentials: "include",
-                                                body: JSON.stringify({
-                                                  cartId,
-                                                  code,
-                                                  action: "apply",
-                                                }),
-                                              },
-                                            );
-                                            const applyData = await applyRes
-                                              .json()
-                                              .catch(() => ({}));
-                                            if (applyData.need_line_friend) {
-                                              setNeedLineFriend(true);
-                                              if (applyData.line_oa_url) {
-                                                setLineOaUrl(
-                                                  applyData.line_oa_url,
-                                                );
-                                              }
-                                              setCouponMessage(
-                                                "尚未偵測到官方 LINE 好友。請確認已加好友，並以 LINE 登入本站後再試。",
-                                              );
-                                              return;
-                                            }
-                                            if (
-                                              applyRes.ok &&
-                                              applyData.success
-                                            ) {
-                                              const raw = Number(
-                                                applyData.discount_total || 0,
-                                              );
-                                              const asYen =
-                                                raw >= 1000
-                                                  ? Math.round(raw / 100)
-                                                  : raw;
-                                              setDiscount(asYen);
-                                              setAppliedCode(
-                                                applyData.code || code,
-                                              );
-                                              setCouponMessage(
-                                                `已自動套用新會員折價券 ${applyData.code || code}`,
-                                              );
-                                            } else {
-                                              setCouponMessage(
-                                                applyData.error ||
-                                                  "已確認為官方 LINE 好友，請點「套用」使用折扣碼。",
-                                              );
-                                            }
-                                          } else {
-                                            setCouponMessage(
-                                              "已確認為官方 LINE 好友，請點「套用」使用折扣碼。",
-                                            );
-                                          }
-                                        } catch (e) {
-                                          setCouponMessage(
-                                            e.message || "重新檢查失敗",
-                                          );
-                                        } finally {
-                                          setIsApplyingCoupon(false);
-                                        }
-                                      }}
-                                      disabled={isApplyingCoupon}
+                                      onClick={recheckWelcomeAfterLineBind}
+                                      disabled={
+                                        isApplyingCoupon ||
+                                        lineBindStatus === "loading"
+                                      }
                                       className="text-[12px] font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900 disabled:opacity-50"
                                     >
-                                      我已加入，重新檢查
+                                      我已連結／已加好友，重新檢查
                                     </button>
                                   </div>
+                                  {lineBindMessage && (
+                                    <p
+                                      className={`mt-2 text-[12px] font-medium leading-relaxed ${
+                                        lineBindStatus === "error"
+                                          ? "text-red-600"
+                                          : "text-emerald-700"
+                                      }`}
+                                    >
+                                      {lineBindMessage}
+                                    </p>
+                                  )}
                                 </div>
                               )}
 
                               {couponMessage && (
                                 <p
-                                  className={`text-[12px] ${
+                                  className={`leading-relaxed ${
                                     appliedCode
-                                      ? "text-emerald-600"
+                                      ? "text-[11px] text-slate-400"
                                       : needLineFriend
-                                        ? "text-amber-700"
-                                        : "text-red-500"
+                                        ? "text-[12px] text-amber-700"
+                                        : "text-[12px] text-red-500"
                                   }`}
                                 >
                                   {couponMessage}

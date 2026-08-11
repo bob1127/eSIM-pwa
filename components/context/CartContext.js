@@ -231,7 +231,10 @@ export const CartProvider = ({ children }) => {
 
       setCartItems((prev) => {
         const idx = prev.findIndex(
-          (i) => i.variant_id === item.variant_id && i.type === item.type,
+          (i) =>
+            i.variant_id === item.variant_id &&
+            i.type === item.type &&
+            String(i.store_id || "") === String(item.store_id || ""),
         );
         if (idx >= 0) {
           return prev.map((i, n) =>

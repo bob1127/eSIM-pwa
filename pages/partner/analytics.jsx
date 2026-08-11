@@ -477,30 +477,34 @@ export default function PartnerAnalyticsPage() {
                   >
                     <td
                       className="px-4 py-3 font-black"
-                      colSpan={2}
+                      colSpan={3}
                       style={{ color: AUI.dark }}
                     >
-                      分潤總計
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Badge tone="success">100%</Badge>
+                      總計
                     </td>
                     <td
                       className="px-4 py-3 text-right font-bold tabular-nums"
                       style={{ color: AUI.dark }}
                     >
+                      <span
+                        className="block text-[10px] font-bold uppercase tracking-wider mb-0.5"
+                        style={{ color: AUI.soft }}
+                      >
+                        訂單總數
+                      </span>
                       {tableTotals.count}
                     </td>
-                    <td
-                      className="px-4 py-3 text-right font-bold tabular-nums"
-                      style={{ color: AUI.dark }}
-                    >
-                      {fmt(tableTotals.avgProfit)}
-                    </td>
+                    <td className="px-4 py-3" />
                     <td
                       className="px-4 py-3 text-right font-black tabular-nums"
                       style={{ color: AUI.dark }}
                     >
+                      <span
+                        className="block text-[10px] font-bold uppercase tracking-wider mb-0.5"
+                        style={{ color: AUI.soft }}
+                      >
+                        總計分潤金額
+                      </span>
                       {fmt(tableTotals.profit)}
                     </td>
                   </tr>

@@ -16,6 +16,11 @@ import {
   healStoreProductListings,
   healEmptyListingsForProduct,
 } from "../../../lib/healStoreProductListings";
+import {
+  syncCatalogAvailability,
+  CATALOG_STATUS,
+  probeLiveMedusaProductIds,
+} from "../../../lib/partnerCatalogAvailability";
 
 /**
  * 與前台商品頁「確認您的選擇」一致：
@@ -102,6 +107,44 @@ export default async function handler(req, res) {
       console.warn("[store-listings] heal failed:", err?.message || err);
     }
 
+    // 對齊主站：已下架／刪除的商品自動暫停夥伴上架，避免繼續販售
+    let catalogSync = { checked: 0, unavailable: [], pausedListings: 0 };
+    try {
+      const medusaIdsForSync = [
+        ...new Set(
+          listings
+            .map((r) => r.medusa_product_id)
+            .filter(Boolean)
+            .map(String),
+        ),
+      ];
+      if (medusaIdsForSync.length) {
+        catalogSync = await syncCatalogAvailability(supabase, medusaIdsForSync);
+        if (catalogSync.pausedListings || catalogSync.unavailable?.length) {
+          // 重新讀取 status（可能剛被 pause）
+          const selectAttempts2 = [
+            "id, store_id, product_id, medusa_product_id, custom_prices, status, created_at",
+            "id, store_id, product_id, medusa_product_id, custom_prices, created_at",
+          ];
+          for (const cols of selectAttempts2) {
+            const { data, error } = await supabase
+              .from("store_products")
+              .select(cols)
+              .eq("store_id", storeId);
+            if (!error) {
+              listings = (data || []).map((r) => ({
+                ...r,
+                store_id: r.store_id ?? storeId,
+              }));
+              break;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[store-listings] catalog sync failed:", err?.message || err);
+    }
+
     const productIds = [
       ...new Set(listings.map((r) => r.product_id).filter(Boolean)),
     ];
@@ -109,6 +152,7 @@ export default async function handler(req, res) {
     const variantsByProduct = {};
     if (productIds.length) {
       const nameTries = [
+        "id, name, image_url, handle, hot_sale_telecoms, medusa_product_id, catalog_status, catalog_unavailable_at",
         "id, name, image_url, handle, hot_sale_telecoms, medusa_product_id",
         "id, name, image_url, handle, medusa_product_id",
         "id, name, image_url, handle",
@@ -133,6 +177,8 @@ export default async function handler(req, res) {
           handle: p.handle || null,
           medusa_product_id: p.medusa_product_id || null,
           hot_sale_telecoms: parseHotSaleTelecoms(p.hot_sale_telecoms),
+          catalog_status: p.catalog_status || CATALOG_STATUS.ACTIVE,
+          catalog_unavailable_at: p.catalog_unavailable_at || null,
           minB2B: 0,
           planCount: 0,
         };
@@ -276,6 +322,11 @@ export default async function handler(req, res) {
         product_image: local?.image_url || null,
         product_handle: local?.handle || null,
         hot_sale_telecoms: hotSale,
+        catalog_status: local?.catalog_status || CATALOG_STATUS.ACTIVE,
+        catalog_unavailable_at: local?.catalog_unavailable_at || null,
+        catalog_available:
+          (local?.catalog_status || CATALOG_STATUS.ACTIVE) ===
+          CATALOG_STATUS.ACTIVE,
         /** 夥伴可見底價（已含平台 PARTNER_B2B_COST_RATE） */
         min_b2b: applyPartnerB2BMarkup(apiMin),
         /** API 原始最低底價 */
@@ -291,6 +342,7 @@ export default async function handler(req, res) {
       markup_mode: access.store.markup_mode || "percent",
       markup_fixed: Number(access.store.markup_fixed) || 50,
       heal: healInfo,
+      catalog_sync: catalogSync,
     });
   }
 
@@ -445,6 +497,46 @@ export default async function handler(req, res) {
     if (status === "active" || status === "paused") {
       patch.status = status;
     }
+
+    // 主站已下架時禁止重新啟用
+    if (patch.status === "active") {
+      let medusaId = existingListing.medusa_product_id || null;
+      let catalogStatus = null;
+      if (existingListing.product_id) {
+        const { data: prod } = await supabase
+          .from("products")
+          .select("medusa_product_id, catalog_status")
+          .eq("id", existingListing.product_id)
+          .maybeSingle();
+        if (prod) {
+          medusaId = medusaId || prod.medusa_product_id || null;
+          catalogStatus = prod.catalog_status || null;
+        }
+      }
+
+      if (
+        catalogStatus === CATALOG_STATUS.UNAVAILABLE ||
+        catalogStatus === CATALOG_STATUS.DELETED
+      ) {
+        return res.status(400).json({
+          error:
+            "此商品已於主站下架或刪除，無法重新啟用。請至選品管理移除或等待主站恢復上架。",
+        });
+      }
+      if (medusaId) {
+        const { live, confirmedMissing } = await probeLiveMedusaProductIds([
+          String(medusaId),
+        ]);
+        if (confirmedMissing.has(String(medusaId))) {
+          return res.status(400).json({
+            error: "主站目前找不到此商品（已下架／刪除），無法啟用販售。",
+          });
+        }
+        // live 未確認且非 confirmedMissing → API 暫時錯誤，允許維持原行為不誤擋
+        void live;
+      }
+    }
+
     if (Object.keys(patch).length === 0) {
       return res.status(400).json({ error: "沒有可更新的欄位" });
     }

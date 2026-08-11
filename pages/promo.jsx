@@ -3,30 +3,12 @@
 import Link from "next/link";
 import Layout from "./Layout";
 import MaterialIcon from "@/components/MaterialIcon";
-import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import PromoBannerCarousel from "@/components/promo/PromoBannerCarousel";
 import PromoLotteryMachine from "@/components/promo/PromoLotteryMachine";
+import PromoWelcomeRules from "@/components/promo/PromoWelcomeRules";
 
 const LINE_OA =
   process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@391huuts";
-
-const HIGHLIGHTS = [
-  {
-    icon: "card_giftcard",
-    title: "新會員折 50",
-    desc: "加入會員即可領取 50 元折價券（可自動套用）；結帳前請先加入官方 LINE 即可使用。",
-  },
-  {
-    icon: "group_add",
-    title: "推薦好友各折 50",
-    desc: "好友註冊並完成首購後，你與好友各得 50 元折抵（好友端與新會員 50 合併，不重複疊加）。",
-  },
-  {
-    icon: "casino",
-    title: "優惠拉霸機",
-    desc: "會員可參加拉霸抽獎，中獎折價券自動存入會員帳戶。",
-  },
-];
 
 export default function PromoPage() {
   return (
@@ -34,7 +16,7 @@ export default function PromoPage() {
       seo={{
         title: "最新優惠・限時特惠｜Jeko eSIM",
         description:
-          "Jeko eSIM 最新優惠：新會員首單折 50、優惠拉霸抽獎，立即查看活動 Banner。",
+          "Jeko eSIM 最新優惠：新會員折 50（須加入官方 LINE 方可使用）、優惠拉霸抽獎；同一禮遇不疊加。",
       }}
     >
       <div
@@ -83,47 +65,7 @@ export default function PromoPage() {
         </div>
 
         <div className="max-w-[1500px] w-[94%] mx-auto">
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-            {HIGHLIGHTS.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <div className="w-10 h-10 rounded-xl bg-[#EAF0FB] flex items-center justify-center mb-3">
-                  <MaterialIcon
-                    name={item.icon}
-                    size={22}
-                    style={{ color: "#3768C7" }}
-                  />
-                </div>
-                <h2 className="font-bold text-slate-900 text-sm mb-1.5">
-                  {item.title}
-                </h2>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </section>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center sm:justify-start">
-            <a
-              href={LINE_OA}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-sm px-6 py-3"
-            >
-              <LineIconSvg className="w-[18px] h-[18px]" />
-              加入官方 LINE 領優惠
-            </a>
-            <Link
-              href="/product"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm px-6 py-3"
-            >
-              瀏覽 eSIM 方案
-              <MaterialIcon name="arrow_forward" size={18} />
-            </Link>
-          </div>
+          <PromoWelcomeRules />
         </div>
       </div>
     </Layout>

@@ -2,78 +2,22 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import parse from "html-react-parser";
-import {
-  FacebookIconSvg,
-  InstagramIconSvg,
-  LineIconSvg,
-} from "@/components/social/SocialBrandIcons";
+import { useMemo, useState } from "react";
 import PartnerBlogSidebar from "@/components/Shop/PartnerBlogSidebar";
-
-function ShareButtons({ store, title }) {
-  const shareUrl =
-    typeof window !== "undefined" ? window.location.href : "";
-  const encoded = encodeURIComponent(shareUrl);
-  const text = encodeURIComponent(title || "");
-
-  const items = [
-    {
-      key: "facebook",
-      label: "Facebook",
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encoded}`,
-      icon: <FacebookIconSvg className="w-4 h-4" />,
-      className: "hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2]",
-    },
-    {
-      key: "line",
-      label: "LINE",
-      href: `https://social-plugins.line.me/lineit/share?url=${encoded}`,
-      icon: <LineIconSvg className="w-4 h-4" />,
-      className: "hover:bg-[#00C300] hover:text-white hover:border-[#00C300]",
-    },
-    {
-      key: "instagram",
-      label: "Instagram",
-      href: store?.social_instagram?.trim() || null,
-      icon: <InstagramIconSvg className="w-4 h-4" />,
-      className:
-        "hover:bg-gradient-to-br hover:from-[#f58529] hover:via-[#dd2a7b] hover:to-[#8134af] hover:text-white hover:border-transparent",
-    },
-  ].filter((i) => i.href);
-
-  return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-slate-500 mr-1">
-        Share
-      </span>
-      {items.map((item) => (
-        <a
-          key={item.key}
-          href={item.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={item.label}
-          className={`w-9 h-9 rounded-full border border-slate-300 text-slate-700 inline-flex items-center justify-center transition-colors ${item.className}`}
-        >
-          {item.icon}
-        </a>
-      ))}
-      <button
-        type="button"
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(shareUrl || window.location.href);
-          } catch {
-            /* ignore */
-          }
-        }}
-        className="text-[11px] font-bold text-slate-500 hover:text-[#0A6CD0] underline-offset-2 hover:underline"
-      >
-        複製連結
-      </button>
-    </div>
-  );
-}
+import PartnerBlogByline from "@/components/Shop/PartnerBlogByline";
+import PartnerShareButtons from "@/components/Shop/PartnerShareButtons";
+import PartnerIgPostCarousel from "@/components/Shop/PartnerIgPostCarousel";
+import PartnerBlogCmsEditor from "@/components/Shop/PartnerBlogCmsEditor";
+import { usePartnerStoreOwner } from "@/components/Shop/PartnerHomepageEditor";
+import WpArticleBody from "@/components/Blog/WpArticleBody";
+import MediaGalleryLightbox from "@/components/MediaGalleryLightbox";
+import { collectWpArticleImages } from "@/components/Blog/BlogArticleLightbox";
+import { normalizeWpAssetUrl } from "@/lib/wordpress";
+import { SITE_URL } from "@/lib/seo.config";
+import {
+  mergeBlogCms,
+  resolveFeaturedProduct,
+} from "@/lib/partnerBlogCms";
 
 /**
  * 夥伴 Blog 文章內頁（CHA 編輯風格）
@@ -82,22 +26,64 @@ export default function PartnerBlogArticleView({
   store,
   post,
   relatedPosts = [],
-  pickupProduct = null,
+  products = [],
+  blogCms: blogCmsProp = null,
+  pickupProduct: pickupProductProp = null,
   prevPost = null,
 }) {
   const domain = store?.domain;
-  if (!post) return null;
-
   const brand = store?.store_name || "JEKO";
   const authorName =
-    post.authorName || store?.footer_company_name || store?.store_name || null;
+    post?.authorName || store?.footer_company_name || store?.store_name || null;
   const authorBio =
-    post.authorBio ||
+    post?.authorBio ||
     store?.description ||
     `${brand} 精選出國旅遊與 eSIM 實用內容。`;
 
-  // 內文：若第一段已在 hero 展示標題，直接顯示全文
-  const bodyHtml = post.contentHtml || "";
+  const bodyHtml = post?.contentHtml || "";
+  const [coverLightboxOpen, setCoverLightboxOpen] = useState(false);
+  const [blogCms, setBlogCms] = useState(() =>
+    mergeBlogCms(blogCmsProp ?? store?.blog_cms),
+  );
+  const [editSignal, setEditSignal] = useState(0);
+  const { isOwner } = usePartnerStoreOwner(store);
+
+  const pickupProduct =
+    resolveFeaturedProduct(products, blogCms) || pickupProductProp;
+
+  const articleGallery = useMemo(() => {
+    const list = [];
+    if (post?.image) {
+      const src = normalizeWpAssetUrl(post.image);
+      list.push({
+        src,
+        thumb: src,
+        alt: post.title || "",
+        type: "image",
+      });
+    }
+    list.push(...collectWpArticleImages(bodyHtml));
+    const seen = new Set();
+    return list.filter((item) => {
+      if (!item?.src || seen.has(item.src)) return false;
+      seen.add(item.src);
+      return true;
+    });
+  }, [post?.image, post?.title, bodyHtml]);
+
+  const proseClassName = `partner-blog-prose max-w-[720px]
+                text-[15px] sm:text-[16px] leading-[2] text-slate-700
+                [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-900 [&_h2]:mt-12 [&_h2]:mb-4
+                [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-slate-900 [&_h3]:mt-8 [&_h3]:mb-3
+                [&_p]:mb-6
+                [&_a]:text-[#0A6CD0] [&_a]:underline-offset-2 hover:[&_a]:underline
+                [&_img]:my-8 [&_img]:w-full [&_img]:h-auto
+                [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-6
+                [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-6
+                [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-500
+                [&_button]:cursor-zoom-in`;
+
+  if (!post) return null;
 
   return (
     <div className="bg-white">
@@ -114,126 +100,127 @@ export default function PartnerBlogArticleView({
             </Link>
 
             {/* Breadcrumb */}
-            <nav className="text-[11px] text-slate-400 tracking-wide mb-4">
+            <nav className="text-[12px] text-slate-400 tracking-wide mb-4">
               <Link href={`/p/${domain}/`} className="hover:text-slate-700">
-                HOME
+                首頁
               </Link>
               <span className="mx-1.5">/</span>
               <Link href={`/p/${domain}/blog/`} className="hover:text-slate-700">
-                ARTICLE
+                旅遊文章
               </Link>
               <span className="mx-1.5">/</span>
-              <span className="uppercase text-slate-600">
-                {post.categoryLabel}
-              </span>
+              <span className="text-slate-600">{post.categoryLabel}</span>
             </nav>
 
             {/* Hero */}
             <div className="relative w-full aspect-[16/10] sm:aspect-[21/10] min-h-[240px] bg-[#efeee9] overflow-hidden mb-10">
               {post.image ? (
-                <Image
-                  src={post.image}
-                  alt={post.title}
-                  fill
-                  priority
-                  className="object-cover"
-                  sizes="(max-width:1024px) 100vw, 70vw"
-                />
+                <button
+                  type="button"
+                  className="absolute inset-0 block w-full h-full cursor-zoom-in text-left"
+                  onClick={() =>
+                    articleGallery.length > 0 && setCoverLightboxOpen(true)
+                  }
+                  aria-label="查看文章圖片幻燈片"
+                >
+                  <Image
+                    src={post.image}
+                    alt={post.title}
+                    fill
+                    priority
+                    className="object-cover"
+                    sizes="(max-width:1024px) 100vw, 70vw"
+                  />
+                </button>
               ) : null}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 pointer-events-none">
                 <h1 className="text-white text-xl sm:text-2xl lg:text-[28px] font-bold leading-snug max-w-2xl">
                   {post.title}
                 </h1>
-                <div className="text-white/90 text-[11px] tracking-wide sm:text-right shrink-0">
-                  <p>{post.date}</p>
-                  <p className="uppercase font-semibold tracking-[0.14em] mt-0.5">
+                <div className="text-white/90 text-[11px] tracking-wide sm:text-right shrink-0 max-w-[260px] sm:ml-auto">
+                  <p className="uppercase font-semibold tracking-[0.14em] mb-2">
                     {post.categoryLabel}
                   </p>
-                  {post.tags?.length ? (
-                    <p className="mt-1 text-white/70 max-w-[220px] sm:ml-auto">
-                      {post.tags.slice(0, 4).join(" · ")}
-                    </p>
-                  ) : null}
+                  <PartnerBlogByline post={post} tone="light" compact />
                 </div>
               </div>
-              <div className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 flex-col items-center gap-2 text-white/80">
+              <div className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 flex-col items-center gap-2 text-white/80 pointer-events-none">
                 <span className="w-px h-10 bg-white/50" />
                 <span
-                  className="text-[9px] font-bold tracking-[0.3em] uppercase"
+                  className="text-[9px] font-bold tracking-[0.2em]"
                   style={{ writingMode: "vertical-rl" }}
                 >
-                  Scroll
+                  往下看
                 </span>
               </div>
             </div>
 
-            {/* Body */}
-            <div
-              className="partner-blog-prose max-w-[720px]
-                text-[15px] sm:text-[16px] leading-[2] text-slate-700
-                [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-900 [&_h2]:mt-12 [&_h2]:mb-4
-                [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-slate-900 [&_h3]:mt-8 [&_h3]:mb-3
-                [&_p]:mb-6
-                [&_a]:text-[#0A6CD0] [&_a]:underline-offset-2 hover:[&_a]:underline
-                [&_img]:my-8 [&_img]:w-full [&_img]:h-auto
-                [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-6
-                [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-6
-                [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-500"
-            >
-              {bodyHtml ? parse(bodyHtml) : (
+            {/* Body：與主站相同，點圖開幻燈片 */}
+            {bodyHtml ? (
+              <WpArticleBody
+                html={bodyHtml}
+                className={proseClassName}
+                lightboxTitle={post.title || "文章圖片"}
+              />
+            ) : (
+              <div className={proseClassName}>
                 <p>{post.excerpt}</p>
-              )}
-            </div>
+              </div>
+            )}
+
+            <MediaGalleryLightbox
+              isOpen={coverLightboxOpen}
+              onClose={() => setCoverLightboxOpen(false)}
+              images={articleGallery}
+              title={post.title || "文章圖片"}
+              initialIndex={0}
+              ariaLabel="文章圖片幻燈片"
+            />
 
             {/* Author box */}
             {authorName ? (
               <div className="mt-14 bg-[#f3f1eb] px-6 py-7 sm:px-8 sm:py-8">
-                <p className="text-[15px] font-bold text-slate-900 mb-3">
+                <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-slate-500 mb-2">
+                  編輯者
+                </p>
+                <p className="text-[17px] font-bold text-slate-900 mb-1">
                   {authorName}
-                  {post.source === "partner" ? (
-                    <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-[#0A6CD0]">
-                      Partner
+                  {post.source === "partner" || post.source === "partner-demo" ? (
+                    <span className="ml-2 align-middle text-[10px] font-bold tracking-wider text-[#0A6CD0]">
+                      夥伴
                     </span>
                   ) : null}
                 </p>
+                <PartnerBlogByline post={post} className="mb-3" />
                 <p className="text-[13px] text-slate-600 leading-relaxed whitespace-pre-line">
                   {authorBio}
                 </p>
-                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
+                <div className="mt-4">
                   <Link
                     href={`/p/${domain}/`}
-                    className="text-[#0A6CD0] hover:underline"
+                    className="text-[12px] text-[#0A6CD0] hover:underline"
                   >
                     賣場首頁
                   </Link>
-                  {store?.social_instagram ? (
-                    <a
-                      href={store.social_instagram}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#0A6CD0] hover:underline"
-                    >
-                      Instagram
-                    </a>
-                  ) : null}
-                  {store?.social_facebook ? (
-                    <a
-                      href={store.social_facebook}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#0A6CD0] hover:underline"
-                    >
-                      Facebook
-                    </a>
-                  ) : null}
                 </div>
               </div>
             ) : null}
 
+            <PartnerIgPostCarousel
+              blogCms={blogCms}
+              isOwner={isOwner}
+              onEditClick={() => setEditSignal((n) => n + 1)}
+            />
+
             {/* Share + tags */}
             <div className="mt-10 pt-8 border-t border-slate-200 space-y-5">
-              <ShareButtons store={store} title={post.title} />
+              <PartnerShareButtons
+                store={store}
+                title={post.title}
+                slug={post.slug}
+                shareUrl={`${SITE_URL}/p/${domain}/blog/${post.slug}/`}
+              />
               <div className="flex flex-wrap gap-2">
                 <span className="inline-flex items-center px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] uppercase bg-slate-900 text-white">
                   {post.categoryLabel}
@@ -262,12 +249,9 @@ export default function PartnerBlogArticleView({
             <section className="mt-16 pb-10">
               <div className="flex items-end justify-between gap-4 mb-6">
                 <div>
-                  <h2 className="text-[13px] font-black tracking-[0.18em] uppercase text-slate-900">
-                    Related Articles
-                  </h2>
-                  <p className="text-[12px] text-slate-500 mt-1">
+                  <h2 className="text-[15px] font-black text-slate-900">
                     推薦閱讀
-                  </p>
+                  </h2>
                 </div>
                 {prevPost ? (
                   <Link
@@ -323,9 +307,9 @@ export default function PartnerBlogArticleView({
               <div className="mt-10">
                 <Link
                   href={`/p/${domain}/blog/`}
-                  className="text-[12px] font-bold tracking-[0.18em] uppercase text-slate-800 border-b-2 border-slate-800 pb-1 hover:text-[#0A6CD0] hover:border-[#0A6CD0] transition-colors"
+                  className="text-[13px] font-bold text-slate-800 border-b-2 border-slate-800 pb-1 hover:text-[#0A6CD0] hover:border-[#0A6CD0] transition-colors"
                 >
-                  ← Back to Articles
+                  ← 返回文章列表
                 </Link>
               </div>
             </section>
@@ -338,10 +322,20 @@ export default function PartnerBlogArticleView({
               posts={relatedPosts.length ? relatedPosts : [post]}
               pickupProduct={pickupProduct}
               active="article"
+              isOwner={isOwner}
+              onEditFeatured={() => setEditSignal((n) => n + 1)}
             />
           </div>
         </div>
       </div>
+
+      <PartnerBlogCmsEditor
+        store={store}
+        products={products}
+        blogCms={blogCms}
+        onCmsChange={setBlogCms}
+        openSignal={editSignal}
+      />
     </div>
   );
 }

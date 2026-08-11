@@ -89,8 +89,9 @@ export default async function handler(req, res) {
       "id, amount, status, requested_at, processed_at, remitted_at, remittance_memo, created_at",
     )
     .eq("partner_id", partnerId)
-    .eq("status", "remitted")
-    .limit(500);
+    .in("status", ["pending", "approved", "remitted"])
+    .order("requested_at", { ascending: true })
+    .limit(2000);
 
   const withdrawalRows =
     wdErr && /does not exist|schema cache/i.test(wdErr.message || "")
@@ -116,8 +117,17 @@ export default async function handler(req, res) {
     return res.status(200).json({
       filename,
       statement: {
-        ...statement,
-        rows: statement.rows,
+        partner: statement.partner,
+        period: statement.period,
+        schedule: statement.schedule,
+        remittanceMemo: statement.remittanceMemo,
+        counts: statement.counts,
+        totals: statement.totals,
+        withdrawalsDeducted: statement.withdrawalsDeducted,
+        openWithdrawalsAgainstPeriod: statement.openWithdrawalsAgainstPeriod,
+        generatedAt: statement.generatedAt,
+        /** 列表可省略明細；完整 HTML 仍含 rows */
+        rowCount: statement.rows?.length || 0,
       },
       html,
     });

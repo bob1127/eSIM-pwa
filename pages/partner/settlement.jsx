@@ -10,7 +10,7 @@ import {
 } from "@/components/partner/ShopifyControls";
 import { usePartnerSession } from "@/lib/partnerAuth";
 import { supabase } from "@/lib/supabaseClient";
-import { SHOPIFY_BADGE } from "@/lib/shopifyUi";
+import StatusIconBadge from "@/components/partner/StatusIconBadge";
 import {
   PAYOUT_FREEZE_DAYS,
   PAYOUT_MIN_WITHDRAWAL,
@@ -18,6 +18,9 @@ import {
   PAYOUT_REMITTANCE_WORKING_DAYS,
   PAYOUT_EXTRA_WITHDRAWAL_FEE,
   PAYOUT_FREE_WITHDRAWALS_PER_MONTH,
+  PAYOUT_METHODS,
+  normalizePayoutMethod,
+  getPayoutMethodLabel,
 } from "@/lib/partnerPayout";
 
 /** 結算頁：深灰／淺灰／白 + 小圓角；狀態徽章用特殊色 */
@@ -42,24 +45,13 @@ async function getToken() {
   return data.session?.access_token || "";
 }
 
-function Badge({ tone = "neutral", children }) {
-  const t = SHOPIFY_BADGE[tone] || SHOPIFY_BADGE.neutral;
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-bold whitespace-nowrap"
-      style={{
-        backgroundColor: t.bg,
-        color: t.text,
-        borderRadius: UI.radiusSm,
-      }}
-    >
-      <span
-        className="w-1.5 h-1.5 rounded-full shrink-0"
-        style={{ backgroundColor: t.dot }}
-      />
-      {children}
-    </span>
-  );
+function statusTone(status) {
+  const s = String(status || "").toLowerCase();
+  if (s === "remitted") return "success";
+  if (s === "approved") return "info";
+  if (s === "pending") return "warning";
+  if (s === "rejected" || s === "cancelled") return "critical";
+  return "neutral";
 }
 
 function Card({ children, className = "", style = {} }) {
@@ -78,7 +70,7 @@ function Card({ children, className = "", style = {} }) {
   );
 }
 
-function MetricCard({ label, value, hint, icon, iconBg }) {
+function MetricCard({ label, value, hint, icon, iconBg, onHintClick }) {
   return (
     <Card className="px-4 py-3.5 flex-1 min-w-[140px]">
       <div className="flex items-start justify-between gap-2">
@@ -104,21 +96,180 @@ function MetricCard({ label, value, hint, icon, iconBg }) {
         {value}
       </p>
       {hint ? (
-        <p className="text-[11px] mt-1 leading-snug" style={{ color: UI.soft }}>
-          {hint}
-        </p>
+        onHintClick ? (
+          <button
+            type="button"
+            onClick={onHintClick}
+            className="mt-1 inline-flex items-center gap-0.5 text-[11px] leading-snug font-semibold hover:underline underline-offset-2 text-left"
+            style={{ color: UI.mid }}
+          >
+            {hint}
+            <MaterialIcon name="info" size={14} style={{ color: UI.soft }} />
+          </button>
+        ) : (
+          <p className="text-[11px] mt-1 leading-snug" style={{ color: UI.soft }}>
+            {hint}
+          </p>
+        )
       ) : null}
     </Card>
   );
 }
 
-function statusTone(status) {
-  const s = String(status || "").toLowerCase();
-  if (s === "remitted") return "success";
-  if (s === "approved") return "info";
-  if (s === "pending") return "warning";
-  if (s === "rejected" || s === "cancelled") return "critical";
-  return "neutral";
+/** 可提領餘額 — 凍結天數說明彈窗 */
+function FreezeInfoModal({ open, snapshot, onClose }) {
+  if (!open) return null;
+  const days = snapshot?.freezeDays ?? PAYOUT_FREEZE_DAYS;
+  const cutoff = snapshot?.freezeCutoffIso
+    ? new Date(snapshot.freezeCutoffIso).toLocaleDateString("zh-TW", {
+        timeZone: "Asia/Taipei",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+    : null;
+
+  const rows = [
+    {
+      label: "累計可結算分潤",
+      value: fmt(snapshot?.totalEarned),
+      note: "已完成且未退款訂單之分潤加總",
+    },
+    {
+      label: `${days} 天內尚未計入`,
+      value: fmt(snapshot?.heldInFreeze),
+      note: "保護期內訂單，暫不可提領",
+    },
+    {
+      label: "已申請／已匯保留",
+      value: fmt(snapshot?.reserved),
+      note: "審核中、已核准或已匯款金額",
+    },
+    {
+      label: "目前可提領餘額",
+      value: fmt(snapshot?.available),
+      note: "累計 − 保護期 − 已保留",
+      emphasize: true,
+    },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-3">
+      <div className="absolute inset-0 bg-black/45" onClick={onClose} aria-hidden />
+      <div
+        className="relative w-full max-w-md max-h-[85vh] shadow-2xl flex flex-col overflow-hidden"
+        style={{
+          backgroundColor: UI.white,
+          borderRadius: UI.radius,
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="freeze-info-title"
+      >
+        <div
+          className="flex items-center justify-between px-4 py-3"
+          style={{ borderBottom: `1px solid ${UI.border}` }}
+        >
+          <div>
+            <p
+              id="freeze-info-title"
+              className="text-sm font-black"
+              style={{ color: UI.dark }}
+            >
+              為什麼會扣除 {days} 天內訂單？
+            </p>
+            <p className="text-[11px] mt-0.5" style={{ color: UI.soft }}>
+              可提領餘額計算說明
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center hover:bg-black/5 transition"
+            style={{ borderRadius: UI.radiusSm }}
+            aria-label="關閉"
+          >
+            <MaterialIcon name="close" size={18} style={{ color: UI.mid }} />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-3 overflow-y-auto">
+          <p className="text-xs leading-relaxed" style={{ color: UI.mid }}>
+            為降低退款／爭議風險，訂單需自成立日起滿{" "}
+            <strong style={{ color: UI.dark }}>{days} 個日曆天</strong>
+            後，其分潤才會計入可提領餘額。保護期內的分潤仍會保留在您的帳戶，到期後自動釋出。
+          </p>
+          {cutoff ? (
+            <p
+              className="text-[11px] px-3 py-2"
+              style={{
+                borderRadius: UI.radiusSm,
+                backgroundColor: UI.light,
+                border: `1px solid ${UI.border}`,
+                color: UI.soft,
+              }}
+            >
+              目前計入截止日：{cutoff}（含）以前完成的訂單
+            </p>
+          ) : null}
+
+          <div
+            className="rounded-sm overflow-hidden"
+            style={{ border: `1px solid ${UI.border}` }}
+          >
+            {rows.map((r, i) => (
+              <div
+                key={r.label}
+                className="flex items-start justify-between gap-3 px-3 py-2.5"
+                style={{
+                  borderTop: i === 0 ? undefined : `1px solid ${UI.border}`,
+                  backgroundColor: r.emphasize ? UI.light : UI.white,
+                }}
+              >
+                <div>
+                  <p
+                    className={`text-xs ${r.emphasize ? "font-black" : "font-bold"}`}
+                    style={{ color: UI.dark }}
+                  >
+                    {r.label}
+                  </p>
+                  <p className="text-[10px] mt-0.5" style={{ color: UI.soft }}>
+                    {r.note}
+                  </p>
+                </div>
+                <p
+                  className={`text-sm tabular-nums shrink-0 ${
+                    r.emphasize ? "font-black" : "font-bold"
+                  }`}
+                  style={{ color: r.emphasize ? "#008060" : UI.dark }}
+                >
+                  {r.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div
+          className="px-4 py-3"
+          style={{ borderTop: `1px solid ${UI.border}` }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full h-9 text-sm font-bold transition hover:opacity-90"
+            style={{
+              borderRadius: UI.radiusSm,
+              backgroundColor: UI.dark,
+              color: UI.white,
+            }}
+          >
+            知道了
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function toCsvValue(v) {
@@ -202,9 +353,10 @@ function WithdrawalDetailModal({ open, row, onClose }) {
             <span className="text-xs font-bold" style={{ color: UI.soft }}>
               狀態
             </span>
-            <Badge tone={statusTone(row.status)}>
-              {row.status_label || row.status}
-            </Badge>
+            <StatusIconBadge
+              tone={statusTone(row.status)}
+              label={row.status_label || row.status}
+            />
           </div>
           {[
             ["申請金額", fmt(row.amount)],
@@ -269,16 +421,19 @@ export default function PartnerSettlementPage() {
   const [requests, setRequests] = useState([]);
   const [scheduleHint, setScheduleHint] = useState("");
   const [bank, setBank] = useState({
+    payout_method: "tw_bank",
     bank_name: "",
     bank_code: "",
     branch_name: "",
     account_name: "",
     account_number: "",
+    payout_note: "",
   });
   const [amount, setAmount] = useState("");
   const [tab, setTab] = useState("all");
   const [page, setPage] = useState(1);
   const [detailRow, setDetailRow] = useState(null);
+  const [freezeInfoOpen, setFreezeInfoOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -295,11 +450,13 @@ export default function PartnerSettlementPage() {
       setScheduleHint(data.scheduleHint || "");
       if (data.bank) {
         setBank({
+          payout_method: normalizePayoutMethod(data.bank.payout_method),
           bank_name: data.bank.bank_name || "",
           bank_code: data.bank.bank_code || "",
           branch_name: data.bank.branch_name || "",
           account_name: data.bank.account_name || "",
           account_number: data.bank.account_number || "",
+          payout_note: data.bank.payout_note || "",
         });
       }
       if (data.snapshot?.available >= PAYOUT_MIN_WITHDRAWAL) {
@@ -340,8 +497,17 @@ export default function PartnerSettlementPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "儲存失敗");
-      setMessage("收款帳戶已儲存");
-      if (data.bank) setBank({ ...bank, ...data.bank });
+      setMessage(data.warning || "收款帳戶已儲存");
+      if (data.bank) {
+        setBank((prev) => ({
+          ...prev,
+          ...data.bank,
+          payout_method: normalizePayoutMethod(
+            data.bank.payout_method || prev.payout_method,
+          ),
+          payout_note: data.bank.payout_note ?? prev.payout_note ?? "",
+        }));
+      }
     } catch (err) {
       setError(err.message || "儲存失敗");
     } finally {
@@ -463,7 +629,8 @@ export default function PartnerSettlementPage() {
             </h1>
             <p className="text-xs sm:text-sm mt-1 max-w-xl" style={{ color: UI.mid }}>
               月結對帳單＋申請提領。成交月之次月 15 日產製對帳單；申請後目標{" "}
-              {PAYOUT_REMITTANCE_WORKING_DAYS} 個工作天內匯款。
+              {PAYOUT_REMITTANCE_WORKING_DAYS}{" "}
+              個工作天內匯款。已匯提領會自對帳單「本期應匯」扣減，不會重複給付。
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -525,7 +692,8 @@ export default function PartnerSettlementPage() {
           <MetricCard
             label="可提領餘額"
             value={loading ? "…" : fmt(snapshot?.available)}
-            hint={`已扣凍結 ${snapshot?.freezeDays ?? PAYOUT_FREEZE_DAYS} 天內訂單`}
+            hint={`已扣除 ${snapshot?.freezeDays ?? PAYOUT_FREEZE_DAYS} 天內訂單`}
+            onHintClick={() => setFreezeInfoOpen(true)}
             icon="account_balance_wallet"
             iconBg="#008060"
           />
@@ -660,33 +828,170 @@ export default function PartnerSettlementPage() {
                   className="text-white"
                 />
               </div>
-              <h3 className="text-sm font-black" style={{ color: UI.dark }}>
-                收款帳戶
-              </h3>
+              <div>
+                <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                  收款帳戶
+                </h3>
+                <p className="text-[10px]" style={{ color: UI.soft }}>
+                  可依需求選擇匯款方式
+                </p>
+              </div>
             </div>
+
+            <div>
+              <p
+                className="text-[10px] font-bold uppercase tracking-wider mb-1.5"
+                style={{ color: UI.soft }}
+              >
+                收款方式
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {PAYOUT_METHODS.map((m) => {
+                  const active =
+                    normalizePayoutMethod(bank.payout_method) === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() =>
+                        setBank((prev) => ({
+                          ...prev,
+                          payout_method: m.id,
+                          bank_name:
+                            m.id === "line_pay"
+                              ? prev.bank_name || "LINE Pay"
+                              : m.id === "paypal"
+                                ? prev.bank_name || "PayPal"
+                                : m.id === "other"
+                                  ? prev.bank_name || "其他收款方式"
+                                  : prev.bank_name === "LINE Pay" ||
+                                      prev.bank_name === "PayPal" ||
+                                      prev.bank_name === "其他收款方式"
+                                    ? ""
+                                    : prev.bank_name,
+                        }))
+                      }
+                      className="px-2.5 py-1.5 text-[11px] font-bold transition"
+                      style={{
+                        borderRadius: UI.radiusSm,
+                        border: `1px solid ${active ? UI.dark : UI.border}`,
+                        backgroundColor: active ? UI.dark : UI.white,
+                        color: active ? UI.white : UI.mid,
+                      }}
+                      title={m.desc}
+                    >
+                      {m.short}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] mt-1.5" style={{ color: UI.soft }}>
+                {
+                  PAYOUT_METHODS.find(
+                    (m) => m.id === normalizePayoutMethod(bank.payout_method),
+                  )?.desc
+                }
+              </p>
+            </div>
+
             <div className="space-y-2.5">
-              {[
-                ["bank_name", "銀行名稱 *"],
-                ["bank_code", "銀行代碼"],
-                ["branch_name", "分行"],
-                ["account_name", "戶名 *"],
-                ["account_number", "帳號 *"],
-              ].map(([key, label]) => (
-                <label key={key} className="block text-xs">
-                  <span className="font-bold" style={{ color: UI.mid }}>
-                    {label}
-                  </span>
-                  <input
-                    value={bank[key] || ""}
-                    onChange={(e) =>
-                      setBank((prev) => ({ ...prev, [key]: e.target.value }))
-                    }
-                    className={inputClass}
-                    style={inputStyle}
-                  />
-                </label>
-              ))}
+              {(() => {
+                const method = normalizePayoutMethod(bank.payout_method);
+                const fields =
+                  method === "tw_bank"
+                    ? [
+                        ["bank_name", "銀行名稱 *"],
+                        ["bank_code", "銀行代碼"],
+                        ["branch_name", "分行"],
+                        ["account_name", "戶名 *"],
+                        ["account_number", "帳號 *"],
+                      ]
+                    : method === "overseas_bank"
+                      ? [
+                          ["bank_name", "銀行名稱 *"],
+                          ["bank_code", "SWIFT／BIC *"],
+                          ["branch_name", "國家／地區"],
+                          ["account_name", "戶名 *"],
+                          ["account_number", "帳號／IBAN *"],
+                        ]
+                      : method === "line_pay"
+                        ? [
+                            ["account_name", "收款人姓名 *"],
+                            ["account_number", "LINE Pay 手機／帳號 *"],
+                          ]
+                        : method === "paypal"
+                          ? [
+                              ["account_name", "收款人姓名 *"],
+                              ["account_number", "PayPal Email *"],
+                            ]
+                          : [["account_name", "收款人／聯絡姓名 *"]];
+
+                return (
+                  <>
+                    {fields.map(([key, label]) => (
+                      <label key={key} className="block text-xs">
+                        <span className="font-bold" style={{ color: UI.mid }}>
+                          {label}
+                        </span>
+                        <input
+                          value={bank[key] || ""}
+                          onChange={(e) =>
+                            setBank((prev) => ({
+                              ...prev,
+                              [key]: e.target.value,
+                            }))
+                          }
+                          className={inputClass}
+                          style={inputStyle}
+                          placeholder={
+                            key === "account_number" && method === "paypal"
+                              ? "name@example.com"
+                              : undefined
+                          }
+                        />
+                      </label>
+                    ))}
+                    {(method === "overseas_bank" ||
+                      method === "other" ||
+                      method === "line_pay") && (
+                      <label className="block text-xs">
+                        <span className="font-bold" style={{ color: UI.mid }}>
+                          {method === "other"
+                            ? "其他說明 *（匯款管道、帳號、注意事項）"
+                            : "補充說明（選填）"}
+                        </span>
+                        <textarea
+                          value={bank.payout_note || ""}
+                          onChange={(e) =>
+                            setBank((prev) => ({
+                              ...prev,
+                              payout_note: e.target.value,
+                            }))
+                          }
+                          rows={method === "other" ? 4 : 2}
+                          className={inputClass}
+                          style={{ ...inputStyle, resize: "vertical" }}
+                          placeholder={
+                            method === "other"
+                              ? "例：請匯至某某錢包／超商代碼，聯絡 LINE：xxx"
+                              : method === "overseas_bank"
+                                ? "例：中間行、地址、幣別需求"
+                                : "例：收款備註"
+                          }
+                        />
+                      </label>
+                    )}
+                  </>
+                );
+              })()}
             </div>
+            <p className="text-[10px] leading-relaxed" style={{ color: UI.soft }}>
+              目前選擇：
+              <span className="font-bold" style={{ color: UI.dark }}>
+                {getPayoutMethodLabel(bank.payout_method)}
+              </span>
+              。非台灣銀行匯款可能需較長作業時間，平台會與您確認後再匯。
+            </p>
             <button
               type="button"
               disabled={savingBank}
@@ -782,9 +1087,10 @@ export default function PartnerSettlementPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge tone={statusTone(r.status)}>
-                          {r.status_label || r.status}
-                        </Badge>
+                        <StatusIconBadge
+                          tone={statusTone(r.status)}
+                          label={r.status_label || r.status}
+                        />
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
@@ -825,6 +1131,11 @@ export default function PartnerSettlementPage() {
         open={!!detailRow}
         row={detailRow}
         onClose={() => setDetailRow(null)}
+      />
+      <FreezeInfoModal
+        open={freezeInfoOpen}
+        snapshot={snapshot}
+        onClose={() => setFreezeInfoOpen(false)}
       />
     </PartnerAdminLayout>
   );

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import MaterialIcon from "@/components/MaterialIcon";
 import RefundRequestModal from "@/components/refund/RefundRequestModal";
 import OrderRefundDetailModal from "@/components/refund/OrderRefundDetailModal";
+import { useCart } from "@/components/context/CartContext";
 import {
   ACCOUNT_UI,
   ACCOUNT_THEME,
@@ -40,6 +41,103 @@ const UI = {
   radius: ACCOUNT_UI.radius,
   radiusSm: ACCOUNT_UI.radiusSm,
 };
+
+/** 解析訂單商品列（排除付款 demo 標記） */
+function parseOrderLineItems(order) {
+  let items = order?.item_details ?? order?.items;
+  if (typeof items === "string") {
+    try {
+      items = JSON.parse(items);
+    } catch {
+      items = [];
+    }
+  }
+  if (!Array.isArray(items)) items = [];
+  return items.filter((i) => i && !i._payment_demo);
+}
+
+function productPageHrefFromItem(item) {
+  if (!item) return null;
+  if (item.href) return item.href;
+  const slug = item.slug || item.handle;
+  const cat = item.categorySlug || item.category || item.category_slug;
+  if (cat && slug) return `/product/${cat}/${slug}`;
+  if (slug) return `/product/${slug}`;
+  return null;
+}
+
+/**
+ * 再次購買：把原訂單方案加回購物車並導向結帳；
+ * 若缺 planId／規格則改開商品頁（或首頁）。
+ */
+function useBuyAgain(order) {
+  const cart = useCart();
+  const addToCart = cart?.addToCart;
+
+  return useCallback(() => {
+    const lines = parseOrderLineItems(order);
+    const firstHref = productPageHrefFromItem(lines[0]);
+
+    const canCheckout = lines.some(
+      (i) => i.planId || i.plan_id || i.variant_id || i.variantId || i.id,
+    );
+
+    if (canCheckout && typeof addToCart === "function" && lines.length > 0) {
+      lines.forEach((item) => {
+        addToCart(
+          {
+            id: item.variant_id || item.variantId || item.id,
+            variant_id: item.variant_id || item.variantId || item.id,
+            parentId: item.parentId || item.parent_id || null,
+            name: item.name || item.productName || item.title || "eSIM 方案",
+            price: Number(item.price) || 0,
+            sku: item.sku || null,
+            planId: item.planId || item.plan_id || null,
+            image: item.image || item.thumbnail || "/images/jeko-esim.png",
+            slug: item.slug || item.handle || null,
+            categorySlug:
+              item.categorySlug || item.category || item.category_slug || null,
+            href: productPageHrefFromItem(item),
+            quantity: Math.max(1, Number(item.quantity) || 1),
+            options: item.options || item.specLabel || "",
+            specLabel: item.specLabel || item.options || "",
+            type: item.type || "esim",
+            store_id: item.store_id || null,
+            telecom: item.telecom,
+            days: item.days,
+            data_amount: item.data_amount,
+          },
+          { open: false },
+        );
+      });
+
+      const hasPlan = lines.some((i) => i.planId || i.plan_id);
+      try {
+        window.dispatchEvent(new Event("open-cart-sidebar"));
+      } catch {
+        /* ignore */
+      }
+
+      // 有 planId 可直接結帳；否則開商品頁讓使用者重選規格
+      if (hasPlan) {
+        window.location.assign("/checkout");
+        return;
+      }
+      if (firstHref) {
+        window.location.assign(firstHref);
+        return;
+      }
+      window.location.assign("/checkout");
+      return;
+    }
+
+    if (firstHref) {
+      window.location.assign(firstHref);
+      return;
+    }
+    window.location.assign("/");
+  }, [order, addToCart]);
+}
 
 function getEsimQRCodes(order) {
   if (!order?.qrcode_data) return [];
@@ -464,19 +562,12 @@ function OrderDetailView({
   const refundUi = getRefundUiState(order);
   const payInfo = parsePaymentInfo(order);
   const isPending = String(order.status).toLowerCase() === "pending";
+  const buyAgain = useBuyAgain(order);
 
   const [refundOrder, setRefundOrder] = useState(null);
   const [refundDetailOrder, setRefundDetailOrder] = useState(null);
 
-  let items = order?.item_details;
-  if (typeof items === "string") {
-    try {
-      items = JSON.parse(items);
-    } catch {
-      items = [];
-    }
-  }
-  if (!Array.isArray(items)) items = [];
+  const items = parseOrderLineItems(order);
 
   const iccidList = getEsimIccids(order);
 
@@ -498,9 +589,7 @@ function OrderDetailView({
       id: "buy",
       label: "再次購買",
       icon: "add_shopping_cart",
-      onClick: () => {
-        window.location.href = "/";
-      },
+      onClick: buyAgain,
     },
   ];
 
@@ -654,7 +743,7 @@ function OrderDetailView({
                     查詢流量
                   </SecondaryBtn>
                 ) : null}
-                <PrimaryBtn href="/">再次購買</PrimaryBtn>
+                <PrimaryBtn onClick={buyAgain}>再次購買</PrimaryBtn>
               </div>
             </div>
           </Card>
@@ -1083,7 +1172,7 @@ function OrderDetailView({
                   申請退款
                 </SecondaryBtn>
               ) : null}
-              <PrimaryBtn href="/" className="w-full">
+              <PrimaryBtn onClick={buyAgain} className="w-full">
                 <MaterialIcon name="add" size={16} />
                 再次購買
               </PrimaryBtn>

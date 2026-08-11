@@ -83,7 +83,7 @@ export function ShopifyDropdown({
         borderRadius: "0.5rem",
       }
     : {
-        backgroundColor: open ? "#e3e3e3" : "#fafafa",
+        backgroundColor: open ? "#f1f1f1" : "#ffffff",
         color: "#303030",
         border: "1px solid #8a8a8a",
         borderRadius: "0.5rem",
@@ -145,12 +145,17 @@ export function ShopifyDropdown({
                   item.onClick?.();
                 }}
                 className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-[13px] font-medium transition disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ color: "#303030" }}
+                style={{
+                  color: "#303030",
+                  backgroundColor: item.active ? "#f1f1f1" : "transparent",
+                }}
                 onMouseEnter={(e) => {
                   if (!item.disabled) e.currentTarget.style.backgroundColor = "#f6f6f7";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.backgroundColor = item.active
+                    ? "#f1f1f1"
+                    : "transparent";
                 }}
               >
                 {item.icon ? (
@@ -163,6 +168,13 @@ export function ShopifyDropdown({
                   <span className="w-[18px] shrink-0" />
                 )}
                 <span className="flex-1 truncate leading-snug">{item.label}</span>
+                {item.active ? (
+                  <MaterialIcon
+                    name="check"
+                    size={18}
+                    style={{ color: "#008060", flexShrink: 0 }}
+                  />
+                ) : null}
               </button>
             );
           })}
@@ -174,7 +186,8 @@ export function ShopifyDropdown({
 
 /**
  * Shopify 風格頁內 Tabs（全部／已付款／尚未付款…）
- * tabs: [{ id, label, count? }]
+ * tabs: [{ id, label, count?, amount? }]
+ * amount 可為字串（如 "NT$1,234"）顯示於筆數旁
  */
 export function ShopifyTabs({ tabs = [], value, onChange }) {
   return (
@@ -198,7 +211,7 @@ export function ShopifyTabs({ tabs = [], value, onChange }) {
               fontWeight: active ? 700 : 500,
             }}
           >
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1.5 flex-wrap justify-center">
               {tab.label}
               {tab.count != null ? (
                 <span
@@ -211,6 +224,18 @@ export function ShopifyTabs({ tabs = [], value, onChange }) {
                   }}
                 >
                   {tab.count}
+                </span>
+              ) : null}
+              {tab.amount != null && tab.amount !== "" ? (
+                <span
+                  className="tabular-nums text-[11px] font-bold"
+                  style={{
+                    color: active
+                      ? SHOPIFY_UI.textPrimary
+                      : SHOPIFY_UI.textTertiary,
+                  }}
+                >
+                  {tab.amount}
                 </span>
               ) : null}
             </span>

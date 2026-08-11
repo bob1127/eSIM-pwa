@@ -63,11 +63,18 @@ export default async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY 
     );
 
-    const { data: orders, error } = await supabaseAdmin
-      .from("orders")
-      .select("*")
-      .in("customer_email", lookupEmails)
-      .order("created_at", { ascending: false });
+    const { data: orders, error } = await (() => {
+      let q = supabaseAdmin
+        .from("orders")
+        .select("*")
+        .in("customer_email", lookupEmails)
+        .order("created_at", { ascending: false });
+      const storeId = Number(req.query.store_id);
+      if (Number.isFinite(storeId) && storeId > 0) {
+        q = q.eq("store_id", storeId);
+      }
+      return q;
+    })();
 
     if (error) throw error;
 

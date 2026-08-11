@@ -101,6 +101,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "GET") {
+    res.setHeader("Cache-Control", "no-store");
     const { data, error } = await supabaseAdmin
       .from("partners")
       .select("*")
@@ -119,26 +120,64 @@ export default async function handler(req, res) {
           .map(String),
       ),
     ];
+    const partnerIds = partners.map((p) => p.id).filter(Boolean);
 
     let storeByDomain = {};
     if (domains.length) {
       const { data: stores } = await supabaseAdmin
         .from("stores")
-        .select("id, domain, blog_custom_enabled, status")
+        .select(
+          "id, domain, store_name, blog_custom_enabled, status, logo_url, footer_phone, footer_email, updated_at",
+        )
         .in("domain", domains);
       storeByDomain = Object.fromEntries(
         (stores || []).map((s) => [s.domain, s]),
       );
     }
 
+    const bankByPartner = {};
+    if (partnerIds.length) {
+      let { data: banks, error: bankErr } = await supabaseAdmin
+        .from("partner_bank_accounts")
+        .select(
+          "partner_id, payout_method, bank_name, account_name, account_number, payout_note, updated_at",
+        )
+        .in("partner_id", partnerIds);
+      if (
+        bankErr &&
+        /payout_method|payout_note|column/i.test(bankErr.message || "")
+      ) {
+        ({ data: banks } = await supabaseAdmin
+          .from("partner_bank_accounts")
+          .select(
+            "partner_id, bank_name, account_name, account_number, updated_at",
+          )
+          .in("partner_id", partnerIds));
+        banks = (banks || []).map((b) => ({
+          ...b,
+          payout_method: "tw_bank",
+          payout_note: "",
+        }));
+      }
+      for (const b of banks || []) bankByPartner[b.partner_id] = b;
+    }
+
     const enriched = partners.map((p) => {
       const key = p.slug || p.referral_code;
-      const store = key ? storeByDomain[key] : null;
+      const store = key ? storeByDomain[String(key)] : null;
+      const bank = bankByPartner[p.id] || null;
       return {
         ...p,
         blog_custom_enabled: !!store?.blog_custom_enabled,
         store_id: store?.id || null,
         store_domain: store?.domain || null,
+        store_name: store?.store_name || null,
+        store_logo_url: store?.logo_url || null,
+        store_phone: store?.footer_phone || null,
+        store_contact_email: store?.footer_email || null,
+        store_updated_at: store?.updated_at || null,
+        bank,
+        bank_updated_at: bank?.updated_at || null,
       };
     });
 

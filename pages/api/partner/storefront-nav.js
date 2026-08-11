@@ -28,10 +28,7 @@ export default async function handler(req, res) {
     }
     const products = await fetchStoreProductsForStorefront(store);
     const countries = buildPartnerCountryNavItems(products, store.domain);
-    res.setHeader(
-      "Cache-Control",
-      "public, s-maxage=60, stale-while-revalidate=300",
-    );
+    res.setHeader("Cache-Control", "no-store, max-age=0");
     return res.status(200).json({ countries });
   } catch (err) {
     console.error("[storefront-nav]", err);

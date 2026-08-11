@@ -507,7 +507,26 @@ export default function ArticleBlogPostLayout({
             {post.partnerContribution ? (
               <p className="mb-3 text-[13px] font-semibold text-[#1E4AD1]">
                 合作夥伴供稿
-                {post.partnerStoreName ? ` · ${post.partnerStoreName}` : ""}
+                {post.partnerStoreName && post.partnerStoreDomain ? (
+                  <>
+                    {" · "}
+                    <Link
+                      href={`/p/${post.partnerStoreDomain}/`}
+                      className="underline-offset-2 hover:underline"
+                    >
+                      {post.partnerStoreName}
+                    </Link>
+                    {" · "}
+                    <Link
+                      href={`/p/${post.partnerStoreDomain}/blog/${post.slug}/`}
+                      className="font-medium text-[#0A6CD0] underline-offset-2 hover:underline"
+                    >
+                      夥伴賣場原文
+                    </Link>
+                  </>
+                ) : post.partnerStoreName ? (
+                  ` · ${post.partnerStoreName}`
+                ) : null}
               </p>
             ) : null}
 

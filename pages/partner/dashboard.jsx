@@ -18,6 +18,7 @@ import { displayReferralCouponCode } from "@/lib/partnerReferralDiscount";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
 import { paymentMethodLabel, buyerDisplayName } from "@/lib/orderDisplay";
 import { SHOPIFY_BADGE } from "@/lib/shopifyUi";
+import StatusIconBadge from "@/components/partner/StatusIconBadge";
 import {
   filterByRange,
   sumTotals,
@@ -71,26 +72,6 @@ const STATUS_LABEL = {
   refunded: "已退款",
   refund_pending: "退款審核中",
 };
-
-function Badge({ tone = "neutral", children }) {
-  const t = SHOPIFY_BADGE[tone] || SHOPIFY_BADGE.neutral;
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-bold whitespace-nowrap"
-      style={{
-        backgroundColor: t.bg,
-        color: t.text,
-        borderRadius: UI.radiusSm,
-      }}
-    >
-      <span
-        className="w-1.5 h-1.5 rounded-full shrink-0"
-        style={{ backgroundColor: t.dot }}
-      />
-      {children}
-    </span>
-  );
-}
 
 function Card({ children, className = "", style = {} }) {
   return (
@@ -615,11 +596,10 @@ export default function PartnerDashboard() {
                           +{fmt(order.partner_profit)}
                         </td>
                         <td className="px-4 py-3">
-                          <Badge
+                          <StatusIconBadge
                             tone={STATUS_BADGE[order.status] || "neutral"}
-                          >
-                            {STATUS_LABEL[order.status] || order.status}
-                          </Badge>
+                            label={STATUS_LABEL[order.status] || order.status}
+                          />
                         </td>
                       </tr>
                     ))

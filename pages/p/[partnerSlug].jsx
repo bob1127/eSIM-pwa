@@ -1,7 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import PartnerShopLayout from "@/components/Shop/PartnerShopLayout";
+import PartnerHomepageEditor, {
+  usePartnerStoreOwner,
+} from "@/components/Shop/PartnerHomepageEditor";
+import PartnerHeroBanner from "@/components/Shop/PartnerHeroBanner";
 import {
   fetchActiveStoreByDomain,
   fetchStoreProductsForStorefront,
@@ -12,6 +17,7 @@ import {
   filterProductsByCountry,
   PARTNER_COUNTRY_DEFS,
 } from "@/lib/partnerNavCountries";
+import { resolveHomepageDisplay } from "@/lib/partnerHomepageCms";
 
 const CONTAINER = "max-w-[1680px] mx-auto px-6 lg:px-10";
 
@@ -22,9 +28,9 @@ function ProductCard({ product, domain }) {
   return (
     <Link
       href={href}
-      className="group flex flex-col bg-white border border-slate-100 hover:border-slate-200 transition-colors"
+      className="group flex flex-col h-full bg-white border border-slate-100 hover:border-slate-200 transition-colors"
     >
-      <div className="relative aspect-square bg-[#f5f5f5] overflow-hidden">
+      <div className="relative aspect-square bg-[#f5f5f5] overflow-hidden shrink-0">
         {product.image ? (
           <Image
             src={product.image}
@@ -39,16 +45,16 @@ function ProductCard({ product, domain }) {
           </div>
         )}
       </div>
-      <div className="p-4 flex flex-col gap-1.5 flex-1">
-        <h3 className="text-[14px] font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#3B9EFF] transition-colors">
+      <div className="p-4 flex flex-col flex-1 min-h-0">
+        <h3 className="text-[14px] font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.5rem] group-hover:text-[#3B9EFF] transition-colors">
           {product.name}
         </h3>
-        {product.description ? (
-          <p className="text-[12px] text-slate-500 line-clamp-2">
-            {product.description.replace(/<[^>]+>/g, "")}
-          </p>
-        ) : null}
-        <p className="mt-auto pt-2 text-[15px] font-bold text-slate-900">
+        <p className="mt-1.5 text-[12px] text-slate-500 line-clamp-2 min-h-[2.25rem]">
+          {product.description
+            ? product.description.replace(/<[^>]+>/g, "")
+            : "\u00A0"}
+        </p>
+        <p className="mt-auto pt-3 text-[15px] font-bold text-slate-900">
           {price > 0 ? (
             <>
               NT${price.toLocaleString()}
@@ -65,19 +71,69 @@ function ProductCard({ product, domain }) {
   );
 }
 
+function PromoCard({ card, editMode }) {
+  const inner = (
+    <>
+      <Image
+        src={card.image}
+        alt={card.title}
+        fill
+        className="object-cover opacity-80 transition-transform duration-500 group-hover:scale-105"
+        sizes="(max-width:768px) 100vw, 50vw"
+        unoptimized={String(card.image || "").startsWith("http")}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+        <h2 className="text-white text-xl sm:text-2xl font-bold">{card.title}</h2>
+        <p className="text-white/80 text-sm mt-1">{card.subtitle}</p>
+      </div>
+      {editMode ? (
+        <span className="absolute top-3 right-3 text-[10px] font-bold bg-white/90 text-slate-800 px-2 py-1 rounded">
+          可編輯
+        </span>
+      ) : null}
+    </>
+  );
+
+  const cls =
+    "group relative block aspect-[16/9] min-h-[180px] overflow-hidden bg-slate-900";
+
+  if (String(card.href || "").startsWith("#")) {
+    return (
+      <a href={card.href} className={cls}>
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <Link href={card.href || "/"} className={cls}>
+      {inner}
+    </Link>
+  );
+}
+
 /**
- * 夥伴賣場首頁 — 版面與 /shop 一致（ShopNavbar + Footer）
- * Navbar 顯示夥伴上架方案對應的國家
+ * 夥伴賣場首頁 — 版面與 /shop 一致；店主登入可前台編輯 hero／促銷卡／Discover
  */
 export default function PartnerStorefront({ store, products, navCountries }) {
   const router = useRouter();
   const currentStore = store || { store_name: "Jeko eSIM", domain: "default" };
   const domain = currentStore.domain;
+  const { isOwner, token, checking } = usePartnerStoreOwner(currentStore);
+  const [cms, setCms] = useState(() => currentStore.homepage_cms || null);
+
+  const display = useMemo(
+    () => resolveHomepageDisplay(currentStore, cms),
+    [currentStore, cms],
+  );
+
   const countryKey =
     typeof router.query.country === "string" ? router.query.country : null;
   const countryLabel =
     PARTNER_COUNTRY_DEFS.find((c) => c.key === countryKey)?.label || null;
   const list = filterProductsByCountry(products || [], countryKey);
+
+  const hero = display.hero;
 
   return (
     <PartnerShopLayout
@@ -86,104 +142,24 @@ export default function PartnerStorefront({ store, products, navCountries }) {
       description={currentStore.description}
       navCountries={navCountries || []}
     >
-      {/* Hero — 店名品牌區（對齊 shop 大標風格） */}
-      <section className="relative w-full bg-gradient-to-br from-[#0a3a7a] via-[#1a56db] to-[#3B9EFF] text-white">
-        <div
-          className="absolute inset-0 opacity-30 pointer-events-none"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 20% 20%, rgba(255,255,255,.35), transparent 40%), radial-gradient(circle at 80% 10%, rgba(255,212,58,.2), transparent 35%)",
-          }}
-        />
-        <div className={`${CONTAINER} relative py-16 sm:py-20 md:py-24`}>
-          {currentStore.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={currentStore.logo_url}
-              alt={currentStore.store_name}
-              className="h-12 sm:h-14 w-auto object-contain mb-6 rounded-lg bg-white/10 p-1.5"
-              referrerPolicy="no-referrer"
-            />
-          ) : null}
-          <p className="text-xs sm:text-sm font-bold tracking-[0.2em] uppercase text-white/70 mb-3">
-            Official Partner Store · Powered by Jeko
-          </p>
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.1] mb-4">
-            {currentStore.store_name}
-          </h1>
-          <p className="text-sm sm:text-base text-white/85 max-w-2xl leading-relaxed">
-            {currentStore.description ||
-              "精選全球 eSIM 方案，即買即用，出遊上網一次搞定。"}
-          </p>
-          <div id="about" className="sr-only">
-            {currentStore.store_name} — {currentStore.description || "官方授權專屬商城"}
-          </div>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href="#plans"
-              className="inline-flex items-center bg-white text-[#0a3a7a] text-sm font-bold px-6 py-3 hover:bg-white/95 transition"
-            >
-              探索 eSIM 方案
-            </a>
-            <Link
-              href={`/p/${domain}/blog/`}
-              className="inline-flex items-center border border-white/40 text-white text-sm font-bold px-6 py-3 hover:bg-white/10 transition"
-            >
-              旅遊文章
-            </Link>
-            <Link
-              href={`/p/${domain}/tutorial/`}
-              className="inline-flex items-center border border-white/40 text-white text-sm font-bold px-6 py-3 hover:bg-white/10 transition"
-            >
-              安裝教學
-            </Link>
-          </div>
+      {isOwner && !checking ? (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 text-xs sm:text-sm font-bold px-4 py-2.5 text-center">
+          您正以本店夥伴主帳號瀏覽 — 可使用右下角「編輯首頁」修改圖片、文字與連結
         </div>
-      </section>
+      ) : null}
 
-      {/* 雙欄促銷／導覽卡（shop 同款） */}
+      <PartnerHeroBanner
+        store={currentStore}
+        hero={hero}
+        domain={domain}
+      />
+
+      {/* 雙欄促銷卡 */}
       <section className={`${CONTAINER} py-10 sm:py-14`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link
-            href="#plans"
-            className="group relative block aspect-[16/9] min-h-[180px] overflow-hidden bg-slate-900"
-          >
-            <Image
-              src="/images/shop/shop-promo-01.png"
-              alt="出國必備 eSIM"
-              fill
-              className="object-cover opacity-80 transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width:768px) 100vw, 50vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-              <h2 className="text-white text-xl sm:text-2xl font-bold">
-                出國必備 eSIM
-              </h2>
-              <p className="text-white/80 text-sm mt-1">
-                抵達目的地即開即用 · QR Code 啟用
-              </p>
-            </div>
-          </Link>
-          <Link
-            href="/shop/"
-            className="group relative block aspect-[16/9] min-h-[180px] overflow-hidden bg-slate-900"
-          >
-            <Image
-              src="https://www.bitplayinc.com/cdn/shop/files/Slider_s4_2000x.jpg?v=1740538574"
-              alt="旅行周邊"
-              fill
-              className="object-cover opacity-80 transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width:768px) 100vw, 50vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-              <h2 className="text-white text-xl sm:text-2xl font-bold">
-                旅行周邊精選
-              </h2>
-              <p className="text-white/80 text-sm mt-1">前往 Jeko Shop 探索更多</p>
-            </div>
-          </Link>
+          {display.promoCards.map((card, i) => (
+            <PromoCard key={i} card={card} editMode={isOwner} />
+          ))}
         </div>
       </section>
 
@@ -246,33 +222,43 @@ export default function PartnerStorefront({ store, products, navCountries }) {
       {/* Discover banner */}
       <section className={`${CONTAINER} pb-16 sm:pb-20`}>
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">
-          Discover More from Jeko
+          {display.discover.section_title}
         </h2>
         <Link
-          href="/shop/"
+          href={display.discover.href || "/shop/"}
           className="group relative block w-full aspect-[21/9] min-h-[220px] overflow-hidden bg-slate-200"
         >
           <Image
-            src="/images/shop/shop-promo-01.png"
-            alt="Discover Jeko Shop"
+            src={display.discover.image}
+            alt={display.discover.title}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="100vw"
+            unoptimized={String(display.discover.image || "").startsWith("http")}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
           <div className="absolute inset-0 flex flex-col justify-center items-start px-8 sm:px-14 gap-2">
             <h3 className="text-white text-2xl sm:text-3xl font-bold leading-tight">
-              Jeko Shop 旅行完整配備
+              {display.discover.title}
             </h3>
             <p className="text-white/90 text-sm sm:text-base">
-              eSIM、充電器、收納與旅遊配件一次購足
+              {display.discover.subtitle}
             </p>
             <span className="mt-3 inline-block bg-white text-black text-[13px] font-bold px-6 py-2.5 hover:bg-slate-100 transition-colors">
-              立即逛商城
+              {display.discover.button_label}
             </span>
           </div>
         </Link>
       </section>
+
+      {isOwner && token ? (
+        <PartnerHomepageEditor
+          store={currentStore}
+          cms={cms}
+          onCmsChange={setCms}
+          token={token}
+        />
+      ) : null}
     </PartnerShopLayout>
   );
 }
@@ -287,7 +273,6 @@ export async function getServerSideProps(context) {
     return { notFound: true };
   }
 
-  // 商品載入失敗不應讓整間店 404
   let products = [];
   let navCountries = [];
   try {
@@ -297,7 +282,6 @@ export async function getServerSideProps(context) {
     console.error("[p/[partnerSlug]] products SSR error:", err);
   }
 
-  // 確保可序列化（避免 Date / undefined 造成生產環境 props 失敗）
   const safe = (v) => JSON.parse(JSON.stringify(v ?? null));
 
   return {

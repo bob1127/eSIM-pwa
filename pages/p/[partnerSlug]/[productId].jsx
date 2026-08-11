@@ -137,10 +137,11 @@ async function loadLocalProductFallback(listing, store) {
 
 function inferCategoryHandleFromProduct(product) {
   const s = `${product?.name || ""} ${product?.slug || ""}`;
+  // 香港須在 china 之前（CSL / China Telecom HK）
+  if (/香港|hong.?kong|\bhk\b/i.test(s)) return "hongkong";
   if (/中國|china/i.test(s)) return "china";
   if (/日本|japan/i.test(s)) return "japan";
   if (/韓國|korea/i.test(s)) return "korea";
-  if (/香港|hong.?kong|\bhk\b/i.test(s)) return "hong-kong";
   if (/泰國|thailand/i.test(s)) return "thailand";
   if (/歐洲|europe/i.test(s)) return "europe";
   if (/美國|usa|united.?states/i.test(s)) return "usa";
@@ -223,6 +224,14 @@ export async function getServerSideProps(context) {
       }
     }
     if (!formatted && listing) {
+      // 主站已下架／刪除時 Store API 會失敗；禁止落到本地快照繼續賣
+      if (medusaId || handle) {
+        console.warn(
+          "[partner product] Medusa unavailable — block local fallback",
+          { medusaId, handle, store: store.domain },
+        );
+        return { notFound: true };
+      }
       formatted = await loadLocalProductFallback(listing, store);
     }
 

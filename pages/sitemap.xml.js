@@ -132,6 +132,50 @@ export async function getServerSideProps({ res }) {
     // 略過
   }
 
+  // 官方授權夥伴賣場（與主站 SEO 互聯：可索引公開頁）
+  try {
+    const { getPartnerStorefrontDb } = await import("../lib/partnerStorefront");
+    const db = getPartnerStorefrontDb();
+    if (db) {
+      const { data: stores } = await db
+        .from("stores")
+        .select("domain, updated_at, store_name")
+        .eq("status", "active")
+        .not("domain", "is", null)
+        .limit(200);
+      for (const s of stores || []) {
+        const d = String(s.domain || "")
+          .trim()
+          .toLowerCase();
+        if (!d) continue;
+        const lastmod = s.updated_at || undefined;
+        urls.push(
+          urlEntry(`${SITE_URL}/p/${d}/`, {
+            changefreq: "daily",
+            priority: "0.8",
+            lastmod,
+          }),
+        );
+        urls.push(
+          urlEntry(`${SITE_URL}/p/${d}/blog/`, {
+            changefreq: "weekly",
+            priority: "0.65",
+            lastmod,
+          }),
+        );
+        urls.push(
+          urlEntry(`${SITE_URL}/p/${d}/tutorial/`, {
+            changefreq: "monthly",
+            priority: "0.55",
+            lastmod,
+          }),
+        );
+      }
+    }
+  } catch {
+    // 略過
+  }
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.join("\n")}

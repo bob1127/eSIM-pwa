@@ -8,6 +8,10 @@ export const TH_TELECOM_DTAC = "TRRE 電信";
 export const TH_TELECOM_TRRE = "TRRE 電信";
 export const TH_TELECOM_AIS = "AIS";
 export const TH_TELECOM_TRUE = "TRUE";
+/** 東南亞多國總量（含泰）— 前台只顯示泰國電信商名 */
+export const TH_TELECOM_DTAC_RF = "DTAC / REAL FUTURE";
+/** 泰國原生每日型（帶號碼） */
+export const TH_TELECOM_DTAC_NATIVE = "DTAC";
 
 function pack(bullets, actual_experience = "") {
   return { bullets, actual_experience };
@@ -23,6 +27,7 @@ export function truemoveHKeyFeatures() {
       "**4G／5G 高速覆蓋**：TRUE／Truemove H 網路在熱門旅遊城市覆蓋良好，適合跨府移動與海島行程。",
       "**支援熱點與常用 App**：可熱點分享給相機／筆電，並使用 ChatGPT、TikTok、Gemini 等工具。",
       "**啟用提醒**：建議抵達泰國後再安裝／啟用。自 2026 年 5 月 22 日起，撥出電話與發送 SMS 需於 True 門店完成護照實名登記，才能恢復通話功能（純上網方案仍可依數據方案使用）。",
+      "**特別說明**：計費時間自安裝之日起算。免費接聽來電及接收簡訊的泰國 eSIM 卡，不得插入或安裝於非服務覆蓋區域，否則該方案將失效且無法使用。查詢數據用量請撥打：*900#；查詢電話號碼請撥打：*833#；查詢餘額請撥打：*123#。",
     ],
     "曼谷／清邁／普吉等熱門城市 4G／5G 測速常見可到數十～上百 Mbps（室內、地下室、偏遠海島與擁塞時段會下降）。本方案標示為真．不限速，一般不會刻意鎖在 10Mbps；實際仍依位置與網路負載而定。導航、Grab、視訊、熱點通常比降速方案更從容。僅供參考，非保證每位旅客測速結果。",
   );
@@ -59,6 +64,54 @@ export function aisKeyFeatures() {
   );
 }
 
+/** AIS 每日型（新加坡 IP 漫遊） */
+export function aisDailyKeyFeatures() {
+  return pack(
+    [
+      "AIS 是泰國最大行動電信商之一，覆蓋曼谷、清邁、普吉與主要公路沿線表現穩定。本每日型方案採 AIS Thailand 網路漫遊（新加坡 IP），每天重置高速額度，適合行程天數明確、想控管每日用量的旅客。",
+      "**為什麼選擇 AIS 每日型 eSIM？**",
+      "**每日高速額度**：可選每日 500MB／1GB／2GB／3GB，當日高速用完後降速至約 128 kbps，隔日恢復高速額度。",
+      "**AIS Thailand 4G／5G**：熱門旅遊城市覆蓋良好，適合導航、Grab 與社群。",
+      "**漫遊新加坡 IP**：APN e-ideas、自動設定，抵達泰國後安裝啟用即可。",
+      "**支援熱點與常用 App**：熱點分享、ChatGPT、TikTok、Gemini 等皆可使用。",
+      "**天數好選**：1～10、15、20、25、30 天皆有對應方案。",
+    ],
+    "每日高速額度內：都會區測速常見可到數十 Mbps。當日額度用完後降速至約 128kbps（約 0.1Mbps 等級），傳訊息尚可、影音／即時導航會吃力；隔日會再恢復高速額度。僅供參考。",
+  );
+}
+
+/** DTAC 原生每日型（泰國 IP、帶當地號碼） */
+export function dtacDailyKeyFeatures() {
+  return pack(
+    [
+      "DTAC 是泰國主要行動電信商之一，本方案為泰國原生 eSIM，走 DTAC 當地網路與泰國 IP，並附當地號碼，適合需要原生連線體驗、熱點分享的旅客。",
+      "**為什麼選擇 DTAC 原生每日型？**",
+      "**泰國原生 IP**：當地電信基礎設施與泰國 IP，造訪本地網站與 App（Grab、地圖、訂餐）更接近在地體驗。",
+      "**每日 5GB**：當日高速額度用完即斷網，隔日恢復（依供應商規則）。",
+      "**4G／5G 覆蓋**：DTAC 在曼谷與主要旅遊城市覆蓋良好。",
+      "**帶當地號碼**：可取得 DTAC 門號體驗（通話／簡訊依供應商與實名規定）。",
+      "**安裝提醒**：建議抵達泰國後、於覆蓋範圍內再安裝／啟用；請勿在覆蓋範圍外提前安裝。",
+    ],
+    "每日 5GB 額度內：熱門城市測速常見可到數十 Mbps。額度用完當日會斷網（非降速），隔日再恢復；請留意用量。僅供參考。",
+  );
+}
+
+/** DTAC / REAL FUTURE 每日型（高 CP 多國，前台顯示泰國電信名） */
+export function dtacRealFutureDailyKeyFeatures() {
+  return pack(
+    [
+      "本方案在泰國走 DTAC 與 Real Future（TrueMove）網路，前台直接以這兩家泰國電信商名稱顯示。線路成本較純泰方案更親民，適合預算敏感、想控管每日用量的旅客。",
+      "**為什麼選擇 DTAC / REAL FUTURE 每日型？**",
+      "**泰國主流雙網**：DTAC 與 Real Future（TrueMove）4G／5G，覆蓋曼谷與主要旅遊城市。",
+      "**每日高速額度**：可選每日 500MB／1GB／2GB／3GB，當日高速用完後降速至約 128 kbps，隔日恢復。",
+      "**漫遊香港 IP**：本線路為香港 IP 漫遊（APN cmlink），自動設定，抵達後安裝啟用即可。",
+      "**支援熱點與常用 App**：熱點分享、ChatGPT、TikTok、Gemini 等皆可使用。",
+      "**高 CP 選項**：相同天數／流量通常比純泰單國每日型更省。",
+    ],
+    "每日高速額度內：都會區測速常見可到數十 Mbps。當日額度用完後降速至約 128kbps（約 0.1Mbps 等級），傳訊息尚可、影音／即時導航會吃力；隔日會再恢復高速額度。僅供參考。",
+  );
+}
+
 export function trueLocalTotalKeyFeatures() {
   return pack(
     [
@@ -74,9 +127,29 @@ export function trueLocalTotalKeyFeatures() {
   );
 }
 
+/** DTAC / REAL FUTURE（TrueMove）— 高 CP 多國總量，前台以泰國電信名呈現 */
+export function dtacRealFutureTotalKeyFeatures() {
+  return pack(
+    [
+      "本方案在泰國走 DTAC 與 Real Future（TrueMove）網路，前台直接以這兩家泰國電信商名稱顯示。線路成本較純泰方案更親民，適合預算敏感、已預估總流量的旅客。",
+      "**為什麼選擇 DTAC / REAL FUTURE 總量型？**",
+      "**泰國主流雙網**：DTAC 與 Real Future（TrueMove）4G／5G，覆蓋曼谷與主要旅遊城市。",
+      "**總量高速額度**：依所選方案提供 3～50GB 等總流量，高速用完後降速至約 128 kbps 可持續使用。",
+      "**漫遊香港 IP**：本線路為香港 IP 漫遊（APN cmlink），自動設定，抵達後安裝啟用即可。",
+      "**支援熱點與常用 App**：熱點分享、ChatGPT、TikTok、Gemini 等皆可使用。",
+      "**高 CP 選項**：相同天數／流量通常比純泰單國總量更省，適合短途與多日行程控管用量。",
+    ],
+    "高速額度內：熱門城市測速常見可到數十 Mbps（視訊號而定）。高速用完後降速至約 128kbps，測速通常只有約 0.1Mbps 等級——傳訊息勉強可以，影音與即時導航會明顯困難。請依總量規劃用量。僅供參考。",
+  );
+}
+
 export default {
   truemoveHKeyFeatures,
   trueDtacKeyFeatures,
   aisKeyFeatures,
+  aisDailyKeyFeatures,
+  dtacDailyKeyFeatures,
+  dtacRealFutureDailyKeyFeatures,
   trueLocalTotalKeyFeatures,
+  dtacRealFutureTotalKeyFeatures,
 };

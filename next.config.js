@@ -131,18 +131,36 @@ const nextConfig = {
       "malaysia",
       "my",
     ];
-    return countries.flatMap((slug) => [
+    return [
+      // 歷史拼字 tailand → 正規 thailand
       {
-        source: `/${slug}`,
-        destination: `/product/${slug}/`,
+        source: "/product/tailand",
+        destination: "/product/thailand",
         permanent: false,
       },
       {
-        source: `/${slug}/`,
-        destination: `/product/${slug}/`,
+        source: "/product/tailand/",
+        destination: "/product/thailand/",
         permanent: false,
       },
-    ]);
+      {
+        source: "/product/tailand/:slug*",
+        destination: "/product/thailand/:slug*",
+        permanent: false,
+      },
+      ...countries.flatMap((slug) => [
+        {
+          source: `/${slug}`,
+          destination: `/product/${slug}/`,
+          permanent: false,
+        },
+        {
+          source: `/${slug}/`,
+          destination: `/product/${slug}/`,
+          permanent: false,
+        },
+      ]),
+    ];
   },
 
   async headers() {

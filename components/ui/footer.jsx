@@ -192,14 +192,6 @@ export default function Footer({
                 </li>
                 <li>
                   <Link
-                    href="/member-offers"
-                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    會員優惠
-                  </Link>
-                </li>
-                <li>
-                  <Link
                     href="/cooperation"
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >

@@ -539,7 +539,6 @@ export default function AccountSupportView({
                   icon: "android",
                 },
                 { label: "FAQ 常見問題", href: "/faq", icon: "help_center" },
-                { label: "會員優惠", href: "/member-offers", icon: "loyalty" },
                 { label: "退換貨政策", href: "/refund-policy", icon: "policy" },
               ].map((l) => (
                 <li key={l.href}>
@@ -595,7 +594,7 @@ export default function AccountSupportView({
                     智慧客服自動回覆
                   </p>
                   <p className="text-[11px] mt-0.5" style={{ color: UI.soft }}>
-                    23:00 – 隔日 09:00
+                    全天候 24 小時
                   </p>
                 </dd>
               </div>

@@ -22,6 +22,8 @@ export default async function handler(req, res) {
     return res.status(405).end("Method Not Allowed");
   }
 
+  res.setHeader("Cache-Control", "no-store");
+
   if (!supabaseAdmin) {
     return res.status(500).json({ error: "伺服器未設定 SUPABASE_SERVICE_ROLE_KEY" });
   }
@@ -40,7 +42,7 @@ export default async function handler(req, res) {
       id, status, partner_id, store_id, customer_email,
       total_amount, b2b_cost, partner_profit, item_details, items,
       created_at, updated_at, refunded_at,
-      partners ( id, name, slug, email, status ),
+      partners ( id, name, slug, email, status, cooperation_model, referral_code, description ),
       stores ( id, store_name, domain, markup_rate )
     `,
     )
@@ -53,7 +55,9 @@ export default async function handler(req, res) {
 
   const { data: partners } = await supabaseAdmin
     .from("partners")
-    .select("id, name, slug, status")
+    .select(
+      "id, name, slug, status, email, cooperation_model, referral_code, description",
+    )
     .order("name");
 
   const { data: stores } = await supabaseAdmin

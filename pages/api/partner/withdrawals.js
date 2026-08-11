@@ -8,6 +8,8 @@ import {
   validateWithdrawalAmount,
   netRemitAmount,
   WITHDRAWAL_STATUS_LABEL,
+  isPayoutAccountComplete,
+  buildPayoutSnapshot,
 } from "../../../lib/partnerPayout";
 
 function mapRequest(r) {
@@ -35,7 +37,7 @@ async function loadOrdersAndRequests(supabase, partnerId) {
     )
     .eq("partner_id", partnerId)
     .order("requested_at", { ascending: false })
-    .limit(100);
+    .limit(2000);
 
   if (reqRes.error && /fee_amount/i.test(reqRes.error.message || "")) {
     reqRes = await supabase
@@ -45,7 +47,7 @@ async function loadOrdersAndRequests(supabase, partnerId) {
       )
       .eq("partner_id", partnerId)
       .order("requested_at", { ascending: false })
-      .limit(100);
+      .limit(2000);
   }
 
   const { data: orders } = await ordersP;
@@ -93,13 +95,28 @@ export default async function handler(req, res) {
     const snapshot = computePayoutSnapshot({ orders, requests });
 
     if (req.method === "GET") {
-      const { data: bank } = await supabase
+      let { data: bank, error: bankGetErr } = await supabase
         .from("partner_bank_accounts")
         .select(
-          "bank_name, bank_code, branch_name, account_name, account_number, updated_at",
+          "payout_method, bank_name, bank_code, branch_name, account_name, account_number, payout_note, updated_at",
         )
         .eq("partner_id", partnerId)
         .maybeSingle();
+      if (
+        bankGetErr &&
+        /payout_method|payout_note|column/i.test(bankGetErr.message || "")
+      ) {
+        ({ data: bank } = await supabase
+          .from("partner_bank_accounts")
+          .select(
+            "bank_name, bank_code, branch_name, account_name, account_number, updated_at",
+          )
+          .eq("partner_id", partnerId)
+          .maybeSingle());
+        if (bank) {
+          bank = { ...bank, payout_method: "tw_bank", payout_note: "" };
+        }
+      }
 
       return res.status(200).json({
         snapshot,
@@ -111,47 +128,73 @@ export default async function handler(req, res) {
     }
 
     // POST 申請
-    const { data: bank } = await supabase
+    let { data: bank, error: bankErr } = await supabase
       .from("partner_bank_accounts")
-      .select("account_number, account_name, bank_name")
+      .select(
+        "payout_method, account_number, account_name, bank_name, bank_code, branch_name, payout_note, updated_at",
+      )
       .eq("partner_id", partnerId)
       .maybeSingle();
-    if (!bank?.account_number || !bank?.account_name || !bank?.bank_name) {
+    if (bankErr && /payout_method|payout_note|column/i.test(bankErr.message || "")) {
+      ({ data: bank } = await supabase
+        .from("partner_bank_accounts")
+        .select(
+          "account_number, account_name, bank_name, bank_code, branch_name, updated_at",
+        )
+        .eq("partner_id", partnerId)
+        .maybeSingle());
+    }
+    if (!isPayoutAccountComplete(bank)) {
       return res.status(400).json({ error: "請先完整儲存收款帳戶資料" });
     }
 
     const check = validateWithdrawalAmount(req.body?.amount, snapshot);
     if (!check.ok) return res.status(400).json({ error: check.error });
 
+    const payoutSnapshot = buildPayoutSnapshot(bank);
     const insertPayload = {
       partner_id: partnerId,
       amount: check.amount,
       fee_amount: check.fee,
       status: "pending",
+      payout_snapshot: payoutSnapshot,
     };
 
     let { data: created, error } = await supabase
       .from("partner_withdrawal_requests")
       .insert(insertPayload)
       .select(
-        "id, amount, fee_amount, status, requested_at, processed_at, remitted_at, admin_note, remittance_memo",
+        "id, amount, fee_amount, status, requested_at, processed_at, remitted_at, admin_note, remittance_memo, payout_snapshot",
       )
       .single();
 
-    // 尚未跑 fee_amount migration 時降級（仍允許申請，手續費欄位之後補）
-    if (error && /fee_amount/i.test(error.message || "")) {
+    // 尚未跑 fee_amount / payout_snapshot migration 時降級
+    if (
+      error &&
+      /fee_amount|payout_snapshot/i.test(error.message || "")
+    ) {
+      const slim = {
+        partner_id: partnerId,
+        amount: check.amount,
+        status: "pending",
+      };
+      if (!/fee_amount/i.test(error.message || "")) {
+        slim.fee_amount = check.fee;
+      }
       ({ data: created, error } = await supabase
         .from("partner_withdrawal_requests")
-        .insert({
-          partner_id: partnerId,
-          amount: check.amount,
-          status: "pending",
-        })
+        .insert(slim)
         .select(
           "id, amount, status, requested_at, processed_at, remitted_at, admin_note, remittance_memo",
         )
         .single());
-      if (created) created = { ...created, fee_amount: check.fee };
+      if (created) {
+        created = {
+          ...created,
+          fee_amount: check.fee,
+          payout_snapshot: payoutSnapshot,
+        };
+      }
     }
 
     if (error) return res.status(500).json({ error: error.message });

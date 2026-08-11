@@ -12,7 +12,7 @@ const PUBLISHABLE_KEY =
 
 /**
  * POST /api/admin/product-overview-notices
- * body: { productId, carrier, fup_notice?, activation_notice? }
+ * body: { productId, carrier, fup_notice?, activation_notice?, special_notice? }
  */
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -34,7 +34,8 @@ export default async function handler(req, res) {
     });
   }
 
-  const { productId, carrier, fup_notice, activation_notice } = req.body ?? {};
+  const { productId, carrier, fup_notice, activation_notice, special_notice } =
+    req.body ?? {};
 
   if (!productId || typeof productId !== "string") {
     return res.status(400).json({ error: "缺少 productId" });
@@ -61,6 +62,7 @@ export default async function handler(req, res) {
           contentType: "overview",
           fup_notice: String(fup_notice ?? "").trim(),
           activation_notice: String(activation_notice ?? "").trim(),
+          special_notice: String(special_notice ?? "").trim(),
           updatedBy: admin.email,
         }),
       },

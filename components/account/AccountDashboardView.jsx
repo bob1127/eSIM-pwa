@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
@@ -17,6 +17,10 @@ import { useUser } from "@/components/context/UserContext";
 import { orderItemSummary, refundStatusLabel } from "@/lib/refundPolicy";
 import { ACCOUNT_THEME, ACCOUNT_UI, SHOPIFY_BADGE } from "@/lib/accountUi";
 import { formatMemberEmailDisplay } from "@/lib/lineAuth";
+import { CONTACT_INFO } from "@/lib/contactUi";
+import { LineIconSvg } from "@/components/social/SocialBrandIcons";
+import { useLineBind } from "@/hooks/useLineBind";
+import { maybeMarkWelcomeGiftOnFirstClaim } from "@/lib/welcomeGiftPopup";
 
 const formatNTD = (val) => {
   if (val == null) return "0";
@@ -121,34 +125,43 @@ export default function AccountDashboardView({
   const { status: nextAuthStatus } = useSession();
   const [memberCoupons, setMemberCoupons] = useState([]);
   const [couponsLoading, setCouponsLoading] = useState(true);
+  const [needLineForWelcome, setNeedLineForWelcome] = useState(false);
+  const [lineOaUrl, setLineOaUrl] = useState(CONTACT_INFO.lineUrl);
+
+  const loadCoupons = useCallback(async () => {
+    setCouponsLoading(true);
+    try {
+      const headers = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch("/api/promo/member-coupons", {
+        headers,
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      setMemberCoupons(res.ok && data.success ? data.coupons || [] : []);
+      setNeedLineForWelcome(Boolean(data.need_line_for_welcome));
+      if (data.line_oa_url) setLineOaUrl(data.line_oa_url);
+      if (res.ok && data.success && data.welcome) {
+        maybeMarkWelcomeGiftOnFirstClaim(data.welcome);
+      }
+    } catch {
+      setMemberCoupons([]);
+      setNeedLineForWelcome(false);
+    } finally {
+      setCouponsLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setCouponsLoading(true);
-      try {
-        const headers = {};
-        if (token) headers.Authorization = `Bearer ${token}`;
-        const res = await fetch("/api/promo/member-coupons", {
-          headers,
-          credentials: "include",
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!cancelled) {
-          setMemberCoupons(res.ok && data.success ? data.coupons || [] : []);
-        }
-      } catch {
-        if (!cancelled) setMemberCoupons([]);
-      } finally {
-        if (!cancelled) setCouponsLoading(false);
-      }
-    };
-    if (nextAuthStatus === "loading") return undefined;
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [token, nextAuthStatus]);
+    if (nextAuthStatus === "loading") return;
+    loadCoupons();
+  }, [nextAuthStatus, loadCoupons]);
+
+  const {
+    status: lineBindStatus,
+    message: lineBindMessage,
+    bind: bindLine,
+  } = useLineBind({ onSuccess: loadCoupons });
 
   const availableCoupons = memberCoupons.filter((c) => c.status === "available");
 
@@ -492,6 +505,56 @@ export default function AccountDashboardView({
                 </Link>
               }
             >
+              {needLineForWelcome && (
+                <div className="mb-3 rounded-lg border border-[#06C755]/35 bg-[#06C755]/10 px-3.5 py-3">
+                  <p
+                    className="text-[13px] font-bold leading-snug"
+                    style={{ color: ACCOUNT_THEME.dark }}
+                  >
+                    尚未加入官方 LINE
+                  </p>
+                  <p
+                    className="mt-1 text-[12px] leading-relaxed"
+                    style={{ color: ACCOUNT_THEME.mid }}
+                  >
+                    新會員 50 元折價券已入帳，但須先連結並加入官方 LINE
+                    後才能於結帳使用。
+                  </p>
+                  <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={bindLine}
+                      disabled={lineBindStatus === "loading"}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2 disabled:opacity-60"
+                    >
+                      <LineIconSvg className="w-3.5 h-3.5" />
+                      {lineBindStatus === "loading"
+                        ? "連結中…"
+                        : "連結 LINE 並啟用優惠"}
+                    </button>
+                    <a
+                      href={lineOaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[12px] font-bold underline"
+                      style={{ color: ACCOUNT_THEME.dark }}
+                    >
+                      尚未加好友？點此加入官方 LINE
+                    </a>
+                  </div>
+                  {lineBindMessage && (
+                    <p
+                      className={`mt-2 text-[12px] font-medium leading-relaxed ${
+                        lineBindStatus === "error"
+                          ? "text-red-600"
+                          : "text-emerald-700"
+                      }`}
+                    >
+                      {lineBindMessage}
+                    </p>
+                  )}
+                </div>
+              )}
               {couponsLoading ? (
                 <p className="text-sm py-3" style={{ color: ACCOUNT_THEME.soft }}>
                   載入中…
@@ -502,29 +565,47 @@ export default function AccountDashboardView({
                 </p>
               ) : (
                 <ul>
-                  {availableCoupons.map((c) => (
-                    <li
-                      key={c.id}
-                      className="py-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
-                      style={{ borderTop: `1px solid ${ACCOUNT_THEME.border}` }}
-                    >
-                      <div>
-                        <p
-                          className="text-sm font-bold"
-                          style={{ color: ACCOUNT_THEME.dark }}
-                        >
-                          {c.label || `${c.amount} 元折抵`}
-                        </p>
-                        <p
-                          className="text-[11px] font-mono break-all"
-                          style={{ color: ACCOUNT_THEME.soft }}
-                        >
-                          {c.code}
-                        </p>
-                      </div>
-                      <AccountBadge tone="success">NT$ {c.amount}</AccountBadge>
-                    </li>
-                  ))}
+                  {availableCoupons.map((c) => {
+                    const isWelcomeLocked =
+                      needLineForWelcome && c.source === "welcome";
+                    return (
+                      <li
+                        key={c.id}
+                        className="py-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between"
+                        style={{
+                          borderTop: `1px solid ${ACCOUNT_THEME.border}`,
+                        }}
+                      >
+                        <div className="min-w-0">
+                          <p
+                            className="text-sm font-bold"
+                            style={{ color: ACCOUNT_THEME.dark }}
+                          >
+                            {c.label || `${c.amount} 元折抵`}
+                          </p>
+                          <p
+                            className="text-[11px] font-mono break-all"
+                            style={{ color: ACCOUNT_THEME.soft }}
+                          >
+                            {c.code}
+                          </p>
+                          {isWelcomeLocked && (
+                            <p className="mt-1 text-[11px] font-medium text-amber-700 leading-snug">
+                              ※ 須加入官方 LINE 後才能使用
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {isWelcomeLocked && (
+                            <AccountBadge tone="warning">待啟用</AccountBadge>
+                          )}
+                          <AccountBadge tone="success">
+                            NT$ {c.amount}
+                          </AccountBadge>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </NavyPanel>

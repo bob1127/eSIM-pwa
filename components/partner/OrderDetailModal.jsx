@@ -1,5 +1,5 @@
 import MaterialIcon from "@/components/MaterialIcon";
-import { SHOPIFY_UI, SHOPIFY_BADGE } from "@/lib/shopifyUi";
+import { SHOPIFY_UI } from "@/lib/shopifyUi";
 import { fmt } from "@/components/partner/DobermanWidgets";
 import {
   paymentMethodLabel,
@@ -7,6 +7,7 @@ import {
   buyerEmail,
 } from "@/lib/orderDisplay";
 import { parseItemDetails } from "@/lib/partnerAnalytics";
+import StatusIconBadge from "@/components/partner/StatusIconBadge";
 
 const STATUS_LABEL = {
   completed: "已完成",
@@ -36,21 +37,6 @@ function formatDateTime(d) {
   });
 }
 
-function Badge({ tone = "neutral", children }) {
-  const t = SHOPIFY_BADGE[tone] || SHOPIFY_BADGE.neutral;
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold"
-      style={{ backgroundColor: t.bg, color: t.text }}
-    >
-      <span
-        className="w-1.5 h-1.5 rounded-full shrink-0"
-        style={{ backgroundColor: t.dot }}
-      />
-      {children}
-    </span>
-  );
-}
 
 function Field({ label, children }) {
   return (
@@ -118,9 +104,10 @@ export default function OrderDetailModal({ open, order, onClose }) {
               >
                 #{code}
               </h2>
-              <Badge tone={tone}>
-                {STATUS_LABEL[order.status] || order.status}
-              </Badge>
+              <StatusIconBadge
+                tone={tone}
+                label={STATUS_LABEL[order.status] || order.status}
+              />
             </div>
             <p className="text-[11px] mt-0.5" style={{ color: SHOPIFY_UI.textTertiary }}>
               {formatDateTime(order.created_at)}

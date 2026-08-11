@@ -13,10 +13,87 @@ import {
   ChevronRight,
   ChevronUp,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useCart } from "@/components/context/CartContext";
 import NavbarSiteSearch from "@/components/Navbar/NavbarSiteSearch";
+import { supabase } from "@/lib/supabaseClient";
 
 const CONTAINER = "max-w-[1280px] mx-auto px-6 lg:px-10";
+
+function useShopMemberAuth() {
+  const { data: session, status } = useSession();
+  const [supabaseUser, setSupabaseUser] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!cancelled) setSupabaseUser(user || null);
+    })();
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSupabaseUser(s?.user || null);
+    });
+    return () => {
+      cancelled = true;
+      sub?.subscription?.unsubscribe?.();
+    };
+  }, []);
+
+  const isLoggedIn = status === "authenticated" || !!supabaseUser;
+  const userName =
+    supabaseUser?.user_metadata?.full_name ||
+    supabaseUser?.user_metadata?.name ||
+    session?.user?.name ||
+    "會員";
+  const userImage =
+    supabaseUser?.user_metadata?.avatar_url ||
+    supabaseUser?.user_metadata?.picture ||
+    session?.user?.image ||
+    null;
+
+  return { isLoggedIn, userName, userImage };
+}
+
+function MemberAvatarIcon({ size = 18, isLoggedIn, userImage, userName }) {
+  if (isLoggedIn && userImage) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={userImage}
+        alt=""
+        width={size}
+        height={size}
+        className="rounded-full object-cover ring-1 ring-slate-200"
+        style={{ width: size, height: size }}
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+  if (isLoggedIn) {
+    const initial = String(userName || "會")
+      .trim()
+      .charAt(0)
+      .toUpperCase();
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-full bg-[#1a56db] text-white font-bold leading-none"
+        style={{ width: size, height: size, fontSize: Math.max(9, size * 0.45) }}
+        aria-hidden
+      >
+        {initial}
+      </span>
+    );
+  }
+  return (
+    <User
+      className="opacity-90"
+      style={{ width: size, height: size }}
+      strokeWidth={1.75}
+    />
+  );
+}
 
 // ── 導覽資料 ──────────────────────────────────────────────────────
 const SHOP_NAV = [
@@ -624,9 +701,13 @@ export default function ShopNavbar({
   loginHref = "/login",
   promoHref = "/shop/deals",
   supportHref = "/shop/support",
+  /** 'physical' = /shop 實體車；'esim' = 夥伴賣場 eSIM 車 */
+  cartMode = "physical",
 }) {
-  const { physicalCount, setIsCartOpen } = useCart();
-  const cartCount = physicalCount || cartCountProp;
+  const { physicalCount, esimCount, setIsCartOpen } = useCart();
+  const cartCount =
+    (cartMode === "esim" ? esimCount : physicalCount) || cartCountProp;
+  const { isLoggedIn, userName, userImage } = useShopMemberAuth();
   const [activeKey, setActiveKey] = useState(null);
   const [headerBottom, setHeaderBottom] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -636,6 +717,18 @@ export default function ShopNavbar({
 
   const navItems = primaryNav ?? SHOP_NAV;
   const secondaryItems = secondaryNav ?? SECONDARY_NAV;
+
+  const memberBtnClass =
+    "p-2 hover:bg-slate-50 rounded transition-colors inline-flex items-center justify-center";
+  const memberAria = isLoggedIn ? "會員中心" : "會員登入";
+  const memberIcon = (
+    <MemberAvatarIcon
+      size={18}
+      isLoggedIn={isLoggedIn}
+      userImage={userImage}
+      userName={userName}
+    />
+  );
 
   useEffect(() => {
     const update = () => {
@@ -812,13 +905,11 @@ export default function ShopNavbar({
                 </button>
                 <Link
                   href={loginHref}
-                  className="p-2 hover:bg-slate-50 rounded transition-colors"
-                  aria-label="會員"
+                  className={memberBtnClass}
+                  aria-label={memberAria}
+                  title={isLoggedIn ? userName : "會員登入"}
                 >
-                  <User
-                    className="w-[18px] h-[18px] text-slate-700"
-                    strokeWidth={1.75}
-                  />
+                  {memberIcon}
                 </Link>
                 <button
                   type="button"
@@ -869,13 +960,11 @@ export default function ShopNavbar({
                   </button>
                   <Link
                     href={loginHref}
-                    className="p-2 hover:bg-slate-50 rounded transition-colors"
-                    aria-label="會員"
+                    className={memberBtnClass}
+                    aria-label={memberAria}
+                    title={isLoggedIn ? userName : "會員登入"}
                   >
-                    <User
-                      className="w-[18px] h-[18px] text-slate-700"
-                      strokeWidth={1.75}
-                    />
+                    {memberIcon}
                   </Link>
                   <button
                     type="button"
@@ -1071,10 +1160,16 @@ export default function ShopNavbar({
               <div className="shrink-0 px-4 py-4 border-t border-slate-100">
                 <Link
                   href={loginHref}
-                  className="flex items-center gap-2 w-full px-4 py-2.5 bg-black text-white text-sm font-bold justify-center"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2.5 w-full px-4 py-2.5 bg-black text-white text-sm font-bold justify-center"
                 >
-                  <User className="w-4 h-4" />
-                  登入 / 註冊
+                  <MemberAvatarIcon
+                    size={20}
+                    isLoggedIn={isLoggedIn}
+                    userImage={userImage}
+                    userName={userName}
+                  />
+                  {isLoggedIn ? "會員中心" : "登入 / 註冊"}
                 </Link>
               </div>
             </motion.aside>

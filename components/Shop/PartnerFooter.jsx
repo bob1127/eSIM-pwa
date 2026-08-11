@@ -1,11 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  FacebookIconSvg,
-  InstagramIconSvg,
-  LineIconSvg,
-} from "@/components/social/SocialBrandIcons";
+import PartnerSocialIcons from "@/components/Shop/PartnerSocialIcons";
 
 const PAYMENT_ICONS = [
   { src: "/images/payment/visa.svg", alt: "Visa", w: 36, h: 24 },
@@ -16,59 +12,6 @@ const PAYMENT_ICONS = [
   { src: "/images/payment/atm.svg", alt: "ATM 轉帳", w: 42, h: 28 },
   { src: "/images/payment/cvs.svg", alt: "超商代碼繳費", w: 42, h: 28 },
 ];
-
-function PartnerSocialIcons({ store, size = "sm" }) {
-  const dim = size === "sm" ? "w-8 h-8" : "w-9 h-9";
-  const iconClass = "w-[17px] h-[17px]";
-  const items = [
-    {
-      key: "instagram",
-      label: "Instagram",
-      href: store?.social_instagram?.trim(),
-      className:
-        "bg-gradient-to-br from-[#f58529] via-[#dd2a7b] to-[#8134af] text-white",
-      icon: <InstagramIconSvg className={iconClass} />,
-    },
-    {
-      key: "facebook",
-      label: "Facebook",
-      href: store?.social_facebook?.trim(),
-      className: "bg-[#1877F2] text-white",
-      icon: <FacebookIconSvg className={iconClass} />,
-    },
-    {
-      key: "line",
-      label: "LINE",
-      href: store?.social_line?.trim(),
-      className: "bg-[#00C300] text-white",
-      icon: <LineIconSvg className={iconClass} />,
-    },
-  ].filter((item) => item.href);
-
-  if (items.length === 0) return null;
-
-  return (
-    <div className="flex items-center gap-2.5">
-      {items.map((item) => (
-        <a
-          key={item.key}
-          href={item.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={item.label}
-          title={item.label}
-          className="rounded-full transition-opacity hover:opacity-85 active:scale-95"
-        >
-          <span
-            className={`${dim} rounded-full inline-flex items-center justify-center shrink-0 ${item.className}`}
-          >
-            {item.icon}
-          </span>
-        </a>
-      ))}
-    </div>
-  );
-}
 
 /**
  * 夥伴賣場 Footer：無主站導覽列／三欄連結；資訊來自 stores 後台欄位。
@@ -218,15 +161,7 @@ export default function PartnerFooter({ store } = {}) {
                 />
               </svg>
             </button>
-            <a
-              href="https://www.jeek-webdesign.com.tw"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] text-gray-400 hover:text-stone-800 duration-300"
-            >
-              Design by 極客網頁設計
-            </a>
-            <PartnerSocialIcons store={store} />
+            <PartnerSocialIcons store={store} size="sm" emptyHint={false} />
             <p className="text-[11px] text-gray-400">{copyright}</p>
           </div>
         </div>

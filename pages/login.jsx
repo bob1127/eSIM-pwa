@@ -22,6 +22,10 @@ import {
   peekAuthRedirect,
   rememberAuthRedirect,
 } from "../lib/authRedirect";
+import {
+  markWelcomeGiftPopup,
+  WELCOME_GIFT_TRIGGER_ON_LOGIN,
+} from "../lib/welcomeGiftPopup";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
 const LoginRegisterPage = () => {
@@ -129,10 +133,19 @@ const LoginRegisterPage = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 登入成功後回到原頁（或 redirect 參數指定頁面）
+  // 登入成功後導頁；TEMP：導首頁並彈出新會員 50 禮（核對設計用）
   useEffect(() => {
     if (!isLoggedIn) return;
-    const dest = sanitizeRedirect(redirectTo, "/account");
+
+    if (WELCOME_GIFT_TRIGGER_ON_LOGIN) {
+      markWelcomeGiftPopup();
+    }
+
+    // TEMP：核對 popup 設計 → 固定回首頁；之後改回 sanitizeRedirect(redirectTo, "/account")
+    const dest = WELCOME_GIFT_TRIGGER_ON_LOGIN
+      ? "/"
+      : sanitizeRedirect(redirectTo, "/account");
+
     try {
       sessionStorage.removeItem("jeko_auth_redirect");
     } catch {
@@ -194,7 +207,9 @@ const LoginRegisterPage = () => {
   const handleOAuthLogin = async (provider) => {
     try {
       addLog(`準備請求 ${provider} 授權...`);
-      const redirectUrl = getOAuthRedirectUrl(redirectTo);
+      const redirectUrl = getOAuthRedirectUrl(
+        WELCOME_GIFT_TRIGGER_ON_LOGIN ? "/" : redirectTo,
+      );
       addLog(`redirectTo: ${redirectUrl}`);
 
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -244,7 +259,7 @@ const LoginRegisterPage = () => {
 
       const { callbackUrl, serverConfig } = await logLineLoginStart(
         window.location.origin,
-        redirectTo,
+        WELCOME_GIFT_TRIGGER_ON_LOGIN ? "/" : redirectTo,
       );
       addLog(`callbackUrl: ${callbackUrl}`);
       if (serverConfig?.expectedLineCallback) {

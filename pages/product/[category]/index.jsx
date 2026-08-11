@@ -10,6 +10,11 @@ import {
   shouldBypassImageOptimization,
 } from "../../../lib/resolveMedusaImageUrl";
 import { sortCategoriesByRank } from "../../../lib/sortCategoriesByRank";
+import {
+  canonicalCategoryHandle,
+  categoryHandlesForProductFetch,
+  dedupeCategoriesForNav,
+} from "../../../lib/categoryAliases";
 import FilterSideBar, {
   filterProductsByTags,
   buildFilterTagsFromProduct,
@@ -31,6 +36,13 @@ const getMedusaHeaders = () => {
 const backendUrl =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
 
+async function findCategoryByHandle(headers, handle) {
+  const catUrl = `${backendUrl}/store/product-categories?handle=${encodeURIComponent(handle)}`;
+  const catRes = await fetch(catUrl, { headers });
+  const catData = await catRes.json();
+  return catData.product_categories?.[0] || null;
+}
+
 // ==========================================
 // 🚀 1. getStaticPaths
 // ==========================================
@@ -47,9 +59,14 @@ export async function getStaticPaths() {
     });
     if (!res.ok) throw new Error("無法取得 Medusa 分類路徑");
     const { product_categories } = await res.json();
-    const paths = (product_categories || []).map((cat) => ({
-      params: { category: cat.handle },
-    }));
+    const seen = new Set();
+    const paths = [];
+    for (const cat of product_categories || []) {
+      const slug = canonicalCategoryHandle(cat.handle);
+      if (seen.has(slug)) continue;
+      seen.add(slug);
+      paths.push({ params: { category: slug } });
+    }
     return { paths, fallback: "blocking" };
   } catch (error) {
     return { paths: [], fallback: "blocking" };
@@ -58,13 +75,14 @@ export async function getStaticPaths() {
 
 export async function getStaticProps({ params }) {
   try {
-    const { category: categoryHandle } = params;
+    const rawHandle = String(params.category || "");
+    const categoryHandle = canonicalCategoryHandle(rawHandle);
     const headers = getMedusaHeaders();
 
-    const catUrl = `${backendUrl}/store/product-categories?handle=${categoryHandle}`;
-    const catRes = await fetch(catUrl, { headers });
-    const catData = await catRes.json();
-    const currentCategory = catData.product_categories?.[0];
+    // 別名（如 tailand）→ 正規分類；若正規不存在再回退別名本身
+    let currentCategory =
+      (await findCategoryByHandle(headers, categoryHandle)) ||
+      (await findCategoryByHandle(headers, rawHandle));
 
     if (!currentCategory) {
       // 不設 revalidate 的話，Medusa 一次暫時性失敗就會被永久快取成 404
@@ -79,12 +97,28 @@ export async function getStaticProps({ params }) {
         (r) => r.currency_code?.toLowerCase() === "twd",
       ) || regionData.regions?.[0];
 
+    // 合併別名分類下的商品（泰國：thailand + 歷史 typo tailand）
+    const fetchHandles = categoryHandlesForProductFetch(
+      currentCategory.handle || categoryHandle,
+    );
+    const aliasCats = await Promise.all(
+      fetchHandles.map((h) => findCategoryByHandle(headers, h)),
+    );
+    const categoryIds = [
+      ...new Set(aliasCats.filter(Boolean).map((c) => c.id)),
+    ];
+    if (!categoryIds.includes(currentCategory.id)) {
+      categoryIds.unshift(currentCategory.id);
+    }
+
     const prodQuery = new URLSearchParams({
-      "category_id[]": currentCategory.id,
       fields:
         "+metadata,*tags,*options,*variants,*variants.options,*variants.prices,*variants.calculated_price",
       limit: "100",
     });
+    for (const id of categoryIds) {
+      prodQuery.append("category_id[]", id);
+    }
     if (region?.id) prodQuery.set("region_id", region.id);
 
     const prodUrl = `${backendUrl}/store/products?${prodQuery}`;
@@ -99,20 +133,21 @@ export async function getStaticProps({ params }) {
     });
     const allCatData = await allCatRes.json();
 
+    const displaySlug = canonicalCategoryHandle(currentCategory.handle);
     const formattedCurrentCategory = {
       id: currentCategory.id,
       name: currentCategory.name,
-      slug: currentCategory.handle,
+      slug: displaySlug,
       description: currentCategory.description || "",
     };
 
-    const formattedAllCategories = sortCategoriesByRank(
-      allCatData.product_categories || [],
-    ).map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.handle,
-    }));
+    const formattedAllCategories = dedupeCategoriesForNav(
+      sortCategoriesByRank(allCatData.product_categories || []).map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.handle,
+      })),
+    );
 
     const getVariantAmount = (v) => {
       if (
@@ -135,32 +170,39 @@ export async function getStaticProps({ params }) {
       return null;
     };
 
-    const formattedProducts = (prodData.products || []).map((p) => {
-      const amounts = (p.variants || [])
-        .map(getVariantAmount)
-        .filter((n) => typeof n === "number" && n > 0);
-      const price = amounts.length > 0 ? Math.min(...amounts) : 0;
-      const firstVariant = p.variants?.[0];
-      const originalPrice = firstVariant?.original_price || price;
-      const isTestPlan = !!(
-        p.metadata?.microesim_test ||
-        p.metadata?.test_plan ||
-        String(p.title || "").includes("測試購買")
-      );
+    const seenProductIds = new Set();
+    const formattedProducts = (prodData.products || [])
+      .filter((p) => {
+        if (!p?.id || seenProductIds.has(p.id)) return false;
+        seenProductIds.add(p.id);
+        return true;
+      })
+      .map((p) => {
+        const amounts = (p.variants || [])
+          .map(getVariantAmount)
+          .filter((n) => typeof n === "number" && n > 0);
+        const price = amounts.length > 0 ? Math.min(...amounts) : 0;
+        const firstVariant = p.variants?.[0];
+        const originalPrice = firstVariant?.original_price || price;
+        const isTestPlan = !!(
+          p.metadata?.microesim_test ||
+          p.metadata?.test_plan ||
+          String(p.title || "").includes("測試購買")
+        );
 
-      const filterTags = buildFilterTagsFromProduct(p);
-      return {
-        id: p.id,
-        name: p.title,
-        slug: p.handle,
-        price,
-        original_price: originalPrice,
-        image_url: resolveMedusaImageUrl(p.thumbnail),
-        tags: filterTags,
-        displayTags: buildDisplayTagsFromProduct(p, filterTags),
-        isTestPlan,
-      };
-    });
+        const filterTags = buildFilterTagsFromProduct(p);
+        return {
+          id: p.id,
+          name: p.title,
+          slug: p.handle,
+          price,
+          original_price: originalPrice,
+          image_url: resolveMedusaImageUrl(p.thumbnail),
+          tags: filterTags,
+          displayTags: buildDisplayTagsFromProduct(p, filterTags),
+          isTestPlan,
+        };
+      });
 
     // MicroeSIM 測試購買商品置頂，方便串接驗證
     formattedProducts.sort(

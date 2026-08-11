@@ -57,6 +57,16 @@ type CountryConfig = {
   /** 多國：location token 集合需完全相符（順序不拘） */
   locationSet?: string[];
   locationSets?: string[][];
+  /**
+   * 高 CP／涵蓋型：location 含任一 covers 碼即命中
+   * coversMultiOnly=true 時需至少 2 國（排除純單國）
+   */
+  covers?: string[];
+  coversMultiOnly?: boolean;
+  /** 名稱前綴／關鍵字命中時，一併納入的區域碼（如 ASIA） */
+  includeRegionCodes?: string[];
+  /** 選中時預設依成本由低到高 */
+  defaultSortByCost?: boolean;
   /** 只掃方案名稱／SKU（禁止掃整包 JSON，避免 Hong Kong Time 誤傷） */
   keywords?: string[];
   /** 名稱前綴備援（僅 pure 且 location 空白時） */
@@ -93,6 +103,42 @@ const COUNTRIES: Record<string, CountryConfig> = {
     namePrefixes: ["Thailand-", "Thailand ", "Thailand("],
     keywords: [],
     exclude: ["ASIA", "GLOBAL", "Singapore", "Malaysia"],
+  },
+  TH_CP: {
+    emoji: "💎",
+    name: "高CP泰國 (多國)",
+    pure: false,
+    codes: ["TH_CP", "TH_VALUE"],
+    /** 涵蓋泰國的多國包（星馬泰、亞太多國等），通常比純泰成本低 */
+    covers: ["TH"],
+    coversMultiOnly: true,
+    includeRegionCodes: ["ASIA", "ASIA11", "ASIA24", "SEA"],
+    locationSets: [
+      ["SG", "MY", "TH"],
+      ["TH", "MY", "SG"],
+      ["SG", "TH"],
+      ["MY", "TH"],
+      ["TH", "VN"],
+      ["TH", "ID"],
+    ],
+    keywords: [
+      "Singapore&Malaysia&Thailand",
+      "Singapore-Malaysia-Thailand",
+      "Singapore/Malaysia/Thailand",
+      "Singapore Malaysia Thailand",
+      "Malaysia&Thailand",
+      "Malaysia-Thailand",
+      "Singapore&Thailand",
+      "Singapore-Thailand",
+      "星馬泰",
+      "新馬泰",
+      "東南亞",
+      "ASIA",
+      "Asia ",
+      "SEA ",
+    ],
+    defaultSortByCost: true,
+    exclude: ["GLOBAL", "EUROPE", "EU ", "WORLD"],
   },
   CN: {
     emoji: "🇨🇳",
@@ -272,6 +318,27 @@ function planMatchesCountry(
     return false;
   }
 
+  // ── 涵蓋型（高 CP）：location 含目標國，且為多國／區域包 ──
+  if (config.covers?.length) {
+    const need = normalizeAliasCodes(config.covers);
+    const hasCover = need.some((c) => tokens.includes(c));
+    const multiOk = !config.coversMultiOnly || tokens.length >= 2;
+    if (hasCover && multiOk) return true;
+
+    // 區域碼：ASIA / SEA 等（通常含泰國）
+    if (config.includeRegionCodes?.length) {
+      const regions = normalizeAliasCodes(config.includeRegionCodes);
+      if (tokens.some((t) => regions.includes(t))) return true;
+      // 名稱／SKU 標 ASIA 且與泰國／東南亞相關
+      if (
+        regions.some((r) => pName.includes(r) || pLocRaw.toUpperCase().includes(r)) &&
+        /THAILAND|\bTH\b|泰國|星馬泰|新馬泰|東南亞|ASIA|SEA/.test(hayForExclude)
+      ) {
+        return true;
+      }
+    }
+  }
+
   // ── 多國／區域：location token 集合完全相符 ──
   const sets: string[][] = [];
   if (config.locationSet?.length) {
@@ -284,16 +351,30 @@ function planMatchesCountry(
 
   // 名稱關鍵字（只掃 name／SKU，不掃整包 JSON）
   if (config.keywords?.length) {
-    if (
-      config.keywords.some((k) => pName.includes(String(k).toUpperCase()))
-    ) {
-      // 中港澳：名稱命中但 location 含 TW 已在 exclude；若有明確多國 location 且不是目標 set，擋下
-      if (config.locationSet?.length && tokens.length > 0) {
-        const want = normalizeAliasCodes(config.locationSet);
-        if (!sameTokenSet(tokens, want)) return false;
-      }
-      return true;
+    const hitKeywords = config.keywords.filter((k) =>
+      pName.includes(String(k).toUpperCase()),
+    );
+    if (!hitKeywords.length) return false;
+
+    // 涵蓋型（高 CP）：明確多國關鍵字直接過；ASIA／SEA 需再確認與泰國有關
+    if (config.covers?.length) {
+      const loose = /^(ASIA|SEA\s?|東南亞|ASIA\s)/i;
+      const hasSpecific = hitKeywords.some((k) => !loose.test(String(k).trim()));
+      if (hasSpecific) return true;
+      const regionTokens = normalizeAliasCodes(config.includeRegionCodes || []);
+      const thRelated =
+        tokens.includes("TH") ||
+        regionTokens.some((r) => tokens.includes(r)) ||
+        /THAILAND|\bTH\b|泰國|星馬泰|新馬泰|東南亞/.test(hayForExclude);
+      return thRelated;
     }
+
+    // 精確多國 set：名稱命中但 location 已標其他組合 → 擋下
+    if (config.locationSet?.length && tokens.length > 0) {
+      const want = normalizeAliasCodes(config.locationSet);
+      if (!sameTokenSet(tokens, want)) return false;
+    }
+    return true;
   }
 
   return false;
@@ -1060,6 +1141,10 @@ export default function GlobalPlanScanner() {
   useEffect(() => {
     setFilterName("ALL");
     setFilterCarrier("ALL");
+    const cfg = COUNTRIES[selectedCountry];
+    if (cfg?.defaultSortByCost) {
+      setSortStack([{ key: "PRICE", order: "ASC" }]);
+    }
   }, [selectedCountry]);
 
   const filteredPlans = useMemo(() => {
@@ -1208,19 +1293,26 @@ export default function GlobalPlanScanner() {
           {/* 第一排：基礎篩選 */}
           <div className="flex flex-wrap gap-4 items-center">
             {!showSavedOnly && (
-              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-2">
-                <span className="text-xl mr-2">🌏</span>
-                <select
-                  value={selectedCountry}
-                  onChange={(e) => setSelectedCountry(e.target.value)}
-                  className="py-2 pl-1 pr-8 bg-transparent font-bold outline-none cursor-pointer text-gray-800 min-w-[120px]"
-                >
-                  {Object.keys(COUNTRIES).map((c) => (
-                    <option key={c} value={c}>
-                      {COUNTRIES[c].emoji} {COUNTRIES[c].name}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-2">
+                  <span className="text-xl mr-2">🌏</span>
+                  <select
+                    value={selectedCountry}
+                    onChange={(e) => setSelectedCountry(e.target.value)}
+                    className="py-2 pl-1 pr-8 bg-transparent font-bold outline-none cursor-pointer text-gray-800 min-w-[120px]"
+                  >
+                    {Object.keys(COUNTRIES).map((c) => (
+                      <option key={c} value={c}>
+                        {COUNTRIES[c].emoji} {COUNTRIES[c].name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedCountry === "TH_CP" && (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-md">
+                    抓取涵蓋泰國的多國／星馬泰／亞太方案，預設依成本由低到高（通常比純泰更省）
+                  </p>
+                )}
               </div>
             )}
 
@@ -1307,6 +1399,20 @@ export default function GlobalPlanScanner() {
                 <span className="text-[10px] font-bold text-emerald-700 whitespace-nowrap">
                   原生
                 </span>
+                {[50, 55, 60].map((pct) => (
+                  <button
+                    key={`native-${pct}`}
+                    type="button"
+                    onClick={() => applyNativeProfitPercent(pct)}
+                    className={`px-2 py-1 rounded-md text-[11px] font-bold border transition-all ${
+                      nativeProfitPercent === pct
+                        ? "bg-emerald-600 text-white shadow-sm border-emerald-600"
+                        : "bg-white text-emerald-900 border-emerald-200 hover:bg-emerald-50"
+                    }`}
+                  >
+                    {pct}%
+                  </button>
+                ))}
                 <input
                   type="number"
                   min={1}

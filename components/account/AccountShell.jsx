@@ -57,6 +57,10 @@ export default function AccountShell({
   onLogout,
   orderBadge = 0,
   children,
+  /** 夥伴商店：回賣場／品牌文案 */
+  homeHref = "/",
+  brandLabel = "Jeko 會員",
+  shopCtaLabel = "返回商城",
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -168,7 +172,7 @@ export default function AccountShell({
         style={{ borderTop: `1px solid ${SHOPIFY_UI.sidebarBorder}` }}
       >
         <Link
-          href="/"
+          href={homeHref || "/"}
           className="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-bold text-white transition"
           style={{
             backgroundColor: SHOPIFY_UI.primaryBtnBg,
@@ -176,7 +180,7 @@ export default function AccountShell({
           }}
         >
           <MaterialIcon name="storefront" size={18} />
-          返回商城
+          {shopCtaLabel || "返回商城"}
         </Link>
       </div>
     </>
@@ -201,12 +205,15 @@ export default function AccountShell({
           <MaterialIcon name="menu" size={20} />
         </button>
 
-        <Link href="/" className="flex items-center gap-2 shrink-0">
+        <Link
+          href={homeHref || "/"}
+          className="flex items-center gap-2 shrink-0"
+        >
           <div className="w-7 h-7 rounded-md bg-white flex items-center justify-center">
             <MaterialIcon name="sim_card" size={16} className="text-[#1a1a1a]" />
           </div>
           <span className="text-white font-black text-sm tracking-tight hidden sm:inline">
-            Jeko 會員
+            {brandLabel || "Jeko 會員"}
           </span>
         </Link>
 

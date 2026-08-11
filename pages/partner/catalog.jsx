@@ -6,6 +6,8 @@ import { usePartnerSession } from "@/lib/partnerAuth";
 import { supabase } from "@/lib/supabaseClient";
 import MaterialIcon from "@/components/MaterialIcon";
 import { fmt } from "@/components/partner/DobermanWidgets";
+import { ShopifyDropdown } from "@/components/partner/ShopifyControls";
+import { inferProductCountry } from "@/lib/partnerNavCountries";
 
 const TABS = [
   { id: "pool", label: "商品池", icon: "inventory" },
@@ -17,26 +19,111 @@ const SORT_OPTS = [
   { value: "name_asc", label: "名稱 A→Z" },
   { value: "price_asc", label: "底價（低→高）" },
   { value: "price_desc", label: "底價（高→低）" },
+  { value: "profit_desc", label: "分潤（高→低）" },
 ];
 
-function getCategory(name = "") {
-  const m = name.match(/^(JP|KR|US|CN|TH|SG|HK|TW|EU|AU)/i);
-  if (m) return m[1].toUpperCase();
-  if (name.includes("日本")) return "日本";
-  if (name.includes("韓國")) return "韓國";
-  if (name.includes("美國")) return "美國";
-  return "eSIM";
+const LIST_STATUS_OPTS = [
+  { value: "all", label: "全部狀態" },
+  { value: "unlisted", label: "未上架" },
+  { value: "listed", label: "已上架" },
+];
+
+const PRICE_OPTS = [
+  { value: "all", label: "全部底價" },
+  { value: "has_cost", label: "已有底價" },
+  { value: "no_cost", label: "尚無底價" },
+];
+
+const PLAN_OPTS = [
+  { value: "all", label: "全部方案數" },
+  { value: "has_plans", label: "已有方案" },
+  { value: "pending_plans", label: "方案待同步" },
+];
+
+const CATALOG_OPTS = [
+  { value: "all", label: "主站全部" },
+  { value: "available", label: "主站可售" },
+  { value: "off", label: "主站已下架" },
+];
+
+function resolveCountry(product) {
+  return (
+    inferProductCountry(product) || {
+      key: "other",
+      label: "其他",
+    }
+  );
 }
 
-const fmtCost = (n) => (Number(n) > 0 ? fmt(n) : "上架後顯示");
+const fmtCost = (n) => (Number(n) > 0 ? fmt(n) : "—");
 const fmtPlans = (n) => (Number(n) > 0 ? `${n} 個方案` : "方案待同步");
+
+function LoadingSpinner({ size = 14, className = "" }) {
+  return (
+    <span
+      className={`inline-block rounded-full border-2 border-white/35 border-t-white animate-spin shrink-0 ${className}`}
+      style={{ width: size, height: size }}
+      aria-hidden
+    />
+  );
+}
+
+function AddToStoreButton({
+  busy,
+  anyBusy,
+  onClick,
+  size = "md",
+  className = "",
+}) {
+  const sm = size === "sm";
+  return (
+    <button
+      type="button"
+      disabled={anyBusy}
+      onClick={onClick}
+      aria-busy={busy}
+      className={
+        className ||
+        (sm
+          ? "inline-flex items-center justify-center gap-1.5 min-w-[7.5rem] text-xs font-bold bg-[#1E4AD1] text-white px-3 py-1.5 rounded-sm hover:bg-[#0071EB] disabled:opacity-60 disabled:cursor-wait transition"
+          : "flex-1 min-h-11 inline-flex items-center justify-center gap-1.5 text-sm font-bold bg-[#1E4AD1] text-white rounded-lg hover:bg-[#0071EB] disabled:opacity-60 disabled:cursor-wait transition")
+      }
+    >
+      {busy ? (
+        <>
+          <LoadingSpinner size={sm ? 12 : 14} />
+          上架中…
+        </>
+      ) : (
+        <>
+          <MaterialIcon name="add" size={sm ? 14 : 16} />
+          加入店鋪
+        </>
+      )}
+    </button>
+  );
+}
 
 function sortProducts(list, sortKey) {
   const arr = [...list];
   if (sortKey === "name_asc") return arr.sort((a, b) => a.name.localeCompare(b.name, "zh-TW"));
   if (sortKey === "price_asc") return arr.sort((a, b) => a.minB2B - b.minB2B);
   if (sortKey === "price_desc") return arr.sort((a, b) => b.minB2B - a.minB2B);
+  if (sortKey === "profit_desc") return arr.sort((a, b) => (b.profit || 0) - (a.profit || 0));
   return arr.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+}
+
+function FilterChip({ label, onClear }) {
+  return (
+    <button
+      type="button"
+      onClick={onClear}
+      className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+    >
+      {label}
+      <MaterialIcon name="close" size={14} />
+    </button>
+  );
 }
 
 function PoolProductCard({
@@ -45,8 +132,13 @@ function PoolProductCard({
   onAdd,
   onRemove,
 }) {
+  const busy = busyId === p.id;
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <article
+      className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition ${
+        busy ? "ring-2 ring-[#1E4AD1]/25 bg-blue-50/30" : ""
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-black text-slate-800 leading-snug break-words">
@@ -99,15 +191,11 @@ function PoolProductCard({
 
       <div className="mt-3 flex gap-2">
         {!p.isListed ? (
-          <button
-            type="button"
-            disabled={busyId === p.id}
+          <AddToStoreButton
+            busy={busyId === p.id}
+            anyBusy={!!busyId}
             onClick={() => onAdd(p.id)}
-            className="flex-1 min-h-11 inline-flex items-center justify-center gap-1 text-sm font-bold bg-[#1E4AD1] text-white rounded-lg hover:bg-[#0071EB] disabled:opacity-50"
-          >
-            <MaterialIcon name="add" size={16} />
-            加入店鋪
-          </button>
+          />
         ) : (
           <>
             <Link
@@ -118,8 +206,9 @@ function PoolProductCard({
             </Link>
             <button
               type="button"
+              disabled={!!busyId}
               onClick={() => onRemove(p)}
-              className="min-h-11 px-3 inline-flex items-center justify-center text-sm font-bold text-red-500 border border-red-100 rounded-lg"
+              className="min-h-11 px-3 inline-flex items-center justify-center text-sm font-bold text-red-500 border border-red-100 rounded-lg disabled:opacity-50"
             >
               移除
             </button>
@@ -140,8 +229,14 @@ function ListedProductCard({ p, onRemove }) {
           </p>
           <p className="text-xs text-slate-400 mt-1">{p.category}</p>
         </div>
-        <span className="shrink-0 text-[11px] font-bold px-2 py-1 rounded-md bg-[#e0f2fe] text-[#0369a1]">
-          已開設
+        <span
+          className={`shrink-0 text-[11px] font-bold px-2 py-1 rounded-md ${
+            p.catalogAvailable === false
+              ? "bg-red-50 text-red-700"
+              : "bg-[#e0f2fe] text-[#0369a1]"
+          }`}
+        >
+          {p.catalogAvailable === false ? "主站已下架" : "已開設"}
         </span>
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -208,9 +303,11 @@ export default function PartnerCatalogPage() {
   const [listedMap, setListedMap] = useState({});
   const [search, setSearch] = useState("");
   const [poolFilter, setPoolFilter] = useState("all");
-  const [listedFilter, setListedFilter] = useState("all");
   const [sortKey, setSortKey] = useState("newest");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [countryFilter, setCountryFilter] = useState("");
+  const [priceFilter, setPriceFilter] = useState("all");
+  const [planFilter, setPlanFilter] = useState("all");
+  const [catalogFilter, setCatalogFilter] = useState("all");
   const [confirmRemove, setConfirmRemove] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
@@ -256,24 +353,70 @@ export default function PartnerCatalogPage() {
         const enriched = (poolData.products || []).map((p) => {
           const minB2B = p.minB2B || 0;
           const sellPrice = Math.round(minB2B * (1 + markup / 100));
+          const listing = map[p.medusa_product_id];
           const isListed = listedMedusaIds.has(p.medusa_product_id);
+          const catalogAvailable = listing
+            ? listing.catalog_available !== false
+            : true;
+          const country = resolveCountry(p);
           return {
             id: p.medusa_product_id,
             medusaProductId: p.medusa_product_id,
             handle: p.handle,
             name: p.name,
             description: p.description,
-            category: getCategory(p.name),
+            category: country.label,
+            countryKey: country.key,
+            countryLabel: country.label,
             planCount: p.planCount,
             minB2B,
             sellPrice,
             profit: sellPrice - minB2B,
             createdAt: p.created_at || "",
-            listedAt: map[p.medusa_product_id]?.created_at || null,
+            listedAt: listing?.created_at || null,
             isListed,
-            supabaseProductId: map[p.medusa_product_id]?.product_id || null,
+            catalogAvailable,
+            orphanOffCatalog: false,
+            listingStatus: listing?.status || null,
+            supabaseProductId: listing?.product_id || null,
           };
         });
+
+        // 主站已下架 → 不在商品池，但仍在 store_products：顯示於「已上架」並標示不可售
+        const poolIds = new Set(enriched.map((p) => p.id));
+        for (const row of listings) {
+          const mid = row.medusa_product_id;
+          if (!mid || poolIds.has(mid)) continue;
+          const minB2B = Number(row.min_b2b) || 0;
+          const sellPrice = Math.round(minB2B * (1 + markup / 100));
+          const orphanName =
+            row.product_name || `已下架商品（${String(mid).slice(0, 10)}）`;
+          const country = resolveCountry({
+            name: orphanName,
+            handle: row.product_handle,
+          });
+          enriched.push({
+            id: mid,
+            medusaProductId: mid,
+            handle: row.product_handle || null,
+            name: orphanName,
+            description: "主站已下架或刪除，無法繼續販售",
+            category: "主站已下架",
+            countryKey: country.key,
+            countryLabel: country.label,
+            planCount: row.plan_count || 0,
+            minB2B,
+            sellPrice,
+            profit: Math.max(0, sellPrice - minB2B),
+            createdAt: row.created_at || "",
+            listedAt: row.created_at || null,
+            isListed: true,
+            catalogAvailable: false,
+            listingStatus: row.status || "paused",
+            supabaseProductId: row.product_id || null,
+            orphanOffCatalog: true,
+          });
+        }
 
         setProducts(enriched);
         setListedMap(map);
@@ -288,22 +431,149 @@ export default function PartnerCatalogPage() {
     load();
   }, [store, markup]);
 
-  const categories = useMemo(
-    () => [...new Set(products.map((p) => p.category))].sort(),
-    [products],
-  );
+  const countryOptions = useMemo(() => {
+    const map = new Map();
+    for (const p of products) {
+      const key = p.countryKey || "other";
+      const label = p.countryLabel || "其他";
+      const prev = map.get(key) || { key, label, count: 0 };
+      prev.count += 1;
+      map.set(key, prev);
+    }
+    return [...map.values()].sort(
+      (a, b) => b.count - a.count || a.label.localeCompare(b.label, "zh-TW"),
+    );
+  }, [products]);
 
   const poolList = useMemo(() => {
-    let list = products;
+    let list = [...products];
+
+    if (catalogFilter === "off") {
+      list = list.filter(
+        (p) => p.orphanOffCatalog || p.catalogAvailable === false,
+      );
+    } else if (catalogFilter === "available") {
+      list = list.filter((p) => !p.orphanOffCatalog && p.catalogAvailable !== false);
+    } else {
+      list = list.filter((p) => !p.orphanOffCatalog);
+    }
+
     if (poolFilter === "unlisted") list = list.filter((p) => !p.isListed);
     if (poolFilter === "listed") list = list.filter((p) => p.isListed);
-    if (categoryFilter) list = list.filter((p) => p.category === categoryFilter);
+
+    if (countryFilter) {
+      list = list.filter((p) => (p.countryKey || "other") === countryFilter);
+    }
+
+    if (priceFilter === "has_cost") list = list.filter((p) => Number(p.minB2B) > 0);
+    if (priceFilter === "no_cost") list = list.filter((p) => !(Number(p.minB2B) > 0));
+
+    if (planFilter === "has_plans") list = list.filter((p) => Number(p.planCount) > 0);
+    if (planFilter === "pending_plans") {
+      list = list.filter((p) => !(Number(p.planCount) > 0));
+    }
+
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter((p) => p.name?.toLowerCase().includes(q));
     }
     return sortProducts(list, sortKey);
-  }, [products, poolFilter, categoryFilter, search, sortKey]);
+  }, [
+    products,
+    poolFilter,
+    countryFilter,
+    priceFilter,
+    planFilter,
+    catalogFilter,
+    search,
+    sortKey,
+  ]);
+
+  const advancedActiveCount = [
+    poolFilter !== "all",
+    priceFilter !== "all",
+    planFilter !== "all",
+    catalogFilter !== "all",
+  ].filter(Boolean).length;
+
+  const clearAdvancedFilters = () => {
+    setPoolFilter("all");
+    setPriceFilter("all");
+    setPlanFilter("all");
+    setCatalogFilter("all");
+  };
+
+  const countryLabel =
+    countryOptions.find((c) => c.key === countryFilter)?.label ||
+    (countryFilter ? "已選國家" : "");
+
+  const sortLabel =
+    SORT_OPTS.find((o) => o.value === sortKey)?.label || "最新上架";
+
+  const countryMenuItems = useMemo(
+    () => [
+      {
+        id: "all",
+        label: "全部國家",
+        icon: "public",
+        active: !countryFilter,
+        onClick: () => setCountryFilter(""),
+      },
+      { divider: true },
+      ...countryOptions.map((c) => ({
+        id: c.key,
+        label: `${c.label}（${c.count}）`,
+        icon: "flag",
+        active: countryFilter === c.key,
+        onClick: () => setCountryFilter(c.key),
+      })),
+    ],
+    [countryOptions, countryFilter],
+  );
+
+  const advancedMenuItems = useMemo(() => {
+    const section = (prefix, opts, value, setter, icon) =>
+      opts.map((o) => ({
+        id: `${prefix}-${o.value}`,
+        label: o.label,
+        icon,
+        active: value === o.value,
+        onClick: () => setter(o.value),
+      }));
+
+    return [
+      ...section("list", LIST_STATUS_OPTS, poolFilter, setPoolFilter, "storefront"),
+      { divider: true },
+      ...section("price", PRICE_OPTS, priceFilter, setPriceFilter, "payments"),
+      { divider: true },
+      ...section("plan", PLAN_OPTS, planFilter, setPlanFilter, "layers"),
+      { divider: true },
+      ...section("catalog", CATALOG_OPTS, catalogFilter, setCatalogFilter, "inventory_2"),
+      ...(advancedActiveCount
+        ? [
+            { divider: true },
+            {
+              id: "clear-advanced",
+              label: "清除進階篩選",
+              icon: "filter_alt_off",
+              onClick: clearAdvancedFilters,
+            },
+          ]
+        : []),
+    ];
+  }, [poolFilter, priceFilter, planFilter, catalogFilter, advancedActiveCount]);
+
+  const sortMenuItems = useMemo(
+    () =>
+      SORT_OPTS.map((o) => ({
+        id: o.value,
+        label: o.label,
+        icon: "swap_vert",
+        active: sortKey === o.value,
+        onClick: () => setSortKey(o.value),
+      })),
+    [sortKey],
+  );
 
   const listedList = useMemo(() => {
     let list = products.filter((p) => p.isListed);
@@ -316,9 +586,10 @@ export default function PartnerCatalogPage() {
 
   const stats = useMemo(
     () => ({
-      total: products.length,
+      total: products.filter((p) => !p.orphanOffCatalog).length,
       listed: products.filter((p) => p.isListed).length,
-      unlisted: products.filter((p) => !p.isListed).length,
+      unlisted: products.filter((p) => !p.isListed && !p.orphanOffCatalog)
+        .length,
     }),
     [products],
   );
@@ -461,91 +732,122 @@ export default function PartnerCatalogPage() {
           <>
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
               <div className="flex flex-col gap-3 px-4 py-4 border-b border-slate-200">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold text-slate-500 shrink-0">分類</span>
-                  <button
-                    type="button"
-                    onClick={() => setCategoryFilter("")}
-                    className={`text-xs font-bold px-3 py-2 rounded-lg border ${
-                      !categoryFilter
-                        ? "bg-[#1E4AD1] text-white border-[#1E4AD1]"
-                        : "border-slate-200 text-slate-600"
-                    }`}
-                  >
-                    全部
-                  </button>
-                  {categories.slice(0, 6).map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() =>
-                        setCategoryFilter(categoryFilter === c ? "" : c)
-                      }
-                      className={`text-xs font-bold px-3 py-2 rounded-lg border ${
-                        categoryFilter === c
-                          ? "bg-[#1E4AD1] text-white border-[#1E4AD1]"
-                          : "border-slate-200 text-slate-600"
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-                <Link
-                  href="/partner/products?tab=products"
-                  className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 min-h-11 bg-[#1E4AD1] hover:bg-[#0071EB] text-white text-sm font-bold px-5 py-2.5 rounded-lg transition"
-                >
-                  <MaterialIcon name="price_change" size={18} />
-                  管理已上架商品
-                </Link>
-              </div>
-
-              <div className="flex flex-col gap-3 px-4 py-3 border-b border-slate-100 bg-slate-50/60">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-xs text-slate-500 font-bold">顯示</span>
-                  {[
-                    ["all", "全部"],
-                    ["unlisted", "未上架"],
-                    ["listed", "已上架"],
-                  ].map(([v, l]) => (
-                    <label key={v} className="flex items-center gap-1.5 cursor-pointer min-h-9">
-                      <input
-                        type="radio"
-                        name="pool_filter"
-                        checked={poolFilter === v}
-                        onChange={() => setPoolFilter(v)}
-                        className="accent-[#1E4AD1] w-3.5 h-3.5"
-                      />
-                      <span className="text-xs text-slate-700">{l}</span>
-                    </label>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="relative">
-                    <MaterialIcon
-                      name="search"
-                      size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="搜尋商品名稱..."
-                      className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:border-[#1E4AD1] outline-none"
-                    />
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-black text-slate-800">商品池</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      依國家與條件篩選後加入店鋪 · 目前 {loading ? "…" : poolList.length} 項
+                    </p>
                   </div>
-                  <select
-                    value={sortKey}
-                    onChange={(e) => setSortKey(e.target.value)}
-                    className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#1E4AD1] min-h-11"
+                  <Link
+                    href="/partner/products?tab=products"
+                    className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 min-h-10 bg-[#1E4AD1] hover:bg-[#0071EB] text-white text-sm font-bold px-4 py-2 rounded-lg transition"
                   >
-                    {SORT_OPTS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        排序：{o.label}
-                      </option>
-                    ))}
-                  </select>
+                    <MaterialIcon name="price_change" size={18} />
+                    管理已上架商品
+                  </Link>
                 </div>
+
+                <div className="relative">
+                  <MaterialIcon
+                    name="search"
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="搜尋商品名稱..."
+                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:border-[#1E4AD1] outline-none bg-white"
+                  />
+                </div>
+
+                {/* 圖一風格：白底描邊下拉 */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <ShopifyDropdown
+                    label={
+                      countryFilter
+                        ? `國家：${countryLabel}`
+                        : "國家分類"
+                    }
+                    icon="public"
+                    align="left"
+                    items={countryMenuItems}
+                  />
+                  <ShopifyDropdown
+                    label={
+                      advancedActiveCount
+                        ? `進階篩選（${advancedActiveCount}）`
+                        : "進階篩選"
+                    }
+                    icon="tune"
+                    align="left"
+                    items={advancedMenuItems}
+                  />
+                  <ShopifyDropdown
+                    label={`排序：${sortLabel}`}
+                    icon="swap_vert"
+                    align="left"
+                    items={sortMenuItems}
+                  />
+                </div>
+
+                {(countryFilter || advancedActiveCount > 0) && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {countryFilter ? (
+                      <FilterChip
+                        label={`國家：${countryLabel}`}
+                        onClear={() => setCountryFilter("")}
+                      />
+                    ) : null}
+                    {poolFilter !== "all" ? (
+                      <FilterChip
+                        label={
+                          LIST_STATUS_OPTS.find((o) => o.value === poolFilter)
+                            ?.label || poolFilter
+                        }
+                        onClear={() => setPoolFilter("all")}
+                      />
+                    ) : null}
+                    {priceFilter !== "all" ? (
+                      <FilterChip
+                        label={
+                          PRICE_OPTS.find((o) => o.value === priceFilter)?.label ||
+                          priceFilter
+                        }
+                        onClear={() => setPriceFilter("all")}
+                      />
+                    ) : null}
+                    {planFilter !== "all" ? (
+                      <FilterChip
+                        label={
+                          PLAN_OPTS.find((o) => o.value === planFilter)?.label ||
+                          planFilter
+                        }
+                        onClear={() => setPlanFilter("all")}
+                      />
+                    ) : null}
+                    {catalogFilter !== "all" ? (
+                      <FilterChip
+                        label={
+                          CATALOG_OPTS.find((o) => o.value === catalogFilter)
+                            ?.label || catalogFilter
+                        }
+                        onClear={() => setCatalogFilter("all")}
+                      />
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCountryFilter("");
+                        clearAdvancedFilters();
+                      }}
+                      className="text-[11px] font-bold text-[#1E4AD1] hover:underline px-1"
+                    >
+                      全部清除
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* 手機卡片 */}
@@ -599,7 +901,12 @@ export default function PartnerCatalogPage() {
                       </tr>
                     ) : (
                       poolList.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-50/60">
+                        <tr
+                          key={p.id}
+                          className={`hover:bg-slate-50/60 ${
+                            busyId === p.id ? "bg-blue-50/40" : ""
+                          }`}
+                        >
                           <td className="px-5 py-4 max-w-[280px]">
                             <p className="font-bold text-slate-800 break-words">{p.name}</p>
                             <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">
@@ -634,17 +941,14 @@ export default function PartnerCatalogPage() {
                           </td>
                           <td className="px-5 py-4 text-center">
                             {!p.isListed ? (
-                              <button
-                                type="button"
-                                disabled={busyId === p.id}
+                              <AddToStoreButton
+                                size="sm"
+                                busy={busyId === p.id}
+                                anyBusy={!!busyId}
                                 onClick={() => handleAdd(p.id)}
-                                className="inline-flex items-center gap-1 text-xs font-bold bg-[#1E4AD1] text-white px-3 py-1.5 rounded-sm hover:bg-[#0071EB] disabled:opacity-50 transition"
-                              >
-                                <MaterialIcon name="add" size={14} />
-                                加入店鋪
-                              </button>
+                              />
                             ) : (
-                              <div className="inline-flex items-center gap-2">
+                              <div className="inline-flex items-center justify-center gap-2 min-w-[7.5rem]">
                                 <Link
                                   href="/partner/products?tab=pricing"
                                   className="text-xs font-bold text-[#1E4AD1] hover:underline"
@@ -653,8 +957,9 @@ export default function PartnerCatalogPage() {
                                 </Link>
                                 <button
                                   type="button"
+                                  disabled={!!busyId}
                                   onClick={() => setConfirmRemove(p)}
-                                  className="text-xs font-bold text-red-500 hover:underline"
+                                  className="text-xs font-bold text-red-500 hover:underline disabled:opacity-50"
                                 >
                                   移除
                                 </button>
@@ -683,7 +988,12 @@ export default function PartnerCatalogPage() {
         {activeTab === "listed" && (
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-4 border-b border-slate-200">
-              <h2 className="text-base font-black text-slate-800">已上架商品</h2>
+              <div>
+                <h2 className="text-base font-black text-slate-800">已上架商品</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  主站下架或刪除的方案會自動標示「主站已下架」並從賣場下架；請移除選品或待主站恢復後再啟用。
+                </p>
+              </div>
               <Link
                 href="/partner/products?tab=pricing"
                 className="inline-flex items-center justify-center gap-1.5 min-h-11 bg-[#1E4AD1] hover:bg-[#0071EB] text-white text-sm font-bold px-4 py-2.5 rounded-lg transition"
@@ -739,17 +1049,27 @@ export default function PartnerCatalogPage() {
             </div>
 
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-sm min-w-[760px]">
+              <table className="w-full text-sm table-fixed min-w-[920px]">
+                <colgroup>
+                  <col style={{ width: "26%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "8%" }} />
+                </colgroup>
                 <thead className="bg-slate-50 text-slate-500 text-xs">
                   <tr>
                     <th className="px-5 py-3 text-left font-bold">商品名稱</th>
-                    <th className="px-5 py-3 text-center font-bold">方案數</th>
-                    <th className="px-5 py-3 text-right font-bold">底價</th>
-                    <th className="px-5 py-3 text-right font-bold">預設售價</th>
-                    <th className="px-5 py-3 text-right font-bold">預估分潤</th>
-                    <th className="px-5 py-3 text-center font-bold">上架狀態</th>
-                    <th className="px-5 py-3 text-center font-bold">上架日期</th>
-                    <th className="px-5 py-3 text-center font-bold">操作</th>
+                    <th className="px-4 py-3 text-center font-bold">方案數</th>
+                    <th className="px-4 py-3 text-right font-bold">底價</th>
+                    <th className="px-4 py-3 text-right font-bold">預設售價</th>
+                    <th className="px-4 py-3 text-right font-bold">預估分潤</th>
+                    <th className="px-4 py-3 text-center font-bold">上架狀態</th>
+                    <th className="px-4 py-3 text-center font-bold">上架日期</th>
+                    <th className="px-4 py-3 text-right font-bold">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -768,29 +1088,47 @@ export default function PartnerCatalogPage() {
                   ) : (
                     listedList.map((p) => (
                       <tr key={p.id} className="hover:bg-slate-50/60">
-                        <td className="px-5 py-4 max-w-[280px]">
-                          <p className="font-bold text-slate-800 break-words">{p.name}</p>
-                          <p className="text-xs text-slate-400">{p.category}</p>
+                        <td className="px-5 py-4 align-top">
+                          <p className="font-bold text-slate-800 break-words leading-snug">
+                            {p.name}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5 truncate">
+                            {p.category || "eSIM"}
+                          </p>
                         </td>
-                        <td className="px-5 py-4 text-center font-bold">{p.planCount}</td>
-                        <td className="px-5 py-4 text-right text-slate-600">{fmtCost(p.minB2B)}</td>
-                        <td className="px-5 py-4 text-right font-bold">{fmt(p.sellPrice)}</td>
-                        <td className="px-5 py-4 text-right font-black text-[#1E4AD1]">
+                        <td className="px-4 py-4 align-top text-center tabular-nums font-bold text-slate-700">
+                          {p.planCount}
+                        </td>
+                        <td className="px-4 py-4 align-top text-right tabular-nums text-slate-600 whitespace-nowrap">
+                          {fmtCost(p.minB2B)}
+                        </td>
+                        <td className="px-4 py-4 align-top text-right tabular-nums font-bold text-slate-800 whitespace-nowrap">
+                          {fmt(p.sellPrice)}
+                        </td>
+                        <td className="px-4 py-4 align-top text-right tabular-nums font-black text-[#1E4AD1] whitespace-nowrap">
                           +{fmt(p.profit)}
                         </td>
-                        <td className="px-5 py-4 text-center">
-                          <span className="text-xs font-bold px-2.5 py-1 rounded-sm bg-[#e0f2fe] text-[#0369a1]">
-                            已開設
+                        <td className="px-4 py-4 align-top text-center">
+                          <span
+                            className={`inline-flex items-center justify-center min-w-[5.75rem] text-xs font-bold px-2.5 py-1 rounded-sm ${
+                              p.catalogAvailable === false
+                                ? "bg-red-50 text-red-700"
+                                : "bg-[#e0f2fe] text-[#0369a1]"
+                            }`}
+                          >
+                            {p.catalogAvailable === false
+                              ? "主站已下架"
+                              : "已開設"}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-center text-xs text-slate-500">
+                        <td className="px-4 py-4 align-top text-center text-xs text-slate-500 whitespace-nowrap">
                           {fmtDate(p.listedAt)}
                         </td>
-                        <td className="px-5 py-4 text-center">
-                          <div className="flex items-center justify-center gap-2">
+                        <td className="px-4 py-4 align-top">
+                          <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
                             <Link
                               href="/partner/products?tab=pricing"
-                              className="text-xs border border-slate-300 rounded-sm px-3 py-1 text-slate-600 hover:border-[#1E4AD1] hover:text-[#1E4AD1] font-bold"
+                              className="text-xs border border-slate-300 rounded-sm px-2.5 py-1 text-slate-600 hover:border-[#1E4AD1] hover:text-[#1E4AD1] font-bold"
                             >
                               編輯定價
                             </Link>
@@ -798,6 +1136,7 @@ export default function PartnerCatalogPage() {
                               type="button"
                               onClick={() => setConfirmRemove(p)}
                               className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500"
+                              aria-label="移除商品"
                             >
                               <MaterialIcon name="delete" size={18} />
                             </button>
@@ -828,18 +1167,26 @@ export default function PartnerCatalogPage() {
             <div className="flex justify-end gap-3">
               <button
                 type="button"
+                disabled={!!busyId}
                 onClick={() => setConfirmRemove(null)}
-                className="px-5 py-2 text-sm text-slate-600 border border-slate-300 rounded-sm hover:bg-slate-50"
+                className="px-5 py-2 text-sm text-slate-600 border border-slate-300 rounded-sm hover:bg-slate-50 disabled:opacity-50"
               >
                 取消
               </button>
               <button
                 type="button"
-                disabled={busyId === confirmRemove.id}
+                disabled={!!busyId}
                 onClick={() => handleRemove(confirmRemove.id)}
-                className="px-5 py-2 text-sm font-bold text-white bg-[#1E4AD1] rounded-sm hover:bg-[#0071EB] disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-1.5 min-w-[6.5rem] px-5 py-2 text-sm font-bold text-white bg-[#1E4AD1] rounded-sm hover:bg-[#0071EB] disabled:opacity-60 disabled:cursor-wait"
               >
-                確定移除
+                {busyId === confirmRemove.id ? (
+                  <>
+                    <LoadingSpinner size={14} />
+                    移除中…
+                  </>
+                ) : (
+                  "確定移除"
+                )}
               </button>
             </div>
           </div>

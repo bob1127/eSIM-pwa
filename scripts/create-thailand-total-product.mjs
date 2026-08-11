@@ -1,9 +1,12 @@
 /**
- * 建立「泰國 eSIM 總量型」— 兩個電信變體
+ * 建立「泰國 eSIM 總量型」— 三個電信變體
  *   1) AIS ← Thailand-Total*GB（AIS Thailand／e-ideas／新加坡 IP 漫遊）
- *      利潤 50%｜專屬夥伴連結 25%｜95 折（5%）
- *   2) TRUE ← Thailand-Local-Total*（TRUE 原生 TH IP）
- *      利潤 85%｜專屬夥伴連結 45%｜95 折（5%）
+ *      利潤 40%｜專屬夥伴連結 25%｜95 折（5%）
+ *   2) TRUE ← Thailand-Local-Total*（TRUE 原生 TH IP；7天／10天）
+ *      利潤 70%｜專屬夥伴連結 50%｜95 折（5%）
+ *   3) DTAC / REAL FUTURE ← Southeast Asia 4-Total*（多國含泰；前台只顯示泰國電信名）
+ *      利潤 40%｜專屬夥伴連結 25%｜95 折（5%）
+ *   （選品神器對齊：漫遊／高 CP 40%／TRUE 原生 70%）
  *
  * 用法：
  *   HKD_TO_TWD=4.5 node scripts/create-thailand-total-product.mjs
@@ -15,6 +18,8 @@ import { fileURLToPath } from "url";
 import {
   aisKeyFeatures,
   trueLocalTotalKeyFeatures,
+  dtacRealFutureTotalKeyFeatures,
+  TH_TELECOM_DTAC_RF,
 } from "../content/product-detailed/thailand-key-features.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -54,19 +59,23 @@ const PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "ScriptImport2026!";
 const HANDLE = "thailand-total-esim";
 const TELECOM_AIS = "AIS";
 const TELECOM_TRUE = "TRUE";
+const TELECOM_DTAC_RF = TH_TELECOM_DTAC_RF; // "DTAC / REAL FUTURE"
 const LINE = "總量型";
 
 const PROFIT_BY_TELECOM = {
-  [TELECOM_AIS]: 50,
-  [TELECOM_TRUE]: 85,
+  [TELECOM_AIS]: 40,
+  [TELECOM_TRUE]: 70,
+  [TELECOM_DTAC_RF]: 40,
 };
 const PARTNER_RATE_BY_TELECOM = {
   [TELECOM_AIS]: 25,
-  [TELECOM_TRUE]: 45,
+  [TELECOM_TRUE]: 50,
+  [TELECOM_DTAC_RF]: 25,
 };
 const REFERRAL_DISCOUNT_BY_TELECOM = {
   [TELECOM_AIS]: 5, // 95 折
   [TELECOM_TRUE]: 5, // 95 折
+  [TELECOM_DTAC_RF]: 5,
 };
 
 const DATA_ORDER = ["3GB", "5GB", "10GB", "15GB", "20GB", "30GB", "50GB"];
@@ -78,7 +87,7 @@ const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 
 const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
-const CATEGORY_IDS = ["pcat_01KZJNBXJX5EFQD5H7YSEXRWK1"]; // tailand
+const CATEGORY_IDS = ["pcat_01KZJNBX7K2X5KN4KP41T4F60D"]; // thailand
 const THUMB =
   process.env.THAILAND_PRODUCT_THUMB ||
   "https://www.jeko-esim.com.tw/images/tailand-esim-banner.jpg";
@@ -115,8 +124,9 @@ function dataRank(label) {
 }
 
 function telecomRank(telecom) {
-  if (telecom === TELECOM_AIS) return 0;
-  if (telecom === TELECOM_TRUE) return 1;
+  if (telecom === TELECOM_DTAC_RF) return 0; // 高 CP 優先
+  if (telecom === TELECOM_AIS) return 1;
+  if (telecom === TELECOM_TRUE) return 2;
   return 9;
 }
 
@@ -145,6 +155,7 @@ function loadPlans(hkdToTwd) {
       });
     }
   };
+  push(raw.dtac_rf, TELECOM_DTAC_RF, "dtac_rf");
   push(raw.ais, TELECOM_AIS, "ais");
   push(raw.true, TELECOM_TRUE, "true");
   return rows.sort(
@@ -200,6 +211,7 @@ function chunk(arr, size) {
 
 function toVariant(row) {
   const isTrue = row.kind === "true";
+  const isDtacRf = row.kind === "dtac_rf";
   const dataAmount = row.data_amount;
   const profit = row.profit_percent;
   const speedRule =
@@ -207,10 +219,14 @@ function toVariant(row) {
     (isTrue
       ? "高速用完後降速（依供應商規則）"
       : "高速用完後降速至約 128 kbps");
-  const network = isTrue ? "TRUE 4G/5G" : "AIS Thailand 4G/LTE/5G";
-  const apn = row.apn || (isTrue ? "internet" : "e-ideas");
-  const ip = isTrue ? "TH" : "SG";
-  const ipType = isTrue ? "泰國 IP" : "新加坡 IP";
+  const network = isTrue
+    ? "TRUE 4G/5G"
+    : isDtacRf
+      ? "DTAC / Real Future (TrueMove) 4G/LTE/5G"
+      : "AIS Thailand 4G/LTE/5G";
+  const apn = row.apn || (isTrue ? "internet" : isDtacRf ? "cmlink" : "e-ideas");
+  const ip = isTrue ? "TH" : isDtacRf ? "HK" : "SG";
+  const ipType = isTrue ? "泰國 IP" : isDtacRf ? "香港 IP" : "新加坡 IP";
   const routeType = isTrue ? "原生eSIM" : "漫遊";
 
   return {
@@ -277,7 +293,7 @@ async function main() {
   const dataValues = DATA_ORDER.filter((d) =>
     rows.some((r) => r.data_amount === d),
   );
-  const telecomValues = [TELECOM_AIS, TELECOM_TRUE];
+  const telecomValues = [TELECOM_DTAC_RF, TELECOM_AIS, TELECOM_TRUE];
 
   for (const telecom of telecomValues) {
     const sample =
@@ -303,29 +319,41 @@ async function main() {
     type: "esim",
     country: "TH",
     plan_kind: "total",
-    hot_sale_telecoms: [TELECOM_TRUE],
+    hot_sale_telecoms: [TELECOM_DTAC_RF, TELECOM_TRUE],
     carrier_profit_by_carrier: {
+      [TELECOM_DTAC_RF]: PROFIT_BY_TELECOM[TELECOM_DTAC_RF],
       [TELECOM_AIS]: PROFIT_BY_TELECOM[TELECOM_AIS],
       [TELECOM_TRUE]: PROFIT_BY_TELECOM[TELECOM_TRUE],
     },
     carrier_partner_rate_by_carrier: {
+      [TELECOM_DTAC_RF]: PARTNER_RATE_BY_TELECOM[TELECOM_DTAC_RF],
       [TELECOM_AIS]: PARTNER_RATE_BY_TELECOM[TELECOM_AIS],
       [TELECOM_TRUE]: PARTNER_RATE_BY_TELECOM[TELECOM_TRUE],
     },
     carrier_referral_discount_by_carrier: {
+      [TELECOM_DTAC_RF]: REFERRAL_DISCOUNT_BY_TELECOM[TELECOM_DTAC_RF],
       [TELECOM_AIS]: REFERRAL_DISCOUNT_BY_TELECOM[TELECOM_AIS],
       [TELECOM_TRUE]: REFERRAL_DISCOUNT_BY_TELECOM[TELECOM_TRUE],
     },
-    seo_title: "泰國 eSIM 總量型｜AIS / TRUE｜Jeko eSIM",
+    seo_title: "泰國 eSIM 總量型｜DTAC／AIS／TRUE｜Jeko eSIM",
     seo_description:
-      "泰國總量型 eSIM：AIS（新加坡 IP 漫遊）與 TRUE（泰國 IP 原生）。依天數與總量選購，支援熱點分享。",
+      "泰國總量型 eSIM：DTAC／REAL FUTURE（高 CP）、AIS（新加坡 IP 漫遊）與 TRUE（泰國 IP 原生）。依天數與總量選購，支援熱點分享。",
     seo_keywords:
-      "泰國eSIM,總量型eSIM,AIS,TRUE,原生eSIM,漫遊eSIM,總量流量,旅遊eSIM,Jeko eSIM",
+      "泰國eSIM,總量型eSIM,DTAC,REAL FUTURE,AIS,TRUE,原生eSIM,漫遊eSIM,總量流量,旅遊eSIM,Jeko eSIM",
     subtitle_by_carrier: {
+      [TELECOM_DTAC_RF]: "總量型・DTAC／REAL FUTURE・香港 IP 漫遊・用完降速 128kbps",
       [TELECOM_AIS]: "總量型・AIS Thailand・新加坡 IP 漫遊・用完降速 128kbps",
       [TELECOM_TRUE]: "總量型・TRUE 原生・泰國當地 IP",
     },
     carrier_specs_by_carrier: {
+      [TELECOM_DTAC_RF]: {
+        ip_type: "香港 IP",
+        route_type: "漫遊",
+        network: "DTAC / Real Future (TrueMove) 4G/LTE/5G",
+        speed_rule: "方案總量高速用完後降速至約 128 kbps（可持續使用）",
+        apps: "熱點分享,ChatGPT,TikTok,Gemini",
+        apn: "cmlink",
+      },
       [TELECOM_AIS]: {
         ip_type: "新加坡 IP",
         route_type: "漫遊",
@@ -345,10 +373,16 @@ async function main() {
       },
     },
     key_features_by_carrier: {
+      [TELECOM_DTAC_RF]: dtacRealFutureTotalKeyFeatures(),
       [TELECOM_AIS]: aisKeyFeatures(),
       [TELECOM_TRUE]: trueLocalTotalKeyFeatures(),
     },
     overview_notices_by_carrier: {
+      [TELECOM_DTAC_RF]: {
+        fup_notice:
+          "公平使用政策 (FUP): 方案總量高速用完後降速至約 128 kbps，可持續使用。實際速度取決於您的位置及網路環境。",
+        activation_notice: "建議抵達泰國後再安裝／啟用 eSIM",
+      },
       [TELECOM_AIS]: {
         fup_notice:
           "公平使用政策 (FUP): 方案總量高速用完後降速至約 128 kbps，可持續使用。實際速度取決於您的位置及網路環境。",
@@ -365,10 +399,10 @@ async function main() {
 
   const payloadBase = {
     title: "泰國 eSIM 總量型",
-    subtitle: "AIS／TRUE｜依天數與總量選購｜支援熱點",
+    subtitle: "DTAC／AIS／TRUE｜依天數與總量選購｜支援熱點",
     handle: HANDLE,
     description:
-      "泰國 eSIM 總量型，兩種電信：AIS（AIS Thailand／新加坡 IP 漫遊，高速用完後約 128 kbps）與 TRUE（原生泰國 IP：15GB／7天、50GB／10天）。支援熱點與主流 App，依天數與流量選購。",
+      "泰國 eSIM 總量型，三種電信：DTAC／REAL FUTURE（高 CP 漫遊）、AIS（AIS Thailand／新加坡 IP 漫遊，高速用完後約 128 kbps）與 TRUE（原生泰國 IP：15GB／7天、50GB／10天）。支援熱點與主流 App，依天數與流量選購。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,
@@ -385,10 +419,11 @@ async function main() {
   };
 
   const variants = rows.map(toVariant);
+  const nDtac = rows.filter((r) => r.telecom === TELECOM_DTAC_RF).length;
   const nAis = rows.filter((r) => r.telecom === TELECOM_AIS).length;
   const nTrue = rows.filter((r) => r.telecom === TELECOM_TRUE).length;
   console.log(
-    `📦 方案 ${rows.length} 筆（AIS ${nAis} + TRUE ${nTrue}）・利潤 50%／85%`,
+    `📦 方案 ${rows.length} 筆（DTAC/RF ${nDtac} + AIS ${nAis} + TRUE ${nTrue}）・利潤 40%／40%／70%`,
   );
   console.log(`數據量選項: ${dataValues.join(" | ")}`);
   console.log(`天數選項: ${dayValues.join(" | ")}`);
@@ -462,8 +497,15 @@ async function main() {
   );
   const vs = check.product?.variants || [];
   console.log("\n======= 完成 =======");
-  console.log(`前台: /product/tailand/${HANDLE}`);
+  console.log(`前台: /product/thailand/${HANDLE}`);
   console.log(`變體數: ${vs.length}`);
+  console.log(
+    `範例: DTAC/RF →`,
+    rows.find(
+      (r) =>
+        r.telecom === TELECOM_DTAC_RF && r.day === 3 && r.data_amount === "3GB",
+    ),
+  );
   console.log(
     `範例: AIS →`,
     rows.find((r) => r.telecom === TELECOM_AIS && r.day === 3 && r.data_amount === "3GB"),

@@ -3,60 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import {
-  FacebookIconSvg,
-  InstagramIconSvg,
-  LineIconSvg,
-} from "@/components/social/SocialBrandIcons";
 import { Search } from "lucide-react";
-
-function MonoSocial({ store }) {
-  const items = [
-    {
-      key: "instagram",
-      label: "Instagram",
-      href: store?.social_instagram?.trim(),
-      icon: <InstagramIconSvg className="w-4 h-4" />,
-    },
-    {
-      key: "facebook",
-      label: "Facebook",
-      href: store?.social_facebook?.trim(),
-      icon: <FacebookIconSvg className="w-4 h-4" />,
-    },
-    {
-      key: "line",
-      label: "LINE",
-      href: store?.social_line?.trim(),
-      icon: <LineIconSvg className="w-4 h-4" />,
-    },
-  ].filter((i) => i.href);
-
-  if (!items.length) {
-    return (
-      <p className="text-[11px] text-slate-400 leading-relaxed">
-        請於夥伴後台「商店設定」填寫 IG／FB／LINE
-      </p>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-3">
-      {items.map((item) => (
-        <a
-          key={item.key}
-          href={item.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={item.label}
-          className="w-9 h-9 rounded-full border border-slate-300 bg-white text-slate-800 inline-flex items-center justify-center hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-colors"
-        >
-          {item.icon}
-        </a>
-      ))}
-    </div>
-  );
-}
+import PartnerSocialIcons from "@/components/Shop/PartnerSocialIcons";
 
 /**
  * 夥伴 Blog 右側欄（CHA 編輯風格）
@@ -67,23 +15,30 @@ export default function PartnerBlogSidebar({
   pickupProduct = null,
   active = "article",
   onSearch,
+  isOwner = false,
+  onEditFeatured,
 }) {
   const domain = store?.domain;
   const base = `/p/${domain}`;
   const [q, setQ] = useState("");
 
   const nav = [
-    { key: "home", label: "HOME", href: `${base}/` },
-    { key: "about", label: "ABOUT", href: `${base}/#about` },
-    { key: "article", label: "ARTICLE", href: `${base}/blog/` },
+    { key: "home", label: "首頁", href: `${base}/` },
+    { key: "about", label: "關於我們", href: `${base}/#about` },
+    { key: "article", label: "旅遊文章", href: `${base}/blog/` },
     {
       key: "shop",
-      label: "SHOP",
+      label: "選購方案",
       href: `${base}/#plans`,
     },
   ];
 
   const recent = useMemo(() => posts.slice(0, 4), [posts]);
+  const hasSocial = Boolean(
+    store?.social_instagram?.trim() ||
+      store?.social_facebook?.trim() ||
+      store?.social_line?.trim(),
+  );
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -100,7 +55,7 @@ export default function PartnerBlogSidebar({
               <Link
                 key={item.key}
                 href={item.href}
-                className={`text-center text-[11px] font-bold tracking-[0.18em] uppercase py-4 hover:bg-slate-50 transition-colors ${
+                className={`text-center text-[12px] font-bold tracking-wide py-4 hover:bg-slate-50 transition-colors ${
                   idx % 2 === 0 ? "border-r border-slate-200" : ""
                 } ${idx < 2 ? "border-b border-slate-200" : ""} ${
                   active === item.key ? "bg-slate-50 text-slate-900" : "text-slate-600"
@@ -127,52 +82,74 @@ export default function PartnerBlogSidebar({
           />
         </form>
 
-        {/* FOLLOW US */}
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.22em] uppercase text-slate-500 mb-3">
-            Follow Us
-          </p>
-          <MonoSocial store={store} />
+        {/* 追蹤我們 — 品牌色社群圖示 */}
+        <div className="border border-slate-200 bg-[#faf9f6] px-4 py-4">
+          <p className="text-[12px] font-bold text-slate-500 mb-3">追蹤我們</p>
+          <PartnerSocialIcons
+            store={store}
+            size="md"
+            showLabels={hasSocial}
+            emptyHint
+          />
         </div>
 
         {/* 精選商品 */}
-        {pickupProduct ? (
+        {pickupProduct || isOwner ? (
           <div>
-            <p className="text-[10px] font-bold tracking-[0.22em] uppercase text-slate-500 mb-3">
-              Pick Up Items
-            </p>
-            <Link
-              href={`${base}/${pickupProduct.id}/`}
-              className="block"
-            >
-              <div className="relative aspect-[4/5] bg-[#efeee9] overflow-hidden">
-                {pickupProduct.image ? (
-                  <Image
-                    src={pickupProduct.image}
-                    alt={pickupProduct.name}
-                    fill
-                    className="object-contain p-4"
-                    sizes="260px"
-                  />
-                ) : null}
-              </div>
-              <p className="mt-3 text-[13px] font-bold text-[#0A6CD0] leading-snug">
-                {pickupProduct.name}
-              </p>
-              {pickupProduct.displayPrice > 0 ? (
-                <p className="mt-1 text-[11px] text-slate-500">
-                  NT${Number(pickupProduct.displayPrice).toLocaleString()} 起
-                </p>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <p className="text-[12px] font-bold text-slate-500">精選商品</p>
+              {isOwner ? (
+                <button
+                  type="button"
+                  onClick={onEditFeatured}
+                  className="text-[10px] font-bold text-[#0A6CD0] hover:underline"
+                >
+                  編輯
+                </button>
               ) : null}
-            </Link>
+            </div>
+            {pickupProduct ? (
+              <Link
+                href={`${base}/${pickupProduct.id}/`}
+                className="block"
+              >
+                <div className="relative aspect-[4/5] bg-[#efeee9] overflow-hidden">
+                  {pickupProduct.image ? (
+                    <Image
+                      src={pickupProduct.image}
+                      alt={pickupProduct.name}
+                      fill
+                      className="object-contain p-4"
+                      sizes="260px"
+                    />
+                  ) : null}
+                </div>
+                <p className="mt-3 text-[13px] font-bold text-[#0A6CD0] leading-snug">
+                  {pickupProduct.name}
+                </p>
+                {pickupProduct.displayPrice > 0 ? (
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    NT${Number(pickupProduct.displayPrice).toLocaleString()} 起
+                  </p>
+                ) : null}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={onEditFeatured}
+                className="w-full border border-dashed border-slate-300 px-3 py-8 text-[11px] text-slate-500 hover:border-[#0A6CD0] hover:text-[#0A6CD0]"
+              >
+                選擇側欄精選商品
+              </button>
+            )}
           </div>
         ) : null}
 
         {/* 最新文章 */}
         {recent.length > 0 ? (
           <div>
-            <p className="text-[10px] font-bold tracking-[0.22em] uppercase text-slate-500 mb-3">
-              Latest
+            <p className="text-[12px] font-bold text-slate-500 mb-3">
+              最新文章
             </p>
             <ul className="space-y-4">
               {recent.map((post) => (
@@ -198,7 +175,7 @@ export default function PartnerBlogSidebar({
                       </p>
                       <p className="mt-1 text-[10px] text-slate-400 tracking-wide">
                         {post.date}{" "}
-                        <span className="uppercase">{post.categoryLabel}</span>
+                        <span>{post.categoryLabel}</span>
                       </p>
                     </div>
                   </Link>

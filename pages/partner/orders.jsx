@@ -21,7 +21,7 @@ import {
   buyerEmail,
 } from "@/lib/orderDisplay";
 import { PARTNER_UI } from "@/lib/partnerUi";
-import { SHOPIFY_BADGE } from "@/lib/shopifyUi";
+import StatusIconBadge from "@/components/partner/StatusIconBadge";
 
 const PAGE_SIZE = 10;
 
@@ -65,23 +65,11 @@ const STATUS_LABEL = {
 };
 
 function StatusBadge({ status }) {
-  const tone = STATUS_TONE[status] || "neutral";
-  const t = SHOPIFY_BADGE[tone] || SHOPIFY_BADGE.neutral;
   return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-bold whitespace-nowrap"
-      style={{
-        backgroundColor: t.bg,
-        color: t.text,
-        borderRadius: UI.radiusSm,
-      }}
-    >
-      <span
-        className="w-1.5 h-1.5 rounded-full shrink-0"
-        style={{ backgroundColor: t.dot }}
-      />
-      {STATUS_LABEL[status] || status}
-    </span>
+    <StatusIconBadge
+      tone={STATUS_TONE[status] || "neutral"}
+      label={STATUS_LABEL[status] || status}
+    />
   );
 }
 
@@ -164,15 +152,34 @@ export default function PartnerOrdersPage() {
   const statusCounts = useMemo(() => {
     let paid = 0;
     let unpaid = 0;
+    let paidProfit = 0;
+    let unpaidProfit = 0;
+    let paidRevenue = 0;
+    let unpaidRevenue = 0;
     for (const o of orders) {
-      if (o.status === "completed") paid += 1;
-      else if (o.status === "pending") unpaid += 1;
+      const profit = Math.round(Number(o.partner_profit) || 0);
+      const revenue = Math.round(Number(o.total_amount) || 0);
+      if (o.status === "completed") {
+        paid += 1;
+        paidProfit += profit;
+        paidRevenue += revenue;
+      } else if (o.status === "pending") {
+        unpaid += 1;
+        unpaidProfit += profit;
+        unpaidRevenue += revenue;
+      }
     }
     return {
       paid,
       unpaid,
       valid: paid + unpaid,
       all: orders.length,
+      paidProfit,
+      unpaidProfit,
+      validProfit: paidProfit + unpaidProfit,
+      paidRevenue,
+      unpaidRevenue,
+      validRevenue: paidRevenue + unpaidRevenue,
     };
   }, [orders]);
 
@@ -184,6 +191,16 @@ export default function PartnerOrdersPage() {
       }),
     [orders, filter],
   );
+
+  const filteredTotals = useMemo(() => {
+    let profit = 0;
+    let revenue = 0;
+    for (const o of filtered) {
+      profit += Math.round(Number(o.partner_profit) || 0);
+      revenue += Math.round(Number(o.total_amount) || 0);
+    }
+    return { profit, revenue, count: filtered.length };
+  }, [filtered]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -226,21 +243,26 @@ export default function PartnerOrdersPage() {
   const selectionLabel =
     selected.size > 0 ? `（已選 ${selected.size}）` : "";
 
+  const amountLabel = (n) => (loading ? "…" : fmt(n));
+
   const filterTabs = [
     {
       id: "all",
       label: "全部有效",
       count: loading ? "…" : statusCounts.valid,
+      amount: amountLabel(statusCounts.validProfit),
     },
     {
       id: "completed",
       label: "已付款",
       count: loading ? "…" : statusCounts.paid,
+      amount: amountLabel(statusCounts.paidProfit),
     },
     {
       id: "pending",
       label: "尚未付款",
       count: loading ? "…" : statusCounts.unpaid,
+      amount: amountLabel(statusCounts.unpaidProfit),
     },
   ];
 
@@ -354,7 +376,11 @@ export default function PartnerOrdersPage() {
             <MetricCard
               label="累計分潤"
               value={loading ? "…" : fmt(stats?.totalProfit)}
-              hint="有效訂單分潤合計"
+              hint={
+                loading
+                  ? "有效訂單分潤合計"
+                  : `已付款 ${fmt(statusCounts.paidProfit)} · 尚未付款 ${fmt(statusCounts.unpaidProfit)}`
+              }
               icon="payments"
               iconBg="#008060"
             />
@@ -368,11 +394,38 @@ export default function PartnerOrdersPage() {
             <MetricCard
               label="店鋪營收"
               value={loading ? "…" : fmt(stats?.totalRevenue)}
-              hint="受取合計"
+              hint={
+                loading
+                  ? "受取合計"
+                  : `已付款 ${fmt(statusCounts.paidRevenue)} · 尚未付款 ${fmt(statusCounts.unpaidRevenue)}`
+              }
               icon="storefront"
               iconBg="#eec200"
             />
           </div>
+          {!loading ? (
+            <Card
+              className="mt-3 px-3.5 py-3 text-xs leading-relaxed"
+              style={{ backgroundColor: "#f0f7ff", borderColor: "#bfdbfe" }}
+            >
+              <p className="font-bold mb-0.5" style={{ color: "#1e40af" }}>
+                為何累計分潤與可提領不同？
+              </p>
+              <p style={{ color: "#1e3a8a" }}>
+                累計分潤含「已付款＋尚未付款」。可提領僅計「已付款且滿 10
+                天」的分潤，並扣除已申請／已匯保留金額。尚未付款約{" "}
+                <span className="font-bold">{fmt(statusCounts.unpaidProfit)}</span>
+                ；其餘差額多半是保護期內訂單或已提領保留。明細請至{" "}
+                <Link
+                  href="/partner/settlement"
+                  className="font-bold underline underline-offset-2"
+                >
+                  結算與提領
+                </Link>
+                。
+              </p>
+            </Card>
+          ) : null}
         </div>
 
         <div className="px-4 sm:px-6 pb-6 space-y-4">
@@ -682,6 +735,37 @@ export default function PartnerOrdersPage() {
                 </tbody>
               </table>
             </div>
+
+            {!loading && filtered.length > 0 ? (
+              <div
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs"
+                style={{
+                  borderTop: `1px solid ${UI.border}`,
+                  backgroundColor: UI.wash,
+                }}
+              >
+                <p style={{ color: UI.mid }}>
+                  此分頁條件合計{" "}
+                  <span className="font-bold" style={{ color: UI.dark }}>
+                    {filteredTotals.count} 筆
+                  </span>
+                </p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 font-bold tabular-nums">
+                  <span style={{ color: UI.mid }}>
+                    營收{" "}
+                    <span style={{ color: UI.dark }}>
+                      {fmt(filteredTotals.revenue)}
+                    </span>
+                  </span>
+                  <span style={{ color: UI.mid }}>
+                    分潤{" "}
+                    <span style={{ color: "#008060" }}>
+                      {fmt(filteredTotals.profit)}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            ) : null}
 
             {!loading && filtered.length > 0 ? (
               <ShopifyPagination

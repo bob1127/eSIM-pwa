@@ -4,11 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import PartnerBlogSidebar from "@/components/Shop/PartnerBlogSidebar";
+import PartnerBlogByline from "@/components/Shop/PartnerBlogByline";
+import PartnerSocialIcons from "@/components/Shop/PartnerSocialIcons";
+import PartnerBlogCmsEditor from "@/components/Shop/PartnerBlogCmsEditor";
+import { usePartnerStoreOwner } from "@/components/Shop/PartnerHomepageEditor";
 import {
-  FacebookIconSvg,
-  InstagramIconSvg,
-  LineIconSvg,
-} from "@/components/social/SocialBrandIcons";
+  mergeBlogCms,
+  resolveFeaturedProduct,
+} from "@/lib/partnerBlogCms";
 
 const PAGE_SIZE = 6;
 
@@ -41,28 +44,35 @@ function ArticleCard({ post, domain }) {
           {post.title}
         </Link>
       </h2>
-      <p className="mt-2 text-[11px] text-slate-500 tracking-wide">
-        <span>{post.date}</span>
-        <span className="mx-1.5 text-slate-300">|</span>
-        <span className="uppercase font-semibold tracking-[0.12em]">
-          {post.categoryLabel}
-        </span>
+      <PartnerBlogByline post={post} compact className="mt-2.5" />
+      <p className="mt-1.5 text-[10px] font-bold tracking-[0.14em] uppercase text-slate-400">
+        {post.categoryLabel}
       </p>
     </article>
   );
 }
 
 /**
- * 夥伴 Blog 列表（編輯風格：主欄文章格 + 右側側欄）
+ * 夥伴 Blog 列表（僅該店文章／示範文，不含主站 WP）
  */
 export default function PartnerBlogListView({
   store,
   posts = [],
-  pickupProduct = null,
+  products = [],
+  blogCms: blogCmsProp = null,
+  pickupProduct: pickupProductProp = null,
 }) {
   const domain = store?.domain;
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [query, setQuery] = useState("");
+  const [blogCms, setBlogCms] = useState(() =>
+    mergeBlogCms(blogCmsProp ?? store?.blog_cms),
+  );
+  const [editSignal, setEditSignal] = useState(0);
+  const { isOwner } = usePartnerStoreOwner(store);
+
+  const pickupProduct =
+    resolveFeaturedProduct(products, blogCms) || pickupProductProp;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -71,7 +81,8 @@ export default function PartnerBlogListView({
       (p) =>
         p.title?.toLowerCase().includes(q) ||
         p.excerpt?.toLowerCase().includes(q) ||
-        p.categoryLabel?.toLowerCase().includes(q),
+        p.categoryLabel?.toLowerCase().includes(q) ||
+        p.editorName?.toLowerCase().includes(q),
     );
   }, [posts, query]);
 
@@ -85,9 +96,19 @@ export default function PartnerBlogListView({
     <div className="bg-white">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-10 py-10 lg:py-14">
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 items-start">
-          {/* 主欄 */}
           <div className="flex-1 min-w-0 w-full">
-            {/* Hero featured */}
+            <header className="mb-8">
+              <p className="text-[12px] font-bold text-slate-400 mb-2">
+                夥伴精選
+              </p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+                精選文章
+              </h1>
+              <p className="mt-2 text-sm text-slate-500">
+                由「{store?.store_name || "本店夥伴"}」撰寫與發布 · 非主站內容
+              </p>
+            </header>
+
             {featured && !query ? (
               <Link
                 href={`/p/${domain}/blog/${featured.slug}/`}
@@ -103,60 +124,53 @@ export default function PartnerBlogListView({
                     sizes="(max-width:1024px) 100vw, 70vw"
                   />
                 ) : null}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
-                <div className="absolute left-0 right-0 bottom-0 p-6 sm:p-8 flex items-end justify-between gap-4">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute left-0 right-0 bottom-0 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                   <div className="max-w-xl">
                     <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-white/80 mb-2">
-                      {featured.date} · {featured.categoryLabel}
+                      {featured.categoryLabel}
                     </p>
-                    <h1 className="text-white text-xl sm:text-2xl lg:text-3xl font-bold leading-snug">
+                    <h2 className="text-white text-xl sm:text-2xl lg:text-3xl font-bold leading-snug">
                       {featured.title}
-                    </h1>
+                    </h2>
+                    <PartnerBlogByline
+                      post={featured}
+                      tone="light"
+                      compact
+                      className="mt-3"
+                    />
                   </div>
-                  <span className="hidden sm:inline text-[11px] font-bold tracking-[0.18em] uppercase text-white/90 whitespace-nowrap">
-                    Read →
+                  <span className="hidden sm:inline text-[12px] font-bold text-white/90 whitespace-nowrap">
+                    閱讀全文 →
                   </span>
                 </div>
               </Link>
-            ) : (
-              <header className="mb-8">
-                <p className="text-[10px] font-bold tracking-[0.22em] uppercase text-slate-400 mb-2">
-                  Article
-                </p>
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                  旅遊文章
-                </h1>
-                <p className="mt-2 text-sm text-slate-500">
-                  {store?.store_name} 精選出國攻略與 eSIM 實用知識
-                </p>
-              </header>
-            )}
+            ) : null}
 
-            {listWithoutFeatured.length === 0 ? (
+            {listWithoutFeatured.length === 0 && !featured ? (
               <div className="py-16 text-center border border-dashed border-slate-200">
                 <p className="text-slate-600 font-bold">目前沒有符合的文章</p>
               </div>
-            ) : (
+            ) : listWithoutFeatured.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10">
                 {listWithoutFeatured.map((post) => (
                   <ArticleCard key={post.slug} post={post} domain={domain} />
                 ))}
               </div>
-            )}
+            ) : null}
 
             {visible < filtered.length ? (
               <div className="mt-12 flex justify-center">
                 <button
                   type="button"
                   onClick={() => setVisible((v) => v + PAGE_SIZE)}
-                  className="text-[12px] font-bold tracking-[0.22em] uppercase text-slate-800 border-b-2 border-slate-800 pb-1 hover:text-[#0A6CD0] hover:border-[#0A6CD0] transition-colors"
+                  className="text-[13px] font-bold text-slate-800 border-b-2 border-slate-800 pb-1 hover:text-[#0A6CD0] hover:border-[#0A6CD0] transition-colors"
                 >
-                  Read More
+                  看更多文章
                 </button>
               </div>
             ) : null}
 
-            {/* 底部雙欄 CTA */}
             <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 min-h-[180px]">
               <Link
                 href={`/p/${domain}/`}
@@ -174,46 +188,16 @@ export default function PartnerBlogListView({
                   <span className="text-lg sm:text-xl font-black tracking-tight">
                     {store?.store_name || "JEKO"}
                   </span>
-                  <span className="text-[11px] font-bold tracking-[0.2em] uppercase border-b border-white/80 pb-0.5">
-                    About Us
+                  <span className="text-[12px] font-bold tracking-wide border-b border-white/80 pb-0.5">
+                    關於我們
                   </span>
                 </div>
               </Link>
               <div className="bg-[#f3f1eb] min-h-[180px] flex flex-col items-center justify-center gap-4 px-6">
-                <p className="text-[11px] font-bold tracking-[0.22em] uppercase text-slate-600">
-                  Follow Us
+                <p className="text-[12px] font-bold text-slate-600">
+                  追蹤我們
                 </p>
-                <div className="flex items-center gap-3">
-                  {[
-                    {
-                      key: "ig",
-                      href: store?.social_instagram,
-                      icon: <InstagramIconSvg className="w-4 h-4" />,
-                    },
-                    {
-                      key: "fb",
-                      href: store?.social_facebook,
-                      icon: <FacebookIconSvg className="w-4 h-4" />,
-                    },
-                    {
-                      key: "line",
-                      href: store?.social_line,
-                      icon: <LineIconSvg className="w-4 h-4" />,
-                    },
-                  ]
-                    .filter((i) => i.href)
-                    .map((item) => (
-                      <a
-                        key={item.key}
-                        href={item.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-10 h-10 rounded-full bg-white border border-slate-200 text-slate-800 inline-flex items-center justify-center hover:bg-slate-900 hover:text-white transition-colors"
-                      >
-                        {item.icon}
-                      </a>
-                    ))}
-                </div>
+                <PartnerSocialIcons store={store} size="lg" showLabels emptyHint />
               </div>
             </div>
           </div>
@@ -224,9 +208,19 @@ export default function PartnerBlogListView({
             pickupProduct={pickupProduct}
             active="article"
             onSearch={setQuery}
+            isOwner={isOwner}
+            onEditFeatured={() => setEditSignal((n) => n + 1)}
           />
         </div>
       </div>
+
+      <PartnerBlogCmsEditor
+        store={store}
+        products={products}
+        blogCms={blogCms}
+        onCmsChange={setBlogCms}
+        openSignal={editSignal}
+      />
     </div>
   );
 }

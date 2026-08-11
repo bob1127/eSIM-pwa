@@ -204,7 +204,22 @@ export default function AccountBossPartnersPanel() {
                   <tr key={p.id} className="border-b border-slate-100 hover:bg-blue-50/30">
                     <td className="px-4 py-3.5">
                       <div className="font-bold text-slate-900">{p.name}</div>
+                      {p.store_name ? (
+                        <div className="text-xs font-bold text-[#0071EB] mt-0.5">
+                          店鋪：{p.store_name}
+                        </div>
+                      ) : null}
                       <div className="text-xs text-slate-400">{p.email}</div>
+                      {p.bank ? (
+                        <div className="text-[10px] text-slate-500 mt-1 truncate max-w-[200px]">
+                          收款：{p.bank.bank_name || p.bank.payout_method || "已設定"}
+                          {p.bank_updated_at
+                            ? ` · ${new Date(p.bank_updated_at).toLocaleDateString("zh-TW")}`
+                            : ""}
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-amber-600 mt-1">尚未設定收款帳戶</div>
+                      )}
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex flex-col gap-1">

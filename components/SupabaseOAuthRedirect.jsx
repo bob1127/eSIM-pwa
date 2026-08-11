@@ -8,6 +8,10 @@ import {
   consumeAuthRedirect,
   peekAuthRedirect,
 } from "@/lib/authRedirect";
+import {
+  markWelcomeGiftPopup,
+  WELCOME_GIFT_TRIGGER_ON_LOGIN,
+} from "@/lib/welcomeGiftPopup";
 
 /**
  * Supabase OAuth 回傳時 URL hash 帶 access_token。
@@ -35,12 +39,18 @@ export default function SupabaseOAuthRedirect() {
       window.history.replaceState(null, "", `${path}${search}`);
 
       if (session && (path === "/" || path === "/login" || path === "/login/")) {
+        // TEMP：登入核對歡迎禮 popup → 回首頁
+        if (WELCOME_GIFT_TRIGGER_ON_LOGIN) {
+          markWelcomeGiftPopup();
+        }
         const params = new URLSearchParams(search);
         const fromQuery = params.get("redirect") || params.get("callbackUrl");
-        const dest = sanitizeRedirect(
-          fromQuery || peekAuthRedirect("/account"),
-          "/account",
-        );
+        const dest = WELCOME_GIFT_TRIGGER_ON_LOGIN
+          ? "/"
+          : sanitizeRedirect(
+              fromQuery || peekAuthRedirect("/account"),
+              "/account",
+            );
         consumeAuthRedirect(dest);
         if (dest !== path + search) {
           router.replace(dest);

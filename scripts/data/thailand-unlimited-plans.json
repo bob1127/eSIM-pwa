@@ -1,5 +1,5 @@
 {
-  "note": "truemove_high_speed=Unlimited High Speed (8/15天) @80%; trre_10mbps=unlimited 10mbps 多天數 @110%",
+  "note": "truemove_high_speed=Unlimited High Speed (8/15天) @80%; trre_10mbps=unlimited 10mbps 多天數 @60%",
   "source": "api/esim/list",
   "fetched_at": "2026-08-06T08:05:03.980Z",
   "truemove_high_speed": [

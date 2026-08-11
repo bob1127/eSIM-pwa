@@ -396,7 +396,23 @@ export default async function handler(req, res) {
           code: displayCode,
         });
       }
-      throw new Error("折扣碼無效或已過期");
+      const medusaMsg =
+        applyData?.message ||
+        applyData?.type ||
+        (Array.isArray(applyData?.errors)
+          ? applyData.errors.map((e) => e?.message || e).join("; ")
+          : "");
+      console.warn(
+        "[promotion] Medusa 套用失敗:",
+        normalizedCode,
+        applyRes.status,
+        medusaMsg || applyData,
+      );
+      throw new Error(
+        medusaMsg
+          ? `折扣碼無法套用（${normalizedCode}）：${medusaMsg}`
+          : `折扣碼無效或已過期（Medusa 無對應活動 ${normalizedCode}，請先執行 seed-welcome-promotions）`,
+      );
     }
 
     const updatedCart = applyData.cart;
@@ -411,9 +427,14 @@ export default async function handler(req, res) {
         code: displayCode,
         success: false,
       });
+      console.warn(
+        "[promotion] Medusa 回傳成功但購物車未含碼:",
+        normalizedCode,
+        appliedCodes,
+      );
       return res.status(400).json({
         success: false,
-        error: "折扣碼無效或已過期",
+        error: `折扣碼無效或已過期（${normalizedCode} 未套入購物車）`,
       });
     }
 

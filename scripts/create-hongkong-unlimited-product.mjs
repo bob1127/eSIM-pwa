@@ -7,6 +7,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { hongkongUnlimitedKeyFeatures } from "../content/product-detailed/hongkong-key-features.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -55,9 +56,23 @@ const HKD_TO_TWD_FALLBACK = 4.5;
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
-const THUMB =
-  process.env.HONGKONG_PRODUCT_THUMB ||
-  "https://www.jeko-esim.com.tw/images/about-marquee/hongkong.png";
+// 香港每日／總量／吃到飽共用同一組商品圖（吃到飽為基準）
+const HONGKONG_GALLERY = [
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858HYVJW14GNBG8WM48A2.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858J2CKZAR4K8HSKM0NE4.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858J3XNJ1ADPJZFDRXPKT.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858J5WZR09G0J10NDTA5M.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JESPFJ3XE2R6K8DB7P.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JMJH26X9YJQA5B9K9S.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JR47BX2JS5ZJJ6VT0Z.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JTCZPZD9GFMECW02HB.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JWA37RKBGD17ZKTSJS.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JY6CXD14S3M1HCSRJQ.png",
+  "https://www.jeko-esim.com.tw/images/about-marquee/hongkong.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JZCSEQV9Y9P6R4H94N.jpg",
+];
+const THUMB = process.env.HONGKONG_PRODUCT_THUMB || HONGKONG_GALLERY[0];
+const PRODUCT_IMAGES = HONGKONG_GALLERY.map((url) => ({ url }));
 
 function retailFromCost(costTwd, profitPercent) {
   return Math.ceil((costTwd * (1 + profitPercent / 100)) / 10) * 10 - 1;
@@ -181,12 +196,13 @@ function toVariant(row) {
         network: "CSL / China Telecom HK 4G/5G",
         ip_type: "香港IP",
         route_type: "香港IP",
-        hotspot: true,
-        gpt: true,
-        tiktok: true,
-        gemini: true,
+        hotspot: false,
+        gpt: false,
+        tiktok: false,
+        gemini: false,
         speed_rule: speedRule,
         coverage: "香港",
+        apps: "",
       },
     },
   };
@@ -222,24 +238,24 @@ async function upsertProduct(token, rows) {
         route_type: "香港IP",
         network: "CSL / China Telecom HK 4G/5G",
         speed_rule: "每日約 1GB 高速後限速約 10 Mbps 可持續使用（吃到飽）",
-        apps: "熱點分享,ChatGPT,TikTok,Gemini",
+        apps: "",
         apn: "ctexcel",
         coverage: "香港",
       },
     },
     key_features_by_carrier: {
-      [TELECOM]: [
-        "吃到飽",
-        "香港IP",
-        "CSL + 中國電信香港",
-        "10Mbps",
-        "支援 TikTok／ChatGPT",
-      ],
+      [TELECOM]: (() => {
+        const kf = hongkongUnlimitedKeyFeatures();
+        return {
+          bullets: kf.bullets || [],
+          actual_experience: kf.actual_experience || "",
+        };
+      })(),
     },
     overview_notices_by_carrier: {
       [TELECOM]: {
         fup_notice:
-          "吃到飽方案：每日約 1GB 高速後限速約 10 Mbps 可持續使用。CSL 與 China Telecom HK 雙網，香港 IP。支援熱點、TikTok 與 ChatGPT。",
+          "吃到飽方案：每日約 1GB 高速後限速約 10 Mbps 可持續使用。CSL 與 China Telecom HK 雙網，香港 IP。本線路不標示熱點／ChatGPT／TikTok／Gemini。",
         activation_notice: "建議抵達香港後再安裝／啟用 eSIM",
       },
     },
@@ -254,7 +270,7 @@ async function upsertProduct(token, rows) {
     status: "published",
     discountable: true,
     thumbnail: THUMB,
-    images: [{ url: THUMB }],
+    images: PRODUCT_IMAGES,
     metadata: productMeta,
     options: [
       { title: "使用天數", values: dayValues },

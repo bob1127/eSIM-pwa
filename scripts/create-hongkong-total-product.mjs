@@ -7,6 +7,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { hongkongTotalKeyFeatures } from "../content/product-detailed/hongkong-key-features.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -55,9 +56,23 @@ const HKD_TO_TWD_FALLBACK = 4.5;
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
-const THUMB =
-  process.env.HONGKONG_PRODUCT_THUMB ||
-  "https://www.jeko-esim.com.tw/images/about-marquee/hongkong.png";
+// 香港每日／總量／吃到飽共用同一組商品圖（吃到飽為基準）
+const HONGKONG_GALLERY = [
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858HYVJW14GNBG8WM48A2.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858J2CKZAR4K8HSKM0NE4.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858J3XNJ1ADPJZFDRXPKT.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858J5WZR09G0J10NDTA5M.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JESPFJ3XE2R6K8DB7P.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JMJH26X9YJQA5B9K9S.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JR47BX2JS5ZJJ6VT0Z.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JTCZPZD9GFMECW02HB.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JWA37RKBGD17ZKTSJS.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JY6CXD14S3M1HCSRJQ.png",
+  "https://www.jeko-esim.com.tw/images/about-marquee/hongkong.png",
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK858JZCSEQV9Y9P6R4H94N.jpg",
+];
+const THUMB = process.env.HONGKONG_PRODUCT_THUMB || HONGKONG_GALLERY[0];
+const PRODUCT_IMAGES = HONGKONG_GALLERY.map((url) => ({ url }));
 
 function retailFromCost(costTwd, profitPercent) {
   return Math.ceil((costTwd * (1 + profitPercent / 100)) / 10) * 10 - 1;
@@ -238,13 +253,13 @@ async function upsertProduct(token, rows) {
       },
     },
     key_features_by_carrier: {
-      [TELECOM]: [
-        "總量型",
-        "CSL / SmarTone",
-        "雙網切換",
-        "新加坡IP",
-        "用完降速 128kbps",
-      ],
+      [TELECOM]: (() => {
+        const kf = hongkongTotalKeyFeatures();
+        return {
+          bullets: kf.bullets || [],
+          actual_experience: kf.actual_experience || "",
+        };
+      })(),
     },
     overview_notices_by_carrier: {
       [TELECOM]: {
@@ -264,7 +279,7 @@ async function upsertProduct(token, rows) {
     status: "published",
     discountable: true,
     thumbnail: THUMB,
-    images: [{ url: THUMB }],
+    images: PRODUCT_IMAGES,
     metadata: productMeta,
     options: [
       { title: "使用天數", values: dayValues },

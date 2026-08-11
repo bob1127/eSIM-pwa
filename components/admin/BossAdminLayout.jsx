@@ -8,6 +8,7 @@ import {
   ArrowRightOnRectangleIcon,
   HomeIcon,
   BanknotesIcon,
+  CurrencyDollarIcon,
 } from "@heroicons/react/24/outline";
 import { clearBossSession, getBossEmail } from "@/lib/bossAdminClient";
 import { StatCard } from "@/components/partner/PartnerAdminLayout";
@@ -16,6 +17,12 @@ const NAV_ITEMS = [
   { id: "sales", href: "/admin-boss", label: "銷售分析", icon: ChartBarIcon },
   { id: "partners", href: "/admin-boss?tab=partners", label: "夥伴審核", icon: UserGroupIcon },
   { id: "refunds", href: "/admin-boss?tab=refunds", label: "退款審核", icon: BanknotesIcon },
+  {
+    id: "withdrawals",
+    href: "/admin-boss?tab=withdrawals",
+    label: "提領審核",
+    icon: CurrencyDollarIcon,
+  },
 ];
 
 export default function BossAdminLayout({ title, children, activeTab = "sales" }) {

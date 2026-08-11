@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -36,10 +36,25 @@ const steps = ["購物車", "填寫資料", "完成訂單"];
 
 export default function PartnerCart({ store }) {
   const router = useRouter();
-  const { esimItems, esimTotal, updateQuantity, removeFromCart, clearCart } =
-    useCart();
-  const cartItems = esimItems || [];
-  const cartTotal = esimTotal || 0;
+  const { esimItems, updateQuantity, removeFromCart, clearCart } = useCart();
+  const cartItems = useMemo(() => {
+    const all = esimItems || [];
+    if (!store?.id) return all;
+    const sid = String(store.id);
+    // 只結本店商品；舊資料無 store_id 時仍顯示（相容）
+    const matched = all.filter(
+      (i) => !i.store_id || String(i.store_id) === sid,
+    );
+    return matched.length ? matched : all;
+  }, [esimItems, store?.id]);
+  const cartTotal = useMemo(
+    () =>
+      cartItems.reduce(
+        (s, i) => s + (Number(i.price) || 0) * (Number(i.quantity) || 1),
+        0,
+      ),
+    [cartItems],
+  );
 
   const [activeStep, setActiveStep] = useState(0);
   const [removingIndex, setRemovingIndex] = useState(null);

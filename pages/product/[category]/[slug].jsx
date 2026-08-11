@@ -12,7 +12,7 @@ import { useRouter } from "next/router";
 import { useCart } from "../../../components/context/CartContext";
 import Layout from "../../Layout";
 import PartnerShopLayout from "../../../components/Shop/PartnerShopLayout";
-import { buildProductSeo, resolveProductCategoryBreadcrumbLabel } from "../../../lib/seo.config";
+import { buildProductSeo, resolveProductCategoryBreadcrumbLabel, absoluteUrl } from "../../../lib/seo.config";
 import {
   resolveOverviewNotices,
   parseOverviewNoticesByCarrier,
@@ -593,8 +593,26 @@ const CARRIER_INFO_MAP = {
       policyTitle: "公平使用政策 (FUP):",
       policyDesc: "無限高速數據，實際速度取決於您的位置及網路環境。",
       note: "⚠️ 注意: eSIM新增後即開始計算使用有效期，我們建議您需要時再安裝。 查看啟用政策。\n我們建議您在抵達泰國後安裝此 eSIM。⚠️ 自泰國當地時間 2026 年 5 月 22 日起，撥出電話與發送 SMS 需完成護照實名登記。請前往 True 門店完成登記，以恢復通話功能。",
+      specialNotice:
+        "計費時間自安裝之日起算。免費接聽來電及接收簡訊的泰國 eSIM 卡，不得插入或安裝於非服務覆蓋區域，否則該方案將失效且無法使用。查詢數據用量請撥打：*900# 查詢電話號碼請撥打：*833# 查詢餘額請撥打：*123#",
     },
     summaryPrefix: "Truemove H 當地號碼",
+  },
+  "Mobifone 當地號碼": {
+    badges: [
+      { text: "Mobifone", type: "4G" },
+      { text: "帶號碼", type: "info" },
+    ],
+    marketingBox: {
+      bgColor: "bg-rose-50",
+      borderColor: "border-rose-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "總量高速額度用完即斷網。實際速度取決於您的位置及網路環境。",
+      note: "⚠️ 有效期於 eSIM 下載到裝置後立即開始計算，請準備好使用時再安裝。抵達後請撥打 900，接著按 1 啟用。",
+      specialNotice:
+        "查詢手機號碼：*0#；查詢流量：*090*5# 或發送簡訊 KT_ALL 至 999。通話僅限接聽、簡訊僅限接收（免費）。兌換後請於 30 天內完成啟用。",
+    },
+    summaryPrefix: "Mobifone 當地號碼",
   },
   "TRRE 電信": {
     badges: [{ text: "TRUE", type: "5G" }],
@@ -618,6 +636,60 @@ const CARRIER_INFO_MAP = {
       note: "注意：我們建議您抵達泰國後再安裝 eSIM。",
     },
     summaryPrefix: "TRRE 電信",
+  },
+  "DTAC / REAL FUTURE": {
+    badges: [
+      { text: "DTAC", type: "5G" },
+      { text: "REAL FUTURE", type: "5G" },
+    ],
+    marketingBox: {
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc:
+        "方案總量高速用完後降速至約 128 kbps，可持續使用。實際速度取決於您的位置及網路環境。",
+      note: "注意：我們建議您抵達泰國後再安裝 eSIM。",
+    },
+    summaryPrefix: "DTAC / REAL FUTURE",
+  },
+  AIS: {
+    badges: [{ text: "AIS", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-green-50",
+      borderColor: "border-green-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc:
+        "每日／方案高速額度用完後降速至約 128 kbps，可持續使用。實際速度取決於您的位置及網路環境。",
+      note: "注意：我們建議您抵達泰國後再安裝 eSIM。",
+    },
+    summaryPrefix: "AIS",
+  },
+  DTAC: {
+    badges: [
+      { text: "DTAC", type: "5G" },
+      { text: "帶號碼", type: "info" },
+    ],
+    marketingBox: {
+      bgColor: "bg-sky-50",
+      borderColor: "border-sky-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc:
+        "每日 5GB 高速額度用完即斷網，隔日恢復。實際速度取決於您的位置及網路環境。",
+      note: "注意：建議抵達泰國後、於覆蓋範圍內再安裝／啟用 eSIM。",
+    },
+    summaryPrefix: "DTAC",
+  },
+  TRUE: {
+    badges: [{ text: "TRUE", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc:
+        "方案總量高速用完後依方案降速（約 1 Mbps 或約 384 kbps），可持續使用。",
+      note: "注意：建議抵達泰國後、於覆蓋範圍內再安裝／啟用 eSIM。",
+    },
+    summaryPrefix: "TRUE",
   },
   "短天數｜中國電信／CSL／澳門電信": {
     badges: [
@@ -875,6 +947,7 @@ function ProductOverviewNotices({
   const [isEditing, setIsEditing] = useState(false);
   const [fupDraft, setFupDraft] = useState("");
   const [activationDraft, setActivationDraft] = useState("");
+  const [specialDraft, setSpecialDraft] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const fupTextRaw =
@@ -892,7 +965,7 @@ function ProductOverviewNotices({
     return body ? `公平使用政策 (FUP): ${body}` : "公平使用政策 (FUP):";
   })();
   const activationExtra = String(
-    notices?.activation_notice || "",
+    notices?.activation_notice || carrierFallback?.note || "",
   ).trim();
   /** 啟用提醒固定文案；額外注意事項（如 APN）另列 */
   const activationText = DEFAULT_ACTIVATION_NOTICE;
@@ -900,6 +973,11 @@ function ProductOverviewNotices({
     activationExtra &&
     activationExtra !== DEFAULT_ACTIVATION_NOTICE &&
     !/^建議抵達|^建議您抵達|建議.*後再安裝/.test(activationExtra);
+  const specialText = String(
+    notices?.special_notice || carrierFallback?.specialNotice || "",
+  )
+    .trim()
+    .replace(/^特別說明\s*[:：]?\s*/i, "");
 
   useEffect(() => {
     if (!isEditing) {
@@ -907,8 +985,11 @@ function ProductOverviewNotices({
       setActivationDraft(
         notices?.activation_notice || DEFAULT_ACTIVATION_NOTICE,
       );
+      setSpecialDraft(
+        notices?.special_notice || carrierFallback?.specialNotice || "",
+      );
     }
-  }, [notices, isEditing]);
+  }, [notices, carrierFallback, isEditing]);
 
   const saveOverview = async () => {
     if (!carrier) {
@@ -926,6 +1007,7 @@ function ProductOverviewNotices({
           carrier,
           fup_notice: fupDraft.trim(),
           activation_notice: activationDraft.trim(),
+          special_notice: specialDraft.trim(),
         }),
       });
       const data = await res.json();
@@ -942,13 +1024,21 @@ function ProductOverviewNotices({
     }
   };
 
-  const showDisplay = !isEditing && (fupText || activationText);
+  const showDisplay =
+    !isEditing && (fupText || activationText || specialText);
   const showEmptyAdmin =
-    !isEditing && !fupText && !activationText && adminChecked && isAdmin;
+    !isEditing &&
+    !fupText &&
+    !activationText &&
+    !specialText &&
+    adminChecked &&
+    isAdmin;
 
   if (!showDisplay && !isEditing && !showEmptyAdmin) return null;
 
-  const noticeCount = [fupText, activationText].filter(Boolean).length;
+  const noticeCount = [fupText, activationText, specialText].filter(
+    Boolean,
+  ).length;
 
   return (
     <div className="mt-4 space-y-3">
@@ -965,6 +1055,11 @@ function ProductOverviewNotices({
                 setFupDraft(notices?.fup_notice || "");
                 setActivationDraft(
                   notices?.activation_notice || DEFAULT_ACTIVATION_NOTICE,
+                );
+                setSpecialDraft(
+                  notices?.special_notice ||
+                    carrierFallback?.specialNotice ||
+                    "",
                 );
               }
               setIsEditing(!isEditing);
@@ -1006,6 +1101,18 @@ function ProductOverviewNotices({
               placeholder={DEFAULT_ACTIVATION_NOTICE}
             />
           </div>
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">
+              特別說明
+            </label>
+            <textarea
+              value={specialDraft}
+              onChange={(e) => setSpecialDraft(e.target.value)}
+              rows={4}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2"
+              placeholder="例：計費時間自安裝之日起算…"
+            />
+          </div>
           <button
             type="button"
             onClick={saveOverview}
@@ -1017,7 +1124,7 @@ function ProductOverviewNotices({
         </div>
       ) : (
         <>
-          {(fupText || activationText) && (
+          {(fupText || activationText || specialText) && (
             <div className="relative pl-7">
               {noticeCount > 1 ? (
                 <div
@@ -1027,7 +1134,11 @@ function ProductOverviewNotices({
               ) : null}
 
               {fupText ? (
-                <div className={`relative ${activationText ? "mb-3" : ""}`}>
+                <div
+                  className={`relative ${
+                    activationText || specialText ? "mb-3" : ""
+                  }`}
+                >
                   <span
                     className="absolute -left-7 top-5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-[3px] border-[#0A6CD0] bg-[#0A6CD0]"
                     aria-hidden
@@ -1071,7 +1182,7 @@ function ProductOverviewNotices({
               ) : null}
 
               {activationText ? (
-                <div className="relative">
+                <div className={`relative ${specialText ? "mb-3" : ""}`}>
                   <span
                     className="absolute -left-7 top-5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-slate-300 bg-white"
                     aria-hidden
@@ -1109,6 +1220,28 @@ function ProductOverviewNotices({
                         <MaterialIcon name="arrow_forward" size={14} />
                       </Link>
                     </div>
+                  </article>
+                </div>
+              ) : null}
+
+              {specialText ? (
+                <div className="relative">
+                  <span
+                    className="absolute -left-7 top-5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-amber-400 bg-amber-50"
+                    aria-hidden
+                  />
+                  <article className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <h4 className="text-[15px] font-bold text-amber-950 leading-snug">
+                        特別說明
+                      </h4>
+                      <span className="shrink-0 text-[12px] font-medium text-amber-700/70">
+                        重要
+                      </span>
+                    </div>
+                    <FeatureBulletText className="mt-1.5 text-[13px] leading-relaxed text-amber-950/80">
+                      {specialText}
+                    </FeatureBulletText>
                   </article>
                 </div>
               ) : null}
@@ -3097,11 +3230,41 @@ export default function ProductPage({
       .join("｜");
 
   const PageShell = isPartnerShell ? PartnerShopLayout : Layout;
+  const categoryHandle =
+    product?.category_handle ||
+    (typeof router.query.category === "string" ? router.query.category : null);
+  const mainProductUrl =
+    categoryHandle && product?.slug
+      ? absoluteUrl(`/product/${categoryHandle}/${product.slug}`)
+      : null;
   const shellProps = isPartnerShell
     ? {
         store,
         title: documentTitle || product?.name,
         description: product?.description,
+        seo: {
+          pageType: "Product",
+          ogType: "product",
+          path: String(product?.slug || product?.handle || ""),
+          product: {
+            name: product?.name,
+            description: product?.description,
+            image: product?.thumbnail || product?.images?.[0],
+            images: product?.images,
+          },
+          mainProductUrl,
+          breadcrumbs: [
+            { name: "Jeko eSIM", path: "/" },
+            {
+              name: store?.store_name || "夥伴賣場",
+              path: `/p/${store?.domain}/`,
+            },
+            {
+              name: product?.name || "商品",
+              path: `/p/${store?.domain}/${product?.slug || product?.handle || ""}/`,
+            },
+          ],
+        },
       }
     : { seo: pageSeo };
 

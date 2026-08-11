@@ -3,7 +3,7 @@
  *   1) Truemove H 當地號碼 ← Unlimited High Speed（目前 8／15 天）
  *      真．不限速｜利潤 80%｜給夥伴 30%｜95 折
  *   2) TRRE 電信 ← unlimited 10mbps（1／3／4／5／6／7／10／15／20／30 天等）
- *      FUP 10Mbps 無限流量｜利潤 110%｜給夥伴 50%｜9 折
+ *      FUP 10Mbps 無限流量｜利潤 60%｜給夥伴 50%｜9 折
  *
  * 用法：
  *   HKD_TO_TWD=4.5 node scripts/create-thailand-unlimited-product.mjs
@@ -62,11 +62,13 @@ const FUP_TRUEMOVE =
 const SPEED_TRUEMOVE = "真．不限速（Unlimited High Speed）";
 const ACTIVATION_TRUEMOVE =
   "⚠️ 注意: eSIM新增後即開始計算使用有效期，我們建議您需要時再安裝。 查看啟用政策。\n我們建議您在抵達泰國後安裝此 eSIM。⚠️ 自泰國當地時間 2026 年 5 月 22 日起，撥出電話與發送 SMS 需完成護照實名登記。請前往 True 門店完成登記，以恢復通話功能。";
+const SPECIAL_TRUEMOVE =
+  "計費時間自安裝之日起算。免費接聽來電及接收簡訊的泰國 eSIM 卡，不得插入或安裝於非服務覆蓋區域，否則該方案將失效且無法使用。查詢數據用量請撥打：*900# 查詢電話號碼請撥打：*833# 查詢餘額請撥打：*123#";
 
 /** 官網售價利潤％ */
 const PROFIT_BY_TELECOM = {
   [TELECOM_TRUEMOVE]: 80,
-  [TELECOM_TRRE]: 110,
+  [TELECOM_TRRE]: 60,
 };
 
 /**
@@ -95,7 +97,7 @@ const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
 
 const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
-const CATEGORY_IDS = ["pcat_01KZJNBXJX5EFQD5H7YSEXRWK1"]; // tailand
+const CATEGORY_IDS = ["pcat_01KZJNBX7K2X5KN4KP41T4F60D"]; // thailand
 const THUMB =
   process.env.THAILAND_PRODUCT_THUMB ||
   "https://www.jeko-esim.com.tw/images/tailand-esim-banner.jpg";
@@ -379,6 +381,7 @@ async function main() {
       [TELECOM_TRUEMOVE]: {
         fup_notice: FUP_TRUEMOVE,
         activation_notice: ACTIVATION_TRUEMOVE,
+        special_notice: SPECIAL_TRUEMOVE,
       },
       [TELECOM_TRRE]: {
         fup_notice: FUP_TRRE,
@@ -412,7 +415,7 @@ async function main() {
   const nTmh = rows.filter((r) => r.telecom === TELECOM_TRUEMOVE).length;
   const nTrre = rows.filter((r) => r.telecom === TELECOM_TRRE).length;
   console.log(
-    `📦 方案 ${rows.length} 筆（${TELECOM_TRUEMOVE} ${nTmh} + ${TELECOM_TRRE} ${nTrre}）・利潤 80%／110%`,
+    `📦 方案 ${rows.length} 筆（${TELECOM_TRUEMOVE} ${nTmh} + ${TELECOM_TRRE} ${nTrre}）・利潤 80%／60%`,
   );
   console.log(`天數選項: ${dayValues.join(" | ")}`);
 
@@ -485,7 +488,7 @@ async function main() {
   );
   const vs = check.product?.variants || [];
   console.log("\n======= 完成 =======");
-  console.log(`前台: /product/tailand/${HANDLE}`);
+  console.log(`前台: /product/thailand/${HANDLE}`);
   console.log(`變體數: ${vs.length}`);
   console.log(
     `範例: ${TELECOM_TRUEMOVE} 8天 →`,

@@ -22,6 +22,7 @@ import {
   buildMonthlyRows,
 } from "@/lib/partnerCsvExport";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
+import StatusIconBadge from "@/components/partner/StatusIconBadge";
 
 const PartnerProductAnalytics = dynamic(
   () => import("@/components/partner/PartnerProductAnalytics"),
@@ -290,12 +291,18 @@ function ProductsTab({
                   </div>
                   <span
                     className={`shrink-0 text-[11px] font-bold px-2 py-1 rounded-md ${
-                      p.status === "active"
-                        ? "bg-[#e0f2fe] text-[#0369a1]"
-                        : "bg-[#fef3c7] text-[#92400e]"
+                      !p.catalogAvailable
+                        ? "bg-red-50 text-red-700"
+                        : p.status === "active"
+                          ? "bg-[#e0f2fe] text-[#0369a1]"
+                          : "bg-[#fef3c7] text-[#92400e]"
                     }`}
                   >
-                    {p.status === "active" ? "已上架" : "已停用"}
+                    {!p.catalogAvailable
+                      ? "主站已下架"
+                      : p.status === "active"
+                        ? "已上架"
+                        : "已停用"}
                   </span>
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -328,13 +335,19 @@ function ProductsTab({
                   </button>
                   <button
                     type="button"
+                    disabled={!p.catalogAvailable && p.status !== "active"}
+                    title={
+                      !p.catalogAvailable
+                        ? "主站已下架，無法啟用"
+                        : undefined
+                    }
                     onClick={() =>
                       onStatusChange(
                         p,
                         p.status === "active" ? "paused" : "active",
                       )
                     }
-                    className="min-h-11 px-3 text-sm font-bold rounded-lg border border-slate-200 text-slate-600"
+                    className="min-h-11 px-3 text-sm font-bold rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40"
                   >
                     {p.status === "active" ? "停用" : "啟用"}
                   </button>
@@ -417,21 +430,32 @@ function ProductsTab({
                     <td className="px-5 py-4 text-center">
                       <span
                         className={`text-xs font-bold px-2.5 py-1 rounded-sm ${
-                          p.status === "active"
-                            ? "bg-[#e0f2fe] text-[#0369a1] border border-[#bae6fd]"
-                            : "bg-[#fef3c7] text-[#92400e] border border-[#fde68a]"
+                          !p.catalogAvailable
+                            ? "bg-red-50 text-red-700 border border-red-100"
+                            : p.status === "active"
+                              ? "bg-[#e0f2fe] text-[#0369a1] border border-[#bae6fd]"
+                              : "bg-[#fef3c7] text-[#92400e] border border-[#fde68a]"
                         }`}
                       >
-                        {p.status === "active" ? "已上架" : "已停用"}
+                        {!p.catalogAvailable
+                          ? "主站已下架"
+                          : p.status === "active"
+                            ? "已上架"
+                            : "已停用"}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-center">
                       <div className="inline-flex rounded-sm overflow-hidden border border-slate-200 text-xs font-bold">
                         <button
                           type="button"
-                          disabled={busy}
+                          disabled={busy || !p.catalogAvailable}
+                          title={
+                            !p.catalogAvailable
+                              ? "主站已下架，無法啟用"
+                              : undefined
+                          }
                           onClick={() => toggleStatus(p, "active")}
-                          className={`px-3 py-1 transition ${
+                          className={`px-3 py-1 transition disabled:opacity-40 ${
                             p.status === "active"
                               ? "bg-[#1E4AD1] text-white"
                               : "bg-white text-slate-500 hover:bg-slate-50"
@@ -2195,21 +2219,22 @@ function ReportTab({ stats, partner, store, onGoTab }) {
                     className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50/60 group transition"
                   >
                     <div className="flex items-center gap-3">
-                      <span
-                        className={`text-xs font-bold px-2 py-0.5 rounded-sm ${
+                      <StatusIconBadge
+                        tone={
                           o.status === "completed"
-                            ? "bg-[#d1fae5] text-[#065f46]"
+                            ? "success"
                             : o.status === "pending"
-                              ? "bg-[#fef3c7] text-[#92400e]"
-                              : "bg-slate-100 text-slate-500"
-                        }`}
-                      >
-                        {o.status === "completed"
-                          ? "已付款"
-                          : o.status === "pending"
-                            ? "待付款"
-                            : "其他"}
-                      </span>
+                              ? "warning"
+                              : "neutral"
+                        }
+                        label={
+                          o.status === "completed"
+                            ? "已付款"
+                            : o.status === "pending"
+                              ? "待付款"
+                              : "其他"
+                        }
+                      />
                       <div>
                         <p className="text-xs font-bold text-slate-700">
                           {o.customer_email || "—"}
@@ -2419,6 +2444,8 @@ export default function PartnerProductsPage() {
             : null;
         const status =
           statusFromDb || localStatus[id] || "active";
+        const catalogAvailable = row.catalog_available !== false;
+        const catalogStatus = row.catalog_status || "active";
 
         rows.push({
           id,
@@ -2438,6 +2465,8 @@ export default function PartnerProductsPage() {
           totalSales: sales.totalSales,
           totalProfit: sales.totalProfit,
           status,
+          catalogAvailable,
+          catalogStatus,
           updated: row.created_at || null,
         });
       }
@@ -2465,6 +2494,15 @@ export default function PartnerProductsPage() {
   }, [loadingStats, loadProducts]);
 
   const handleStatusChange = async (product, nextStatus) => {
+    if (
+      nextStatus === "active" &&
+      product.catalogAvailable === false
+    ) {
+      window.alert(
+        "此商品已於主站下架或刪除，無法啟用。請至選品管理移除，或待主站恢復上架後再試。",
+      );
+      return;
+    }
     const token = await getAccessToken();
     const res = await fetch("/api/partner/store-listings", {
       method: "PATCH",

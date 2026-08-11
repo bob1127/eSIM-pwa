@@ -10,6 +10,7 @@ import {
   setBossSession,
 } from "@/lib/bossAdminClient";
 import AdminRefundsPanel from "@/components/admin/AdminRefundsPanel";
+import AdminWithdrawalsPanel from "@/components/admin/AdminWithdrawalsPanel";
 import AccountBossPartnersPanel from "@/components/account/AccountBossPartnersPanel";
 import BossSalesAnalyticsPanel from "@/components/admin/BossSalesAnalyticsPanel";
 import BossInlineLogin from "@/components/account/BossInlineLogin";
@@ -43,7 +44,12 @@ export default function AdminBossDashboard() {
   useEffect(() => {
     if (!router.isReady) return;
     const tab = router.query.tab;
-    if (tab === "partners" || tab === "refunds" || tab === "sales") {
+    if (
+      tab === "partners" ||
+      tab === "refunds" ||
+      tab === "sales" ||
+      tab === "withdrawals"
+    ) {
       setBossTab(tab);
     }
   }, [router.isReady, router.query.tab]);
@@ -149,6 +155,7 @@ export default function AdminBossDashboard() {
     { id: "sales", label: "銷售分析" },
     { id: "partners", label: "夥伴審核" },
     { id: "refunds", label: "退款審核" },
+    { id: "withdrawals", label: "提領審核" },
   ];
 
   const title =
@@ -156,7 +163,9 @@ export default function AdminBossDashboard() {
       ? "銷售分析"
       : bossTab === "refunds"
         ? "退款審核"
-        : "夥伴審核";
+        : bossTab === "withdrawals"
+          ? "提領審核"
+          : "夥伴審核";
 
   const content = (
     <>
@@ -165,7 +174,15 @@ export default function AdminBossDashboard() {
           <button
             key={t.id}
             type="button"
-            onClick={() => setBossTab(t.id)}
+            onClick={() => {
+              setBossTab(t.id);
+              if (typeof window !== "undefined") {
+                const url = new URL(window.location.href);
+                if (t.id === "sales") url.searchParams.delete("tab");
+                else url.searchParams.set("tab", t.id);
+                window.history.replaceState({}, "", url.toString());
+              }
+            }}
             className={`px-4 py-2 rounded-sm text-sm font-bold transition ${
               bossTab === t.id
                 ? "bg-[#1a56db] text-white"
@@ -180,6 +197,8 @@ export default function AdminBossDashboard() {
       {bossTab === "sales" && <BossSalesAnalyticsPanel />}
 
       {bossTab === "refunds" && <AdminRefundsPanel />}
+
+      {bossTab === "withdrawals" && <AdminWithdrawalsPanel />}
 
       {bossTab === "partners" && (
         <>

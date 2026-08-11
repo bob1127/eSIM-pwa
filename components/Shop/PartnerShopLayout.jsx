@@ -1,38 +1,61 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Head from "next/head";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import ShopNavbar from "@/components/Shop/ShopNavbar";
-import ShopCartSidebar from "@/components/Shop/ShopCartSidebar";
+import PartnerCartSidebar from "@/components/PartnerCartSidebar";
 import PartnerFooter from "@/components/Shop/PartnerFooter";
-import { SITE_URL } from "@/lib/seo.config";
+import SeoHead from "@/components/SeoHead";
+import { buildPartnerShopSeo, isPartnerPrivatePath } from "@/lib/partnerSeo";
 
 /**
- * 夥伴賣場統一殼層：與 /shop 相同的 Navbar + Footer + 購物車側欄
- * Navbar 主選單改為夥伴上架方案推斷出的國家項目
+ * 夥伴賣場統一殼層：Navbar + Footer + 購物車
+ * SEO：與主站互聯（Organization parent／isPartOf／可索引公開頁）
  */
 export default function PartnerShopLayout({
   store,
   title,
   description,
-  /** 覆寫 canonical／og:url（夥伴文章應指向主站 /blog/{slug}） */
+  /** 覆寫 canonical／og:url */
   canonicalUrl = null,
-  /** SSR 可預先帶入國家 nav，避免閃爍 */
+  /** SSR 可預先帶入國家 nav */
   navCountries = null,
+  /** 額外 SEO 覆寫（pageType、product、article、mainProductUrl…） */
+  seo = null,
   children,
 }) {
+  const router = useRouter();
   const storeName = store?.store_name || "Jeko eSIM";
   const domain = store?.domain || "";
   const homeHref = domain ? `/p/${domain}/` : "/";
-  const pageTitle = title
-    ? `${title} | ${storeName}`
-    : `${storeName} | 官方授權專屬商城`;
-  const pageDesc =
-    description ||
-    store?.description ||
-    `${storeName} — Jeko eSIM 官方授權經銷商店`;
-  const canonical =
-    canonicalUrl || (domain ? `${SITE_URL}/p/${domain}/` : SITE_URL);
+  const accountHref = domain ? `/p/${domain}/account/` : "/account";
+  const path = router.asPath?.split("?")[0] || "";
+  const privatePage = isPartnerPrivatePath(path);
+
+  const resolvedSeo = useMemo(() => {
+    return buildPartnerShopSeo({
+      store,
+      title: seo?.title || title,
+      description: seo?.description || description,
+      path:
+        seo?.path != null
+          ? seo.path
+          : domain
+            ? path.replace(new RegExp(`^/p/${domain}/?`), "") || ""
+            : "",
+      canonicalUrl: seo?.canonical || canonicalUrl,
+      noindex: privatePage || seo?.noindex === true,
+      pageType: seo?.pageType || "WebPage",
+      ogType: seo?.ogType || "website",
+      ogImage: seo?.ogImage,
+      breadcrumbs: seo?.breadcrumbs,
+      product: seo?.product,
+      article: seo?.article,
+      mainProductUrl: seo?.mainProductUrl,
+      mainArticleUrl: seo?.mainArticleUrl,
+      keywords: seo?.keywords,
+    });
+  }, [store, title, description, canonicalUrl, path, domain, privatePage, seo]);
 
   const [primaryNav, setPrimaryNav] = useState(navCountries || []);
 
@@ -40,18 +63,20 @@ export default function PartnerShopLayout({
     ? [
         { label: "旅遊文章", href: `/p/${domain}/blog/` },
         { label: "安裝教學", href: `/p/${domain}/tutorial/` },
-        { label: "會員登入", href: `/p/${domain}/login/` },
+        { label: "會員中心", href: accountHref },
       ]
     : [];
 
   useEffect(() => {
-    if (Array.isArray(navCountries) && navCountries.length > 0) {
+    if (Array.isArray(navCountries)) {
       setPrimaryNav(navCountries);
-      return;
     }
     if (!domain) return;
     let cancelled = false;
-    fetch(`/api/partner/storefront-nav?domain=${encodeURIComponent(domain)}`)
+    fetch(
+      `/api/partner/storefront-nav?domain=${encodeURIComponent(domain)}`,
+      { cache: "no-store" },
+    )
       .then((r) => r.json())
       .then((data) => {
         if (!cancelled && Array.isArray(data?.countries)) {
@@ -66,26 +91,38 @@ export default function PartnerShopLayout({
 
   return (
     <>
-      <Head>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDesc} />
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={pageDesc} />
-        <meta property="og:url" content={canonical} />
-        <link rel="canonical" href={canonical} />
-      </Head>
+      <SeoHead
+        title={resolvedSeo.title}
+        description={resolvedSeo.description}
+        keywords={resolvedSeo.keywords}
+        canonical={resolvedSeo.canonical}
+        ogImage={resolvedSeo.ogImage}
+        ogImageAlt={resolvedSeo.ogImageAlt}
+        ogType={resolvedSeo.ogType}
+        robots={resolvedSeo.robots}
+        noindex={resolvedSeo.noindex}
+        breadcrumbs={resolvedSeo.breadcrumbs}
+        jsonLd={resolvedSeo.jsonLd}
+        jsonLdTypes={resolvedSeo.jsonLdTypes}
+        articlePublishedTime={seo?.articlePublishedTime}
+        articleModifiedTime={seo?.articleModifiedTime}
+        articleSection={seo?.articleSection}
+        articleTags={seo?.articleTags}
+        articleAuthor={seo?.articleAuthor || storeName}
+      />
       <ShopNavbar
         primaryNav={primaryNav}
         secondaryNav={secondaryNav}
         homeHref={homeHref}
         brandLabel={storeName}
-        loginHref={domain ? `/p/${domain}/login/` : "/login"}
+        loginHref={accountHref}
         promoHref={`${homeHref}#plans`}
         supportHref={domain ? `/p/${domain}/tutorial/` : "/guide"}
+        cartMode="esim"
       />
       <main className="min-h-screen bg-white">{children}</main>
       <PartnerFooter store={store} />
-      <ShopCartSidebar />
+      <PartnerCartSidebar storeDomain={domain} storeId={store?.id} />
     </>
   );
 }

@@ -67,7 +67,25 @@ const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const CATEGORY_IDS = ["pcat_01KZJNBYMN524P29B285E6XFF5"]; // vietnam
 const THUMB =
   process.env.VIETNAM_PRODUCT_THUMB ||
-  "https://www.jeko-esim.com.tw/images/about-marquee/vietnam.png";
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829TZQCPYT6AZE92A4XF2.png";
+/** 與越南每日型同一組商品圖 */
+const PRODUCT_IMAGES = (
+  process.env.VIETNAM_PRODUCT_IMAGES
+    ? process.env.VIETNAM_PRODUCT_IMAGES.split(",").map((s) => s.trim()).filter(Boolean)
+    : [
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829TZQCPYT6AZE92A4XF2.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V2TSY138ZN02BJRJA2.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V3KQZ01YKCWS09J3H7.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V5TFFF48WEVKHEM2GX.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V7ZT5SJ6JNPECWD6PW.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V8PYDRJ8RN0CSRRDTW.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V9NVSKPSKSR9DE3YYX.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829VA45TD5JDXEZJCQBF5.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829VCE00HTJP4F5NGVKHV.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829VDMETW32XPJPAK4S2Z.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829VF5DQN9PSGG81BCEZJ.jpg",
+      ]
+).map((url) => ({ url }));
 
 function retailFromCost(costTwd, profitPercent) {
   const margin = 1 + profitPercent / 100;
@@ -360,7 +378,7 @@ async function main() {
     status: "published",
     discountable: true,
     thumbnail: THUMB,
-    images: [{ url: THUMB }],
+    images: PRODUCT_IMAGES,
     metadata: productMeta,
     options: [
       { title: "使用天數", values: dayValues },

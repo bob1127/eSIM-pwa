@@ -10,6 +10,8 @@ import PartnerRecoveryRedirect from "../components/PartnerRecoveryRedirect";
 import SupabaseOAuthRedirect from "../components/SupabaseOAuthRedirect";
 import PWARegister from "../components/PWARegister";
 import ReferralCapture from "../components/ReferralCapture";
+import WelcomeGiftPopup from "../components/WelcomeGiftPopup";
+import LineInviteGuestPopup from "../components/LineInviteGuestPopup";
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   return (
@@ -36,6 +38,8 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
               <ReferralCapture />
               <PartnerRecoveryRedirect />
               <SupabaseOAuthRedirect />
+              <LineInviteGuestPopup />
+              <WelcomeGiftPopup />
               <Component {...pageProps} />
             </CartProvider>
           </NextUIProvider>

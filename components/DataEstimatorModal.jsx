@@ -417,16 +417,20 @@ function MiniSimIcon() {
 
 export function getEstimatorDestinationLabel(product, categoryHandle) {
   const name = String(product?.name || "");
-  const cat = String(categoryHandle || "").toLowerCase();
-  if (/中國|china/i.test(name) || cat === "china") return "中國大陸";
-  if (/日本|japan/i.test(name) || cat === "japan" || cat === "jp")
-    return "日本";
-  if (/韓國|korea/i.test(name) || cat === "korea" || cat === "kr")
-    return "韓國";
-  if (/香港|hong.?kong/i.test(name) || cat === "hong-kong" || cat === "hk")
-    return "香港";
-  if (/泰國|thailand/i.test(name) || cat === "thailand" || cat === "th")
-    return "泰國";
+  const cat = String(
+    categoryHandle || product?.categories?.[0]?.handle || "",
+  ).toLowerCase();
+  if (cat === "hongkong" || cat === "hong-kong" || cat === "hk") return "香港";
+  if (cat === "china") return "中國大陸";
+  if (cat === "japan" || cat === "jp") return "日本";
+  if (cat === "korea" || cat === "kr") return "韓國";
+  if (cat === "thailand" || cat === "th" || cat === "tailand") return "泰國";
+  // 香港須在 china 之前（CSL / China Telecom HK）
+  if (/香港|hong.?kong/i.test(name)) return "香港";
+  if (/中國|china/i.test(name)) return "中國大陸";
+  if (/日本|japan/i.test(name)) return "日本";
+  if (/韓國|korea/i.test(name)) return "韓國";
+  if (/泰國|thailand/i.test(name)) return "泰國";
   const stripped = name
     .replace(/\s*eSIM.*$/i, "")
     .replace(/總量型|總計型|吃到飽|無限.*$/u, "")

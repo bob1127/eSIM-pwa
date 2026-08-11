@@ -1,7 +1,10 @@
 /**
- * 建立／更新「越南 eSIM 總量型」— 兩個原生當地 IP 電信：
- *   1) Vinaphone ← Vietnam-local-Total*（VN IP，APN m3-world，5G）— 利潤 120%
- *   2) Wintel ← Vietnam-Local-Total*（VN IP，APN m9-wintel）— 利潤 120%・HOT SALE
+ * 建立／更新「越南 eSIM 總量型」— 三個原生當地 IP 電信：
+ *   1) Vinaphone ← Vietnam-local-Total*（VN IP，APN m3-world，5G）
+ *      預設 100%；20GB／30GB → 60%；50GB → 55%
+ *   2) Wintel ← Vietnam-Local-Total*（VN IP，APN m9-wintel）
+ *      預設 100%；20GB／30GB → 75%；50GB → 65%
+ *   3) Mobifone 當地號碼 ← Vietnam-Local-Total*（m-wap，帶號碼）— 利潤 85%
  *
  * 用法：
  *   HKD_TO_TWD=4.5 node scripts/create-vietnam-total-local-product.mjs --rebuild
@@ -11,6 +14,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { VINAPHONE_KEY_FEATURES } from "../content/product-detailed/vinaphone-local-key-features.js";
 import { VINAPHONE_LOCAL_DETAILED_CONTENT_HTML } from "../content/product-detailed/vinaphone-local.js";
+import {
+  MOBIFONE_LOCAL_KEY_FEATURES,
+  TELECOM_MOBIFONE_LOCAL,
+} from "../content/product-detailed/mobifone-local-key-features.js";
+import { MOBIFONE_LOCAL_DETAILED_CONTENT_HTML } from "../content/product-detailed/mobifone-local.js";
+import { WINTEL_KEY_FEATURES } from "../content/product-detailed/wintel-local-key-features.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -49,8 +58,36 @@ const PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "ScriptImport2026!";
 const HANDLE = "vietnam-total-local-esim";
 const TELECOM_VINAPHONE = "Vinaphone";
 const TELECOM_WINTEL = "Wintel";
+const TELECOM_MOBIFONE = TELECOM_MOBIFONE_LOCAL; // "Mobifone 當地號碼"
 const LINE = "原生線路";
-const PROFIT = 120;
+
+/** 預設利潤；大流量另有覆寫 */
+const PROFIT_DEFAULT_BY_TELECOM = {
+  [TELECOM_VINAPHONE]: 100,
+  [TELECOM_WINTEL]: 100,
+  [TELECOM_MOBIFONE]: 85,
+};
+
+/** 依電信 × 流量覆寫利潤（未列則用預設） */
+const PROFIT_BY_TELECOM_DATA = {
+  [TELECOM_VINAPHONE]: {
+    "20GB": 60,
+    "30GB": 60,
+    "50GB": 55,
+  },
+  [TELECOM_WINTEL]: {
+    "20GB": 75,
+    "30GB": 75,
+    "50GB": 65,
+  },
+};
+
+function resolveProfit(telecom, dataAmount) {
+  const data = String(dataAmount || "").toUpperCase().replace(/\s+/g, "");
+  const byData = PROFIT_BY_TELECOM_DATA[telecom];
+  if (byData && Number.isFinite(byData[data])) return byData[data];
+  return PROFIT_DEFAULT_BY_TELECOM[telecom] ?? 100;
+}
 
 const DATA_ORDER = [
   "1GB",
@@ -75,7 +112,25 @@ const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const CATEGORY_IDS = ["pcat_01KZJNBYMN524P29B285E6XFF5"]; // vietnam
 const THUMB =
   process.env.VIETNAM_PRODUCT_THUMB ||
-  "https://www.jeko-esim.com.tw/images/about-marquee/vietnam.png";
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829TZQCPYT6AZE92A4XF2.png";
+/** 與越南每日型同一組商品圖 */
+const PRODUCT_IMAGES = (
+  process.env.VIETNAM_PRODUCT_IMAGES
+    ? process.env.VIETNAM_PRODUCT_IMAGES.split(",").map((s) => s.trim()).filter(Boolean)
+    : [
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829TZQCPYT6AZE92A4XF2.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V2TSY138ZN02BJRJA2.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V3KQZ01YKCWS09J3H7.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V5TFFF48WEVKHEM2GX.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V7ZT5SJ6JNPECWD6PW.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V8PYDRJ8RN0CSRRDTW.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829V9NVSKPSKSR9DE3YYX.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829VA45TD5JDXEZJCQBF5.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829VCE00HTJP4F5NGVKHV.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829VDMETW32XPJPAK4S2Z.png",
+        "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KZK829VF5DQN9PSGG81BCEZJ.jpg",
+      ]
+).map((url) => ({ url }));
 
 function retailFromCost(costTwd, profitPercent) {
   const margin = 1 + profitPercent / 100;
@@ -107,8 +162,9 @@ function dataRank(label) {
 }
 
 function telecomRank(t) {
-  if (t === TELECOM_VINAPHONE) return 0;
-  if (t === TELECOM_WINTEL) return 1;
+  if (t === TELECOM_MOBIFONE) return 0; // 當地號碼優先
+  if (t === TELECOM_VINAPHONE) return 1;
+  if (t === TELECOM_WINTEL) return 2;
   return 9;
 }
 
@@ -120,18 +176,22 @@ function loadPlans(hkdToTwd) {
     for (const p of list || []) {
       const hkd = Number(p.price_hkd) || 0;
       const cost = Math.ceil(hkd * hkdToTwd);
+      const dataAmount = p.data_amount || "5GB";
+      const profit = resolveProfit(telecom, dataAmount);
       rows.push({
         ...p,
+        data_amount: dataAmount,
         telecom,
         plan_kind: "total",
-        profit_percent: PROFIT,
+        profit_percent: profit,
         price_hkd: hkd,
         cost_twd: cost,
-        retail_twd: retailFromCost(cost, PROFIT),
+        retail_twd: retailFromCost(cost, profit),
         daysLabel: `${p.day}天`,
       });
     }
   };
+  push(raw.mobifone, TELECOM_MOBIFONE);
   push(raw.vinaphone, TELECOM_VINAPHONE);
   push(raw.wintel, TELECOM_WINTEL);
 
@@ -207,11 +267,20 @@ function toVariant(row) {
   const profit = row.profit_percent;
   const margin = 1 + profit / 100;
   const isVinaphone = row.telecom === TELECOM_VINAPHONE;
+  const isMobifone = row.telecom === TELECOM_MOBIFONE;
   const speedRule =
     row.speed_rule ||
     (isVinaphone
       ? "總量高速用完後降速至約 128 kbps"
       : "總量用完後斷網");
+  const network = isMobifone
+    ? "Mobifone 4G/LTE"
+    : isVinaphone
+      ? "Vinaphone 4G/LTE/5G"
+      : "Wintel 4G/LTE";
+  const apn =
+    row.apn ||
+    (isMobifone ? "m-wap" : isVinaphone ? "m3-world" : "m9-wintel");
 
   return {
     title: `${row.telecom} · ${row.daysLabel} · ${row.data_amount}`,
@@ -238,25 +307,29 @@ function toVariant(row) {
       profit_rate: `${profit}%`,
       profit_percent: profit,
       margin,
-      apn: row.apn || (isVinaphone ? "m3-world" : "m9-wintel"),
+      apn,
       networks: row.networks || "",
       rule_desc: row.rule_desc || "",
       speed_desc: row.speed_desc || "",
       throttle_kind: row.throttle_kind || "",
       ip: "VN",
+      has_local_number: Boolean(isMobifone || row.has_local_number),
       attributes: {
         days: row.day,
         data: row.data_amount,
         data_amount: row.data_amount,
         telecom: row.telecom,
         line: LINE,
-        network: isVinaphone ? "Vinaphone 4G/LTE/5G" : "Wintel 4G/LTE",
+        network,
         ip_type: "越南IP",
         route_type: "原生eSIM",
         hotspot: true,
-        gpt: true,
+        gpt: !isMobifone,
         tiktok: true,
-        gemini: true,
+        gemini: !isMobifone,
+        local_number: isMobifone,
+        incoming_call: isMobifone,
+        incoming_sms: isMobifone,
         speed_rule: speedRule,
         coverage: "越南",
       },
@@ -277,17 +350,29 @@ async function main() {
   const dataValues = DATA_ORDER.filter((d) =>
     rows.some((r) => r.data_amount === d),
   );
-  const telecomValues = [TELECOM_VINAPHONE, TELECOM_WINTEL];
+  const telecomValues = [
+    TELECOM_MOBIFONE,
+    TELECOM_VINAPHONE,
+    TELECOM_WINTEL,
+  ].filter((t) => rows.some((r) => r.telecom === t));
 
   for (const t of telecomValues) {
-    const sample = rows.find((r) => r.telecom === t);
-    if (sample) {
+    const samples = [
+      rows.find((r) => r.telecom === t && r.data_amount === "20GB"),
+      rows.find((r) => r.telecom === t && r.data_amount === "30GB"),
+      rows.find((r) => r.telecom === t && r.data_amount === "50GB"),
+      rows.find((r) => r.telecom === t),
+    ].filter(Boolean);
+    const seen = new Set();
+    for (const sample of samples) {
+      const k = `${sample.data_amount}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
       console.log(
-        `核對 ${t}: HKD ${sample.price_hkd} → cost NT$${sample.cost_twd} → 售價 NT$${sample.retail_twd}（${sample.profit_percent}%） (${sample.sku})`,
+        `核對 ${t} ${sample.daysLabel} ${sample.data_amount}: HKD ${sample.price_hkd} → cost NT$${sample.cost_twd} → 售價 NT$${sample.retail_twd}（${sample.profit_percent}%） (${sample.sku})`,
       );
-    } else {
-      console.warn(`⚠️ 無 ${t} 方案`);
     }
+    if (!samples.length) console.warn(`⚠️ 無 ${t} 方案`);
   }
 
   console.log("🔐 登入…", EMAIL, "@", MEDUSA_URL);
@@ -303,22 +388,40 @@ async function main() {
     type: "esim",
     country: "VN",
     plan_kind: "total",
-    hot_sale_telecoms: [TELECOM_VINAPHONE, TELECOM_WINTEL],
+    hot_sale_telecoms: [TELECOM_MOBIFONE],
     carrier_profit_by_carrier: {
-      [TELECOM_VINAPHONE]: PROFIT,
-      [TELECOM_WINTEL]: PROFIT,
+      [TELECOM_MOBIFONE]: PROFIT_DEFAULT_BY_TELECOM[TELECOM_MOBIFONE],
+      [TELECOM_VINAPHONE]: PROFIT_DEFAULT_BY_TELECOM[TELECOM_VINAPHONE],
+      [TELECOM_WINTEL]: PROFIT_DEFAULT_BY_TELECOM[TELECOM_WINTEL],
     },
-    seo_title: "越南 eSIM 總量型｜Vinaphone／Wintel 原生 IP｜Jeko eSIM",
+    carrier_profit_by_carrier_data: {
+      [TELECOM_VINAPHONE]: PROFIT_BY_TELECOM_DATA[TELECOM_VINAPHONE],
+      [TELECOM_WINTEL]: PROFIT_BY_TELECOM_DATA[TELECOM_WINTEL],
+    },
+    seo_title:
+      "越南 eSIM 總量型｜Mobifone 當地號碼／Vinaphone／Wintel｜Jeko eSIM",
     seo_description:
-      "越南總量型原生 eSIM：Vinaphone 5G、Wintel 當地 VN IP。依天數與總流量選購，支援熱點與 TikTok／ChatGPT。",
+      "越南總量型原生 eSIM：Mobifone 當地號碼、Vinaphone 5G、Wintel 當地 VN IP。依天數與總流量選購，支援熱點與常用 App。",
     seo_keywords:
-      "越南eSIM,總量型,Vinaphone,Wintel,原生卡,當地IP,5G,旅遊eSIM,Jeko eSIM",
+      "越南eSIM,總量型,Mobifone,當地號碼,Vinaphone,Wintel,原生卡,當地IP,旅遊eSIM,Jeko eSIM",
     subtitle_by_carrier: {
+      [TELECOM_MOBIFONE]:
+        "總量型・Mobifone 原生・越南 IP・當地號碼・接聽／收簡訊免費",
       [TELECOM_VINAPHONE]:
         "總量型・Vinaphone 原生 5G・越南 IP・用完降速約 128kbps",
       [TELECOM_WINTEL]: "總量型・Wintel 原生・越南 IP・用完斷網",
     },
     carrier_specs_by_carrier: {
+      [TELECOM_MOBIFONE]: {
+        ip_type: "越南IP",
+        route_type: "原生eSIM",
+        network: "Mobifone 4G/LTE",
+        speed_rule: "總量用完後斷網",
+        apps: "熱點分享,TikTok,LINE,Zalo,Grab",
+        apn: "m-wap",
+        coverage: "越南",
+        local_number: true,
+      },
       [TELECOM_VINAPHONE]: {
         ip_type: "越南IP",
         route_type: "原生eSIM",
@@ -339,19 +442,23 @@ async function main() {
       },
     },
     key_features_by_carrier: {
+      [TELECOM_MOBIFONE]: MOBIFONE_LOCAL_KEY_FEATURES,
       [TELECOM_VINAPHONE]: VINAPHONE_KEY_FEATURES,
-      [TELECOM_WINTEL]: [
-        "總量型",
-        "Wintel 原生",
-        "越南當地 IP",
-        "4G/LTE",
-        "支援 TikTok／ChatGPT",
-      ],
+      [TELECOM_WINTEL]: WINTEL_KEY_FEATURES,
     },
     detailed_content_by_carrier: {
+      [TELECOM_MOBIFONE]: MOBIFONE_LOCAL_DETAILED_CONTENT_HTML,
       [TELECOM_VINAPHONE]: VINAPHONE_LOCAL_DETAILED_CONTENT_HTML,
     },
     overview_notices_by_carrier: {
+      [TELECOM_MOBIFONE]: {
+        fup_notice:
+          "總量型依所選流量提供高速額度，用完後斷網。Mobifone 原生網路，越南當地 IP，附當地號碼（僅限接聽來電／接收簡訊，免費）。",
+        activation_notice:
+          "有效期於 eSIM 下載到裝置後立即開始計算，請準備好使用時再安裝。抵達後請撥打 900，接著按 1 啟用。兌換後請於 30 天內完成啟用。",
+        special_notice:
+          "查詢手機號碼請撥打 *0#；查詢流量請撥打 *090*5#，或發送簡訊 KT_ALL 至 999。通話僅限接聽、簡訊僅限接收（免費）；旅遊 eSIM 可能無法保證應用程式註冊簡訊。",
+      },
       [TELECOM_VINAPHONE]: {
         fup_notice:
           "總量型依所選流量提供高速額度，用完後降速至約 128 kbps。Vinaphone 原生 5G 網路，越南當地 IP。",
@@ -366,15 +473,15 @@ async function main() {
   };
 
   const payloadBase = {
-    title: "越南 eSIM 總量型 Vinaphone／Wintel 原生 IP",
-    subtitle: "兩個原生電信：Vinaphone 5G・Wintel・越南當地 IP",
+    title: "越南 eSIM 總量型 原生 IP",
+    subtitle: "Mobifone 當地號碼／Vinaphone／Wintel｜越南當地 IP",
     handle: HANDLE,
     description:
-      "越南總量型原生 eSIM，可選 Vinaphone（APN m3-world，5G）或 Wintel（APN m9-wintel），皆為越南當地 IP。依天數與總流量選購，支援熱點與 TikTok／ChatGPT。",
+      "越南總量型原生 eSIM，可選 Mobifone 當地號碼（APN m-wap，接聽／收簡訊免費）、Vinaphone（APN m3-world，5G）或 Wintel（APN m9-wintel），皆為越南當地 IP。依天數與總流量選購，支援熱點與常用 App。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,
-    images: [{ url: THUMB }],
+    images: PRODUCT_IMAGES,
     metadata: productMeta,
     options: [
       { title: "使用天數", values: dayValues },
@@ -387,10 +494,11 @@ async function main() {
   };
 
   const variants = rows.map(toVariant);
+  const nMf = rows.filter((r) => r.telecom === TELECOM_MOBIFONE).length;
   const nVp = rows.filter((r) => r.telecom === TELECOM_VINAPHONE).length;
   const nWt = rows.filter((r) => r.telecom === TELECOM_WINTEL).length;
   console.log(
-    `📦 方案 ${rows.length} 筆（Vinaphone ${nVp} + Wintel ${nWt}）@${PROFIT}%・HOT SALE=兩者`,
+    `📦 方案 ${rows.length} 筆（Mobifone ${nMf} + Vinaphone ${nVp} + Wintel ${nWt}）・Vinaphone 20/30GB=60%・50GB=55%；Wintel 20/30GB=75%・50GB=65%；其餘預設 100%／Mobifone 85%`,
   );
 
   if (!product) {

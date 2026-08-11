@@ -6,6 +6,10 @@ import {
 } from "@/lib/partnerStorefront";
 import { buildPartnerCountryNavItems } from "@/lib/partnerNavCountries";
 import { fetchPartnerBlogPosts } from "@/lib/partnerBlog";
+import {
+  mergeBlogCms,
+  resolveFeaturedProduct,
+} from "@/lib/partnerBlogCms";
 
 /**
  * 夥伴專屬 Blog 列表
@@ -14,6 +18,8 @@ import { fetchPartnerBlogPosts } from "@/lib/partnerBlog";
 export default function PartnerBlogIndexPage({
   store,
   posts,
+  products,
+  blogCms,
   pickupProduct,
   navCountries,
 }) {
@@ -21,12 +27,14 @@ export default function PartnerBlogIndexPage({
     <PartnerShopLayout
       store={store}
       title="旅遊文章"
-      description={`${store?.store_name || "夥伴賣場"}精選出國攻略與 eSIM 實用文章`}
+      description={`${store?.store_name || "夥伴賣場"}夥伴精選文章（非主站內容）`}
       navCountries={navCountries}
     >
       <PartnerBlogListView
         store={store}
         posts={posts}
+        products={products}
+        blogCms={blogCms}
         pickupProduct={pickupProduct}
       />
     </PartnerShopLayout>
@@ -48,13 +56,16 @@ export async function getServerSideProps(context) {
       fetchPartnerBlogPosts({ store, perPage: 30 }),
     ]);
 
+    const blogCms = mergeBlogCms(store.blog_cms);
     const navCountries = buildPartnerCountryNavItems(products, store.domain);
-    const pickupProduct = products[0] || null;
+    const pickupProduct = resolveFeaturedProduct(products, blogCms);
 
     return {
       props: {
         store,
         posts,
+        products,
+        blogCms,
         pickupProduct,
         navCountries,
       },
