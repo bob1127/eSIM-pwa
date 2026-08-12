@@ -19,6 +19,7 @@ import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import { PENDING_COUPON_KEY } from "@/lib/partnerReferralDiscount";
 import { useLineBind } from "@/hooks/useLineBind";
 import { maybeMarkWelcomeGiftOnFirstClaim } from "@/lib/welcomeGiftPopup";
+import { buildLoginUrl } from "@/lib/authRedirect";
 
 const CART_STEP_KEY = "jeko_cart_active_step";
 
@@ -109,6 +110,7 @@ const CartPage = () => {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponMessage, setCouponMessage] = useState("");
   const [needLineFriend, setNeedLineFriend] = useState(false);
+  const [needLogin, setNeedLogin] = useState(false);
   const [lineOaUrl, setLineOaUrl] = useState(
     process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@391huuts",
   );
@@ -341,10 +343,21 @@ const CartPage = () => {
   }, [cartId, appliedCode, token]);
 
   // 登入會員：自動領歡迎禮；未加 LINE 顯示引導；已加則自動套用
+  // 訪客：折扣區提示「登入後才能套用折扣碼」（加官方 LINE 後仍須登入領券）
   // 注意：即使尚無 Medusa cartId，也要先顯示優惠券／加 LINE 引導
   useEffect(() => {
     if (activeStep !== 1) return undefined;
-    if (!authReady || !isLoggedIn || appliedCode) return undefined;
+    if (!authReady) return undefined;
+
+    if (!isLoggedIn) {
+      setNeedLogin(true);
+      setNeedLineFriend(false);
+      setPromoOpen(true);
+      return undefined;
+    }
+
+    setNeedLogin(false);
+    if (appliedCode) return undefined;
     try {
       if (sessionStorage.getItem(PENDING_COUPON_KEY)) return undefined;
     } catch {
@@ -467,6 +480,7 @@ const CartPage = () => {
     setIsApplyingCoupon(true);
     setCouponMessage("");
     setNeedLineFriend(false);
+    if (!isLoggedIn) setNeedLogin(true);
     try {
       const res = await fetch("/api/checkout/promotion", {
         method: "POST",
@@ -478,10 +492,20 @@ const CartPage = () => {
         body: JSON.stringify({ cartId, code, action: "apply" }),
       });
       const data = await res.json().catch(() => ({}));
+      if (data.need_login || res.status === 401) {
+        setDiscount(0);
+        setAppliedCode(null);
+        setNeedLogin(true);
+        setNeedLineFriend(false);
+        setPromoOpen(true);
+        setCouponMessage(data.error || "登入後才能套用折扣碼");
+        return;
+      }
       if (data.need_line_friend) {
         setDiscount(0);
         setAppliedCode(null);
         setNeedLineFriend(true);
+        setNeedLogin(false);
         setPromoOpen(true);
         if (data.line_oa_url) setLineOaUrl(data.line_oa_url);
         setCouponMessage(
@@ -499,6 +523,7 @@ const CartPage = () => {
       const raw = Number(data.discount_total || 0);
       const asYen = raw >= 1000 ? Math.round(raw / 100) : raw;
       setNeedLineFriend(false);
+      if (isLoggedIn) setNeedLogin(false);
       setDiscount(asYen);
       setAppliedCode(data.code || code.toUpperCase());
       setCouponMessage(`已套用折扣碼 ${data.code || code.toUpperCase()}`);
@@ -897,7 +922,36 @@ const CartPage = () => {
                                 </button>
                               </div>
 
-                              {needLineFriend && (
+                              {needLogin && !isLoggedIn && (
+                                <div className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-3">
+                                  <p className="text-[13px] font-bold text-slate-800 leading-snug">
+                                    登入後才能套用折扣碼
+                                  </p>
+                                  <p className="mt-1 text-[12px] text-slate-600 leading-relaxed">
+                                    已加入官方 LINE
+                                    還不夠，請先登入／註冊會員後才能領取並套用新會員折扣。夥伴專屬折扣碼仍可直接輸入套用。
+                                  </p>
+                                  <div className="mt-2.5 flex flex-col gap-2">
+                                    <Link
+                                      href={buildLoginUrl("/Cart?step=1")}
+                                      className="inline-flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 text-white text-[12px] font-bold px-4 py-2"
+                                    >
+                                      登入／註冊以使用折扣
+                                    </Link>
+                                    <a
+                                      href={lineOaUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#06C755] bg-white text-[#06C755] text-[12px] font-bold px-4 py-2"
+                                    >
+                                      <LineIconSvg className="w-3.5 h-3.5" />
+                                      尚未加好友？點此加入官方 LINE
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
+
+                              {needLineFriend && isLoggedIn && (
                                 <div className="rounded-xl border border-[#06C755]/35 bg-[#06C755]/10 px-3.5 py-3">
                                   <p className="text-[13px] font-bold text-slate-800 leading-snug">
                                     需連結 LINE 才能使用折扣
@@ -964,9 +1018,11 @@ const CartPage = () => {
                                   className={`leading-relaxed ${
                                     appliedCode
                                       ? "text-[11px] text-slate-400"
-                                      : needLineFriend
+                                      : needLogin && !isLoggedIn
                                         ? "text-[12px] text-amber-700"
-                                        : "text-[12px] text-red-500"
+                                        : needLineFriend
+                                          ? "text-[12px] text-amber-700"
+                                          : "text-[12px] text-red-500"
                                   }`}
                                 >
                                   {couponMessage}

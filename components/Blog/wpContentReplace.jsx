@@ -104,7 +104,7 @@ export function createWpContentReplace({
           .filter(Boolean)
           .join(" ");
         return (
-          <div className="wp-table-wrap my-10 overflow-x-auto rounded-xl border border-[#e5e5e5] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
+          <div className="wp-table-wrap wp-compare-wrap my-10 overflow-x-auto">
             <table
               {...tableProps}
               className={mergedClass}

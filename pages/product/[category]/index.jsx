@@ -9,6 +9,7 @@ import {
   resolveMedusaImageUrl,
   shouldBypassImageOptimization,
 } from "../../../lib/resolveMedusaImageUrl";
+import { withUsEsimDefaultImage } from "../../../lib/usEsimDefaultImage";
 import { sortCategoriesByRank } from "../../../lib/sortCategoriesByRank";
 import {
   canonicalCategoryHandle,
@@ -191,15 +192,23 @@ export async function getStaticProps({ params }) {
         );
 
         const filterTags = buildFilterTagsFromProduct(p);
+        const primaryCategory = p.categories?.[0];
+        const categorySlug =
+          primaryCategory?.handle || currentCategory.handle;
         return {
           id: p.id,
           name: p.title,
           slug: p.handle,
           price,
           original_price: originalPrice,
-          image_url: resolveMedusaImageUrl(p.thumbnail),
+          image_url: withUsEsimDefaultImage(resolveMedusaImageUrl(p.thumbnail), {
+            categorySlug,
+            handle: p.handle,
+          }),
           tags: filterTags,
           displayTags: buildDisplayTagsFromProduct(p, filterTags),
+          category_slug: categorySlug,
+          category_name: primaryCategory?.name || currentCategory.name,
           isTestPlan,
         };
       });
@@ -515,7 +524,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                       className="min-w-0 w-full"
                     >
                       <Link href={productLink} className="block h-full group">
-                        <div className="h-full flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/90 hover:border-[#0071EB]/30 hover:shadow-md transition-all">
+                        <div className="h-full flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/90 lg:hover:border-[#0071EB]/30 lg:hover:shadow-md transition-all">
                           {/* 圖片區維持原設計 */}
                           <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-50 rounded-t-xl">
                             <SafeImage
@@ -526,7 +535,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                               unoptimized={shouldBypassImageOptimization(
                                 productImage,
                               )}
-                              className="object-contain p-5 sm:p-6 group-hover:scale-[1.03] transition-transform duration-500"
+                              className="object-contain p-5 sm:p-6 lg:group-hover:scale-[1.03] lg:transition-transform lg:duration-500"
                             />
                           </div>
                           <div className="flex flex-col flex-1 p-2.5 sm:p-3.5">

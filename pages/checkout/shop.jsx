@@ -54,8 +54,10 @@ function OrderSummary({
   isApplyingCoupon,
   couponMessage,
   needLineFriend,
+  needLogin,
   lineOaUrl,
   welcomeHint,
+  loginHref,
 }) {
   const physicalItems = items.filter((i) => !i.type || i.type === "physical");
 
@@ -138,7 +140,36 @@ function OrderSummary({
         </button>
       </div>
 
-      {needLineFriend && (
+      {needLogin && (
+        <div className="mb-4 rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-3">
+          <p className="text-[13px] font-bold text-slate-800 leading-snug">
+            登入後才能套用折扣碼
+          </p>
+          <p className="mt-1 text-[12px] text-slate-600 leading-relaxed">
+            已加入官方 LINE
+            還不夠，請先登入／註冊會員後才能領取並套用新會員折扣。夥伴專屬折扣碼仍可直接輸入套用。
+          </p>
+          <div className="mt-2.5 flex flex-col gap-2">
+            <Link
+              href={loginHref || buildLoginUrl("/checkout/shop")}
+              className="inline-flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 text-white text-[12px] font-bold px-4 py-2"
+            >
+              登入／註冊以使用折扣
+            </Link>
+            <a
+              href={lineOaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#06C755] bg-white text-[#06C755] text-[12px] font-bold px-4 py-2"
+            >
+              <LineIconSvg className="w-3.5 h-3.5" />
+              尚未加好友？點此加入官方 LINE
+            </a>
+          </div>
+        </div>
+      )}
+
+      {needLineFriend && !needLogin && (
         <div className="mb-4 rounded-xl border border-[#06C755]/35 bg-[#06C755]/10 px-3.5 py-3">
           <p className="text-[13px] font-bold text-slate-800 leading-snug">
             還未加入官方 LINE？
@@ -164,7 +195,7 @@ function OrderSummary({
           className={`mb-5 text-[12px] ${
             appliedCode
               ? "text-green-600"
-              : needLineFriend
+              : needLogin || needLineFriend
                 ? "text-amber-700"
                 : "text-red-500"
           }`}
@@ -242,6 +273,7 @@ export default function ShopCheckoutPage() {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponMessage, setCouponMessage] = useState("");
   const [needLineFriend, setNeedLineFriend] = useState(false);
+  const [needLogin, setNeedLogin] = useState(false);
   const [lineOaUrl, setLineOaUrl] = useState(
     process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@391huuts",
   );
@@ -266,9 +298,16 @@ export default function ShopCheckoutPage() {
     nextAuthSession?.user?.name,
   ]);
 
-  // 登入會員：自動領取歡迎禮 50；已加 LINE 則自動套用，未加則顯示引導
+  // 訪客：折扣區提示需登入；會員：自動領歡迎禮
   useEffect(() => {
-    if (!authReady || !isLoggedIn || !cartId || appliedCode) return undefined;
+    if (!authReady) return undefined;
+    if (!isLoggedIn) {
+      setNeedLogin(true);
+      setNeedLineFriend(false);
+      return undefined;
+    }
+    setNeedLogin(false);
+    if (!cartId || appliedCode) return undefined;
     let cancelled = false;
 
     (async () => {
@@ -370,6 +409,7 @@ export default function ShopCheckoutPage() {
     setIsApplyingCoupon(true);
     setCouponMessage("");
     setNeedLineFriend(false);
+    if (!isLoggedIn) setNeedLogin(true);
     try {
       const res = await fetch("/api/checkout/promotion", {
         method: "POST",
@@ -382,10 +422,20 @@ export default function ShopCheckoutPage() {
       });
       const data = await res.json();
 
+      if (data.need_login || res.status === 401) {
+        setDiscount(0);
+        setAppliedCode(null);
+        setNeedLogin(true);
+        setNeedLineFriend(false);
+        setCouponMessage(data.error || "登入後才能套用折扣碼");
+        return;
+      }
+
       if (data.need_line_friend) {
         setDiscount(0);
         setAppliedCode(null);
         setNeedLineFriend(true);
+        setNeedLogin(false);
         if (data.line_oa_url) setLineOaUrl(data.line_oa_url);
         setCouponMessage(
           data.error ||
@@ -402,6 +452,7 @@ export default function ShopCheckoutPage() {
       }
 
       setNeedLineFriend(false);
+      if (isLoggedIn) setNeedLogin(false);
       setDiscount(data.discount_total || 0);
       setAppliedCode(data.code || code.toUpperCase());
       setCouponMessage(`已套用折扣碼 ${data.code || code.toUpperCase()}`);
@@ -700,8 +751,10 @@ export default function ShopCheckoutPage() {
               isApplyingCoupon={isApplyingCoupon}
               couponMessage={couponMessage}
               needLineFriend={needLineFriend}
+              needLogin={needLogin}
               lineOaUrl={lineOaUrl}
               welcomeHint={welcomeHint}
+              loginHref={buildLoginUrl("/checkout/shop")}
             />
           </aside>
         </div>

@@ -930,13 +930,13 @@ export default function PostPage({
         {/* Global Style */}
         <style jsx global>{`
           .entry-content {
-            color: #333;
+            color: #111;
             font-family:
               "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN",
               "Hiragino Sans", Meiryo, sans-serif;
-            line-height: 2;
+            line-height: 1.7;
             font-size: 15px;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.02em;
           }
           .entry-content h2 {
             font-size: 22px;
@@ -956,7 +956,9 @@ export default function PostPage({
             letter-spacing: 0.05em;
           }
           .entry-content p {
-            margin-bottom: 32px;
+            margin-bottom: 1.15em;
+            line-height: 1.7;
+            color: #111;
           }
           .entry-content img {
             margin: 40px 0;
@@ -1041,30 +1043,40 @@ export default function PostPage({
             color: #111;
           }
 
-          /* WordPress 表格 */
+          /* WordPress 比較表 — 日文對照表：無格線、欄位層次 */
           .entry-content .wp-table-wrap,
           .entry-content figure.wp-block-table,
           .entry-content .wp-table-figure {
             margin: 40px 0;
             max-width: 100%;
+            border: none !important;
+            box-shadow: none !important;
+            background: #f6f7f9;
+            border-radius: 6px;
+            padding: 12px 8px 16px;
           }
           .entry-content figure.wp-block-table {
             overflow-x: visible;
           }
           .entry-content figure.wp-block-table .wp-table-wrap {
             margin: 0;
+            padding: 0;
+            background: transparent;
           }
           .entry-content table,
           .entry-content .wp-blog-table {
             display: table !important;
+            table-layout: fixed;
             width: 100% !important;
-            min-width: 480px;
-            border-collapse: collapse !important;
+            min-width: 520px;
+            border-collapse: separate !important;
             border-spacing: 0;
+            border: none !important;
             font-size: 14px;
-            line-height: 1.6;
-            color: #333;
-            background: #fff;
+            line-height: 1.7;
+            letter-spacing: 0.04em;
+            color: #111;
+            background: transparent;
           }
           .entry-content table thead {
             display: table-header-group;
@@ -1078,27 +1090,52 @@ export default function PostPage({
           .entry-content table th,
           .entry-content table td {
             display: table-cell !important;
-            border: 1px solid #e5e7eb;
-            padding: 12px 16px;
+            border: none !important;
+            border-bottom: none !important;
+            padding: 0.9em 1.15em;
             text-align: left;
-            vertical-align: top;
+            vertical-align: middle;
             word-break: break-word;
-          }
-          .entry-content table th {
-            background: #f3f4f6;
-            font-weight: 700;
-            color: #111;
-            font-size: 13px;
-            letter-spacing: 0.02em;
+            line-height: 1.7;
+            letter-spacing: 0.04em;
           }
           .entry-content table thead th {
-            background: #e8eef5;
+            font-weight: 700;
+            color: #111;
+            font-size: 12px;
+            letter-spacing: 0.16em;
+            padding: 1.05em 1.15em 1.15em;
+            background: transparent;
+          }
+          .entry-content table th:first-child,
+          .entry-content table td:first-child {
+            width: 24%;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            color: #111;
+            white-space: nowrap;
+          }
+          .entry-content table tbody td {
+            font-size: 14px;
+            font-weight: 400;
+            color: #111;
+          }
+          .entry-content table tbody tr:nth-child(odd) td {
+            background: #fff;
           }
           .entry-content table tbody tr:nth-child(even) td {
-            background: #fafafa;
+            background: transparent;
           }
-          .entry-content table tbody tr:hover td {
-            background: #f0f7ff;
+          .entry-content table thead th:nth-child(2),
+          .entry-content table tbody td:nth-child(2) {
+            background: #eef3fb;
+          }
+          .entry-content table tbody tr:nth-child(odd) td:nth-child(2) {
+            background: #e8eef8;
+          }
+          .entry-content table thead th:nth-child(2) {
+            color: #0a6cd0;
           }
           .entry-content table caption {
             caption-side: bottom;
@@ -1121,7 +1158,7 @@ export default function PostPage({
             }
             .entry-content table th,
             .entry-content table td {
-              padding: 10px 12px;
+              padding: 0.8em 1em;
             }
           }
         `}</style>

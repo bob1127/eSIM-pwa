@@ -14,6 +14,7 @@ import {
   resolveMedusaImageUrl,
   shouldBypassImageOptimization,
 } from "../../lib/resolveMedusaImageUrl";
+import { withUsEsimDefaultImage } from "../../lib/usEsimDefaultImage";
 import {
   getMedusaBackendUrl,
   getMedusaPublishableKey,
@@ -121,7 +122,9 @@ function formatListingProduct(p) {
     String(p.title || "").includes("測試購買")
   );
   const filterTags = buildFilterTagsFromProduct(p);
-  const categorySlug = p.categories?.[0]?.handle || "uncategorized";
+  const primaryCategory = p.categories?.[0];
+  const categorySlug = primaryCategory?.handle || "uncategorized";
+  const categoryName = primaryCategory?.name || categorySlug;
 
   return {
     id: p.id,
@@ -129,9 +132,13 @@ function formatListingProduct(p) {
     slug: p.handle,
     handle: p.handle,
     category_slug: categorySlug,
+    category_name: categoryName,
     price,
     original_price: originalPrice,
-    image_url: resolveMedusaImageUrl(p.thumbnail),
+    image_url: withUsEsimDefaultImage(resolveMedusaImageUrl(p.thumbnail), {
+      categorySlug,
+      handle: p.handle,
+    }),
     tags: filterTags,
     displayTags: buildDisplayTagsFromProduct(p, filterTags),
     isTestPlan,
@@ -259,7 +266,7 @@ const AllProductsPage = ({ initialProducts }) => {
                       transition={{ duration: 0.35, delay: index * 0.04 }}
                     >
                       <Link href={productLink} className="block h-full group">
-                        <div className="h-full flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/90 hover:border-[#0071EB]/30 hover:shadow-md transition-all">
+                        <div className="h-full flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/90 lg:hover:border-[#0071EB]/30 lg:hover:shadow-md transition-all">
                           <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-50">
                             <SafeImage
                               src={productImage}
@@ -269,7 +276,7 @@ const AllProductsPage = ({ initialProducts }) => {
                               unoptimized={shouldBypassImageOptimization(
                                 productImage,
                               )}
-                              className="object-contain p-3 sm:p-4 group-hover:scale-[1.03] transition-transform duration-500"
+                              className="object-contain p-3 sm:p-4 lg:group-hover:scale-[1.03] lg:transition-transform lg:duration-500"
                             />
                           </div>
                           <div className="flex flex-col flex-1 p-2.5 sm:p-3.5">

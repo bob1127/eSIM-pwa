@@ -281,6 +281,7 @@ export default async function handler(req, res) {
         return res.status(resolved.status || 400).json({
           success: false,
           error: resolved.error,
+          ...(resolved.need_login ? { need_login: true } : {}),
         });
       }
       displayCode = normalizedCode;
@@ -297,7 +298,8 @@ export default async function handler(req, res) {
       if (!email) {
         return res.status(401).json({
           success: false,
-          error: "此優惠僅限已登入會員使用，請先登入或註冊會員",
+          need_login: true,
+          error: "登入後才能套用折扣碼",
         });
       }
       const alreadyOrdered = await hasPriorSuccessfulOrder(email);

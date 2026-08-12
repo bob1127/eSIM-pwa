@@ -65,6 +65,11 @@ import {
   buildProductMediaList,
   shouldBypassImageOptimization,
 } from "../../../lib/resolveMedusaImageUrl";
+import {
+  US_ESIM_DEFAULT_IMAGE,
+  isUsEsimProduct,
+  withUsEsimDefaultImage,
+} from "../../../lib/usEsimDefaultImage";
 import EsimRefundDisclosure from "../../../components/legal/EsimRefundDisclosure";
 import Image from "next/image";
 import SafeImage from "../../../components/SafeImage";
@@ -2292,10 +2297,31 @@ export async function getStaticProps({ params }) {
       ),
       overview_notices_by_carrier:
         parseOverviewNoticesByCarrier(rawOverviewNotices),
-      image_url: resolveMedusaImageUrl(product.thumbnail),
-      image_urls: resolveMedusaImageUrls(
-        product.images?.map((img) => img.url) || [],
-      ),
+      image_url: (() => {
+        const resolved = resolveMedusaImageUrl(product.thumbnail);
+        const cat =
+          categoryHandle || product.categories?.[0]?.handle || "uncategorized";
+        return withUsEsimDefaultImage(resolved, {
+          categorySlug: cat,
+          handle: product.handle,
+        });
+      })(),
+      image_urls: (() => {
+        const urls = resolveMedusaImageUrls(
+          product.images?.map((img) => img.url) || [],
+        );
+        const cat =
+          categoryHandle || product.categories?.[0]?.handle || "uncategorized";
+        if (
+          isUsEsimProduct({ categorySlug: cat, handle: product.handle })
+        ) {
+          return [
+            US_ESIM_DEFAULT_IMAGE,
+            ...urls.filter((u) => u && u !== US_ESIM_DEFAULT_IMAGE),
+          ];
+        }
+        return urls;
+      })(),
       price: product.variants?.[0]?.prices?.[0]?.amount || null,
     };
 

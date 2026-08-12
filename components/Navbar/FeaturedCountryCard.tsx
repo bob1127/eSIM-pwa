@@ -15,7 +15,11 @@ export const CATEGORY_IMAGE_FALLBACKS: Record<string, string> = {
   malaysia: "/images/分類eSIM-馬來西亞.png",
   singapore: "/images/分類eSIM-新馬.png",
   vietnam: "/images/分類eSIM-越南.png",
-  "us-ca": "/images/分類eSIM-美加.png",
+  usa: "/images/美國esim.png",
+  "us-canada": "/images/美國esim.png",
+  "us-ca": "/images/美國esim.png",
+  "north-america": "/images/美國esim.png",
+  america: "/images/美國esim.png",
 };
 
 export function resolveCategoryImageSrc(

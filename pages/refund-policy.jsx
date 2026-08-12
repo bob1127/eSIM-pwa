@@ -137,6 +137,11 @@ export default function RefundPolicyPage() {
 
       <LegalSection title="六、發票與退款">
         <ul>
+          <li>
+            本平台<strong>支援開立電子發票</strong>
+            ；付款完成後依結帳資料開立。詳見{" "}
+            <a href="/qa">常見問題</a> 與 <a href="/terms">服務條款</a>。
+          </li>
           <li>全額退款時，已開立之電子發票將依稅法規定辦理折讓或作廢。</li>
           <li>部分退款者，就退款金額開立折讓單。</li>
         </ul>

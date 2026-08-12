@@ -12,11 +12,23 @@ import { normalizeWpAssetUrl } from "@/lib/wordpress";
 function prepareWpContentHtml(html) {
   if (!html) return "";
   return String(html)
-    .replace(/<table([^>]*)>/gi, (match, attrs = "") => {
-      const cleaned = attrs.replace(
-        /style="[^"]*display\s*:\s*none[^"]*"/gi,
-        "",
-      );
+    .replace(/<(table|th|td)([^>]*)>/gi, (match, tag, attrs = "") => {
+      const cleaned = String(attrs)
+        .replace(/style="[^"]*display\s*:\s*none[^"]*"/gi, "")
+        .replace(
+          /style="([^"]*)"/gi,
+          (_, style) => {
+            const next = String(style)
+              .replace(/border[^;]*;?/gi, "")
+              .replace(/background(-color)?\s*:[^;]*;?/gi, "")
+              .trim()
+              .replace(/;+$/, "");
+            return next ? `style="${next}"` : "";
+          },
+        );
+      if (tag.toLowerCase() !== "table") {
+        return `<${tag}${cleaned}>`;
+      }
       if (/class="/i.test(cleaned)) {
         return `<table${cleaned.replace(/class="([^"]*)"/i, 'class="$1 wp-blog-table"')}>`;
       }

@@ -1,0 +1,114 @@
+.header {
+  position: fixed;
+  right: 50px;
+  top: 0px;
+}
+
+.header .menu {
+  width: 480px;
+  height: 480px;
+  background-color: #1757ff;
+  border-radius: 25px;
+  position: relative;
+  overflow: hidden;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+}
+
+.nav {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+  padding: 100px 40px 50px 40px;
+  height: 100%;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+.nav .body {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  gap: 10px;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+}
+
+.nav .body .linkContainer {
+  -webkit-perspective: 120px;
+          perspective: 120px;
+  -webkit-perspective-origin: bottom;
+          perspective-origin: bottom;
+  overflow: hidden;
+}
+
+.nav .body a {
+  text-decoration: none;
+  color: black;
+  font-size: 46px;
+  display: inline-block;
+}
+
+.nav .footer {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-wrap: wrap;
+      flex-wrap: wrap;
+}
+
+.nav .footer a {
+  width: 140px;
+  margin-top: 5px;
+}
+
+.linkContainer {
+  position: relative;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  gap: 1vw;
+  -webkit-perspective: 120px;
+          perspective: 120px;
+  -webkit-perspective-origin: bottom;
+          perspective-origin: bottom;
+}
+
+.imgContainer {
+  overflow: hidden;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  width: 0;
+}
+
+.imgContainer img {
+  width: 10vw;
+  height: auto;
+  -o-object-fit: cover;
+     object-fit: cover;
+}
+/*# sourceMappingURL=style.module.css.map */

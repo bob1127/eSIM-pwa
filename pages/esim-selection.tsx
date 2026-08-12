@@ -31,6 +31,18 @@ function normalizeLocationTokens(raw: string): string[] {
       if (/^(ID|IDN|INDONESIA)$/.test(t)) return "ID";
       if (/^(AU|AUS|AUSTRALIA)$/.test(t)) return "AU";
       if (/^(NZ|NZL|NEW ZEALAND)$/.test(t)) return "NZ";
+      if (/^(US|USA|UNITEDSTATES|UNITED STATES|AMERICA)$/.test(t)) return "US";
+      if (/^(CA|CAN|CANADA)$/.test(t)) return "CA";
+      if (/^(MX|MEX|MEXICO)$/.test(t)) return "MX";
+      if (/^(FR|FRA|FRANCE)$/.test(t)) return "FR";
+      if (/^(IT|ITA|ITALY)$/.test(t)) return "IT";
+      if (/^(GB|GBR|UK|UNITEDKINGDOM|UNITED KINGDOM|ENGLAND)$/.test(t))
+        return "GB";
+      if (/^(DE|DEU|GERMANY)$/.test(t)) return "DE";
+      if (/^(CH|CHE|SWITZERLAND)$/.test(t)) return "CH";
+      if (/^(ES|ESP|SPAIN)$/.test(t)) return "ES";
+      if (/^(NL|NLD|NETHERLANDS|HOLLAND)$/.test(t)) return "NL";
+      if (/^(CZ|CZE|CZECH|CZECHIA|CZECH REPUBLIC)$/.test(t)) return "CZ";
       return t.replace(/\s+/g, "");
     })
     .filter(Boolean);
@@ -186,6 +198,26 @@ const COUNTRIES: Record<string, CountryConfig> = {
     keywords: [],
     exclude: ["ASIA", "GLOBAL"],
   },
+  TW: {
+    emoji: "🇹🇼",
+    name: "台灣 (純台)",
+    pure: true,
+    codes: ["TW", "TWN", "TAIWAN"],
+    namePrefixes: ["Taiwan-", "Taiwan ", "Taiwan(", "Taiwan（"],
+    keywords: [],
+    // 排除大中華／亞洲／全球包（純台只抓 location=TW）
+    exclude: [
+      "ASIA",
+      "GLOBAL",
+      "WORLD",
+      "EUROPE",
+      "CHMT",
+      "GREATER CHINA",
+      "CNHKMO",
+      "CHINA",
+      "HONG KONG",
+    ],
+  },
   ID: {
     emoji: "🇮🇩",
     name: "印尼 (純印)",
@@ -268,6 +300,182 @@ const COUNTRIES: Record<string, CountryConfig> = {
     codes: ["ASIA", "ASIA11", "ASIA24"],
     keywords: ["ASIA", "Asia "],
     exclude: ["GLOBAL", "EUROPE"],
+  },
+  US: {
+    emoji: "🇺🇸",
+    name: "美國 (純美)",
+    pure: true,
+    codes: ["US", "USA", "UNITED STATES"],
+    namePrefixes: [
+      "USA-",
+      "USA ",
+      "United States-",
+      "United States ",
+      "America-",
+    ],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "ASIA", "CANADA", "MEXICO"],
+  },
+  /**
+   * MicroeSIM「美國本土」：Verizon(+T-Mobile)
+   * - Total FUP：United States of America-Total30/60GB-*、60 天 United States-Total*GB-60-*
+   * - 無限流量（圖二）：United States of America-unlimited-*-A0（典型 8–20Mbps）
+   * 不含外島（波多黎各／關島等）與美加／北美組合
+   */
+  US_MAINLAND: {
+    emoji: "🗽",
+    name: "美國本土 (FUP吃到飽)",
+    pure: false,
+    codes: ["US_MAINLAND"],
+    keywords: [
+      "United States of America-Total30GB",
+      "United States of America-Total60GB",
+      "United States of America-unlimited",
+      "United States-Total30GB-60",
+      "United States-Total60GB-60",
+    ],
+    exclude: [
+      "GLOBAL",
+      "EUROPE",
+      "ASIA",
+      "CANADA",
+      "MEXICO",
+      "HAWAII",
+      "GUAM",
+      "PUERTO",
+    ],
+  },
+  CA: {
+    emoji: "🇨🇦",
+    name: "加拿大 (純加)",
+    pure: true,
+    codes: ["CA", "CAN", "CANADA"],
+    namePrefixes: ["Canada-", "Canada "],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "ASIA", "USA", "UNITED STATES"],
+  },
+  FR: {
+    emoji: "🇫🇷",
+    name: "法國 (純法)",
+    pure: true,
+    codes: ["FR", "FRA", "FRANCE"],
+    namePrefixes: ["France-", "France "],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+  },
+  IT: {
+    emoji: "🇮🇹",
+    name: "義大利 (純義)",
+    pure: true,
+    codes: ["IT", "ITA", "ITALY"],
+    namePrefixes: ["Italy-", "Italy "],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+  },
+  GB: {
+    emoji: "🇬🇧",
+    name: "英國 (純英)",
+    pure: true,
+    codes: ["GB", "GBR", "UK", "UNITED KINGDOM"],
+    namePrefixes: [
+      "UK-",
+      "UK ",
+      "United Kingdom-",
+      "United Kingdom ",
+      "Britain-",
+    ],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+  },
+  DE: {
+    emoji: "🇩🇪",
+    name: "德國 (純德)",
+    pure: true,
+    codes: ["DE", "DEU", "GERMANY"],
+    namePrefixes: ["Germany-", "Germany "],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+  },
+  CH: {
+    emoji: "🇨🇭",
+    name: "瑞士 (純瑞)",
+    pure: true,
+    codes: ["CH", "CHE", "SWITZERLAND"],
+    namePrefixes: ["Switzerland-", "Switzerland "],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+  },
+  ES: {
+    emoji: "🇪🇸",
+    name: "西班牙 (純西)",
+    pure: true,
+    codes: ["ES", "ESP", "SPAIN"],
+    namePrefixes: ["Spain-", "Spain "],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+  },
+  NL: {
+    emoji: "🇳🇱",
+    name: "荷蘭 (純荷)",
+    pure: true,
+    codes: ["NL", "NLD", "NETHERLANDS"],
+    namePrefixes: ["Netherlands-", "Netherlands ", "Holland-"],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+  },
+  CZ: {
+    emoji: "🇨🇿",
+    name: "捷克 (純捷)",
+    pure: true,
+    codes: ["CZ", "CZE", "CZECH"],
+    namePrefixes: ["Czech-", "Czech ", "Czechia-"],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+  },
+  US_CA: {
+    emoji: "🇺🇸🇨🇦",
+    name: "美加 (純數據)",
+    pure: false,
+    codes: ["US_CA", "USA_CA"],
+    locationSet: ["US", "CA"],
+    keywords: [
+      "USA&Canada",
+      "USA-Canada",
+      "USA/Canada",
+      "US&Canada",
+      "US-Canada",
+      "United States&Canada",
+      "美加",
+    ],
+    // 不含墨西哥／門號方案（那些走北美）
+    exclude: ["GLOBAL", "EUROPE", "ASIA", "MEXICO", "墨西哥", "北美"],
+  },
+  US_CA_MX: {
+    emoji: "🌎",
+    name: "北美 (美加墨)",
+    pure: false,
+    codes: ["US_CA_MX", "NA", "NORTH_AMERICA"],
+    locationSet: ["US", "CA", "MX"],
+    locationSets: [
+      ["US", "CA", "MX"],
+      ["US", "MX", "CA"],
+    ],
+    keywords: [
+      "USA&Canada&Mexico",
+      "US&Canada&Mexico",
+      "USA-Canada-Mexico",
+      "US-Canada-Mexico",
+      "United States&Canada&Mexico",
+      "North America",
+      "NorthAmerica",
+      "北美",
+      "美加墨",
+      "美國加拿大墨西哥",
+      "ATT US NUMBER",
+      "AT&T 美國號碼",
+      "美國號碼",
+    ],
+    exclude: ["GLOBAL", "EUROPE", "ASIA"],
   },
   EU: {
     emoji: "🇪🇺",
@@ -404,9 +612,10 @@ const getSimpleDesc = (name: string, day: number) => {
 
   if (n.includes("total")) {
     const match = n.match(/total\s*(\d+\.?\d*[g|m]b)/);
+    // MicroeSIM Total = 高速額度用完後降速無限（FUP 吃到飽）
     return match
-      ? `總量 ${match[1].toUpperCase()} · ${day}天`
-      : `總量型 · ${day}天`;
+      ? `高速 ${match[1].toUpperCase()} 後 FUP吃到飽 · ${day}天`
+      : `總量型 FUP吃到飽 · ${day}天`;
   } else if (n.includes("daily") || n.includes("day")) {
     const match = n.match(/daily\s*(\d+\.?\d*[g|m]b)/);
     return match

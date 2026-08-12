@@ -160,7 +160,7 @@ export default function Footer({
                 </li>
                 <li>
                   <Link
-                    href="/support"
+                    href="/qa"
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >
                     常見問題

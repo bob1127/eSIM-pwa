@@ -260,7 +260,76 @@ export function buildFilterTagsFromProduct(product) {
     tags.add("hotsale");
   }
 
+  // 國家／地區分類（供 /product 外層篩選）
+  for (const c of product?.categories || []) {
+    const handle = String(c?.handle || c?.slug || "")
+      .trim()
+      .toLowerCase();
+    if (handle && handle !== "uncategorized") {
+      tags.add(`country:${handle}`);
+    }
+  }
+
   return Array.from(tags).filter(Boolean);
+}
+
+/** 從商品列表動態產生「國家分類」選項 */
+function buildCountryGroup(products = []) {
+  const map = new Map();
+
+  for (const p of products) {
+    const slug = String(p?.category_slug || "")
+      .trim()
+      .toLowerCase();
+    const name = String(p?.category_name || "").trim();
+
+    if (slug && slug !== "uncategorized") {
+      const value = `country:${slug}`;
+      const prev = map.get(value);
+      if (!prev) {
+        map.set(value, {
+          label: name || slug,
+          value,
+          match: (t) => String(t) === value,
+        });
+      } else if (name && prev.label === slug) {
+        prev.label = name;
+      }
+    }
+
+    for (const t of p?.tags || []) {
+      const m = /^country:(.+)$/i.exec(String(t));
+      if (!m) continue;
+      const handle = m[1].trim().toLowerCase();
+      if (!handle || handle === "uncategorized") continue;
+      const value = `country:${handle}`;
+      if (!map.has(value)) {
+        map.set(value, {
+          label: name || handle,
+          value,
+          match: (tag) => String(tag) === value,
+        });
+      }
+    }
+  }
+
+  const options = [...map.values()].sort((a, b) =>
+    a.label.localeCompare(b.label, "zh-TW"),
+  );
+
+  if (options.length <= 1) return null;
+
+  return {
+    key: "country",
+    label: "國家分類",
+    multi: true,
+    options,
+  };
+}
+
+function getFilterGroups(products = []) {
+  const country = buildCountryGroup(products);
+  return country ? [country, ...FILTER_GROUPS] : FILTER_GROUPS;
 }
 
 /** 卡片顯示用：去掉電信商選項尾端的 4G/5G */
@@ -351,14 +420,28 @@ export function buildDisplayTagsFromProduct(product, _filterTags = []) {
   return tags;
 }
 
-/** 供分類頁使用：依 activeTags 過濾商品 */
+function productMatchesFilterOption(product, opt) {
+  const tags = product?.tags || [];
+  if (tags.some((t) => opt.match(String(t)))) return true;
+
+  // 國家分類：相容只有 category_slug、尚未寫入 country: tag 的舊資料
+  if (String(opt.value || "").startsWith("country:")) {
+    const handle = String(opt.value).slice("country:".length);
+    const slug = String(product?.category_slug || "").toLowerCase();
+    if (slug && slug === handle) return true;
+  }
+  return false;
+}
+
+/** 供分類頁／商店頁使用：依 activeTags 過濾商品 */
 export function filterProductsByTags(products, activeTags) {
   if (!activeTags || activeTags.length === 0) return products;
+  const groups = getFilterGroups(products);
   return products.filter((p) =>
     activeTags.every((activeVal) => {
-      for (const group of FILTER_GROUPS) {
+      for (const group of groups) {
         const opt = group.options.find((o) => o.value === activeVal);
-        if (opt) return (p.tags || []).some((t) => opt.match(String(t)));
+        if (opt) return productMatchesFilterOption(p, opt);
       }
       return (p.tags || []).includes(activeVal);
     }),
@@ -367,15 +450,26 @@ export function filterProductsByTags(products, activeTags) {
 
 function buildCounts(products) {
   const counts = {};
-  for (const group of FILTER_GROUPS) {
+  for (const group of getFilterGroups(products)) {
     for (const opt of group.options) {
       const key = `${group.key}:${opt.value}`;
       counts[key] = products.filter((p) =>
-        (p.tags || []).some((tag) => opt.match(String(tag))),
+        productMatchesFilterOption(p, opt),
       ).length;
     }
   }
   return counts;
+}
+
+function resolveActiveTagLabel(tag, groups) {
+  for (const group of groups) {
+    const opt = group.options.find((o) => o.value === tag);
+    if (opt) return opt.label;
+  }
+  if (String(tag).startsWith("country:")) {
+    return String(tag).slice("country:".length);
+  }
+  return tag;
 }
 
 function AccordionSection({ group, selected, onToggle, counts, defaultOpen = true }) {
@@ -456,16 +550,17 @@ export default function FilterSideBar({
   activeTags = [],
   setActiveTags,
 }) {
+  const filterGroups = useMemo(() => getFilterGroups(products), [products]);
   const counts = useMemo(() => buildCounts(products), [products]);
 
   const visibleGroups = useMemo(
     () =>
-      FILTER_GROUPS.filter((group) =>
+      filterGroups.filter((group) =>
         group.options.some(
           (opt) => (counts[`${group.key}:${opt.value}`] ?? 0) > 0,
         ),
       ),
-    [counts],
+    [counts, filterGroups],
   );
 
   const handleToggle = (group, value) => {
@@ -519,24 +614,27 @@ export default function FilterSideBar({
 
       {hasAny && (
         <div className="flex flex-wrap gap-1.5 px-4 py-2.5 border-b border-slate-100 bg-blue-50/60">
-          {activeTags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 text-[11px] bg-[#0A6CD0] text-white rounded-full px-2.5 py-0.5"
-            >
-              {tag}
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveTags?.(activeTags.filter((t) => t !== tag))
-                }
-                className="ml-0.5 hover:bg-white/20 rounded-full"
-                aria-label={`移除 ${tag}`}
+          {activeTags.map((tag) => {
+            const label = resolveActiveTagLabel(tag, filterGroups);
+            return (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 text-[11px] bg-[#0A6CD0] text-white rounded-full px-2.5 py-0.5"
               >
-                ×
-              </button>
-            </span>
-          ))}
+                {label}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveTags?.(activeTags.filter((t) => t !== tag))
+                  }
+                  className="ml-0.5 hover:bg-white/20 rounded-full"
+                  aria-label={`移除 ${label}`}
+                >
+                  ×
+                </button>
+              </span>
+            );
+          })}
         </div>
       )}
 
