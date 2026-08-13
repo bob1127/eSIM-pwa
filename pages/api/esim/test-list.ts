@@ -4,10 +4,13 @@ import {
   ESIM_BASE_URL,
   microesimAuthHeaders,
 } from "../../../lib/esim/microesimClient";
+import { guardEsimCatalog } from "../../../lib/esimCatalogGuard";
 
 const API_PATH = "/allesim/v1/esimDataplanList";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (!(await guardEsimCatalog(req, res))) return;
+
   try {
     const response = await fetch(`${ESIM_BASE_URL}${API_PATH}`, {
       method: "GET",

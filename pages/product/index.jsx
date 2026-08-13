@@ -194,6 +194,15 @@ const AllProductsPage = ({ initialProducts }) => {
   const currentProducts = filteredProducts.slice(startIndex, endIndex);
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
 
+  useEffect(() => {
+    currentProducts.slice(0, 12).forEach((p) => {
+      const categorySlug = p?.category_slug || "uncategorized";
+      const productSlug = p?.slug || p?.handle;
+      if (!productSlug) return;
+      router.prefetch(`/product/${categorySlug}/${productSlug}`);
+    });
+  }, [currentProducts, router]);
+
   return (
     <Layout>
       <div className="flex flex-col bg-[#f9f9fa]">

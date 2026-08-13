@@ -17,6 +17,7 @@
 import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { internalCatalogHeaders } from "./lib/internal-catalog-headers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -93,7 +94,9 @@ async function fetchSupplierPlans() {
     process.env.NEXTAUTH_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     "http://localhost:3000";
-  const res = await fetch(`${base.replace(/\/$/, "")}/api/esim/list`);
+  const res = await fetch(`${base.replace(/\/$/, "")}/api/esim/list`, {
+    headers: internalCatalogHeaders(),
+  });
   if (!res.ok) throw new Error(`/api/esim/list ${res.status}`);
   const data = await res.json();
   return data.result || [];

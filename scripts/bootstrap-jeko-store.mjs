@@ -69,6 +69,12 @@ const CATEGORY_DEFS = [
   { handle: "singapore", name: "新加坡", rank: 8 },
   { handle: "malaysia", name: "馬來西亞", rank: 9 },
   { handle: "vietnam", name: "越南", rank: 10 },
+  { handle: "canada", name: "加拿大", rank: 11 },
+  { handle: "australia", name: "澳洲", rank: 12 },
+  { handle: "anz", name: "紐澳", rank: 13 },
+  { handle: "new-zealand", name: "紐西蘭", rank: 14 },
+  { handle: "france", name: "法國", rank: 15 },
+  { handle: "turkey", name: "土耳其", rank: 16 },
 ];
 
 const OLD_SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";

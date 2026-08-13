@@ -7,7 +7,6 @@ import {
 import {
   fetchFormattedMedusaProductPage,
   applyPartnerMarkupToVariations,
-  fetchCategoryComparablePlans,
 } from "@/lib/formatMedusaProductPage";
 import { applyPartnerB2BMarkup } from "@/lib/medusaPartnerPricing";
 
@@ -264,24 +263,16 @@ export async function getServerSideProps(context) {
         })
       : formatted.variations;
 
-    let comparablePlans = [];
-    const categoryHandle = inferCategoryHandleFromProduct(formatted.product);
-    if (categoryHandle && usedMedusa) {
-      try {
-        const rawPlans = await fetchCategoryComparablePlans({
-          categoryHandle,
-          currentHandle: formatted.product.slug,
-        });
-        comparablePlans = applyPartnerMarkupToVariations(rawPlans, {
-          markupRate: store.markup_rate,
-          markupMode: store.markup_mode || "percent",
-          markupFixed: Number(store.markup_fixed) || 0,
-          customPrices: listing?.custom_prices || {},
-        });
-      } catch (err) {
-        console.warn("[partner product] comparable plans failed", err.message);
-      }
-    }
+    const comparablePlans = variations.map((v) => ({
+      ...v,
+      productId: formatted.product.id,
+      productSlug: formatted.product.slug,
+      productName: formatted.product.name || "",
+      productLabel: "",
+      productKind: "other",
+      isCurrentProduct: true,
+      categoryHandle: inferCategoryHandleFromProduct(formatted.product) || "",
+    }));
 
     return {
       props: {

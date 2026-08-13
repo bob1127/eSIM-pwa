@@ -2,24 +2,49 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 import nodemailer from "nodemailer";
 import PLAN_ID_MAP from "../../lib/esim/planMap";
+import { guardEsimCatalog } from "../../lib/esimCatalogGuard";
 
-const WC_API_URL = "https://inf.fjg.mybluehost.me/website_f9214e6b/wp-json/wc/v3/orders";
-const CONSUMER_KEY = "ck_25c20ddf9bf9c0543bdb6ad59904aca58a960437";
-const CONSUMER_SECRET = "cs_3da596e08887d9c7ccbf8ee15213f83866c160d4";
+/**
+ * 舊「汪喵通SIM」Shopee 訂單兌換流程。
+ * 這支會發 eSIM、改訂單狀態並寄信，因此只接受內部 token 或管理者身分。
+ * 所有金鑰改讀環境變數（原本寫死在原始碼，已進 git 歷史，務必到各後台重新簽發）。
+ */
+const WC_API_URL = String(process.env.SHOPEE_WC_ORDERS_API_URL || "").trim();
+const CONSUMER_KEY = String(process.env.SHOPEE_WC_CONSUMER_KEY || "").trim();
+const CONSUMER_SECRET = String(
+  process.env.SHOPEE_WC_CONSUMER_SECRET || "",
+).trim();
+const ESIM_PROXY_URL = String(process.env.SHOPEE_ESIM_PROXY_URL || "").trim();
+const MAIL_USER = String(process.env.SHOPEE_MAIL_USER || "").trim();
+const MAIL_PASSWORD = String(process.env.SHOPEE_MAIL_PASSWORD || "").trim();
+const MAIL_FROM_NAME = String(
+  process.env.SHOPEE_MAIL_FROM_NAME || "汪喵通SIM",
+).trim();
 
-const ESIM_PROXY_URL = "https://www.wmesim.com/api/esim/qrcode";
+function missingConfig() {
+  return [
+    ["SHOPEE_WC_ORDERS_API_URL", WC_API_URL],
+    ["SHOPEE_WC_CONSUMER_KEY", CONSUMER_KEY],
+    ["SHOPEE_WC_CONSUMER_SECRET", CONSUMER_SECRET],
+    ["SHOPEE_ESIM_PROXY_URL", ESIM_PROXY_URL],
+    ["SHOPEE_MAIL_USER", MAIL_USER],
+    ["SHOPEE_MAIL_PASSWORD", MAIL_PASSWORD],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+}
 
 async function sendEsimEmail(to: string, orderNo: string, html: string) {
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: "wandmesim@gmail.com",
-      pass: "hwoywmluqvsuluss",
+      user: MAIL_USER,
+      pass: MAIL_PASSWORD,
     },
   });
 
   const mailOptions = {
-    from: `"汪喵通SIM" <wandmesim@gmail.com>`,
+    from: `"${MAIL_FROM_NAME}" <${MAIL_USER}>`,
     to,
     subject: `訂單 ${orderNo} 的 eSIM QRCode`,
     html,
@@ -30,6 +55,14 @@ async function sendEsimEmail(to: string, orderNo: string, html: string) {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end("Method Not Allowed");
+
+  if (!(await guardEsimCatalog(req, res))) return;
+
+  const missing = missingConfig();
+  if (missing.length) {
+    console.error("❌ shopee-to-esim 未設定環境變數:", missing.join(", "));
+    return res.status(503).json({ error: "此流程尚未設定" });
+  }
 
   const { shopee_order_no, email } = req.body;
   if (!shopee_order_no) return res.status(400).json({ error: "缺少 shopee_order_no" });

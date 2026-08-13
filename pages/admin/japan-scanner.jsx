@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
+import Head from "next/head";
 import { DEFAULT_PLATFORM_FX } from "@/lib/esim/platformFx";
+import { useProductAdmin } from "@/hooks/useProductAdmin";
 // import Layout from "../Layout"; // 如果您有 Layout 請自行取消註解
 
 // --- 匯率設定：與夥伴底價同一套平台匯率 ---
@@ -59,6 +61,7 @@ const COUNTRIES = {
 };
 
 export default function GlobalPlanScanner() {
+  const { isAdmin, adminChecked, authHeaders } = useProductAdmin();
   // --- 原始資料 State ---
   const [rawPlans, setRawPlans] = useState([]); // 存放 API 回傳的所有原始資料
   const [plans, setPlans] = useState([]); // 當前國家處理後的資料
@@ -72,14 +75,24 @@ export default function GlobalPlanScanner() {
   const [filterData, setFilterData] = useState("ALL"); // ALL, DAILY, TOTAL, UNLIMITED
   const [sortBy, setSortBy] = useState("PRICE_ASC"); // PRICE_ASC, DAY_ASC
 
-  // 1. 初始載入 API
+  // 1. 初始載入 API（目錄需管理者身分，未通過時 API 會回 404）
   useEffect(() => {
+    if (!adminChecked) return;
+    if (!isAdmin) {
+      setLoading(false);
+      setErrorMsg("需要管理者權限");
+      return;
+    }
     fetchPlans();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminChecked, isAdmin, authHeaders]);
 
   const fetchPlans = async () => {
     try {
-      const res = await fetch("/api/esim/list");
+      const res = await fetch("/api/esim/list", {
+        credentials: "include",
+        headers: { ...authHeaders },
+      });
       if (!res.ok) throw new Error(`API Error: ${res.status}`);
       const data = await res.json();
       const allPlans = data.result || [];
@@ -241,9 +254,23 @@ export default function GlobalPlanScanner() {
   };
 
   if (loading)
-    return <div className="p-10 text-center font-bold">載入中...</div>;
+    return (
+      <>
+        <Head>
+          <meta name="robots" content="noindex, nofollow, noarchive" />
+        </Head>
+        <div className="p-10 text-center font-bold">載入中...</div>
+      </>
+    );
   if (errorMsg)
-    return <div className="p-10 text-red-600">錯誤：{errorMsg}</div>;
+    return (
+      <>
+        <Head>
+          <meta name="robots" content="noindex, nofollow, noarchive" />
+        </Head>
+        <div className="p-10 text-red-600">錯誤：{errorMsg}</div>
+      </>
+    );
 
   const currentConfig = COUNTRIES[selectedCountry];
 

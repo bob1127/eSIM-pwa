@@ -9,6 +9,10 @@ import {
   shouldForceTestPlan,
   signMicroesimHeaders,
 } from "../../../lib/esim/microesimClient";
+import {
+  esimCatalogInternalHeaders,
+  guardEsimCatalog,
+} from "../../../lib/esimCatalogGuard";
 
 function env(name: string, fallback = "") {
   return String(process.env[name] ?? fallback).trim();
@@ -59,11 +63,16 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  if (!(await guardEsimCatalog(req, res))) return;
+
   try {
     // 1) 明確指定正式目錄 proxy（須回傳完整欄位，建議指 /api/esim/test-list）
     const catalogProxy = env("ESIM_CATALOG_PROXY_URL");
     if (catalogProxy) {
-      const response = await axios.get(catalogProxy, { timeout: 60000 });
+      const response = await axios.get(catalogProxy, {
+        timeout: 60000,
+        headers: esimCatalogInternalHeaders(),
+      });
       const allPlans = response.data?.result || [];
       return res.status(200).json({
         result: normalizePlans(allPlans),
@@ -101,7 +110,10 @@ export default async function handler(
       const fallback =
         env("ESIM_CATALOG_FALLBACK_URL") ||
         "https://www.jeko-esim.com.tw/api/esim/test-list";
-      const response = await axios.get(fallback, { timeout: 60000 });
+      const response = await axios.get(fallback, {
+        timeout: 60000,
+        headers: esimCatalogInternalHeaders(),
+      });
       const allPlans = response.data?.result || [];
       return res.status(200).json({
         result: normalizePlans(allPlans),

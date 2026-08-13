@@ -9,6 +9,8 @@ Allow: /p/
 Disallow: /admin
 Disallow: /admin/
 Disallow: /api/
+Disallow: /esim-selection
+Disallow: /esim-selection/
 Disallow: /checkout
 Disallow: /Cart
 Disallow: /cart

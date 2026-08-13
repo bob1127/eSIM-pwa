@@ -124,8 +124,8 @@ import {
   formatDataAmountMain,
   getVariationOptionAttrs,
 } from "@/lib/dataAmountLabel";
-import { fetchCategoryComparablePlans } from "@/lib/formatMedusaProductPage";
 import { buildLoginUrl } from "@/lib/authRedirect";
+import { fetchMedusaRegions } from "@/lib/medusaStoreApi";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
@@ -2176,27 +2176,39 @@ const backendUrl =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
 
 export async function getStaticPaths() {
-  // Vercel／CI build：不預渲染全部商品（日本無限流量等變體極多，會卡 >60s 導致
-  // page-data-collection-timeout）。改由 fallback:blocking 首訪／ISR 生成。
+  // Vercel／CI：不在 build 時預渲染全部 PDP（日本無限流量等變體極多會超時）。
+  // fallback: blocking + revalidate → 首訪 ISR 生成 HTML，之後等同靜態頁。
   if (process.env.VERCEL || process.env.SKIP_PRODUCT_SSG === "1") {
     return { paths: [], fallback: "blocking" };
   }
 
   try {
-    const res = await fetch(`${backendUrl}/store/products?limit=100`, {
-      headers: getMedusaHeaders(),
-      signal: AbortSignal.timeout(20_000),
-    });
-    if (!res.ok) throw new Error("無法取得 Medusa 商品");
-
-    const { products } = await res.json();
-
-    const paths = (products || []).map((p) => {
-      const categoryHandle = p.categories?.[0]?.handle || "uncategorized";
-      return {
-        params: { category: categoryHandle, slug: p.handle },
-      };
-    });
+    const paths = [];
+    const seen = new Set();
+    const limit = 100;
+    for (let offset = 0; offset < 500; offset += limit) {
+      const params = new URLSearchParams({
+        limit: String(limit),
+        offset: String(offset),
+        fields: "id,handle,*categories",
+      });
+      const res = await fetch(`${backendUrl}/store/products?${params}`, {
+        headers: getMedusaHeaders(),
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (!res.ok) throw new Error("無法取得 Medusa 商品");
+      const { products } = await res.json();
+      for (const p of products || []) {
+        const slug = p.handle;
+        const categoryHandle = p.categories?.[0]?.handle || "uncategorized";
+        if (!slug) continue;
+        const key = `${categoryHandle}/${slug}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        paths.push({ params: { category: categoryHandle, slug } });
+      }
+      if (!products?.length || products.length < limit) break;
+    }
 
     return { paths, fallback: "blocking" };
   } catch (error) {
@@ -2212,17 +2224,8 @@ export async function getStaticProps({ params }) {
 
     let regionId = "";
     try {
-      const regionRes = await fetch(`${backendUrl}/store/regions`, { headers });
-      if (regionRes.ok) {
-        const regionData = await regionRes.json();
-        const region =
-          regionData.regions?.find(
-            (r) => r.currency_code === "twd" || r.currency_code === "TWD",
-          ) || regionData.regions?.[0];
-        if (region) {
-          regionId = region.id;
-        }
-      }
+      const region = await fetchMedusaRegions();
+      if (region?.id) regionId = region.id;
     } catch {
       /* ignore */
     }
@@ -2230,12 +2233,15 @@ export async function getStaticProps({ params }) {
     const query = new URLSearchParams({
       handle: slug,
       fields:
-        "+metadata,*variants,*variants.metadata,*variants.prices,*variants.calculated_price,*variants.options,*variants.options.option",
+        "+metadata,*variants,*variants.metadata,*variants.prices,*variants.calculated_price,*variants.options,*variants.options.option,*images,*categories",
     });
     if (regionId) query.set("region_id", regionId);
 
     const prodUrl = `${backendUrl}/store/products?${query.toString()}`;
-    const prodRes = await fetch(prodUrl, { headers });
+    const prodRes = await fetch(prodUrl, {
+      headers,
+      signal: AbortSignal.timeout(10_000),
+    });
     const prodData = await prodRes.json();
 
     if (!prodRes.ok) {
@@ -2437,35 +2443,25 @@ export async function getStaticProps({ params }) {
         };
       }) || [];
 
-    // 同分類相關商品變體（流量試算跨商品比較）
-    let comparablePlans = [];
-    try {
-      const resolvedCategory =
-        categoryHandle || product.categories?.[0]?.handle || "uncategorized";
-      comparablePlans = await fetchCategoryComparablePlans({
-        categoryHandle: resolvedCategory,
-        currentHandle: product.handle,
-      });
-    } catch (err) {
-      const hotSaleTelecoms = parseHotSaleTelecoms(
-        product.metadata?.hot_sale_telecoms,
-      );
-      comparablePlans = formattedVariations.map((v) => ({
-        ...v,
-        productId: product.id,
-        productSlug: product.handle,
-        productName: product.title || "",
-        productLabel: "",
-        productKind: "other",
-        isCurrentProduct: true,
-        categoryHandle: categoryHandle || "",
+    // 試算器跨商品比較改由進頁後 /api/esim/comparable-plans 拉取，不阻塞 ISR
+    const hotSaleTelecoms = parseHotSaleTelecoms(
+      product.metadata?.hot_sale_telecoms,
+    );
+    const comparablePlans = formattedVariations.map((v) => ({
+      ...v,
+      productId: product.id,
+      productSlug: product.handle,
+      productName: product.title || "",
+      productLabel: "",
+      productKind: "other",
+      isCurrentProduct: true,
+      categoryHandle: categoryHandle || "",
+      hotSaleTelecoms,
+      isHotSale: isHotSaleTelecom(
         hotSaleTelecoms,
-        isHotSale: isHotSaleTelecom(
-          hotSaleTelecoms,
-          v.attributes?.telecom || "",
-        ),
-      }));
-    }
+        v.attributes?.telecom || "",
+      ),
+    }));
 
     return {
       props: {
@@ -2515,6 +2511,8 @@ export default function ProductPage({
   const [auApnPromptOpen, setAuApnPromptOpen] = useState(false);
   const [softbankApnPromptOpen, setSoftbankApnPromptOpen] = useState(false);
   const [dataExhaustPromptOpen, setDataExhaustPromptOpen] = useState(false);
+  const [liveComparablePlans, setLiveComparablePlans] =
+    useState(comparablePlans);
   const isPartnerShell = shell === "shop" && store;
   const productAdmin = useProductAdmin();
   const isAdmin = isPartnerShell ? false : productAdmin.isAdmin;
@@ -2542,13 +2540,38 @@ export default function ProductPage({
 
   useEffect(() => {
     setProduct(initialProduct);
+    setLiveComparablePlans(comparablePlans);
     setCoverageContinueAction(null);
     setCoveragePromptOpen(false);
     setPendingPurchaseAction(null);
     setIijApnPromptOpen(false);
     setAuApnPromptOpen(false);
     setSoftbankApnPromptOpen(false);
-  }, [initialProduct]);
+  }, [initialProduct, comparablePlans]);
+
+  useEffect(() => {
+    if (isPartnerShell) return;
+    const category =
+      typeof router.query?.category === "string"
+        ? router.query.category
+        : "";
+    const handle = initialProduct?.slug;
+    if (!category || !handle) return;
+    let cancelled = false;
+    fetch(
+      `/api/esim/comparable-plans?category=${encodeURIComponent(category)}&handle=${encodeURIComponent(handle)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !Array.isArray(data?.plans) || !data.plans.length)
+          return;
+        setLiveComparablePlans(data.plans);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isPartnerShell, router.query?.category, initialProduct?.slug]);
 
   // 進頁即時拉最新 metadata（後台儲存後不用等 ISR）
   useEffect(() => {
@@ -3315,7 +3338,7 @@ export default function ProductPage({
           )}
           productName={product?.name}
           variations={variations}
-          comparablePlans={comparablePlans}
+          comparablePlans={liveComparablePlans}
           preferredTelecom={selectedAttributes?.telecom || ""}
           onSelectVariant={handleEstimatorSelectVariant}
         />

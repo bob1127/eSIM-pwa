@@ -9,6 +9,7 @@
 import { readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { internalCatalogHeaders } from "./lib/internal-catalog-headers.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -103,7 +104,7 @@ async function main() {
 
   const listUrl = `${FRONTEND}${ESIM_LIST_PATH}`;
   console.log("fetch plans", listUrl);
-  const plansRes = await fetch(listUrl);
+  const plansRes = await fetch(listUrl, { headers: internalCatalogHeaders() });
   if (!plansRes.ok) throw new Error(`esim list ${plansRes.status}`);
   const plans = (await plansRes.json()).result || [];
   console.log("plans loaded", plans.length);

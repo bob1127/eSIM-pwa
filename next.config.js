@@ -207,6 +207,19 @@ const nextConfig = {
           },
         ],
       },
+      // 內部工具（供應商成本／方案目錄）：不進索引、不被任何快取層留存
+      ...["/esim-selection", "/esim-selection/:path*", "/admin/:path*"].map(
+        (source) => ({
+          source,
+          headers: [
+            {
+              key: "X-Robots-Tag",
+              value: "noindex, nofollow, noarchive, nosnippet",
+            },
+            { key: "Cache-Control", value: "private, no-store, max-age=0" },
+          ],
+        }),
+      ),
     ];
   },
 

@@ -5,8 +5,11 @@ import {
   ESIM_BASE_URL,
   microesimAuthHeaders,
 } from "../../../lib/esim/microesimClient";
+import { guardEsimCatalog } from "../../../lib/esimCatalogGuard";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (!(await guardEsimCatalog(req, res))) return;
+
   const headers = {
     "Content-Type": "application/json",
     ...microesimAuthHeaders(),

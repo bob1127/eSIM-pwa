@@ -6,6 +6,8 @@
  *   HKD_TO_TWD=4.5 node scripts/patch-japan-daily-softbank-kddi.mjs
  *   HKD_TO_TWD=4.5 node scripts/patch-japan-daily-softbank-kddi.mjs --dry-run
  */
+import { internalCatalogHeaders } from "./lib/internal-catalog-headers.mjs";
+
 const MEDUSA_URL = (
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 ).replace(/\/$/, "");
@@ -91,7 +93,10 @@ async function fetchPlans() {
     "https://www.jeko-esim.com.tw/api/esim/test-list",
   ]) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(90000) });
+      const res = await fetch(url, {
+        signal: AbortSignal.timeout(90000),
+        headers: internalCatalogHeaders(),
+      });
       if (!res.ok) continue;
       const data = await res.json();
       if (data.result?.length) return data.result;

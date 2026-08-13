@@ -48,11 +48,6 @@ async function findCategoryByHandle(headers, handle) {
 // 🚀 1. getStaticPaths
 // ==========================================
 export async function getStaticPaths() {
-  // Vercel build 不預建全部分類頁，避免 Medusa 慢查拖垮 collect page data
-  if (process.env.VERCEL || process.env.SKIP_PRODUCT_SSG === "1") {
-    return { paths: [], fallback: "blocking" };
-  }
-
   try {
     const res = await fetch(`${backendUrl}/store/product-categories`, {
       headers: getMedusaHeaders(),
@@ -269,6 +264,14 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
     startIndex + PRODUCTS_PER_PAGE,
   );
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+
+  useEffect(() => {
+    if (!currentCategory?.slug || !currentProducts.length) return;
+    currentProducts.slice(0, 12).forEach((p) => {
+      if (!p?.slug) return;
+      router.prefetch(`/product/${currentCategory.slug}/${p.slug}`);
+    });
+  }, [currentCategory?.slug, currentProducts, router]);
 
   if (router.isFallback)
     return (

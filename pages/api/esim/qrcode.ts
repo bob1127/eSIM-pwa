@@ -10,9 +10,14 @@ import {
   signMicroesimHeaders,
   shouldForceTestPlan,
 } from "../../../lib/esim/microesimClient";
+import { guardEsimCatalog } from "../../../lib/esimCatalogGuard";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end("Method Not Allowed");
+
+  // 這支會直接向供應商下單（真的會扣款），不可對外開放；
+  // 正式站僅接受內部 token 或管理者身分。正規購買流程走 /api/create-order。
+  if (!(await guardEsimCatalog(req, res))) return;
 
   const rawPlanId = req.body.channel_dataplan_id || req.body.planId;
   const number = req.body.number || req.body.quantity;

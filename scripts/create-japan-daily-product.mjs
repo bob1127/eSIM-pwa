@@ -10,6 +10,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { japanDailyKeyFeaturesByCarrier } from "../content/product-detailed/japan-daily-key-features.js";
+import { internalCatalogHeaders } from "./lib/internal-catalog-headers.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -85,7 +86,10 @@ async function fetchPlans() {
 
   for (const url of urls) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(90000) });
+      const res = await fetch(url, {
+        signal: AbortSignal.timeout(90000),
+        headers: internalCatalogHeaders(),
+      });
       if (!res.ok) continue;
       const data = await res.json();
       const list = data.result || [];

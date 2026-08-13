@@ -23,7 +23,9 @@ export function useProductAdmin() {
     return false;
   }, [user, session?.user?.email]);
 
+  /** @type {Record<string, string>} */
   const authHeaders = useMemo(() => {
+    /** @type {Record<string, string>} */
     const headers = {};
     if (token) headers.Authorization = `Bearer ${token}`;
     return headers;

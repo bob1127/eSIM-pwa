@@ -15,18 +15,34 @@ export const CATEGORY_IMAGE_FALLBACKS: Record<string, string> = {
   malaysia: "/images/分類eSIM-馬來西亞.png",
   singapore: "/images/分類eSIM-新馬.png",
   vietnam: "/images/分類eSIM-越南.png",
-  usa: "/images/美國esim.png",
-  "us-canada": "/images/美國esim.png",
-  "us-ca": "/images/美國esim.png",
-  "north-america": "/images/美國esim.png",
-  america: "/images/美國esim.png",
+  usa: "/images/分類eSIM-美國.png",
+  america: "/images/分類eSIM-美國.png",
+  "us-canada": "/images/分類eSIM-美加-.png",
+  "us-ca": "/images/分類eSIM-美加-.png",
+  "north-america": "/images/分類eSIM-美加墨.png",
+  taiwan: "/images/分類eSIM-台灣.png",
+  france: "/images/分類eSIM-法國.png",
+  turkey: "/images/分類eSIM-歐洲.png",
+  tr: "/images/分類eSIM-歐洲.png",
+  turkiye: "/images/分類eSIM-歐洲.png",
+  germany: "/images/分類eSIM-德國.png",
+  de: "/images/分類eSIM-德國.png",
+  spain: "/images/分類eSIM-西班牙.png",
+  italy: "/images/分類eSIM-義大利.png",
+  uk: "/images/分類eSIM-英國.png",
+  "united-kingdom": "/images/分類eSIM-英國.png",
+  britain: "/images/分類eSIM-英國.png",
+  switzerland: "/images/分類eSIM-瑞士.png",
 };
 
 export function resolveCategoryImageSrc(
   slug: string,
   remoteSrc?: string | null,
 ) {
-  const local = CATEGORY_IMAGE_FALLBACKS[slug] || "/images/jeko-esim.png";
+  const mapped = CATEGORY_IMAGE_FALLBACKS[slug];
+  if (mapped) return mapped;
+
+  const local = "/images/jeko-esim.png";
   // 外部 Storage 目前回 402，精選卡優先用本地圖
   if (remoteSrc && !/supabase\.co\/storage/i.test(remoteSrc)) {
     return remoteSrc;

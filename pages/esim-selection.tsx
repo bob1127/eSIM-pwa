@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
+import Head from "next/head";
+import Link from "next/link";
 import { getClientPlatformFxRates } from "@/lib/esim/platformFx";
+import { useProductAdmin } from "@/hooks/useProductAdmin";
 
 const PLATFORM_FX = getClientPlatformFxRates();
 
@@ -31,15 +34,31 @@ function normalizeLocationTokens(raw: string): string[] {
       if (/^(ID|IDN|INDONESIA)$/.test(t)) return "ID";
       if (/^(AU|AUS|AUSTRALIA)$/.test(t)) return "AU";
       if (/^(NZ|NZL|NEW ZEALAND)$/.test(t)) return "NZ";
+      if (/^(EG|EGY|EGYPT)$/.test(t)) return "EG";
+      if (/^(TR|TUR|TURKEY|TURKIYE)$/.test(t)) return "TR";
+      if (
+        /^(AE|ARE|UAE|UNITED ARAB EMIRATES|DUBAI|DXB|ABU DHABI|ABUDHABI)$/.test(
+          t,
+        )
+      )
+        return "AE";
       if (/^(US|USA|UNITEDSTATES|UNITED STATES|AMERICA)$/.test(t)) return "US";
       if (/^(CA|CAN|CANADA)$/.test(t)) return "CA";
       if (/^(MX|MEX|MEXICO)$/.test(t)) return "MX";
+      if (/^(PE|PER|PERU)$/.test(t)) return "PE";
+      if (/^(CL|CHL|CHILE)$/.test(t)) return "CL";
+      if (/^(AR|ARG|ARGENTINA)$/.test(t)) return "AR";
+      if (/^(BR|BRA|BRAZIL|BRASIL)$/.test(t)) return "BR";
       if (/^(FR|FRA|FRANCE)$/.test(t)) return "FR";
       if (/^(IT|ITA|ITALY)$/.test(t)) return "IT";
       if (/^(GB|GBR|UK|UNITEDKINGDOM|UNITED KINGDOM|ENGLAND)$/.test(t))
         return "GB";
       if (/^(DE|DEU|GERMANY)$/.test(t)) return "DE";
+      if (/^(AT|AUT|AUSTRIA)$/.test(t)) return "AT";
       if (/^(CH|CHE|SWITZERLAND)$/.test(t)) return "CH";
+      if (/^(PL|POL|POLAND)$/.test(t)) return "PL";
+      if (/^(BE|BEL|BELGIUM)$/.test(t)) return "BE";
+      if (/^(IE|IRL|IRELAND)$/.test(t)) return "IE";
       if (/^(ES|ESP|SPAIN)$/.test(t)) return "ES";
       if (/^(NL|NLD|NETHERLANDS|HOLLAND)$/.test(t)) return "NL";
       if (/^(CZ|CZE|CZECH|CZECHIA|CZECH REPUBLIC)$/.test(t)) return "CZ";
@@ -81,8 +100,12 @@ type CountryConfig = {
   defaultSortByCost?: boolean;
   /** 只掃方案名稱／SKU（禁止掃整包 JSON，避免 Hong Kong Time 誤傷） */
   keywords?: string[];
-  /** 名稱前綴備援（僅 pure 且 location 空白時） */
+  /** 名稱前綴備援（僅 pure 且 location 空白時；networkCodes 篩選也會用） */
   namePrefixes?: string[];
+  /**
+   * 電信 networks 含「XX:」國碼即命中（歐洲多國包涵蓋波蘭／瑞士等）
+   */
+  networkCodes?: string[];
   exclude?: string[];
   order?: number;
 };
@@ -259,16 +282,37 @@ const COUNTRIES: Record<string, CountryConfig> = {
     ],
     exclude: ["ASIA", "GLOBAL"],
   },
+  AU: {
+    emoji: "🇦🇺",
+    name: "澳洲 (純澳)",
+    pure: true,
+    codes: ["AU", "AUS", "AUSTRALIA"],
+    namePrefixes: ["Australia-", "Australia "],
+    keywords: [],
+    exclude: ["ASIA", "GLOBAL", "NEW ZEALAND", "AU,NZ", "紐澳", "澳紐"],
+  },
+  NZ: {
+    emoji: "🇳🇿",
+    name: "紐西蘭 (純紐)",
+    pure: true,
+    codes: ["NZ", "NZL", "NEW ZEALAND"],
+    namePrefixes: ["New Zealand-", "New Zealand ", "NewZealand-", "NZ-"],
+    keywords: [],
+    exclude: ["ASIA", "GLOBAL", "AUSTRALIA", "AU,NZ", "紐澳", "澳紐"],
+  },
   ANZ: {
-    emoji: "🦘",
+    emoji: "🇦🇺🇳🇿",
     name: "紐澳 (澳洲+紐西蘭)",
     pure: false,
     codes: ["ANZ", "AU_NZ", "AU-NZ"],
     locationSet: ["AU", "NZ"],
     keywords: [
+      "AU,NZ(T+C)",
+      "AU,NZ-",
       "Australia&New Zealand",
       "Australia-New Zealand",
       "Australia/New Zealand",
+      "Australia & New Zealand",
       "紐澳",
       "澳紐",
     ],
@@ -356,12 +400,13 @@ const COUNTRIES: Record<string, CountryConfig> = {
   },
   FR: {
     emoji: "🇫🇷",
-    name: "法國 (純法)",
-    pure: true,
+    name: "法國 (含歐包)",
+    pure: false,
     codes: ["FR", "FRA", "FRANCE"],
-    namePrefixes: ["France-", "France "],
+    networkCodes: ["FR"],
+    namePrefixes: ["France-", "France ", "France("],
     keywords: [],
-    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+    exclude: ["GLOBAL", "WORLD", "ASIA"],
   },
   IT: {
     emoji: "🇮🇹",
@@ -396,14 +441,55 @@ const COUNTRIES: Record<string, CountryConfig> = {
     keywords: [],
     exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
   },
+  AT: {
+    emoji: "🇦🇹",
+    name: "奧地利 (含歐包)",
+    pure: false,
+    codes: ["AT", "AUT", "AUSTRIA"],
+    networkCodes: ["AT"],
+    namePrefixes: ["Austria-", "Austria ", "Austria(", "Österreich-"],
+    keywords: [],
+    exclude: ["GLOBAL", "WORLD", "ASIA"],
+  },
   CH: {
     emoji: "🇨🇭",
-    name: "瑞士 (純瑞)",
-    pure: true,
+    name: "瑞士 (含歐包)",
+    pure: false,
     codes: ["CH", "CHE", "SWITZERLAND"],
-    namePrefixes: ["Switzerland-", "Switzerland "],
+    networkCodes: ["CH"],
+    namePrefixes: ["Switzerland-", "Switzerland ", "Swiss-"],
     keywords: [],
-    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+    exclude: ["GLOBAL", "WORLD", "ASIA"],
+  },
+  PL: {
+    emoji: "🇵🇱",
+    name: "波蘭 (含歐包)",
+    pure: false,
+    codes: ["PL", "POL", "POLAND"],
+    networkCodes: ["PL"],
+    namePrefixes: ["Poland-", "Poland ", "Poland(", "Polska-"],
+    keywords: [],
+    exclude: ["GLOBAL", "WORLD", "ASIA"],
+  },
+  BE: {
+    emoji: "🇧🇪",
+    name: "比利時 (含歐包)",
+    pure: false,
+    codes: ["BE", "BEL", "BELGIUM"],
+    networkCodes: ["BE"],
+    namePrefixes: ["Belgium-", "Belgium ", "Belgium(", "Belgique-"],
+    keywords: [],
+    exclude: ["GLOBAL", "WORLD", "ASIA"],
+  },
+  IE: {
+    emoji: "🇮🇪",
+    name: "愛爾蘭 (含歐包)",
+    pure: false,
+    codes: ["IE", "IRL", "IRELAND"],
+    networkCodes: ["IE"],
+    namePrefixes: ["Ireland-", "Ireland ", "Ireland(", "Eire-"],
+    keywords: [],
+    exclude: ["GLOBAL", "WORLD", "ASIA"],
   },
   ES: {
     emoji: "🇪🇸",
@@ -431,6 +517,58 @@ const COUNTRIES: Record<string, CountryConfig> = {
     namePrefixes: ["Czech-", "Czech ", "Czechia-"],
     keywords: [],
     exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+  },
+  EG: {
+    emoji: "🇪🇬",
+    name: "埃及 (純埃)",
+    pure: true,
+    codes: ["EG", "EGY", "EGYPT"],
+    namePrefixes: ["Egypt-", "Egypt "],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA", "AFRICA", "MIDDLE EAST"],
+  },
+  TR: {
+    emoji: "🇹🇷",
+    name: "土耳其 (純土)",
+    pure: true,
+    codes: ["TR", "TUR", "TURKEY", "TURKIYE"],
+    namePrefixes: ["Turkey-", "Turkey ", "Turkiye-", "Türkiye-"],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA", "MIDDLE EAST"],
+  },
+  AE: {
+    emoji: "🇦🇪",
+    name: "阿拉伯聯合大公國 (杜拜／阿布達比)",
+    pure: true,
+    codes: [
+      "AE",
+      "ARE",
+      "UAE",
+      "UNITED ARAB EMIRATES",
+      "DUBAI",
+      "DXB",
+      "ABU DHABI",
+      "ABUDHABI",
+    ],
+    namePrefixes: [
+      "UAE-",
+      "UAE ",
+      "UAE(",
+      "United Arab",
+      "Dubai-",
+      "Dubai ",
+      "Abu Dhabi-",
+      "Abu Dhabi ",
+      "Abudhabi-",
+      "阿聯",
+      "杜拜-",
+      "杜拜 ",
+      "迪拜-",
+      "阿布達比",
+      "阿布扎比",
+    ],
+    keywords: [],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA", "MEA", "MIDDLE EAST"],
   },
   US_CA: {
     emoji: "🇺🇸🇨🇦",
@@ -477,6 +615,46 @@ const COUNTRIES: Record<string, CountryConfig> = {
     ],
     exclude: ["GLOBAL", "EUROPE", "ASIA"],
   },
+  PE: {
+    emoji: "🇵🇪",
+    name: "秘魯 (含南美包)",
+    pure: false,
+    codes: ["PE", "PER", "PERU"],
+    networkCodes: ["PE"],
+    namePrefixes: ["Peru-", "Peru ", "Peru(", "Perú-"],
+    keywords: [],
+    exclude: ["GLOBAL", "WORLD", "ASIA", "EUROPE", "EU "],
+  },
+  CL: {
+    emoji: "🇨🇱",
+    name: "智利 (含南美包)",
+    pure: false,
+    codes: ["CL", "CHL", "CHILE"],
+    networkCodes: ["CL"],
+    namePrefixes: ["Chile-", "Chile ", "Chile("],
+    keywords: [],
+    exclude: ["GLOBAL", "WORLD", "ASIA", "EUROPE", "EU "],
+  },
+  AR: {
+    emoji: "🇦🇷",
+    name: "阿根廷 (含南美包)",
+    pure: false,
+    codes: ["AR", "ARG", "ARGENTINA"],
+    networkCodes: ["AR"],
+    namePrefixes: ["Argentina-", "Argentina ", "Argentina("],
+    keywords: [],
+    exclude: ["GLOBAL", "WORLD", "ASIA", "EUROPE", "EU "],
+  },
+  BR: {
+    emoji: "🇧🇷",
+    name: "巴西 (含南美包)",
+    pure: false,
+    codes: ["BR", "BRA", "BRAZIL", "BRASIL"],
+    networkCodes: ["BR"],
+    namePrefixes: ["Brazil-", "Brazil ", "Brazil(", "Brasil-", "Brasil "],
+    keywords: [],
+    exclude: ["GLOBAL", "WORLD", "ASIA", "EUROPE", "EU "],
+  },
   EU: {
     emoji: "🇪🇺",
     name: "歐洲多國 (EU)",
@@ -495,9 +673,20 @@ const COUNTRIES: Record<string, CountryConfig> = {
   },
 };
 
+function escapeRegExp(s: string) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /** 方案是否符合選中的國家／區域（純單國＝location 精確單碼） */
 function planMatchesCountry(
-  p: { name?: string; channel_dataplan_name?: string; code?: string; location?: string },
+  p: {
+    name?: string;
+    channel_dataplan_name?: string;
+    code?: string;
+    location?: string;
+    networks?: string;
+    operator?: string;
+  },
   config: CountryConfig,
 ): boolean {
   const pName = String(p.name || p.channel_dataplan_name || "").toUpperCase();
@@ -510,6 +699,16 @@ function planMatchesCountry(
       hayForExclude.includes(String(ex).toUpperCase()),
     );
     if (hit) return false;
+  }
+
+  // ── 電信 networks 含指定國碼（歐洲包涵蓋波蘭／瑞士等）──
+  if (config.networkCodes?.length) {
+    const nets = String(p.networks || p.operator || "").toUpperCase();
+    const hitNet = config.networkCodes.some((code) => {
+      const c = escapeRegExp(String(code).toUpperCase().trim());
+      return c.length > 0 && new RegExp(`(?:^|\\|)${c}:`).test(nets);
+    });
+    if (hitNet) return true;
   }
 
   // ── 純單國：location 只能是該國一碼 ──
@@ -585,6 +784,16 @@ function planMatchesCountry(
     return true;
   }
 
+  if (!config.pure && config.namePrefixes?.length) {
+    if (
+      config.namePrefixes.some((prefix) =>
+        pName.startsWith(String(prefix).toUpperCase()),
+      )
+    ) {
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -626,6 +835,66 @@ const getSimpleDesc = (name: string, day: number) => {
   }
   return `規格詳見內容 · ${day}天`;
 };
+
+type EkycStatus = "none" | "required" | "unknown";
+
+/**
+ * 實名／eKYC：只信 API 備註明文（special_desc / speed_desc / rule_desc）。
+ * 後台沒寫就不猜——例如 Taiwan-Daily*-A1 只寫 Support Tiktok & GPT，算「未標」。
+ */
+function parseEkycStatus(p: any): {
+  ekycStatus: EkycStatus;
+  ekycLabel: string;
+  ekycClass: string;
+  ekycTitle: string;
+} {
+  const notes = [
+    p.speed_desc,
+    p.special_desc,
+    p.rule_desc,
+    p.tags,
+    p.remark,
+    p.note,
+    p.desc,
+  ]
+    .map((x) => String(x || ""))
+    .join(" ");
+
+  const noHit =
+    /no\s*e-?kyc|no ekyc|無需\s*e-?kyc|不需\s*e-?kyc|無需.*實名|不需.*實名|not\s*(require|needed).*e-?kyc|ekyc not (required|needed)|no real[- ]?name/i.test(
+      notes,
+    );
+  const yesHit =
+    /e-?kyc required|require[ds]?\s*e-?kyc|實名認[證証]|real[- ]?name authentication|ekyc required/i.test(
+      notes,
+    ) && !noHit;
+
+  if (noHit) {
+    return {
+      ekycStatus: "none",
+      ekycLabel: "🪪 無需實名",
+      ekycClass: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+      ekycTitle: notes.slice(0, 180) || "API 備註：No ekyc needed",
+    };
+  }
+  if (yesHit) {
+    return {
+      ekycStatus: "required",
+      ekycLabel: "⚠️ 需實名",
+      ekycClass: "bg-red-50 text-red-700 border border-red-200 font-bold",
+      ekycTitle: notes.slice(0, 180) || "API 備註：ekyc required",
+    };
+  }
+
+  return {
+    ekycStatus: "unknown",
+    ekycLabel: "❓ 實名未標",
+    ekycClass: "bg-gray-50 text-gray-500 border border-gray-200",
+    ekycTitle: notes.trim()
+      ? `API 未標實名。備註：${notes.slice(0, 140)}`
+      : "API 備註未標示是否需實名認證",
+  };
+}
 
 // --- 3. 核心解析邏輯 ---
 const parsePlanDetails = (p: any, countryConfig: any) => {
@@ -938,6 +1207,8 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
     hotspotClass = "bg-yellow-50 text-yellow-700 border border-yellow-100";
   }
 
+  const ekyc = parseEkycStatus(p);
+
   return {
     isNative,
     carrier,
@@ -954,6 +1225,7 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
     setupBadge,
     hotspotStatus,
     hotspotClass,
+    ...ekyc,
   };
 };
 
@@ -1041,6 +1313,9 @@ const CurrencyConverter = () => {
 };
 
 export default function GlobalPlanScanner() {
+  // 這頁會攤開供應商成本、方案 ID 與利潤設定，只有管理者能看；
+  // 真正的把關在 /api/esim/list（lib/esimCatalogGuard.js），這裡只是不做無謂請求。
+  const { isAdmin, adminChecked, authHeaders } = useProductAdmin();
   const [rawPlans, setRawPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -1051,6 +1326,8 @@ export default function GlobalPlanScanner() {
   const [filterIP, setFilterIP] = useState("ALL");
   const [filterDayRange, setFilterDayRange] = useState("ALL");
   const [filterType, setFilterType] = useState("ALL");
+  /** ALL | NO_EKYC | EKYC_REQUIRED | UNKNOWN */
+  const [filterEkyc, setFilterEkyc] = useState("ALL");
 
   type SortKey = "PRICE" | "DAY" | "DATA";
   interface SortConfig {
@@ -1084,7 +1361,6 @@ export default function GlobalPlanScanner() {
   const [partnerDiscountPercent, setPartnerDiscountPercent] = useState(10);
 
   useEffect(() => {
-    fetchPlans();
     const saved = localStorage.getItem("savedPlans");
     if (saved) setSavedPlanIds(JSON.parse(saved));
     const savedFx = localStorage.getItem("esimSelectionFxMode");
@@ -1173,7 +1449,10 @@ export default function GlobalPlanScanner() {
   };
   const fetchPlans = async () => {
     try {
-      const res = await fetch("/api/esim/list");
+      const res = await fetch("/api/esim/list", {
+        credentials: "include",
+        headers: { ...(authHeaders as Record<string, string>) },
+      });
       if (!res.ok) throw new Error(`API Error: ${res.status}`);
       const data = await res.json();
       setRawPlans(data.result || []);
@@ -1183,6 +1462,18 @@ export default function GlobalPlanScanner() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!adminChecked) return;
+    if (!isAdmin) {
+      setRawPlans([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    fetchPlans();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminChecked, isAdmin, authHeaders]);
 
   const handleSortClick = (key: SortKey) => {
     setSortStack((prevStack) => {
@@ -1347,9 +1638,23 @@ export default function GlobalPlanScanner() {
     return Array.from(names).sort();
   }, [baseProcessedPlans]);
 
+  const ekycCounts = useMemo(() => {
+    let none = 0;
+    let required = 0;
+    let unknown = 0;
+    for (const p of baseProcessedPlans) {
+      if (p.ekycStatus === "none") none += 1;
+      else if (p.ekycStatus === "required") required += 1;
+      else unknown += 1;
+    }
+    return { none, required, unknown, all: baseProcessedPlans.length };
+  }, [baseProcessedPlans]);
+
   useEffect(() => {
     setFilterName("ALL");
     setFilterCarrier("ALL");
+    setFilterType("ALL");
+    setFilterEkyc("ALL");
     const cfg = COUNTRIES[selectedCountry];
     if (cfg?.defaultSortByCost) {
       setSortStack([{ key: "PRICE", order: "ASC" }]);
@@ -1378,6 +1683,12 @@ export default function GlobalPlanScanner() {
         result = result.filter((p) => p.planCategory === "TOTAL");
       if (filterType === "UNLIMITED")
         result = result.filter((p) => p.planCategory === "UNLIMITED");
+      if (filterEkyc === "NO_EKYC")
+        result = result.filter((p) => p.ekycStatus === "none");
+      if (filterEkyc === "EKYC_REQUIRED")
+        result = result.filter((p) => p.ekycStatus === "required");
+      if (filterEkyc === "UNKNOWN")
+        result = result.filter((p) => p.ekycStatus === "unknown");
     }
 
     result.sort((a, b) => {
@@ -1414,21 +1725,70 @@ export default function GlobalPlanScanner() {
     filterIP,
     filterDayRange,
     filterType,
+    filterEkyc,
     sortStack,
     showSavedOnly,
   ]);
 
+  const noIndex = (
+    <Head>
+      <title>選品工具</title>
+      <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+    </Head>
+  );
+
+  if (!adminChecked)
+    return (
+      <>
+        {noIndex}
+        <div className="p-10 text-center font-bold text-gray-500">
+          驗證權限中...
+        </div>
+      </>
+    );
+
+  if (!isAdmin)
+    return (
+      <>
+        {noIndex}
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+          <div className="max-w-md w-full bg-white border border-gray-200 rounded-2xl p-8 text-center shadow-sm">
+            <div className="text-4xl mb-3">🔒</div>
+            <h1 className="text-lg font-bold text-gray-800 mb-2">
+              內部工具｜需要管理者權限
+            </h1>
+            <p className="text-sm text-gray-500 mb-6">
+              此頁包含供應商成本與方案資料，僅限管理者帳號存取。
+            </p>
+            <Link
+              href="/login"
+              className="inline-block px-5 py-2.5 rounded-lg bg-black text-white text-sm font-semibold"
+            >
+              前往登入
+            </Link>
+          </div>
+        </div>
+      </>
+    );
+
   if (loading)
     return (
-      <div className="p-10 text-center font-bold text-gray-500">掃描中...</div>
+      <>
+        {noIndex}
+        <div className="p-10 text-center font-bold text-gray-500">掃描中...</div>
+      </>
     );
   if (errorMsg)
     return (
-      <div className="p-10 text-center text-red-500">錯誤: {errorMsg}</div>
+      <>
+        {noIndex}
+        <div className="p-10 text-center text-red-500">錯誤: {errorMsg}</div>
+      </>
     );
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans text-sm pb-32">
+      {noIndex}
       <div className="max-w-[1600px] mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
@@ -1520,6 +1880,11 @@ export default function GlobalPlanScanner() {
                 {selectedCountry === "TH_CP" && (
                   <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-md">
                     抓取涵蓋泰國的多國／星馬泰／亞太方案，預設依成本由低到高（通常比純泰更省）
+                  </p>
+                )}
+                {!!COUNTRIES[selectedCountry]?.networkCodes?.length && (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-md">
+                    抓電信 networks 含該國的多國包；若有單國 SKU 也會一併列出（不含全球包）
                   </p>
                 )}
               </div>
@@ -1847,6 +2212,44 @@ export default function GlobalPlanScanner() {
                 <option value="UNLIMITED">♾️ 吃到飽</option>
               </select>
 
+              <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-lg px-1 py-0.5">
+                <span className="text-xs font-bold text-emerald-800 px-1.5 whitespace-nowrap">
+                  實名
+                </span>
+                {(
+                  [
+                    ["ALL", `全部 ${ekycCounts.all}`],
+                    ["NO_EKYC", `🪪 無需 ${ekycCounts.none}`],
+                    ["EKYC_REQUIRED", `⚠️ 需實名 ${ekycCounts.required}`],
+                    ["UNKNOWN", `❓ 未標 ${ekycCounts.unknown}`],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setFilterEkyc(value)}
+                    className={`px-2 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                      filterEkyc === value
+                        ? value === "EKYC_REQUIRED"
+                          ? "bg-red-600 text-white"
+                          : value === "NO_EKYC"
+                            ? "bg-emerald-600 text-white"
+                            : "bg-gray-800 text-white"
+                        : "text-emerald-900 hover:bg-white"
+                    }`}
+                    title={
+                      value === "NO_EKYC"
+                        ? "只含 API 明文：No ekyc needed／無需實名。後台沒寫的不算。"
+                        : value === "UNKNOWN"
+                          ? "API 特殊說明沒寫實名（例如只寫 Support Tiktok & GPT）"
+                          : undefined
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
               <div className="flex items-center gap-2 ml-auto">
                 <span className="text-gray-500 text-xs font-bold mr-1">
                   排序:
@@ -1990,6 +2393,12 @@ export default function GlobalPlanScanner() {
                       className={`font-bold text-sm px-2 py-1 rounded-md inline-block mb-1 ${p.carrierBadge}`}
                     >
                       {p.carrier}
+                    </div>
+                    <div
+                      className={`text-[10px] px-1.5 py-0.5 rounded inline-block mb-1 ${p.ekycClass}`}
+                      title={p.ekycTitle}
+                    >
+                      {p.ekycLabel}
                     </div>
                     {p.carrier.includes("SoftBank / KDDI") && (
                       <div className="text-[10px] text-blue-500">
