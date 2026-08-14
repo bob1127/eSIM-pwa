@@ -95,6 +95,7 @@ async function enableLineTrafficAlert(lineUserId) {
   if (!result.ok) {
     return {
       ok: false,
+      code: result.code,
       message: buildLineAlertNeedMemberMessage(),
     };
   }
@@ -136,6 +137,16 @@ async function handleTextMessage(event) {
     }
     const result = await enableLineTrafficAlert(lineUserId);
     if (!result.ok) {
+      if (result.code === "need_select") {
+        await replyLineMessage(replyToken, [
+          {
+            type: "text",
+            text: "您有多張 eSIM。為節省推播費用，同時只監控一張。請點下方按鈕選擇要提醒的卡。",
+          },
+          buildIccidUsageFlexMessage(),
+        ]);
+        return;
+      }
       await replyLineMessage(replyToken, buildMemberBindMessage());
       return;
     }

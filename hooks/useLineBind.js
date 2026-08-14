@@ -45,8 +45,8 @@ function stripBindQuery(router) {
   delete q.line_bind_msg;
   delete q.line_bind_code;
   delete q.line_friend;
-  // 保留 step，避免清掉 line_bind 參數後掉回購物車步驟 0
-  if (!q.step) q.step = "1";
+  const path = String(router.pathname || "").toLowerCase();
+  if (path.includes("cart") && !q.step) q.step = "1";
   router.replace(
     { pathname: router.pathname, query: q },
     undefined,
@@ -81,11 +81,18 @@ export function useLineBind({ onSuccess } = {}) {
       setStatus("success");
       setMessage(bindSuccessMessage(result));
       onSuccess?.(result);
+      if (
+        router.pathname === "/account" &&
+        String(router.query.line_bind || "") === "start"
+      ) {
+        router.replace("/line/iccid?bind=ok");
+        return;
+      }
     } else {
       setStatus("error");
       setMessage(mapBindError(result));
     }
-  }, [token, onSuccess]);
+  }, [token, onSuccess, router]);
 
   // 本機 OAuth 回呼結果
   useEffect(() => {

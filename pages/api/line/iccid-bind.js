@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   if (!verified.ok) {
     return res.status(401).json({
       ok: false,
-      error: "請從官方 LINE 的按鈕開啟此頁，才能開啟提醒",
+      error: "LINE 身分驗證失敗，請關閉後再從圖文選單「開啟流量提醒」進入",
       code: verified.error,
     });
   }

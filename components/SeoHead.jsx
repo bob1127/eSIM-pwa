@@ -2,6 +2,7 @@ import Head from "next/head";
 import {
   SITE_NAME,
   SITE_NAME_FULL,
+  SITE_AI_SUMMARY,
   BRAND,
   formatTitle,
   absoluteUrl,
@@ -125,11 +126,12 @@ export default function SeoHead({
       <meta name="twitter:image:alt" content={imageAlt} />
 
       {/* GEO / AI 摘要友好 */}
-      {metaDescription && (
-        <meta name="abstract" content={metaDescription.slice(0, 200)} />
-      )}
+      <meta name="abstract" content={SITE_AI_SUMMARY} />
       <meta name="topic" content={articleSection || "旅遊知識"} />
-      <meta name="summary" content={metaDescription.slice(0, 200)} />
+      <meta
+        name="summary"
+        content={(metaDescription || SITE_AI_SUMMARY).slice(0, 220)}
+      />
 
       <link rel="icon" href={SITE_FAVICON} />
 

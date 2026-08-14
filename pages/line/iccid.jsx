@@ -1,15 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Head from "next/head";
-import Link from "next/link";
-import { initLiff } from "@/lib/liffClient";
+import { useRouter } from "next/router";
+import { initLiff, ensureLiffIdToken } from "@/lib/liffClient";
 import { isValidIccid, normalizeIccid } from "@/lib/pushBind";
+import { useAuth } from "@/hooks/useAuth";
+import { useLineBind } from "@/hooks/useLineBind";
+import { buildLoginUrl } from "@/lib/authRedirect";
+import { fireRibbonBurst } from "@/lib/fireCelebrationConfetti";
+import LineIccidScreen from "@/components/line/LineIccidScreen";
 
 /**
  * 圖文選單「開啟流量提醒」：一鍵綁定會員 + ICCID 查流量並開提醒
  */
 export default function LineIccidPage() {
+  const router = useRouter();
+  const { isLoggedIn, authReady } = useAuth();
   const [iccid, setIccid] = useState("");
   const [idToken, setIdToken] = useState("");
   const [liffReady, setLiffReady] = useState(false);
@@ -19,6 +26,33 @@ export default function LineIccidPage() {
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
   const [orderAlert, setOrderAlert] = useState(null);
+  const [orderError, setOrderError] = useState("");
+  const [memberBindOk, setMemberBindOk] = useState(false);
+  const [memberEsims, setMemberEsims] = useState([]);
+  const [selectedTopupId, setSelectedTopupId] = useState("");
+  const [activeTopupId, setActiveTopupId] = useState("");
+  const [usageById, setUsageById] = useState({});
+  const [usageLoading, setUsageLoading] = useState(false);
+  const usageFetched = useRef(new Set());
+
+  const {
+    status: lineBindStatus,
+    message: lineBindMessage,
+    bind: runMemberBind,
+  } = useLineBind({
+    onSuccess: () => {
+      setMemberBindOk(true);
+      fireRibbonBurst();
+    },
+  });
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (router.query.bind === "ok" || router.query.line_bind === "ok") {
+      setMemberBindOk(true);
+      fireRibbonBurst();
+    }
+  }, [router.isReady, router.query.bind, router.query.line_bind]);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,11 +85,19 @@ export default function LineIccidPage() {
           const res = await fetch("/api/line/enable-alert", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ idToken: token }),
+            body: JSON.stringify({ idToken: token, listOnly: true }),
           });
           const data = await res.json();
           if (cancelled) return;
-          if (data.ok) setOrderAlert(data);
+          if (data.ok) {
+            const list = Array.isArray(data.esims) ? data.esims : [];
+            setMemberEsims(list);
+            setActiveTopupId(data.activeTopupId || "");
+            const pick =
+              data.activeTopupId ||
+              (list.length === 1 ? list[0].topupId : "");
+            setSelectedTopupId(pick ? String(pick) : "");
+          }
         } catch {
           /* 沒有本站訂單時改走 ICCID／綁定會員 */
         }
@@ -67,23 +109,120 @@ export default function LineIccidPage() {
     };
   }, []);
 
-  const handleOneClickOrder = async () => {
-    if (!idToken) return;
-    setBindLoading(true);
-    setError("");
+  useEffect(() => {
+    if (!memberBindOk || !idToken) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/line/enable-alert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken, listOnly: true }),
+        });
+        const data = await res.json();
+        if (cancelled || !data.ok) return;
+        const list = Array.isArray(data.esims) ? data.esims : [];
+        setMemberEsims(list);
+        setActiveTopupId(data.activeTopupId || "");
+        const pick =
+          data.activeTopupId || (list.length === 1 ? list[0].topupId : "");
+        setSelectedTopupId(pick ? String(pick) : "");
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [memberBindOk, idToken]);
+
+  const fetchUsage = useCallback(async (esim, { force = false } = {}) => {
+    const key = String(esim?.topupId || "");
+    if (!key) return;
+    if (!force && usageFetched.current.has(key)) return;
+    usageFetched.current.add(key);
+    setUsageLoading(true);
     try {
+      const res = await fetch("/api/esim/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topupId: key }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUsageById((prev) => ({ ...prev, [key]: data }));
+      } else {
+        usageFetched.current.delete(key);
+      }
+    } catch {
+      usageFetched.current.delete(key);
+    } finally {
+      setUsageLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!memberEsims.length) return;
+    memberEsims.slice(0, 8).forEach((esim, i) => {
+      window.setTimeout(() => fetchUsage(esim), 350 * i);
+    });
+  }, [memberEsims, fetchUsage]);
+
+  const handleRefreshUsage = (topupId) => {
+    const key = String(topupId || selectedTopupId || "");
+    const selected = memberEsims.find((e) => String(e.topupId) === key);
+    if (!selected) return;
+    usageFetched.current.delete(key);
+    fetchUsage(selected, { force: true });
+  };
+
+  const handleMemberBindClick = () => {
+    if (!authReady) return;
+    if (!isLoggedIn) {
+      router.push(buildLoginUrl("/line/iccid?line_bind=start"));
+      return;
+    }
+    runMemberBind();
+  };
+
+  const handleOneClickOrder = async () => {
+    setBindLoading(true);
+    setOrderError("");
+    try {
+      const ready = await ensureLiffIdToken();
+      if (ready.pending) return;
+      const token = ready.ok ? ready.token : idToken;
+      if (!token) {
+        setOrderError("請關閉後再從圖文選單「開啟流量提醒」進入");
+        return;
+      }
+      setIdToken(token);
       const res = await fetch("/api/line/enable-alert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
+        body: JSON.stringify({
+          idToken: token,
+          topupId: selectedTopupId || undefined,
+        }),
       });
       const data = await res.json();
+      if (Array.isArray(data.esims)) {
+        setMemberEsims(data.esims);
+      }
       if (!data.ok) {
-        throw new Error(data.error || "尚無本站訂單");
+        throw new Error(
+          data.code === "no_order"
+            ? "這個 LINE 尚無對應的本站訂單。請先「一鍵綁定官網會員」，或在下方輸入 ICCID。"
+            : data.code === "need_select"
+              ? "請先在上方選擇要監控的 eSIM。"
+              : data.error || "開啟提醒失敗",
+        );
       }
       setOrderAlert(data);
+      setActiveTopupId(data.topupId || selectedTopupId);
+      fireRibbonBurst();
     } catch (err) {
-      setError(err.message || "一鍵開啟失敗");
+      setOrderError(err.message || "一鍵開啟失敗");
     } finally {
       setBindLoading(false);
     }
@@ -116,6 +255,11 @@ export default function LineIccidPage() {
         throw new Error(data.error || "查詢失敗");
       }
       setResult(data);
+      if (data.usage) {
+        const key = String(data.usage.topupId || selectedTopupId || "iccid");
+        setUsageById((prev) => ({ ...prev, [key]: data.usage }));
+      }
+      if (data.alertEnabled) fireRibbonBurst();
     } catch (err) {
       setError(err.message || "查詢失敗，請稍後再試");
     } finally {
@@ -129,124 +273,32 @@ export default function LineIccidPage() {
         <title>開啟流量提醒｜Jeko eSIM</title>
         <meta name="robots" content="noindex,nofollow" />
       </Head>
-      <main className="min-h-[100dvh] bg-[#F4F7FB] px-5 py-8">
-        <div className="mx-auto w-full max-w-md">
-          <p className="text-[13px] font-bold tracking-wide text-[#3768C7] mb-1">
-            Jeko eSIM
-          </p>
-          <h1 className="text-[22px] font-black text-stone-900 leading-snug">
-            開啟流量提醒
-          </h1>
-          <p className="mt-2 text-[13px] leading-relaxed text-stone-600">
-            可一鍵綁定官網會員，或輸入 ICCID 查流量並開啟 LINE
-            偏低通知。不必先當會員也能用 ICCID。
-          </p>
-
-          {orderAlert?.ok ? (
-            <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-              <p className="font-bold text-emerald-900 text-sm">
-                已用本站訂單開啟提醒
-              </p>
-              {orderAlert.productName ? (
-                <p className="mt-1 text-[12px] text-emerald-800">
-                  監控：{orderAlert.productName}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          <section className="mt-5 rounded-2xl bg-white p-5 shadow-sm border border-stone-100">
-            <h2 className="text-[15px] font-black text-stone-900">
-              一鍵綁定會員
-            </h2>
-            <p className="mt-1.5 text-[12px] leading-relaxed text-stone-600">
-              Google、Facebook 或 Email
-              註冊的會員，點此連結這個 LINE，並用本站訂單開啟提醒。
-            </p>
-            <div className="mt-3 flex flex-col gap-2">
-              <Link
-                href="/account?line_bind=start"
-                className="w-full rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3 text-sm text-center"
-              >
-                一鍵綁定官網會員
-              </Link>
-              <button
-                type="button"
-                disabled={bindLoading || !idToken}
-                onClick={handleOneClickOrder}
-                className="w-full rounded-xl border border-[#3768C7]/30 text-[#3768C7] font-bold py-3 text-sm disabled:opacity-50"
-              >
-                {bindLoading ? "設定中…" : "已有本站訂單？一鍵開啟提醒"}
-              </button>
-            </div>
-          </section>
-
-          <form
-            onSubmit={handleSubmit}
-            className="mt-4 rounded-2xl bg-white p-5 shadow-sm border border-stone-100"
-          >
-            <h2 className="text-[15px] font-black text-stone-900 mb-1">
-              輸入 ICCID 查流量
-            </h2>
-            <p className="text-[12px] text-stone-600 mb-3 leading-relaxed">
-              不是會員、或其他通路購買，填卡號即可查詢並開啟提醒。
-            </p>
-            <label
-              htmlFor="line-iccid"
-              className="block text-[13px] font-bold text-stone-800 mb-2"
-            >
-              ICCID（19～20 碼）
-            </label>
-            <input
-              id="line-iccid"
-              inputMode="numeric"
-              autoComplete="off"
-              value={iccid}
-              onChange={(e) =>
-                setIccid(e.target.value.replace(/[^\d]/g, "").slice(0, 22))
-              }
-              placeholder="請輸入 eSIM 卡號"
-              className="w-full rounded-xl border border-stone-200 px-4 py-3.5 text-[16px] tracking-wide outline-none focus:border-[#3768C7] focus:ring-2 focus:ring-[#3768C7]/20"
-            />
-            {liffError ? (
-              <p className="mt-2 text-[12px] text-amber-700">{liffError}</p>
-            ) : null}
-            {error ? (
-              <p className="mt-2 text-[12px] text-red-600">{error}</p>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={loading || !liffReady}
-              className="mt-4 w-full rounded-xl bg-[#3768C7] hover:bg-[#2B56A8] disabled:opacity-60 text-white font-bold py-3.5 text-sm"
-            >
-              {loading ? "查詢中…" : "查詢並開啟 LINE 提醒"}
-            </button>
-          </form>
-
-          {result ? (
-            <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-              <p className="font-bold text-emerald-900 text-sm mb-2">
-                {result.alertEnabled
-                  ? "已查詢並開啟偏低提醒"
-                  : "已完成查詢"}
-              </p>
-              <pre className="whitespace-pre-wrap text-[13px] leading-relaxed text-stone-800 font-sans">
-                {result.usageText}
-              </pre>
-              {result.alertEnabled ? (
-                <p className="mt-3 text-[12px] text-emerald-800">
-                  剩餘流量偏低時，會從官方 LINE 通知您（約每日檢查一次）。
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          <p className="mt-6 text-[11px] leading-relaxed text-stone-400">
-            ICCID 可在手機「設定 → 行動服務 → eSIM」或購買信件中找到。
-          </p>
-        </div>
-      </main>
+      <LineIccidScreen
+        iccid={iccid}
+        onIccidChange={setIccid}
+        liffReady={liffReady}
+        liffError={liffError}
+        loading={loading}
+        bindLoading={bindLoading}
+        error={error}
+        result={result}
+        orderAlert={orderAlert}
+        orderError={orderError}
+        memberBindOk={memberBindOk}
+        lineBindMessage={lineBindMessage}
+        lineBindStatus={lineBindStatus}
+        authReady={authReady}
+        memberEsims={memberEsims}
+        selectedTopupId={selectedTopupId}
+        onSelectTopup={setSelectedTopupId}
+        activeTopupId={activeTopupId}
+        usageById={usageById}
+        usageLoading={usageLoading}
+        onRefreshUsage={handleRefreshUsage}
+        onMemberBindClick={handleMemberBindClick}
+        onOneClickOrder={handleOneClickOrder}
+        onSubmit={handleSubmit}
+      />
     </>
   );
 }
