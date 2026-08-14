@@ -8,6 +8,7 @@ import {
   TERMS_COMMON,
   TERMS_BY_MODE,
   TERMS_VERSION,
+  CONTENT_DISCLAIMER,
 } from "@/lib/cooperationTermsContent";
 
 const SCROLL_BOTTOM_THRESHOLD_PX = 24;
@@ -153,6 +154,23 @@ export default function CooperationAgreementModal({
                 </h4>
                 <ul className="space-y-2.5">
                   {TERMS_COMMON.map((text) => (
+                    <li
+                      key={text}
+                      className="flex gap-2.5 text-[13px] leading-relaxed text-slate-600"
+                    >
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#F2CC40]" />
+                      <span>{text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="pt-1 border-t border-slate-100">
+                <h4 className="text-[14px] font-black text-slate-900 mb-3 mt-4">
+                  {CONTENT_DISCLAIMER.title}
+                </h4>
+                <ul className="space-y-2.5">
+                  {CONTENT_DISCLAIMER.bullets.map((text) => (
                     <li
                       key={text}
                       className="flex gap-2.5 text-[13px] leading-relaxed text-slate-600"

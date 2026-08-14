@@ -10,7 +10,7 @@ import { getPushEndpoint } from "../lib/pushBind";
  * LINE 登入會員：開啟官方 LINE 低流量推播（不需 Web Push）
  */
 export default function PushLineAlertSection({ className = "", boundTopupId }) {
-  const { session, authReady } = useAuth();
+  const { session, authReady, token, isLoggedIn } = useAuth();
 
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
   const [error, setError] = useState("");
 
   const loadStatus = useCallback(async () => {
-    if (!authReady || !session?.user?.id) {
+    if (!authReady || (!session?.user?.id && !token)) {
       setLoading(false);
       return;
     }
@@ -31,6 +31,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
         : "";
       const res = await fetch(`/api/push/line-alert${qs}`, {
         credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const data = await res.json();
       setStatus(data);
@@ -39,7 +40,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
     } finally {
       setLoading(false);
     }
-  }, [authReady, session?.user?.id]);
+  }, [authReady, session?.user?.id, token]);
 
   useEffect(() => {
     loadStatus();
@@ -53,7 +54,10 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
       const res = await fetch("/api/push/line-alert", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           action: enable ? "enable" : "disable",
           topupId: boundTopupId || undefined,
@@ -87,7 +91,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
     );
   }
 
-  if (!session?.user?.id) {
+  if (!session?.user?.id && !isLoggedIn) {
     return (
       <div
         className={`rounded-xl border border-[#06C755]/30 bg-[#06C755]/5 p-4 ${className}`}
@@ -97,7 +101,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
           <div>
             <p className="font-bold text-stone-900 text-sm">LINE 推播提醒</p>
             <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-              使用 <strong>LINE 登入</strong> 後，可額外開啟官方 LINE 低流量推播（不需瀏覽器通知）。
+              加入官方 LINE 後，可傳「一鍵綁定」連結 Google／FB 會員，或直接貼 ICCID 開啟偏低提醒。
             </p>
           </div>
         </div>
@@ -108,6 +112,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
   const oaUrl = status?.oaUrl || "https://line.me/R/ti/p/@391huuts";
   const enabled = status?.enabled;
   const needsFriend = status?.needsAddFriend;
+  const needsLineLink = status && status.isLineLogin === false;
 
   return (
     <div
@@ -120,7 +125,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
         <div className="min-w-0 flex-1">
           <p className="font-bold text-stone-900 text-sm">LINE 推播提醒</p>
           <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-            加入官方 LINE 好友後，流量偏低時會收到 LINE 訊息（可與瀏覽器推播同時開啟）。
+            加入官方 LINE 後，流量偏低時會收到訊息。Google／FB 會員請在 LINE 傳「一鍵綁定」。
           </p>
           {enabled && status?.productName && (
             <p className="text-[11px] text-[#06C755] font-bold mt-2">
@@ -150,7 +155,17 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
       )}
 
       <div className="flex flex-col sm:flex-row gap-2">
-        {!enabled ? (
+        {needsLineLink ? (
+          <a
+            href={oaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2"
+          >
+            <LineIconSvg className="w-[18px] h-[18px]" />
+            開啟官方 LINE 並一鍵綁定
+          </a>
+        ) : !enabled ? (
           <button
             type="button"
             disabled={actionLoading}
@@ -176,7 +191,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
           rel="noopener noreferrer"
           className="sm:shrink-0 px-4 py-3 rounded-xl border border-[#06C755]/40 text-[#06C755] text-xs font-bold hover:bg-white text-center"
         >
-          在 LINE 傳「開啟流量提醒」
+          在 LINE 傳「一鍵綁定」或貼 ICCID
         </a>
       </div>
     </div>

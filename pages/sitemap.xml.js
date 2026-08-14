@@ -112,6 +112,7 @@ export async function getServerSideProps({ res }) {
     );
     const {
       fetchAllPublishedPartnerPostsForMain,
+      fetchPublishedPartnerArticlePaths,
     } = await import("../lib/partnerBlogMain");
     const partnerPosts = await fetchAllPublishedPartnerPostsForMain({
       limit: 100,
@@ -125,6 +126,15 @@ export async function getServerSideProps({ res }) {
           changefreq: "monthly",
           priority: "0.72",
           lastmod: post.modified || post.date,
+        }),
+      );
+    }
+    const partnerPaths = await fetchPublishedPartnerArticlePaths({ limit: 200 });
+    for (const p of partnerPaths) {
+      urls.push(
+        urlEntry(`${SITE_URL}/p/${p.partnerSlug}/blog/${p.slug}/`, {
+          changefreq: "monthly",
+          priority: "0.55",
         }),
       );
     }

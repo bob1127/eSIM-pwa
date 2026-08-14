@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, Copy, Share2 } from "lucide-react";
 import {
   FacebookIconSvg,
@@ -8,6 +8,31 @@ import {
   LineIconSvg,
 } from "@/components/social/SocialBrandIcons";
 import { SITE_URL } from "@/lib/seo.config";
+
+export const SHARE_BUTTON_CATALOG = [
+  { id: "facebook", label: "Facebook" },
+  { id: "line", label: "LINE" },
+  { id: "instagram", label: "Instagram" },
+  { id: "copy", label: "複製連結" },
+  { id: "native", label: "系統分享" },
+];
+
+const ALLOWED_SHARE_IDS = SHARE_BUTTON_CATALOG.map((x) => x.id);
+
+export function parseShareItems(items) {
+  const raw = Array.isArray(items)
+    ? items
+    : String(items || "facebook,line,instagram,copy,native").split(/[,，\s]+/);
+  const seen = new Set();
+  const out = [];
+  raw.forEach((id) => {
+    const key = String(id || "").trim();
+    if (!ALLOWED_SHARE_IDS.includes(key) || seen.has(key)) return;
+    seen.add(key);
+    out.push(key);
+  });
+  return out.length ? out : [...ALLOWED_SHARE_IDS];
+}
 
 function buildPartnerArticleShareUrl({ domain, slug, fallbackUrl }) {
   const site = String(SITE_URL || "").replace(/\/$/, "");
@@ -26,19 +51,50 @@ function openShareWindow(href) {
   window.open(href, "_blank", "noopener,noreferrer,width=600,height=640");
 }
 
+function iconSizeClass(size) {
+  return size === "sm" ? "w-[14px] h-[14px]" : "w-[17px] h-[17px]";
+}
+
+function btnSizeClass(size) {
+  return size === "sm" ? "h-8 w-8" : "h-10 w-10";
+}
+
+function shapeClass(shape) {
+  return shape === "rounded" ? "rounded-[10px]" : "rounded-full";
+}
+
 /**
- * 夥伴文章社群分享：FB / LINE / IG（系統分享或複製）/ 複製連結 / 原生分享
+ * 夥伴文章社群分享：FB / LINE / IG / 複製連結 / 原生分享
  */
 export default function PartnerShareButtons({
   store,
   title = "",
   slug = "",
   shareUrl: shareUrlProp = "",
+  label = "分享",
+  showLabel = true,
+  items = "facebook,line,instagram,copy,native",
+  look = "brand",
+  shape = "circle",
+  size = "md",
+  align = "left",
+  disabled = false,
 }) {
   const domain = store?.domain || "";
   const [toast, setToast] = useState(null);
   const [copied, setCopied] = useState(false);
-  const [canNativeShare, setCanNativeShare] = useState(false);
+  const ids = parseShareItems(items);
+  const outline = look === "outline";
+  const ic = iconSizeClass(size);
+  const box = btnSizeClass(size);
+  const round = shapeClass(shape);
+  const copyPad = size === "sm" ? "h-8 px-2.5 text-[11px]" : "h-10 px-3.5 text-[12px]";
+  const justify =
+    align === "center"
+      ? "justify-center"
+      : align === "right"
+        ? "justify-end"
+        : "justify-start";
 
   const shareUrl =
     shareUrlProp ||
@@ -47,12 +103,6 @@ export default function PartnerShareButtons({
       slug,
       fallbackUrl: "",
     });
-
-  useEffect(() => {
-    setCanNativeShare(
-      typeof navigator !== "undefined" && typeof navigator.share === "function",
-    );
-  }, []);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -94,6 +144,7 @@ export default function PartnerShareButtons({
   };
 
   const handleCopy = async () => {
+    if (disabled) return;
     const ok = await copyLink();
     setCopied(ok);
     showToast(ok ? "已複製文章連結" : "複製失敗，請手動選取網址");
@@ -103,8 +154,8 @@ export default function PartnerShareButtons({
     }
   };
 
-  /** Instagram 無官方網頁分享 API：優先系統分享，否則複製連結 */
   const shareInstagram = async () => {
+    if (disabled) return;
     const url = getUrl();
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
@@ -121,6 +172,7 @@ export default function PartnerShareButtons({
   };
 
   const shareFacebook = () => {
+    if (disabled) return;
     const url = getUrl();
     openShareWindow(
       `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
@@ -128,6 +180,7 @@ export default function PartnerShareButtons({
   };
 
   const shareLine = () => {
+    if (disabled) return;
     const url = getUrl();
     openShareWindow(
       `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`,
@@ -135,87 +188,104 @@ export default function PartnerShareButtons({
   };
 
   const shareNative = async () => {
+    if (disabled) return;
     const url = getUrl();
-    try {
-      await navigator.share({ title, text: title, url });
-    } catch (err) {
-      if (err?.name === "AbortError") return;
-      await handleCopy();
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title, text: title, url });
+        return;
+      } catch (err) {
+        if (err?.name === "AbortError") return;
+      }
     }
+    await handleCopy();
   };
 
-  const buttons = [
-    {
-      key: "facebook",
+  const brandButtons = {
+    facebook: {
       label: "Facebook 分享",
-      short: "FB",
       onClick: shareFacebook,
-      className: "bg-[#1877F2] text-white hover:brightness-110",
-      icon: <FacebookIconSvg className="w-[17px] h-[17px]" />,
+      brand: "bg-[#1877F2] text-white hover:brightness-110",
+      outline: "bg-white text-[#1877F2] border border-slate-200 hover:border-[#1877F2]/50",
+      icon: <FacebookIconSvg className={ic} />,
     },
-    {
-      key: "line",
+    line: {
       label: "LINE 傳送",
-      short: "LINE",
       onClick: shareLine,
-      className: "bg-[#06C755] text-white hover:brightness-110",
-      icon: <LineIconSvg className="w-[17px] h-[17px]" />,
+      brand: "bg-[#06C755] text-white hover:brightness-110",
+      outline: "bg-white text-[#06C755] border border-slate-200 hover:border-[#06C755]/50",
+      icon: <LineIconSvg className={ic} />,
     },
-    {
-      key: "instagram",
+    instagram: {
       label: "Instagram 分享",
-      short: "IG",
       onClick: shareInstagram,
-      className:
+      brand:
         "bg-gradient-to-br from-[#f58529] via-[#dd2a7b] to-[#8134af] text-white hover:brightness-110",
-      icon: <InstagramIconSvg className="w-[17px] h-[17px]" />,
+      outline: "bg-white text-[#dd2a7b] border border-slate-200 hover:border-[#dd2a7b]/40",
+      icon: <InstagramIconSvg className={ic} />,
     },
-  ];
+  };
 
   return (
     <div className="relative">
-      <div className="flex flex-wrap items-center gap-2.5">
-        <span className="text-[12px] font-bold text-slate-500 mr-1">分享</span>
-
-        {buttons.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            onClick={item.onClick}
-            aria-label={item.label}
-            title={item.label}
-            className={`w-10 h-10 rounded-full inline-flex items-center justify-center shadow-sm ring-1 ring-black/5 transition active:scale-95 ${item.className}`}
-          >
-            {item.icon}
-          </button>
-        ))}
-
-        <button
-          type="button"
-          onClick={handleCopy}
-          aria-label="複製連結"
-          title="複製連結"
-          className="h-10 px-3.5 rounded-full border border-slate-200 bg-white text-slate-700 inline-flex items-center gap-1.5 text-[12px] font-bold hover:border-slate-400 hover:bg-slate-50 transition active:scale-95"
-        >
-          {copied ? (
-            <Check className="w-3.5 h-3.5 text-emerald-600" strokeWidth={2.5} />
-          ) : (
-            <Copy className="w-3.5 h-3.5" strokeWidth={2} />
-          )}
-          {copied ? "已複製" : "複製連結"}
-        </button>
-
-        {canNativeShare ? (
-          <button
-            type="button"
-            onClick={shareNative}
-            aria-label="更多分享"
-            title="更多分享"
-            className="h-10 w-10 rounded-full border border-slate-200 bg-white text-slate-700 inline-flex items-center justify-center hover:border-slate-400 hover:bg-slate-50 transition active:scale-95"
-          >
-            <Share2 className="w-4 h-4" strokeWidth={2} />
-          </button>
+      <div className={`flex flex-wrap items-center gap-2.5 ${justify}`}>
+        {showLabel !== false && label ? (
+          <span className="text-[12px] font-bold text-slate-500 mr-1">
+            {label}
+          </span>
         ) : null}
+
+        {ids.map((id) => {
+          if (id === "copy") {
+            return (
+              <button
+                key="copy"
+                type="button"
+                onClick={handleCopy}
+                aria-label="複製連結"
+                title="複製連結"
+                className={`${copyPad} ${round} border border-slate-200 bg-white text-slate-700 inline-flex items-center gap-1.5 font-bold hover:border-slate-400 hover:bg-slate-50 transition active:scale-95`}
+              >
+                {copied ? (
+                  <Check className={`${ic} text-emerald-600`} strokeWidth={2.5} />
+                ) : (
+                  <Copy className={ic} strokeWidth={2} />
+                )}
+                {copied ? "已複製" : "複製連結"}
+              </button>
+            );
+          }
+          if (id === "native") {
+            return (
+              <button
+                key="native"
+                type="button"
+                onClick={shareNative}
+                aria-label="更多分享"
+                title="更多分享"
+                className={`${box} ${round} border border-slate-200 bg-white text-slate-700 inline-flex items-center justify-center hover:border-slate-400 hover:bg-slate-50 transition active:scale-95`}
+              >
+                <Share2 className={size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4"} strokeWidth={2} />
+              </button>
+            );
+          }
+          const item = brandButtons[id];
+          if (!item) return null;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={item.onClick}
+              aria-label={item.label}
+              title={item.label}
+              className={`${box} ${round} inline-flex items-center justify-center shadow-sm ring-1 ring-black/5 transition active:scale-95 ${
+                outline ? item.outline : item.brand
+              }`}
+            >
+              {item.icon}
+            </button>
+          );
+        })}
       </div>
 
       {toast ? (

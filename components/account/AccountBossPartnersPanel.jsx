@@ -130,7 +130,7 @@ export default function AccountBossPartnersPanel() {
             <Link href="/partner/login" className="text-[#0071EB] font-bold hover:underline">
               /partner/login
             </Link>
-            。若夥伴透過官方 LINE 申請「自訂文章」，於此表一鍵「開通文章」。
+            。若夥伴透過官方 LINE 申請「自訂文章」，於此表一鍵「開通文章」。開通後夥伴須自行確保內容合法、已取得授權；非法用途或無版權資產之責任由該夥伴承擔。
           </p>
         </div>
         <button

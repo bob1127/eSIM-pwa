@@ -19,7 +19,7 @@ import {
   slimWpPostForPage,
 } from "../../lib/wordpress";
 import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
-import { fetchPublishedPartnerPostBySlugForMain } from "../../lib/partnerBlogMain";
+import { fetchPublishedPartnerArticleBundleForMain } from "../../lib/partnerBlogMain";
 import { useUser } from "../../components/context/UserContext";
 import {
   MAX_IMAGE_MB,
@@ -33,6 +33,7 @@ import MediaGalleryLightbox, {
   toGalleryMediaItems,
 } from "../../components/MediaGalleryLightbox";
 import ArticleBlogPostLayout from "../../components/Blog/ArticleBlogPostLayout";
+import PartnerBlogArticleView from "../../components/Shop/PartnerBlogArticleView";
 import WpArticleBody from "../../components/Blog/WpArticleBody";
 import { buildLoginUrl } from "../../lib/authRedirect";
 
@@ -167,6 +168,7 @@ export default function PostPage({
   articleCountry = null,
   articleSubCats = [],
   popularTags = [],
+  partnerArticle = null,
 }) {
   const router = useRouter();
   const { user, session } = useUser();
@@ -286,6 +288,23 @@ export default function PostPage({
     relatedPosts: relatedPosts || [],
     isArticle: !!isArticle,
   });
+
+  if (partnerArticle?.post && partnerArticle?.store) {
+    return (
+      <Layout seo={{ ...pageSeo }}>
+        <PartnerBlogArticleView
+          variant="main"
+          store={partnerArticle.store}
+          post={partnerArticle.post}
+          relatedPosts={partnerArticle.relatedPosts || []}
+          prevPost={partnerArticle.prevPost || null}
+          products={partnerArticle.products || []}
+          blogCms={partnerArticle.blogCms}
+          pickupProduct={partnerArticle.pickupProduct || null}
+        />
+      </Layout>
+    );
+  }
 
   // 父分類為「文章」→ TABIPPO 風格版型
   if (isArticle) {
@@ -1203,20 +1222,32 @@ export async function getStaticProps({ params }) {
 
   try {
     let post = await fetchWpPostBySlug(slug);
-    let fromPartner = false;
+    let partnerArticle = null;
 
     if (!post) {
-      post = await fetchPublishedPartnerPostBySlugForMain(slug);
-      fromPartner = !!post;
+      const bundle = await fetchPublishedPartnerArticleBundleForMain(slug);
+      if (bundle?.wpPost) {
+        post = bundle.wpPost;
+        partnerArticle = {
+          store: bundle.store,
+          post: bundle.post,
+          relatedPosts: bundle.relatedPosts || [],
+          prevPost: bundle.prevPost,
+          products: bundle.products || [],
+          blogCms: bundle.blogCms,
+          pickupProduct: bundle.pickupProduct,
+        };
+      }
     }
     if (!post) {
       return { notFound: true, revalidate: 60 };
     }
 
-    if (fromPartner) {
+    if (partnerArticle) {
       return {
         props: {
           post: slimWpPostForPage(post),
+          partnerArticle,
           relatedPosts: [],
           isArticle: true,
           articleCountry: null,

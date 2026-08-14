@@ -6,18 +6,44 @@ import { useMemo, useState } from "react";
 import PartnerBlogSidebar from "@/components/Shop/PartnerBlogSidebar";
 import PartnerBlogByline from "@/components/Shop/PartnerBlogByline";
 import PartnerShareButtons from "@/components/Shop/PartnerShareButtons";
-import PartnerIgPostCarousel from "@/components/Shop/PartnerIgPostCarousel";
-import PartnerBlogCmsEditor from "@/components/Shop/PartnerBlogCmsEditor";
-import { usePartnerStoreOwner } from "@/components/Shop/PartnerHomepageEditor";
 import WpArticleBody from "@/components/Blog/WpArticleBody";
 import MediaGalleryLightbox from "@/components/MediaGalleryLightbox";
 import { collectWpArticleImages } from "@/components/Blog/BlogArticleLightbox";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
 import { SITE_URL } from "@/lib/seo.config";
-import {
-  mergeBlogCms,
-  resolveFeaturedProduct,
-} from "@/lib/partnerBlogCms";
+import PartnerBlogBlocksRender from "@/components/partner/blog-builder/PartnerBlogBlocksRender";
+import PartnerContentDisclaimer from "@/components/legal/PartnerContentDisclaimer";
+import MobileCardCarousel from "@/components/MobileCardCarousel";
+
+function RelatedReadCard({ post, href }) {
+  return (
+    <Link href={href} className="group block">
+      <div className="relative aspect-[4/3] bg-[#efeee9] overflow-hidden">
+        {post.image ? (
+          <Image
+            src={post.image}
+            alt=""
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width:640px) 50vw, 30vw"
+          />
+        ) : null}
+      </div>
+      <p className="mt-3 text-[13px] font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#0A6CD0] transition-colors">
+        {post.title}
+      </p>
+      <p className="mt-1.5 text-[10px] text-slate-400 tracking-wide">
+        {post.date}{" "}
+        <span className="uppercase font-semibold">{post.categoryLabel}</span>
+      </p>
+      {post.tags?.length ? (
+        <p className="mt-1 text-[10px] text-slate-400 line-clamp-1">
+          {post.tags.slice(0, 4).join(" ")}
+        </p>
+      ) : null}
+    </Link>
+  );
+}
 
 /**
  * 夥伴 Blog 文章內頁（CHA 編輯風格）
@@ -26,12 +52,17 @@ export default function PartnerBlogArticleView({
   store,
   post,
   relatedPosts = [],
-  products = [],
-  blogCms: blogCmsProp = null,
-  pickupProduct: pickupProductProp = null,
   prevPost = null,
+  variant = "partner",
 }) {
   const domain = store?.domain;
+  const isMain = variant === "main";
+  const articleHref = (slug) =>
+    isMain ? `/blog/${slug}/` : `/p/${domain}/blog/${slug}/`;
+  const listHref = isMain ? "/blog/" : `/p/${domain}/blog/`;
+  const shareUrl = isMain
+    ? `${SITE_URL}/blog/${post?.slug}/`
+    : `${SITE_URL}/p/${domain}/blog/${post?.slug}/`;
   const brand = store?.store_name || "JEKO";
   const authorName =
     post?.authorName || store?.footer_company_name || store?.store_name || null;
@@ -42,14 +73,7 @@ export default function PartnerBlogArticleView({
 
   const bodyHtml = post?.contentHtml || "";
   const [coverLightboxOpen, setCoverLightboxOpen] = useState(false);
-  const [blogCms, setBlogCms] = useState(() =>
-    mergeBlogCms(blogCmsProp ?? store?.blog_cms),
-  );
-  const [editSignal, setEditSignal] = useState(0);
-  const { isOwner } = usePartnerStoreOwner(store);
-
-  const pickupProduct =
-    resolveFeaturedProduct(products, blogCms) || pickupProductProp;
+  const related = relatedPosts.slice(0, 6);
 
   const articleGallery = useMemo(() => {
     const list = [];
@@ -71,13 +95,14 @@ export default function PartnerBlogArticleView({
     });
   }, [post?.image, post?.title, bodyHtml]);
 
-  const proseClassName = `partner-blog-prose max-w-[720px]
-                text-[15px] sm:text-[16px] leading-[2] text-slate-700
-                [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-900 [&_h2]:mt-12 [&_h2]:mb-4
-                [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-slate-900 [&_h3]:mt-8 [&_h3]:mb-3
+  const bodyClassName = `partner-blog-prose w-full
+                text-[15px] sm:text-[16px] leading-[2] text-slate-700`;
+  const htmlProseClassName = `${bodyClassName}
+                [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-slate-900 [&_h2]:mt-12 [&_h2]:mb-4 [&_h2]:leading-snug
+                [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-slate-900 [&_h3]:mt-8 [&_h3]:mb-3 [&_h3]:leading-snug
                 [&_p]:mb-6
                 [&_a]:text-[#0A6CD0] [&_a]:underline-offset-2 hover:[&_a]:underline
-                [&_img]:my-8 [&_img]:w-full [&_img]:h-auto
+                [&_img]:my-8 [&_img]:block [&_img]:w-auto [&_img]:max-w-full [&_img]:h-auto [&_img]:max-h-[100dvh] [&_img]:object-contain
                 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-6
                 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-6
                 [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-500
@@ -87,33 +112,49 @@ export default function PartnerBlogArticleView({
 
   return (
     <div className="bg-white">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row lg:items-stretch min-h-[70vh]">
+      <div className="max-w-[1680px] w-[96%] mx-auto px-3 sm:px-5 lg:px-8">
+        <div className="flex flex-col lg:flex-row lg:items-start min-h-[70vh]">
           {/* ── 主欄 ── */}
           <div className="flex-1 min-w-0 lg:pr-10 lg:border-r lg:border-slate-200 py-8 lg:py-10">
             {/* Logo / brand */}
             <Link
-              href={`/p/${domain}/`}
+              href={isMain ? "/blog/" : `/p/${domain}/`}
               className="inline-block text-[13px] font-black tracking-[0.2em] uppercase text-slate-900 mb-6"
             >
-              {brand}
+              {isMain ? "NEWS" : brand}
             </Link>
 
             {/* Breadcrumb */}
             <nav className="text-[12px] text-slate-400 tracking-wide mb-4">
-              <Link href={`/p/${domain}/`} className="hover:text-slate-700">
-                首頁
-              </Link>
-              <span className="mx-1.5">/</span>
-              <Link href={`/p/${domain}/blog/`} className="hover:text-slate-700">
-                旅遊文章
-              </Link>
-              <span className="mx-1.5">/</span>
-              <span className="text-slate-600">{post.categoryLabel}</span>
+              {isMain ? (
+                <>
+                  <Link href="/" className="hover:text-slate-700">
+                    首頁
+                  </Link>
+                  <span className="mx-1.5">/</span>
+                  <Link href="/blog/" className="hover:text-slate-700">
+                    旅遊文章
+                  </Link>
+                  <span className="mx-1.5">/</span>
+                  <span className="text-[#0A6CD0]">合作夥伴供稿</span>
+                </>
+              ) : (
+                <>
+                  <Link href={`/p/${domain}/`} className="hover:text-slate-700">
+                    首頁
+                  </Link>
+                  <span className="mx-1.5">/</span>
+                  <Link href={`/p/${domain}/blog/`} className="hover:text-slate-700">
+                    旅遊文章
+                  </Link>
+                  <span className="mx-1.5">/</span>
+                  <span className="text-slate-600">{post.categoryLabel}</span>
+                </>
+              )}
             </nav>
 
             {/* Hero */}
-            <div className="relative w-full aspect-[16/10] sm:aspect-[21/10] min-h-[240px] bg-[#efeee9] overflow-hidden mb-10">
+            <div className="relative w-full max-h-[100dvh] aspect-[16/10] sm:aspect-[21/10] min-h-[240px] bg-[#efeee9] overflow-hidden mb-10">
               {post.image ? (
                 <button
                   type="button"
@@ -129,9 +170,14 @@ export default function PartnerBlogArticleView({
                     fill
                     priority
                     className="object-cover"
-                    sizes="(max-width:1024px) 100vw, 70vw"
+                    sizes="(max-width:1024px) 100vw, 80vw"
                   />
                 </button>
+              ) : null}
+              {isMain ? (
+                <span className="absolute top-4 left-4 z-10 bg-[#1E4AD1] text-white text-[11px] font-bold px-2.5 py-1 tracking-wide">
+                  合作夥伴供稿
+                </span>
               ) : null}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
               <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 pointer-events-none">
@@ -156,15 +202,27 @@ export default function PartnerBlogArticleView({
               </div>
             </div>
 
-            {/* Body：與主站相同，點圖開幻燈片 */}
-            {bodyHtml ? (
+            {/* Body：視覺區塊優先，否則 HTML */}
+            {Array.isArray(post?.blocks) && post.blocks.length > 0 ? (
+              <div className={bodyClassName}>
+                <PartnerBlogBlocksRender
+                  blocks={post.blocks}
+                  shareContext={{
+                    store,
+                    title: post.title,
+                    slug: post.slug,
+                    shareUrl,
+                  }}
+                />
+              </div>
+            ) : bodyHtml ? (
               <WpArticleBody
                 html={bodyHtml}
-                className={proseClassName}
+                className={htmlProseClassName}
                 lightboxTitle={post.title || "文章圖片"}
               />
             ) : (
-              <div className={proseClassName}>
+              <div className={htmlProseClassName}>
                 <p>{post.excerpt}</p>
               </div>
             )}
@@ -180,7 +238,7 @@ export default function PartnerBlogArticleView({
 
             {/* Author box */}
             {authorName ? (
-              <div className="mt-14 bg-[#f3f1eb] px-6 py-7 sm:px-8 sm:py-8">
+              <div className="mt-14">
                 <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-slate-500 mb-2">
                   編輯者
                 </p>
@@ -207,19 +265,13 @@ export default function PartnerBlogArticleView({
               </div>
             ) : null}
 
-            <PartnerIgPostCarousel
-              blogCms={blogCms}
-              isOwner={isOwner}
-              onEditClick={() => setEditSignal((n) => n + 1)}
-            />
-
             {/* Share + tags */}
             <div className="mt-10 pt-8 border-t border-slate-200 space-y-5">
               <PartnerShareButtons
                 store={store}
                 title={post.title}
                 slug={post.slug}
-                shareUrl={`${SITE_URL}/p/${domain}/blog/${post.slug}/`}
+                shareUrl={shareUrl}
               />
               <div className="flex flex-wrap gap-2">
                 <span className="inline-flex items-center px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] uppercase bg-slate-900 text-white">
@@ -243,6 +295,9 @@ export default function PartnerBlogArticleView({
                   </span>
                 )}
               </div>
+              {post.source !== "wordpress" ? (
+                <PartnerContentDisclaimer variant="compact" className="pt-1" />
+              ) : null}
             </div>
 
             {/* Related + prev */}
@@ -255,7 +310,7 @@ export default function PartnerBlogArticleView({
                 </div>
                 {prevPost ? (
                   <Link
-                    href={`/p/${domain}/blog/${prevPost.slug}/`}
+                    href={articleHref(prevPost.slug)}
                     className="hidden sm:block text-right group max-w-[200px]"
                   >
                     <p className="text-[10px] font-bold tracking-[0.16em] uppercase text-slate-400 mb-1">
@@ -268,45 +323,39 @@ export default function PartnerBlogArticleView({
                 ) : null}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                {relatedPosts.slice(0, 3).map((r) => (
-                  <Link
-                    key={r.slug}
-                    href={`/p/${domain}/blog/${r.slug}/`}
-                    className="group"
+              <div className="sm:hidden">
+                {related.length ? (
+                  <MobileCardCarousel
+                    slideClassName="min-w-0 flex-[0_0_50%]"
+                    gap={12}
+                    autoplay
+                    autoplayDelay={4000}
+                    loop={related.length > 2}
+                    showArrows={false}
                   >
-                    <div className="relative aspect-[4/3] bg-[#efeee9] overflow-hidden">
-                      {r.image ? (
-                        <Image
-                          src={r.image}
-                          alt=""
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          sizes="30vw"
-                        />
-                      ) : null}
-                    </div>
-                    <p className="mt-3 text-[13px] font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-[#0A6CD0] transition-colors">
-                      {r.title}
-                    </p>
-                    <p className="mt-1.5 text-[10px] text-slate-400 tracking-wide">
-                      {r.date}{" "}
-                      <span className="uppercase font-semibold">
-                        {r.categoryLabel}
-                      </span>
-                    </p>
-                    {r.tags?.length ? (
-                      <p className="mt-1 text-[10px] text-slate-400 line-clamp-1">
-                        {r.tags.slice(0, 4).join(" ")}
-                      </p>
-                    ) : null}
-                  </Link>
+                    {related.map((r) => (
+                      <RelatedReadCard
+                        key={r.slug}
+                        post={r}
+                        href={articleHref(r.slug)}
+                      />
+                    ))}
+                  </MobileCardCarousel>
+                ) : null}
+              </div>
+              <div className="hidden sm:grid grid-cols-3 gap-5">
+                {related.slice(0, 3).map((r) => (
+                  <RelatedReadCard
+                    key={r.slug}
+                    post={r}
+                    href={articleHref(r.slug)}
+                  />
                 ))}
               </div>
 
               <div className="mt-10">
                 <Link
-                  href={`/p/${domain}/blog/`}
+                  href={listHref}
                   className="text-[13px] font-bold text-slate-800 border-b-2 border-slate-800 pb-1 hover:text-[#0A6CD0] hover:border-[#0A6CD0] transition-colors"
                 >
                   ← 返回文章列表
@@ -316,26 +365,18 @@ export default function PartnerBlogArticleView({
           </div>
 
           {/* ── 側欄 ── */}
-          <div className="lg:w-[260px] shrink-0 lg:pl-8 py-8 lg:py-10">
+          <div className="lg:w-[300px] shrink-0 lg:pl-8 py-8 lg:py-10 lg:self-start">
             <PartnerBlogSidebar
               store={store}
-              posts={relatedPosts.length ? relatedPosts : [post]}
-              pickupProduct={pickupProduct}
+              posts={relatedPosts.length ? [post, ...relatedPosts] : [post]}
               active="article"
-              isOwner={isOwner}
-              onEditFeatured={() => setEditSignal((n) => n + 1)}
+              articleHref={articleHref}
+              selectedCategory={post?.categoryLabel || ""}
+              listHref={listHref}
             />
           </div>
         </div>
       </div>
-
-      <PartnerBlogCmsEditor
-        store={store}
-        products={products}
-        blogCms={blogCms}
-        onCmsChange={setBlogCms}
-        openSignal={editSignal}
-      />
     </div>
   );
 }

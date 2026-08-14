@@ -8,7 +8,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useSession, signOut } from "next-auth/react";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
 import { resolveMemberEmail } from "@/lib/memberIdentity";
-import { buildLoginUrl } from "@/lib/authRedirect";
+import { buildLoginUrl, getCurrentReturnPath } from "@/lib/authRedirect";
 import AccountShell, { NavyPanel, MetricTile } from "@/components/account/AccountShell";
 import AccountDashboardView from "@/components/account/AccountDashboardView";
 import AccountOrdersView from "@/components/account/AccountOrdersView";
@@ -201,7 +201,7 @@ export default function AccountPage() {
     if (navStatus === "loading" || !isSupabaseChecked) return;
     const isLoggedIn = navStatus === "authenticated" || !!supabaseUser;
     if (!isLoggedIn) {
-      router.push(buildLoginUrl("/account"));
+      router.push(buildLoginUrl(getCurrentReturnPath("/account")));
       return;
     }
 

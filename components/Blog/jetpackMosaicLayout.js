@@ -133,7 +133,7 @@ function isFourValidCandidate(processed, toProcess) {
  * @param {{ isWide?: boolean }} opts
  * @returns {number[][]} 每一列的欄位形狀，例如 [1,1]＝兩欄各 1 張；[2,1]＝左欄疊 2 張、右欄 1 張
  */
-export function ratiosToMosaicRows(ratios, { isWide = true } = {}) {
+export function ratiosToMosaicRows(ratios, { isWide = false } = {}) {
   const go = (processed, toProcess) => {
     if (!toProcess.length) return processed;
 
@@ -226,7 +226,7 @@ function columnRatioFromAspects(aspects) {
 export function layoutJetpackMosaic(
   aspects,
   containerWidth,
-  { isWide = true, gutter = GUTTER_WIDTH } = {},
+  { isWide = false, gutter = GUTTER_WIDTH } = {},
 ) {
   if (!containerWidth || !aspects?.length) {
     return { rows: [] };
@@ -286,4 +286,90 @@ export function layoutJetpackMosaic(
   });
 
   return { rows };
+}
+
+const JUSTIFIED_ROW_H = {
+  sm: 200,
+  md: 260,
+  lg: 340,
+  full: 420,
+};
+
+const JUSTIFIED_MAX_H = {
+  sm: 280,
+  md: 380,
+  lg: 480,
+  full: 560,
+};
+
+/**
+ * 盡量維持原圖寬高比：同一列等高、撐滿容器寬。
+ * 列高超出上限時才微裁（object-fit: cover）。
+ */
+export function layoutJustifiedRows(
+  aspects,
+  containerWidth,
+  { size = "md", isWide = false, gutter = GUTTER_WIDTH } = {},
+) {
+  if (!containerWidth || !aspects?.length) return [];
+  const key = ["sm", "md", "lg", "full"].includes(size) ? size : "md";
+  let targetH = JUSTIFIED_ROW_H[key];
+  let maxH = JUSTIFIED_MAX_H[key];
+  if (isWide) {
+    targetH = Math.round(targetH * 0.78);
+    maxH = Math.round(maxH * 0.78);
+  }
+  const W = Math.max(1, containerWidth);
+  const safe = aspects.map((a) => (a > 0.05 ? a : 1));
+  const rows = [];
+  let items = [];
+  let rowW = 0;
+
+  const flush = (list) => {
+    if (!list.length) return;
+    const g = gutter * Math.max(list.length - 1, 0);
+    const natural = list.reduce((s, it) => s + it.nw, 0) || 1;
+    const fillScale = (W - g) / natural;
+    const filledH = targetH * fillScale;
+    if (filledH <= maxH) {
+      rows.push({
+        cols: list.map((it) => ({
+          items: [
+            {
+              index: it.index,
+              width: it.nw * fillScale,
+              height: filledH,
+            },
+          ],
+        })),
+      });
+      return;
+    }
+    const widths = list.map((it) => (it.nw / natural) * (W - g));
+    rows.push({
+      cols: list.map((it, i) => ({
+        items: [
+          {
+            index: it.index,
+            width: widths[i],
+            height: maxH,
+          },
+        ],
+      })),
+    });
+  };
+
+  safe.forEach((ar, index) => {
+    const nw = targetH * ar;
+    const nextW = rowW + (items.length ? gutter : 0) + nw;
+    if (items.length && nextW > W) {
+      flush(items);
+      items = [];
+      rowW = 0;
+    }
+    items.push({ index, nw });
+    rowW += (items.length > 1 ? gutter : 0) + nw;
+  });
+  flush(items);
+  return rows;
 }

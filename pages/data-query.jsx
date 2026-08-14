@@ -275,10 +275,9 @@ export default function DataQueryPage() {
             {/* 充值 */}
             <section className="relative rounded-2xl overflow-hidden min-h-[380px] md:min-h-[460px] flex flex-col justify-end">
               <div
-                className="absolute inset-0 bg-cover bg-center"
+                className="absolute inset-0 bg-cover bg-no-repeat bg-[70%_20%]"
                 style={{
-                  backgroundImage:
-                    "url('/images/7bf7a01a-6740-4390-800c-566683623985.png')",
+                  backgroundImage: "url('/images/fv_img01.webp')",
                 }}
                 aria-hidden
               />
@@ -286,20 +285,10 @@ export default function DataQueryPage() {
                 className="absolute inset-0"
                 style={{
                   background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(20,40,80,0.35) 38%, rgba(12,24,48,0.88) 100%)",
+                    "linear-gradient(180deg, rgba(12,24,48,0.18) 0%, rgba(12,24,48,0.38) 45%, rgba(8,16,36,0.88) 100%)",
                 }}
                 aria-hidden
               />
-              <p
-                className="absolute inset-x-0 top-[18%] z-[1] text-center text-[42px] md:text-[52px] font-black leading-none select-none pointer-events-none"
-                style={{
-                  color: "rgba(55,104,199,0.35)",
-                  letterSpacing: "0.02em",
-                }}
-                aria-hidden
-              >
-                流量即將用盡？
-              </p>
               <span className="absolute top-4 left-4 z-10 text-[11px] font-bold text-white px-2.5 py-1 rounded-sm tracking-wide bg-stone-700/85">
                 即將上線
               </span>

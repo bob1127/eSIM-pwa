@@ -1,17 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import PartnerBlogSidebar from "@/components/Shop/PartnerBlogSidebar";
 import PartnerBlogByline from "@/components/Shop/PartnerBlogByline";
 import PartnerSocialIcons from "@/components/Shop/PartnerSocialIcons";
-import PartnerBlogCmsEditor from "@/components/Shop/PartnerBlogCmsEditor";
-import { usePartnerStoreOwner } from "@/components/Shop/PartnerHomepageEditor";
-import {
-  mergeBlogCms,
-  resolveFeaturedProduct,
-} from "@/lib/partnerBlogCms";
+import PartnerContentDisclaimer from "@/components/legal/PartnerContentDisclaimer";
 
 const PAGE_SIZE = 6;
 
@@ -58,43 +54,51 @@ function ArticleCard({ post, domain }) {
 export default function PartnerBlogListView({
   store,
   posts = [],
-  products = [],
-  blogCms: blogCmsProp = null,
-  pickupProduct: pickupProductProp = null,
 }) {
   const domain = store?.domain;
+  const router = useRouter();
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [query, setQuery] = useState("");
-  const [blogCms, setBlogCms] = useState(() =>
-    mergeBlogCms(blogCmsProp ?? store?.blog_cms),
-  );
-  const [editSignal, setEditSignal] = useState(0);
-  const { isOwner } = usePartnerStoreOwner(store);
+  const [category, setCategory] = useState("");
 
-  const pickupProduct =
-    resolveFeaturedProduct(products, blogCms) || pickupProductProp;
+  useEffect(() => {
+    if (!router.isReady) return;
+    const cat = typeof router.query.cat === "string" ? router.query.cat : "";
+    setCategory(cat);
+    setVisible(PAGE_SIZE);
+  }, [router.isReady, router.query.cat]);
+
+  const selectCategory = (label) => {
+    setCategory(label || "");
+    setVisible(PAGE_SIZE);
+    const path = `/p/${domain}/blog/`;
+    const href = label ? `${path}?cat=${encodeURIComponent(label)}` : path;
+    router.replace(href, undefined, { shallow: true, scroll: false });
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return posts;
-    return posts.filter(
-      (p) =>
+    return posts.filter((p) => {
+      if (category && p.categoryLabel !== category) return false;
+      if (!q) return true;
+      return (
         p.title?.toLowerCase().includes(q) ||
         p.excerpt?.toLowerCase().includes(q) ||
         p.categoryLabel?.toLowerCase().includes(q) ||
-        p.editorName?.toLowerCase().includes(q),
-    );
-  }, [posts, query]);
+        p.editorName?.toLowerCase().includes(q)
+      );
+    });
+  }, [posts, query, category]);
 
   const shown = filtered.slice(0, visible);
-  const featured = !query ? filtered[0] || null : null;
+  const featured = !query && !category ? filtered[0] || null : null;
   const listWithoutFeatured = featured
     ? shown.filter((p) => p.slug !== featured.slug)
     : shown;
 
   return (
     <div className="bg-white">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-10 py-10 lg:py-14">
+      <div className="max-w-[1680px] w-[96%] mx-auto px-3 sm:px-5 lg:px-8 py-10 lg:py-14">
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 items-start">
           <div className="flex-1 min-w-0 w-full">
             <header className="mb-8">
@@ -102,14 +106,16 @@ export default function PartnerBlogListView({
                 夥伴精選
               </p>
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                精選文章
+                {category || "精選文章"}
               </h1>
               <p className="mt-2 text-sm text-slate-500">
-                由「{store?.store_name || "本店夥伴"}」撰寫與發布 · 非主站內容
+                {category
+                  ? `${filtered.length} 篇「${category}」文章 · ${store?.store_name || "本店夥伴"}`
+                  : `由「${store?.store_name || "本店夥伴"}」撰寫與發布 · 非主站內容`}
               </p>
             </header>
 
-            {featured && !query ? (
+            {featured && !query && !category ? (
               <Link
                 href={`/p/${domain}/blog/${featured.slug}/`}
                 className="relative block w-full aspect-[16/9] sm:aspect-[21/9] min-h-[220px] bg-slate-200 overflow-hidden mb-10 group"
@@ -200,27 +206,20 @@ export default function PartnerBlogListView({
                 <PartnerSocialIcons store={store} size="lg" showLabels emptyHint />
               </div>
             </div>
+            <PartnerContentDisclaimer className="mt-10" />
           </div>
 
           <PartnerBlogSidebar
             store={store}
             posts={posts}
-            pickupProduct={pickupProduct}
             active="article"
             onSearch={setQuery}
-            isOwner={isOwner}
-            onEditFeatured={() => setEditSignal((n) => n + 1)}
+            selectedCategory={category}
+            onSelectCategory={selectCategory}
+            listHref={`/p/${domain}/blog/`}
           />
         </div>
       </div>
-
-      <PartnerBlogCmsEditor
-        store={store}
-        products={products}
-        blogCms={blogCms}
-        onCmsChange={setBlogCms}
-        openSignal={editSignal}
-      />
     </div>
   );
 }

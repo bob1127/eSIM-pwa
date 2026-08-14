@@ -7,6 +7,7 @@ import {
 } from "./_memberAuth";
 import { userOwnsTopupId } from "../../../lib/esimOrderExtract";
 import { getPublicSiteUrl } from "../../../lib/siteUrl";
+import { resolveLineUserIdFromMemberLink } from "../../../lib/lineTrafficAlert";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -20,7 +21,11 @@ const LINE_OA_URL =
 
 async function resolveLineUserId(req, res) {
   const session = await getServerSession(req, res, authOptions);
-  return session?.user?.id || null;
+  if (session?.user?.id) return session.user.id;
+
+  const member = await resolveMemberEmail(req, res);
+  if (!member?.email) return null;
+  return resolveLineUserIdFromMemberLink(supabaseAdmin, member.email);
 }
 
 async function isLineFriend(lineUserId) {
@@ -150,7 +155,7 @@ export default async function handler(req, res) {
     const dataQueryUrl = `${getPublicSiteUrl()}/data-query`;
     return res.status(404).json({
       error: "找不到可監控的 eSIM 訂單",
-      hint: `LINE 流量提醒僅限以 LINE 登入並購買／綁定的會員。若只想查流量，可至 ${dataQueryUrl} 輸入 ICCID（不必是 LINE 會員）。`,
+      hint: `請先傳「一鍵綁定」連結 Google／FB 會員，或在官方 LINE 貼上 ICCID。也可至 ${dataQueryUrl} 查詢。`,
       dataQueryUrl,
     });
   }

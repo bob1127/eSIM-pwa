@@ -16,7 +16,7 @@ const PAYMENT_ICONS = [
 /**
  * 夥伴賣場 Footer：無主站導覽列／三欄連結；資訊來自 stores 後台欄位。
  */
-export default function PartnerFooter({ store } = {}) {
+export default function PartnerFooter({ store = {}, forceViewport = null } = {}) {
   const homeHref = store?.domain ? `/p/${store.domain}/` : "/";
   const companyName =
     store?.footer_company_name?.trim() || store?.store_name || "Jeko eSIM";
@@ -40,15 +40,25 @@ export default function PartnerFooter({ store } = {}) {
   const telHref = phone
     ? `tel:${phone.replace(/[^\d+]/g, "")}`
     : null;
+  const isPhone = forceViewport === "mobile";
+  const isNarrow = forceViewport === "mobile" || forceViewport === "tablet";
 
   const linkClass =
     "text-gray-500 hover:text-[#0A6CD0] hover:underline underline-offset-2 transition-colors";
 
   return (
     <footer className="block bg-white text-gray-800 border-t relative z-[99] border-gray-200">
-      <div className="lg:max-w-[1300px] w-full md:w-[90%] 2xl:max-w-[1500px] mx-auto px-6 py-10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-          <div className="flex items-start gap-3 md:max-w-[360px]">
+      <div className={`w-full mx-auto ${isPhone ? "px-4 py-8" : "lg:max-w-[1300px] md:w-[90%] 2xl:max-w-[1500px] px-6 py-10"}`}>
+        <div
+          className={`flex justify-between gap-8 ${
+            isPhone
+              ? "flex-col items-start"
+              : isNarrow
+                ? "flex-col sm:flex-row items-start"
+                : "flex-col md:flex-row items-start md:items-end"
+          }`}
+        >
+          <div className={`flex items-start gap-3 ${isPhone ? "max-w-full" : "md:max-w-[360px]"}`}>
             <Link
               href={homeHref}
               className="inline-block select-none shrink-0 mt-0.5"
@@ -119,8 +129,8 @@ export default function PartnerFooter({ store } = {}) {
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-2 mx-auto md:mx-0">
-            <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className={`flex flex-col items-center gap-2 ${isPhone ? "w-full items-start" : "mx-auto md:mx-0"}`}>
+            <div className="flex flex-wrap items-center justify-start gap-2 max-w-full">
               {PAYMENT_ICONS.map((icon) => (
                 <span
                   key={icon.alt}
@@ -140,7 +150,7 @@ export default function PartnerFooter({ store } = {}) {
             </div>
           </div>
 
-          <div className="flex flex-col items-start md:items-end gap-3 w-full md:w-auto">
+          <div className={`flex flex-col gap-3 w-full ${isPhone ? "items-start" : "items-start md:items-end md:w-auto"}`}>
             <button
               type="button"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

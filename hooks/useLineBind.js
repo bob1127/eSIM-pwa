@@ -28,6 +28,16 @@ function mapBindError({ error, code }) {
   }
 }
 
+function bindSuccessMessage(result) {
+  if (result?.isFriend === false) {
+    return "已連結 LINE。請再加入官方帳號，才能收到流量提醒與使用折扣。";
+  }
+  if (result?.trafficAlert?.ok) {
+    return "已綁定 LINE，並開啟流量偏低提醒。剩餘偏低時會在官方 LINE 通知您。";
+  }
+  return "已成功綁定 LINE。若本站尚無 eSIM 訂單，請到官方 LINE 貼上 ICCID 開啟提醒。";
+}
+
 function stripBindQuery(router) {
   if (!router?.isReady || !router.replace) return;
   const q = { ...router.query };
@@ -69,11 +79,7 @@ export function useLineBind({ onSuccess } = {}) {
 
     if (result.ok) {
       setStatus("success");
-      setMessage(
-        result.isFriend
-          ? "已成功綁定 LINE，優惠券已啟用！"
-          : "已成功綁定 LINE！請再加入官方帳號以啟用折扣。",
-      );
+      setMessage(bindSuccessMessage(result));
       onSuccess?.(result);
     } else {
       setStatus("error");
@@ -98,9 +104,10 @@ export function useLineBind({ onSuccess } = {}) {
       const isFriend = router.query.line_friend === "1";
       setStatus("success");
       setMessage(
-        isFriend
-          ? "已成功綁定 LINE，優惠券已啟用！"
-          : "已成功綁定 LINE！請再加入官方帳號以啟用折扣。",
+        bindSuccessMessage({
+          isFriend,
+          trafficAlert: { ok: true },
+        }),
       );
       onSuccess?.({ ok: true, isFriend });
     } else {
@@ -122,7 +129,20 @@ export function useLineBind({ onSuccess } = {}) {
     stripBindQuery(router);
   }, [router, onSuccess]);
 
-  // LIFF 導回後自動續跑（正式站；本機 OAuth 已在上面處理）
+  // 官方 LINE「一鍵綁定」：?line_bind=start 自動連結目前登入的 Google／FB／Email
+  useEffect(() => {
+    if (!router.isReady || !isHydrated) return;
+    if (nextAuthStatus === "loading") return;
+    if (router.query.line_bind !== "start") return;
+    if (ranPendingCheck.current) return;
+    ranPendingCheck.current = true;
+    runBind().finally(() => stripBindQuery(router));
+  }, [
+    router,
+    isHydrated,
+    nextAuthStatus,
+    runBind,
+  ]);
   useEffect(() => {
     if (ranPendingCheck.current) return;
     if (!isHydrated || nextAuthStatus === "loading") return;

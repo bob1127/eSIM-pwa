@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { TERMS_COMMON, TERMS_BY_MODE } from "@/lib/cooperationTermsContent";
+import { TERMS_COMMON, TERMS_BY_MODE, CONTENT_DISCLAIMER } from "@/lib/cooperationTermsContent";
 
 const MODAL_CONTENT = {
   terms: {
@@ -128,6 +128,12 @@ function TermsBody({ mode, onModeChange }) {
           共通約定
         </h4>
         <BulletList items={TERMS_COMMON} />
+      </div>
+      <div className="pt-1 border-t border-slate-100">
+        <h4 className="text-[14px] font-black text-slate-900 mb-3 mt-4">
+          {CONTENT_DISCLAIMER.title}
+        </h4>
+        <BulletList items={CONTENT_DISCLAIMER.bullets} />
       </div>
     </div>
   );

@@ -11,11 +11,15 @@ import { cn } from "@/lib/utils";
 import { displaySourceLabel } from "@/lib/siteSearch";
 
 /**
- * 全站即時搜尋（Navbar／ShopNavbar 共用）
- * 結果小標記：產品／文章／頁面（黑粗小字＋右箭頭）
+ * Navbar 即時搜尋
+ * - scope=site：全站（主站）
+ * - scope=partner：僅該夥伴賣場
+ * - variant=overlay：滿版藍色搜尋層（無陰影）
  *
  * @param {{
- *   variant?: "icon" | "inline",
+ *   variant?: "icon" | "inline" | "overlay",
+ *   scope?: "site" | "partner",
+ *   domain?: string,
  *   className?: string,
  *   panelClassName?: string,
  *   placeholder?: string,
@@ -24,11 +28,21 @@ import { displaySourceLabel } from "@/lib/siteSearch";
  */
 export default function NavbarSiteSearch({
   variant = "icon",
+  scope = "site",
+  domain = "",
   className,
   panelClassName,
-  placeholder = "搜尋商品、文章、條款…",
+  placeholder,
   onNavigate,
 } = {}) {
+  const isPartner = scope === "partner" && !!domain;
+  const isOverlay = variant === "overlay";
+  const hint = isPartner
+    ? "只搜尋本店方案、文章與頁面"
+    : "可搜尋產品、文章、條款與站內頁面";
+  const ph =
+    placeholder ||
+    (isPartner ? "搜尋本店方案、文章…" : "搜尋商品、文章、條款…");
   const reactId = useId();
   const listId = `site-search-${reactId}`;
   const rootRef = useRef(null);
@@ -41,6 +55,9 @@ export default function NavbarSiteSearch({
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -66,10 +83,10 @@ export default function NavbarSiteSearch({
     setError("");
 
     try {
-      const res = await fetch(
-        `/api/site-search?q=${encodeURIComponent(trimmed)}`,
-        { signal: ctrl.signal },
-      );
+      const url = isPartner
+        ? `/api/partner/site-search?domain=${encodeURIComponent(domain)}&q=${encodeURIComponent(trimmed)}`
+        : `/api/site-search?q=${encodeURIComponent(trimmed)}`;
+      const res = await fetch(url, { signal: ctrl.signal });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "搜尋失敗");
       setResults(Array.isArray(data.results) ? data.results : []);
@@ -80,7 +97,7 @@ export default function NavbarSiteSearch({
     } finally {
       if (abortRef.current === ctrl) setLoading(false);
     }
-  }, []);
+  }, [isPartner, domain]);
 
   useEffect(() => {
     if (!open) return;
@@ -94,18 +111,28 @@ export default function NavbarSiteSearch({
       if (e.key === "Escape") close();
     };
     const onPointer = (e) => {
+      if (isOverlay) return;
       if (!rootRef.current?.contains(e.target)) {
         if (variant === "icon") close();
         else setOpen(false);
       }
     };
     document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onPointer);
+    if (!isOverlay) document.addEventListener("mousedown", onPointer);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onPointer);
     };
-  }, [open, close, variant]);
+  }, [open, close, variant, isOverlay]);
+
+  useEffect(() => {
+    if (!open || !isOverlay) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open, isOverlay]);
 
   useEffect(() => {
     return () => {
@@ -196,55 +223,157 @@ export default function NavbarSiteSearch({
     </div>
   ) : null;
 
-  if (variant === "inline") {
+  if (variant === "inline" || variant === "bar") {
+    const isBar = variant === "bar";
     return (
       <div ref={rootRef} className={cn("relative w-full", className)}>
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <div className={cn("flex items-center gap-2", isBar && "w-full")}>
+          <div className="relative flex-1 min-w-0">
+            <MagnifyingGlassIcon
+              className={cn(
+                "pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
+                isBar ? "text-[#1E4AD1]" : "text-slate-400",
+              )}
+            />
             <input
               ref={inputRef}
               type="text"
               value={query}
               onChange={(e) => onChange(e.target.value)}
               onFocus={() => setOpen(true)}
-              placeholder={placeholder}
+              placeholder={ph}
               autoComplete="off"
               aria-autocomplete="list"
               aria-controls={listId}
               aria-expanded={showPanel}
-              className={cn(inputClassName, "pr-3")}
+              className={
+                isBar
+                  ? "w-full h-9 rounded-full bg-[#EAF1FB] border-0 pl-9 pr-8 text-[13px] text-slate-800 placeholder:text-slate-400 outline-none ring-0 focus:outline-none focus:ring-1 focus:ring-[#1E4AD1]/35 [&::-webkit-search-cancel-button]:appearance-none"
+                  : cn(inputClassName, "pr-3")
+              }
             />
+            {isBar && query ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  setResults([]);
+                  inputRef.current?.focus();
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600"
+                aria-label="清除"
+              >
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            ) : null}
           </div>
-          <button
-            type="button"
-            onClick={close}
-            className="text-[13px] text-slate-500 hover:text-slate-800 shrink-0"
-          >
-            取消
-          </button>
+          {!isBar ? (
+            <button
+              type="button"
+              onClick={close}
+              className="text-[13px] text-slate-500 hover:text-slate-800 shrink-0"
+            >
+              取消
+            </button>
+          ) : null}
         </div>
-        {panel}
+        {showPanel ? (
+          <div
+            id={listId}
+            role="listbox"
+            className={cn(
+              "absolute left-0 right-0 top-[calc(100%+6px)] z-[60] max-h-[min(70vh,420px)] overflow-y-auto rounded-lg border border-slate-200 bg-white",
+              isBar ? "" : "rounded-xl shadow-xl",
+              panelClassName,
+            )}
+          >
+            {loading && results.length === 0 && (
+              <p className="px-4 py-3 text-xs text-slate-500">搜尋中…</p>
+            )}
+            {error && (
+              <p className="px-4 py-3 text-xs font-bold text-red-600">{error}</p>
+            )}
+            {!loading && !error && query.trim() && results.length === 0 && (
+              <p className="px-4 py-3 text-xs text-slate-500">
+                找不到「{query.trim()}」相關結果
+              </p>
+            )}
+            <div className="py-1">
+              <ResultList />
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }
 
   return (
-    <div ref={rootRef} className={cn("relative", className)}>
+    <div ref={rootRef} className={cn("relative flex items-center", className)}>
+      {isPartner && open ? (
+        <div className="relative w-[min(70vw,260px)] mr-1">
+          <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1E4AD1]" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={ph}
+            autoComplete="off"
+            aria-autocomplete="list"
+            aria-controls={listId}
+            aria-expanded={showPanel}
+            className="w-full h-9 rounded-full bg-[#EAF1FB] border-0 pl-9 pr-8 text-[13px] text-slate-800 placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-[#1E4AD1]/35 [&::-webkit-search-cancel-button]:appearance-none"
+          />
+          {query ? (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setResults([]);
+                inputRef.current?.focus();
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600"
+              aria-label="清除"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          ) : null}
+          {showPanel ? (
+            <div
+              id={listId}
+              role="listbox"
+              className="absolute left-0 right-0 top-[calc(100%+6px)] z-[70] max-h-[min(60vh,360px)] overflow-y-auto rounded-lg border border-slate-200 bg-white"
+            >
+              {loading && results.length === 0 && (
+                <p className="px-3 py-2.5 text-xs text-slate-500">搜尋中…</p>
+              )}
+              {error && (
+                <p className="px-3 py-2.5 text-xs font-bold text-red-600">{error}</p>
+              )}
+              {!loading && !error && query.trim() && results.length === 0 && (
+                <p className="px-3 py-2.5 text-xs text-slate-500">
+                  找不到「{query.trim()}」相關結果
+                </p>
+              )}
+              <ResultList dense />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <button
         type="button"
         onClick={() => {
           setOpen((v) => !v);
           if (open) close();
         }}
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-        aria-label="全站搜尋"
+        className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-slate-50 transition-colors"
+        aria-label={isPartner ? "搜尋本店" : "全站搜尋"}
         aria-expanded={open}
       >
-        <MagnifyingGlassIcon className="w-5 h-5 text-slate-600" />
+        <MagnifyingGlassIcon className="w-6 h-6 text-slate-600" />
       </button>
 
-      {open && (
+      {!isPartner && open && (
         <div className="absolute right-0 top-[calc(100%+8px)] z-[70] w-[min(92vw,360px)] rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -254,7 +383,7 @@ export default function NavbarSiteSearch({
                 type="text"
                 value={query}
                 onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder}
+                placeholder={ph}
                 autoComplete="off"
                 aria-autocomplete="list"
                 aria-controls={listId}
@@ -277,9 +406,7 @@ export default function NavbarSiteSearch({
               ) : null}
             </div>
           </div>
-          <p className="mt-2 text-[10px] text-slate-400 px-0.5">
-            可搜尋產品、文章、條款與站內頁面
-          </p>
+          <p className="mt-2 text-[10px] text-slate-400 px-0.5">{hint}</p>
           {panel ? (
             <div className="relative mt-1">
               <div className="relative left-0 right-0 top-0 max-h-[min(60vh,360px)] overflow-y-auto rounded-lg border border-slate-100">

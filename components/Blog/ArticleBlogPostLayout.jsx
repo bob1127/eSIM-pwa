@@ -465,7 +465,7 @@ export default function ArticleBlogPostLayout({
 
   return (
     <div className="bg-white min-h-screen pt-10 pb-20 font-sans text-[#333]">
-      <div className="max-w-[1120px] w-[92%] mx-auto pt-6 md:pt-10">
+      <div className="max-w-[1280px] w-[92%] mx-auto pt-6 md:pt-10">
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-12 items-start">
           {/* ── 主欄 ── */}
           <main className="w-full lg:flex-1 min-w-0">
@@ -708,6 +708,18 @@ export default function ArticleBlogPostLayout({
         .article-entry-content img {
           max-width: 100%;
           height: auto;
+        }
+        .article-entry-content .fl-wall.tiled-gallery {
+          width: 100%;
+          max-width: 100%;
+        }
+        .article-entry-content .tiled-gallery__item img {
+          width: 100% !important;
+          height: 100% !important;
+          max-width: none !important;
+          max-height: none !important;
+          object-fit: cover !important;
+          margin: 0 !important;
         }
         .article-entry-content .wp-single-img {
           margin: 32px 0;

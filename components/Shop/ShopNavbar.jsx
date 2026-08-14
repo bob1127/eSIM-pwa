@@ -551,6 +551,15 @@ const SECONDARY_NAV = [
   { label: "探索與支援", href: "/shop/support" },
 ];
 
+const DEFAULT_UTILITY_NAV = [
+  { label: "eSIM 方案", href: "/product" },
+  { label: "旅遊文章", href: "/blog" },
+  { label: "最新優惠", href: "/promo" },
+  { label: "常見問題", href: "/faq" },
+];
+
+const DEFAULT_UTILITY_END = { label: "關於我們", href: "/about" };
+
 // ── 左側 Accordion / Link ─────────────────────────────────────────
 function LeftSection({ section, activeLeft, setActiveLeft }) {
   const [open, setOpen] = useState(section.defaultOpen ?? false);
@@ -701,8 +710,16 @@ export default function ShopNavbar({
   loginHref = "/login",
   promoHref = "/shop/deals",
   supportHref = "/shop/support",
+  /** 頂部灰列捷徑；傳 [] 可隱藏 */
+  utilityNav = null,
+  /** 灰列右側連結；傳 null 隱藏 */
+  utilityEnd = undefined,
+  searchScope = "site",
+  searchDomain = "",
   /** 'physical' = /shop 實體車；'esim' = 夥伴賣場 eSIM 車 */
   cartMode = "physical",
+  /** 編輯器預覽：依畫布寬度強制 RWD（不受瀏覽器視窗 media query 影響） */
+  forceViewport = null,
 }) {
   const { physicalCount, esimCount, setIsCartOpen } = useCart();
   const cartCount =
@@ -714,16 +731,22 @@ export default function ShopNavbar({
   const [mobileExpanded, setMobileExpanded] = useState(null);
   const headerRef = useRef(null);
   const hideTimer = useRef(null);
+  const forceMobileNav =
+    forceViewport === "mobile" || forceViewport === "tablet";
 
   const navItems = primaryNav ?? SHOP_NAV;
   const secondaryItems = secondaryNav ?? SECONDARY_NAV;
+  const utilLinks = utilityNav ?? DEFAULT_UTILITY_NAV;
+  const utilEnd =
+    utilityEnd === undefined ? DEFAULT_UTILITY_END : utilityEnd;
+  const isPartnerNav = cartMode === "esim";
 
   const memberBtnClass =
     "p-2 hover:bg-slate-50 rounded transition-colors inline-flex items-center justify-center";
   const memberAria = isLoggedIn ? "會員中心" : "會員登入";
   const memberIcon = (
     <MemberAvatarIcon
-      size={18}
+      size={24}
       isLoggedIn={isLoggedIn}
       userImage={userImage}
       userName={userName}
@@ -768,7 +791,9 @@ export default function ShopNavbar({
           >
             <Link
               href={promoHref}
-              className="text-white text-[12px] font-medium hover:underline flex items-center gap-2"
+              className={`text-white text-[12px] font-medium hover:underline flex items-center gap-2 ${
+                forceMobileNav ? "truncate max-w-[85%] justify-center" : ""
+              }`}
             >
               全站限時 7.5 折優惠，出國必備一次購齊
               <span className="opacity-80">|</span>
@@ -776,55 +801,83 @@ export default function ShopNavbar({
             </Link>
             <Link
               href={supportHref}
-              className="absolute right-6 lg:right-10 text-white/80 text-[11px] hover:text-white hover:underline"
+              className={`absolute right-6 lg:right-10 text-white/80 text-[11px] hover:text-white hover:underline ${
+                forceMobileNav ? "hidden" : ""
+              }`}
             >
               客服支援
             </Link>
           </div>
         </div>
-        <div className="bg-[#DFE0E5] text-white">
-          <div className={`${CONTAINER} h-8 flex items-center justify-between`}>
-            <div className="flex items-center gap-5 text-[11px] text-white/60 font-medium tracking-wide">
-              <Link
-                href={homeHref}
-                className="flex items-center shrink-0 hover:opacity-90 transition-opacity"
+        <div className="bg-[#F1F2F4] text-slate-600 border-b border-slate-200/80">
+          <div
+            className={`${CONTAINER} h-9 flex items-center gap-4 justify-between`}
+          >
+            {isPartnerNav ? (
+              <nav
+                className={`${forceMobileNav ? "hidden" : "hidden md:flex"} items-center gap-3 lg:gap-4 text-[11px] font-medium tracking-wide min-w-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
+                aria-label="商品分類"
               >
-                <Image
-                  src="/images/LOGO.png"
-                  alt="Jeko"
-                  width={56}
-                  height={18}
-                  className="h-[14px] w-auto object-contain brightness-0 invert"
-                />
-              </Link>
-              <Link
-                href="/product"
-                className="hover:text-white transition-colors"
+                <span className="shrink-0 text-slate-400">商品分類</span>
+                <Link
+                  href={`${homeHref}#plans`}
+                  className="shrink-0 font-bold text-slate-800 hover:text-slate-900"
+                >
+                  全部方案
+                </Link>
+                {navItems.map((item) => (
+                  <Link
+                    key={item.key}
+                    href={item.href}
+                    className="shrink-0 hover:text-slate-900 transition-colors"
+                    onMouseEnter={() => item.mega && showMenu(item.key)}
+                    onMouseLeave={scheduleHide}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : utilLinks.length ? (
+              <nav
+                className="flex items-center gap-4 sm:gap-5 text-[11px] font-medium tracking-wide overflow-x-auto min-w-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                aria-label="快速連結"
               >
-                eSIM
-              </Link>
-              <Link
-                href="/shop/travel"
-                className="hover:text-white transition-colors"
+                {utilLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="shrink-0 hover:text-slate-900 transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : (
+              <span />
+            )}
+            {isPartnerNav && utilLinks.length ? (
+              <nav
+                className="flex items-center gap-4 sm:gap-5 text-[11px] font-medium tracking-wide shrink-0 ml-auto"
+                aria-label="本店導覽"
               >
-                Travel
-              </Link>
+                {utilLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="shrink-0 hover:text-slate-900 transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : utilEnd?.href ? (
               <Link
-                href="/shop/tech"
-                className="hover:text-white transition-colors"
+                href={utilEnd.href}
+                className="shrink-0 ml-auto text-[11px] font-semibold text-slate-700 hover:text-slate-900 tracking-wide"
               >
-                Tech
+                {utilEnd.label}
               </Link>
-              <Link
-                href="/shop/gear"
-                className="hover:text-white transition-colors"
-              >
-                Gear
-              </Link>
-            </div>
-            <span className="text-[11px] text-white/70 font-medium tracking-wide">
-              Jeko Lifestyle
-            </span>
+            ) : null}
           </div>
         </div>
 
@@ -848,7 +901,15 @@ export default function ShopNavbar({
                 </span>
               </Link>
 
-              <nav className="hidden lg:flex items-center h-full flex-1 min-w-0">
+              <nav className={`${forceMobileNav ? "hidden" : "hidden lg:flex"} items-center h-full flex-1 min-w-0`}>
+                {isPartnerNav ? (
+                  <Link
+                    href={`${homeHref}#plans`}
+                    className="relative h-full flex items-center px-2.5 xl:px-3 text-[13px] font-black text-[#1E4AD1] whitespace-nowrap"
+                  >
+                    全部方案
+                  </Link>
+                ) : null}
                 {navItems.map((item) => (
                   <div
                     key={item.key}
@@ -873,7 +934,8 @@ export default function ShopNavbar({
                 ))}
               </nav>
 
-              <nav className="hidden xl:flex items-center h-full gap-0.5 shrink-0">
+              {!isPartnerNav ? (
+              <nav className={`${forceMobileNav ? "hidden" : "hidden xl:flex"} items-center h-full gap-0.5 shrink-0`}>
                 {secondaryItems.map((item) => (
                   <Link
                     key={item.href}
@@ -884,9 +946,14 @@ export default function ShopNavbar({
                   </Link>
                 ))}
               </nav>
+              ) : null}
 
               <div className="flex items-center gap-0.5 shrink-0 ml-auto lg:ml-0">
-                <NavbarSiteSearch />
+                <NavbarSiteSearch
+                  variant="icon"
+                  scope={searchScope}
+                  domain={searchDomain}
+                />
                 <button
                   type="button"
                   onClick={() => setIsCartOpen(true)}
@@ -894,11 +961,11 @@ export default function ShopNavbar({
                   aria-label="購物車"
                 >
                   <ShoppingCart
-                    className="w-[18px] h-[18px] text-slate-700"
+                    className="w-6 h-6 text-slate-700"
                     strokeWidth={1.75}
                   />
                   {cartCount > 0 && (
-                    <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-[#3B9EFF] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                    <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 bg-[#3B9EFF] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                       {cartCount}
                     </span>
                   )}
@@ -914,7 +981,7 @@ export default function ShopNavbar({
                 <button
                   type="button"
                   onClick={() => setMobileOpen(true)}
-                  className="lg:hidden p-2 hover:bg-slate-50 rounded transition-colors"
+                  className={`${forceMobileNav ? "" : "lg:hidden"} p-2 hover:bg-slate-50 rounded transition-colors`}
                   aria-label="選單"
                 >
                   <Menu className="w-5 h-5 text-slate-700" />
@@ -923,11 +990,13 @@ export default function ShopNavbar({
             </div>
           ) : (
             <>
-              {/* 上列：Logo + Icons */}
               <div
-                className={`${CONTAINER} h-12 flex items-center justify-between`}
+                className={`${CONTAINER} h-14 flex items-center justify-between gap-4`}
               >
-                <Link href={homeHref} className="flex items-center gap-3 shrink-0">
+                <Link
+                  href={homeHref}
+                  className="flex items-center gap-3 shrink-0 min-w-0"
+                >
                   <Image
                     src="/images/Logo/logo-no-bg.png"
                     alt="Jeko"
@@ -935,13 +1004,17 @@ export default function ShopNavbar({
                     height={28}
                     className="h-7 w-auto object-contain"
                   />
-                  <span className="hidden sm:block text-[11px] text-slate-400 border-l border-slate-200 pl-3 leading-tight">
+                  <span className={`${forceViewport === "mobile" ? "hidden" : "hidden sm:block"} text-[11px] text-slate-400 border-l border-slate-200 pl-3 leading-tight truncate max-w-[140px]`}>
                     {brandLabel}
                   </span>
                 </Link>
 
                 <div className="flex items-center gap-1">
-                  <NavbarSiteSearch />
+                  <NavbarSiteSearch
+                    variant="icon"
+                    scope={searchScope}
+                    domain={searchDomain}
+                  />
                   <button
                     type="button"
                     onClick={() => setIsCartOpen(true)}
@@ -949,11 +1022,11 @@ export default function ShopNavbar({
                     aria-label="購物車"
                   >
                     <ShoppingCart
-                      className="w-[18px] h-[18px] text-slate-700"
+                      className="w-6 h-6 text-slate-700"
                       strokeWidth={1.75}
                     />
                     {cartCount > 0 && (
-                      <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-[#3B9EFF] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                      <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 bg-[#3B9EFF] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                         {cartCount}
                       </span>
                     )}
@@ -969,7 +1042,7 @@ export default function ShopNavbar({
                   <button
                     type="button"
                     onClick={() => setMobileOpen(true)}
-                    className="lg:hidden p-2 hover:bg-slate-50 rounded transition-colors"
+                    className={`${forceMobileNav ? "" : "lg:hidden"} p-2 hover:bg-slate-50 rounded transition-colors`}
                     aria-label="選單"
                   >
                     <Menu className="w-5 h-5 text-slate-700" />
@@ -977,11 +1050,28 @@ export default function ShopNavbar({
                 </div>
               </div>
 
-              {/* 下列：分類連結（左）+ 次要連結（右） */}
+              {/* 下列：主站分類（夥伴分類已在灰列） */}
+              {!isPartnerNav ? (
+              <div>
               <div
-                className={`${CONTAINER} h-10 hidden lg:flex items-center justify-between`}
+                className={`${CONTAINER} h-11 ${forceMobileNav ? "hidden" : "hidden lg:flex"} items-center gap-3 ${
+                  isPartnerNav ? "" : "justify-between"
+                }`}
               >
-                <nav className="flex items-center h-full">
+                {isPartnerNav ? (
+                  <span className="shrink-0 text-[11px] font-black tracking-[0.12em] text-slate-400 pr-3 border-r border-slate-200">
+                    商品分類
+                  </span>
+                ) : null}
+                <nav className="flex items-center h-full flex-1 min-w-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {isPartnerNav ? (
+                    <Link
+                      href={`${homeHref}#plans`}
+                      className="relative h-full flex items-center px-3.5 text-[13px] font-black text-slate-900 whitespace-nowrap hover:text-slate-700"
+                    >
+                      全部方案
+                    </Link>
+                  ) : null}
                   {navItems.map((item) => (
                     <div
                       key={item.key}
@@ -1006,6 +1096,7 @@ export default function ShopNavbar({
                   ))}
                 </nav>
 
+                {!isPartnerNav ? (
                 <nav className="flex items-center h-full gap-1">
                   {secondaryItems.map((item) => (
                     <Link
@@ -1017,7 +1108,10 @@ export default function ShopNavbar({
                     </Link>
                   ))}
                 </nav>
+                ) : null}
               </div>
+              </div>
+              ) : null}
             </>
           )}
         </div>
@@ -1082,6 +1176,20 @@ export default function ShopNavbar({
                 </button>
               </div>
               <nav className="flex-1 py-2 overflow-y-auto">
+                {isPartnerNav ? (
+                  <p className="px-4 pt-2 pb-1 text-[10px] font-black tracking-[0.14em] text-[#1E4AD1]">
+                    商品分類
+                  </p>
+                ) : null}
+                {isPartnerNav ? (
+                  <Link
+                    href={`${homeHref}#plans`}
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-4 py-2.5 text-[14px] font-black text-[#1E4AD1] hover:bg-slate-50"
+                  >
+                    全部方案
+                  </Link>
+                ) : null}
                 {navItems.map((item) => (
                   <div key={item.key}>
                     <div
@@ -1145,6 +1253,11 @@ export default function ShopNavbar({
                   </div>
                 ))}
                 <div className="border-t border-slate-100 mt-2 pt-2">
+                  {isPartnerNav ? (
+                    <p className="px-4 pt-1 pb-1 text-[10px] font-black tracking-[0.14em] text-slate-400">
+                      本店服務
+                    </p>
+                  ) : null}
                   {secondaryItems.map((item) => (
                     <Link
                       key={item.href}

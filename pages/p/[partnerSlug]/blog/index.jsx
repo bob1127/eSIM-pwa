@@ -1,18 +1,10 @@
 import PartnerShopLayout from "@/components/Shop/PartnerShopLayout";
 import PartnerBlogListView from "@/components/Shop/PartnerBlogListView";
-import {
-  fetchActiveStoreByDomain,
-  fetchStoreProductsForStorefront,
-} from "@/lib/partnerStorefront";
-import { buildPartnerCountryNavItems } from "@/lib/partnerNavCountries";
-import { fetchPartnerBlogPosts } from "@/lib/partnerBlog";
-import {
-  mergeBlogCms,
-  resolveFeaturedProduct,
-} from "@/lib/partnerBlogCms";
+import { loadPartnerBlogIndexProps } from "@/lib/partnerBlogPages";
+import { getPartnerStorefrontDb } from "@/lib/partnerStorefront";
 
 /**
- * 夥伴專屬 Blog 列表
+ * 夥伴專屬 Blog 列表（ISR）
  * /p/{partnerSlug}/blog/
  */
 export default function PartnerBlogIndexPage({
@@ -41,37 +33,40 @@ export default function PartnerBlogIndexPage({
   );
 }
 
-export async function getServerSideProps(context) {
-  const partnerSlug = String(context.params?.partnerSlug || "")
-    .trim()
-    .toLowerCase();
-  if (!partnerSlug) return { notFound: true };
-
+export async function getStaticPaths() {
+  if (process.env.VERCEL || process.env.SKIP_PRODUCT_SSG === "1") {
+    return { paths: [], fallback: "blocking" };
+  }
   try {
-    const store = await fetchActiveStoreByDomain(partnerSlug);
-    if (!store) return { notFound: true };
-
-    const [products, posts] = await Promise.all([
-      fetchStoreProductsForStorefront(store),
-      fetchPartnerBlogPosts({ store, perPage: 30 }),
-    ]);
-
-    const blogCms = mergeBlogCms(store.blog_cms);
-    const navCountries = buildPartnerCountryNavItems(products, store.domain);
-    const pickupProduct = resolveFeaturedProduct(products, blogCms);
-
+    const db = getPartnerStorefrontDb();
+    if (!db) return { paths: [], fallback: "blocking" };
+    const { data } = await db
+      .from("stores")
+      .select("domain")
+      .eq("status", "active")
+      .eq("blog_custom_enabled", true)
+      .limit(80);
     return {
-      props: {
-        store,
-        posts,
-        products,
-        blogCms,
-        pickupProduct,
-        navCountries,
-      },
+      paths: (data || [])
+        .map((s) => String(s.domain || "").trim().toLowerCase())
+        .filter(Boolean)
+        .map((partnerSlug) => ({ params: { partnerSlug } })),
+      fallback: "blocking",
     };
+  } catch {
+    return { paths: [], fallback: "blocking" };
+  }
+}
+
+export async function getStaticProps({ params }) {
+  try {
+    const result = await loadPartnerBlogIndexProps(params?.partnerSlug);
+    if (result.notFound) {
+      return { notFound: true, revalidate: 60 };
+    }
+    return { ...result, revalidate: 600 };
   } catch (err) {
     console.error("[PartnerBlogIndexPage]", err);
-    return { notFound: true };
+    return { notFound: true, revalidate: 60 };
   }
 }

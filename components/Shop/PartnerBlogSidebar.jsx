@@ -4,7 +4,34 @@ import Link from "next/link";
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import PartnerSocialIcons from "@/components/Shop/PartnerSocialIcons";
+
+function CategoryRow({ label, count, selected, onSelect, href }) {
+  const cls = `w-full flex items-center justify-between gap-2 px-2.5 py-2 text-left text-[12px] transition-colors ${
+    selected
+      ? "bg-white text-slate-900 font-bold shadow-[inset_2px_0_0_#0A6CD0]"
+      : "text-slate-600 font-medium hover:bg-white/80"
+  }`;
+  const inner = (
+    <>
+      <span className="truncate">{label}</span>
+      <span className={`tabular-nums text-[10px] ${selected ? "text-[#0A6CD0]" : "text-slate-400"}`}>
+        {count}
+      </span>
+    </>
+  );
+  if (onSelect) {
+    return (
+      <button type="button" onClick={onSelect} className={cls}>
+        {inner}
+      </button>
+    );
+  }
+  return (
+    <Link href={href || "#"} className={cls}>
+      {inner}
+    </Link>
+  );
+}
 
 /**
  * 夥伴 Blog 右側欄（CHA 編輯風格）
@@ -12,14 +39,20 @@ import PartnerSocialIcons from "@/components/Shop/PartnerSocialIcons";
 export default function PartnerBlogSidebar({
   store,
   posts = [],
-  pickupProduct = null,
   active = "article",
   onSearch,
-  isOwner = false,
-  onEditFeatured,
+  articleHref,
+  selectedCategory = "",
+  onSelectCategory,
+  listHref,
 }) {
   const domain = store?.domain;
   const base = `/p/${domain}`;
+  const blogList = listHref || `${base}/blog/`;
+  const postHref = (slug) =>
+    typeof articleHref === "function"
+      ? articleHref(slug)
+      : `${base}/blog/${slug}/`;
   const [q, setQ] = useState("");
 
   const nav = [
@@ -34,20 +67,28 @@ export default function PartnerBlogSidebar({
   ];
 
   const recent = useMemo(() => posts.slice(0, 4), [posts]);
-  const hasSocial = Boolean(
-    store?.social_instagram?.trim() ||
-      store?.social_facebook?.trim() ||
-      store?.social_line?.trim(),
-  );
+  const categories = useMemo(() => {
+    const map = new Map();
+    posts.forEach((p) => {
+      const label = String(p.categoryLabel || "").trim();
+      if (!label) return;
+      map.set(label, (map.get(label) || 0) + 1);
+    });
+    return [...map.entries()]
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "zh-Hant"));
+  }, [posts]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     onSearch?.(q.trim());
   };
 
+  const filterInteractive = typeof onSelectCategory === "function";
+
   return (
-    <aside className="w-full lg:w-[260px] shrink-0">
-      <div className="lg:sticky lg:top-28 space-y-8">
+    <aside className="w-full lg:w-[300px] shrink-0 lg:sticky lg:top-24 lg:self-start">
+      <div className="space-y-8">
         {/* 2x2 導覽 */}
         <nav className="border border-slate-200">
           <div className="grid grid-cols-2">
@@ -70,7 +111,7 @@ export default function PartnerBlogSidebar({
         {/* 搜尋 */}
         <form
           onSubmit={handleSearch}
-          className="flex items-center gap-2 border border-slate-300 px-3 py-2.5"
+          className="flex items-center gap-2 border border-slate-200 bg-[#faf9f6] px-3 py-2.5"
         >
           <Search className="w-4 h-4 text-slate-400 shrink-0" strokeWidth={1.75} />
           <input
@@ -82,66 +123,36 @@ export default function PartnerBlogSidebar({
           />
         </form>
 
-        {/* 追蹤我們 — 品牌色社群圖示 */}
-        <div className="border border-slate-200 bg-[#faf9f6] px-4 py-4">
-          <p className="text-[12px] font-bold text-slate-500 mb-3">追蹤我們</p>
-          <PartnerSocialIcons
-            store={store}
-            size="md"
-            showLabels={hasSocial}
-            emptyHint
-          />
-        </div>
-
-        {/* 精選商品 */}
-        {pickupProduct || isOwner ? (
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <p className="text-[12px] font-bold text-slate-500">精選商品</p>
-              {isOwner ? (
-                <button
-                  type="button"
-                  onClick={onEditFeatured}
-                  className="text-[10px] font-bold text-[#0A6CD0] hover:underline"
-                >
-                  編輯
-                </button>
-              ) : null}
-            </div>
-            {pickupProduct ? (
-              <Link
-                href={`${base}/${pickupProduct.id}/`}
-                className="block"
-              >
-                <div className="relative aspect-[4/5] bg-[#efeee9] overflow-hidden">
-                  {pickupProduct.image ? (
-                    <Image
-                      src={pickupProduct.image}
-                      alt={pickupProduct.name}
-                      fill
-                      className="object-contain p-4"
-                      sizes="260px"
-                    />
-                  ) : null}
-                </div>
-                <p className="mt-3 text-[13px] font-bold text-[#0A6CD0] leading-snug">
-                  {pickupProduct.name}
-                </p>
-                {pickupProduct.displayPrice > 0 ? (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    NT${Number(pickupProduct.displayPrice).toLocaleString()} 起
-                  </p>
-                ) : null}
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={onEditFeatured}
-                className="w-full border border-dashed border-slate-300 px-3 py-8 text-[11px] text-slate-500 hover:border-[#0A6CD0] hover:text-[#0A6CD0]"
-              >
-                選擇側欄精選商品
-              </button>
-            )}
+        {/* 分類篩選 */}
+        {categories.length > 0 ? (
+          <div className="border border-slate-200 bg-[#faf9f6] px-4 py-4">
+            <p className="text-[12px] font-bold text-slate-500 mb-3">
+              文章分類
+            </p>
+            <ul className="space-y-0.5">
+              <li>
+                <CategoryRow
+                  label="全部"
+                  count={posts.length}
+                  selected={!selectedCategory}
+                  onSelect={filterInteractive ? () => onSelectCategory("") : undefined}
+                  href={blogList}
+                />
+              </li>
+              {categories.map((cat) => (
+                <li key={cat.label}>
+                  <CategoryRow
+                    label={cat.label}
+                    count={cat.count}
+                    selected={selectedCategory === cat.label}
+                    onSelect={
+                      filterInteractive ? () => onSelectCategory(cat.label) : undefined
+                    }
+                    href={`${blogList}?cat=${encodeURIComponent(cat.label)}`}
+                  />
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
 
@@ -155,7 +166,7 @@ export default function PartnerBlogSidebar({
               {recent.map((post) => (
                 <li key={post.slug}>
                   <Link
-                    href={`${base}/blog/${post.slug}/`}
+                    href={postHref(post.slug)}
                     className="flex gap-3 group"
                   >
                     <div className="relative w-16 h-14 shrink-0 bg-slate-100 overflow-hidden">

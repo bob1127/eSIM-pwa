@@ -283,7 +283,7 @@ export default function PartnerApplicationTab() {
               >
                 隱私權政策
               </Link>
-              及合作夥伴相關約定。
+              及合作夥伴相關約定（含自訂文章與上傳內容免責：非法用途或無版權資產由夥伴自行負責）。
             </span>
           </label>
 

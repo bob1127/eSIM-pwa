@@ -6,6 +6,7 @@
  */
 import WpPhotoWall, {
   collectImgsFromGalleryNode,
+  extractWpMosaicLayout,
   isImgInsideWpGallery,
   isWpGalleryNode,
 } from "@/components/Blog/WpPhotoWall";
@@ -49,9 +50,16 @@ export function createWpContentReplace({
 
       // 2) 並排圖庫 / 圖庫（獨立幻燈片，不併入整篇文章）
       if (isWpGalleryNode(node)) {
-        const imgs = collectImgsFromGalleryNode(node);
+        const mosaic = extractWpMosaicLayout(node);
+        const imgs = mosaic?.images?.length
+          ? mosaic.images
+          : collectImgsFromGalleryNode(node);
         if (!imgs.length) return null;
-        return <WpPhotoWall images={imgs} />;
+        const cls = String(node.attribs?.class || "");
+        const isWide = /alignwide|alignfull/.test(cls);
+        return (
+          <WpPhotoWall images={imgs} isWide={isWide} mosaic={mosaic} />
+        );
       }
 
       // 3) 標題（可選）
