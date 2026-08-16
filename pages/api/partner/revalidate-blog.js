@@ -3,6 +3,8 @@ import {
   verifyPartnerAccessForUser,
 } from "../../../lib/partnerServer";
 import { sanitizePartnerBlogSlug } from "../../../lib/partnerBlog";
+import { notifyCreatorFollowers } from "../../../lib/creatorFollowNotify";
+import { getPublicSiteUrl } from "../../../lib/siteUrl";
 
 function normalizePath(path) {
   if (!path || typeof path !== "string") return null;
@@ -60,5 +62,16 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.status(200).json({ ok: true, results });
+  let notify = null;
+  if (req.body?.notifyFollowers) {
+    const site = getPublicSiteUrl();
+    notify = await notifyCreatorFollowers({
+      creatorKey: `partner:${domain}`,
+      creatorName: access.store.store_name || access.store.footer_company_name,
+      title: String(req.body?.title || slug),
+      url: `${site}/blog/${slug}/`,
+    });
+  }
+
+  return res.status(200).json({ ok: true, results, notify });
 }

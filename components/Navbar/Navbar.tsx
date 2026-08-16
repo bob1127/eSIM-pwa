@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -20,6 +20,7 @@ import FeaturedCountryCard, {
 } from "./FeaturedCountryCard";
 import SocialIconLinks, { SocialIconLinksMobile } from "./SocialIconLinks";
 import NavbarSiteSearch from "./NavbarSiteSearch";
+import { filterCountriesByQuery } from "@/lib/heroCountryPlans";
 
 import {
   UserIcon,
@@ -40,6 +41,7 @@ import {
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 
 // --- 1. 定義資料型別 ---
@@ -187,6 +189,12 @@ export default function Navbar({ className }: NavbarProps) {
     [],
   );
   const [loadingCats, setLoadingCats] = useState<boolean>(true);
+  const [countryQuery, setCountryQuery] = useState("");
+
+  const visibleCountries = useMemo(
+    () => filterCountriesByQuery(featuredCountries, countryQuery, "slug"),
+    [featuredCountries, countryQuery],
+  );
 
   // 首頁桌面版：頂部收回 navbar。手機版與其他頁面一律顯示。
   useEffect(() => {
@@ -197,6 +205,7 @@ export default function Navbar({ className }: NavbarProps) {
   useEffect(() => {
     setOpenMega("none");
     setMobileOpen(false);
+    setCountryQuery("");
   }, [pathname]);
 
   useEffect(() => {
@@ -494,7 +503,7 @@ export default function Navbar({ className }: NavbarProps) {
                 <div className="px-10 max-w-[1200px] mx-auto">
                   {openMega === "categories" && (
                     <>
-                      <div className="flex items-end justify-between gap-4 mb-5 border-b border-gray-100 pb-3">
+                      <div className="flex flex-wrap items-end justify-between gap-3 mb-5 border-b border-gray-100 pb-3">
                         <div>
                           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
                             精選eSIM
@@ -503,13 +512,47 @@ export default function Navbar({ className }: NavbarProps) {
                             熱門旅遊目的地 eSIM 方案
                           </p>
                         </div>
-                        <Link
-                          href="/product"
-                          onClick={() => setOpenMega("none")}
-                          className="text-sm font-bold text-[#0A6CD0] hover:underline shrink-0"
-                        >
-                          查看全部 →
-                        </Link>
+                        <div className="flex items-center gap-3 min-w-0 flex-1 justify-end">
+                          <label className="relative flex items-center min-w-0 w-full max-w-[280px]">
+                            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 h-4 w-4 text-slate-400" />
+                            <input
+                              type="search"
+                              value={countryQuery}
+                              onChange={(e) => setCountryQuery(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && visibleCountries[0]) {
+                                  e.preventDefault();
+                                  setOpenMega("none");
+                                  setCountryQuery("");
+                                  router.push(
+                                    `/product/${visibleCountries[0].slug}`,
+                                  );
+                                }
+                              }}
+                              placeholder="搜尋國家或城市，例如 維也納"
+                              autoComplete="off"
+                              aria-label="搜尋國家或城市"
+                              className="w-full rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-9 text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A6CD0] focus:bg-white focus:ring-2 focus:ring-[#0A6CD0]/15"
+                            />
+                            {countryQuery ? (
+                              <button
+                                type="button"
+                                onClick={() => setCountryQuery("")}
+                                className="absolute right-2.5 p-0.5 text-slate-400 hover:text-slate-600"
+                                aria-label="清除搜尋"
+                              >
+                                <XMarkIcon className="h-4 w-4" />
+                              </button>
+                            ) : null}
+                          </label>
+                          <Link
+                            href="/product"
+                            onClick={() => setOpenMega("none")}
+                            className="text-sm font-bold text-[#0A6CD0] hover:underline shrink-0"
+                          >
+                            查看全部 →
+                          </Link>
+                        </div>
                       </div>
                       {loadingCats ? (
                         <div className="flex justify-center items-center py-12">
@@ -517,9 +560,9 @@ export default function Navbar({ className }: NavbarProps) {
                             載入中...
                           </span>
                         </div>
-                      ) : featuredCountries.length > 0 ? (
+                      ) : visibleCountries.length > 0 ? (
                         <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
-                          {featuredCountries.map((country) => (
+                          {visibleCountries.map((country) => (
                             <FeaturedCountryCard
                               key={country.id}
                               country={country}
@@ -527,6 +570,10 @@ export default function Navbar({ className }: NavbarProps) {
                             />
                           ))}
                         </div>
+                      ) : featuredCountries.length > 0 ? (
+                        <p className="text-gray-400 text-sm py-8 text-center">
+                          找不到「{countryQuery}」相關國家，試試倫敦、首爾、維也納
+                        </p>
                       ) : (
                         <p className="text-gray-400 text-sm py-8 text-center">
                           尚未建立國家分類
@@ -599,17 +646,50 @@ export default function Navbar({ className }: NavbarProps) {
                   精選eSIM
                 </p>
                 {!loadingCats && featuredCountries.length > 0 && (
+                  <label className="relative flex items-center mb-2">
+                    <MagnifyingGlassIcon className="pointer-events-none absolute left-3 h-4 w-4 text-slate-400" />
+                    <input
+                      type="search"
+                      value={countryQuery}
+                      onChange={(e) => setCountryQuery(e.target.value)}
+                      placeholder="搜尋國家或城市"
+                      autoComplete="off"
+                      aria-label="搜尋國家或城市"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-9 text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A6CD0] focus:bg-white"
+                    />
+                    {countryQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => setCountryQuery("")}
+                        className="absolute right-2.5 p-0.5 text-slate-400"
+                        aria-label="清除搜尋"
+                      >
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </label>
+                )}
+                {!loadingCats && visibleCountries.length > 0 && (
                   <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 mb-2">
-                    {featuredCountries.slice(0, 8).map((country) => (
-                      <FeaturedCountryCard
-                        key={country.id}
-                        country={country}
-                        compact
-                        onNavigate={() => setMobileOpen(false)}
-                      />
-                    ))}
+                    {visibleCountries.slice(0, countryQuery.trim() ? 24 : 8).map(
+                      (country) => (
+                        <FeaturedCountryCard
+                          key={country.id}
+                          country={country}
+                          compact
+                          onNavigate={() => setMobileOpen(false)}
+                        />
+                      ),
+                    )}
                   </div>
                 )}
+                {!loadingCats &&
+                  featuredCountries.length > 0 &&
+                  visibleCountries.length === 0 && (
+                    <p className="text-slate-400 text-xs px-2 mb-2">
+                      找不到「{countryQuery}」相關國家
+                    </p>
+                  )}
                 <MobileSimpleNavItem
                   icon={<GlobeAsiaAustraliaIcon className="w-5 h-5" />}
                   label="瀏覽全部國家方案"

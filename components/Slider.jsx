@@ -98,7 +98,7 @@ function HeroCardAction({
 
 function HeroQuickTile({ label, imageSrc, href, external, onClick }) {
   const cls =
-    "group flex flex-col items-center justify-center gap-2 bg-white rounded-xl border border-slate-100 shadow-[0_2px_12px_rgba(15,23,42,0.06)] hover:shadow-[0_6px_20px_rgba(29,92,197,0.12)] hover:border-[#1d5cc5]/25 transition-all duration-200 p-3 sm:p-4 aspect-square w-full";
+    "group flex flex-col items-center justify-center gap-2 bg-white rounded-xl border border-gray-200 shadow-none hover:border-gray-300 transition-colors duration-200 p-3 sm:p-4 aspect-square w-full";
 
   const inner = (
     <>

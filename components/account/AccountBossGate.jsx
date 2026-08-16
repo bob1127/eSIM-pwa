@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import MaterialIcon from "@/components/MaterialIcon";
+import AccountIcon from "@/components/account/AccountIcon";
 import {
   getBossToken,
   clearBossSession,
@@ -80,7 +80,7 @@ export default function AccountBossGate({ children, onAuthChange }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-slate-200 rounded-sm px-4 py-3">
         <div className="flex items-center gap-2 text-sm">
-          <MaterialIcon name="verified_user" size={20} className="text-emerald-600" />
+          <AccountIcon name="verified_user" size={20} className="text-emerald-600" />
           <span className="text-slate-600">
             已登入：
             <strong className="text-[#1E4AD1] ml-1">

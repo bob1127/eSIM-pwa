@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import MaterialIcon from "@/components/MaterialIcon";
+import AccountIcon from "@/components/account/AccountIcon";
 import { extractEsimsFromOrders } from "@/lib/esimOrderExtract";
 import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
 import {
@@ -302,14 +302,14 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
             disabled={!!loadingId || !esims.length}
             onClick={handleQueryAll}
           >
-            <MaterialIcon name="sync" size={16} />
+            <AccountIcon name="sync" size={16} />
             全部更新
           </SecondaryBtn>
           <PrimaryBtn
             disabled={!!loadingId || !esims.length}
             onClick={() => esims[0] && handleOneClick(esims[0])}
           >
-            <MaterialIcon name="bolt" size={16} />
+            <AccountIcon name="bolt" size={16} />
             查最新一筆
           </PrimaryBtn>
           <ShopifyDropdown label="更多操作" items={moreMenu} />
@@ -360,7 +360,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                 borderRadius: UI.radiusSm,
               }}
             >
-              <MaterialIcon
+              <AccountIcon
                 name="install_mobile"
                 size={18}
                 className="text-white"
@@ -415,7 +415,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
               disabled={!!loadingId || !esims.length}
               onClick={() => esims[0] && handleOneClick(esims[0])}
             >
-              <MaterialIcon name="speed" size={16} />
+              <AccountIcon name="speed" size={16} />
               查最新一筆
             </PrimaryBtn>
           </div>
@@ -432,7 +432,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
               className="text-center py-12 text-sm px-4"
               style={{ color: UI.soft }}
             >
-              <MaterialIcon
+              <AccountIcon
                 name="sim_card"
                 size={40}
                 className="mx-auto mb-3 opacity-30"
@@ -614,7 +614,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                 color: SHOPIFY_BADGE.critical.dot,
               }}
             >
-              <MaterialIcon name="error" size={16} />
+              <AccountIcon name="error" size={16} />
               {error}
             </div>
           ) : null}
@@ -624,7 +624,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
         <aside className="space-y-4 min-w-0">
           <Card className="p-4 overflow-hidden">
             <div className="flex items-center gap-2 mb-3">
-              <MaterialIcon
+              <AccountIcon
                 name="donut_large"
                 size={18}
                 style={{ color: UI.mid }}
@@ -674,7 +674,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                 disabled={!!loadingId || !esims.length}
                 onClick={() => esims[0] && handleOneClick(esims[0])}
               >
-                <MaterialIcon name="bolt" size={16} />
+                <AccountIcon name="bolt" size={16} />
                 一鍵查最新
               </SecondaryBtn>
               <SecondaryBtn
@@ -682,7 +682,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                 disabled={!!loadingId || !esims.length}
                 onClick={handleQueryAll}
               >
-                <MaterialIcon name="sync" size={16} />
+                <AccountIcon name="sync" size={16} />
                 全部更新
               </SecondaryBtn>
               <SecondaryBtn
@@ -694,11 +694,11 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                   }, 50);
                 }}
               >
-                <MaterialIcon name="notifications_active" size={16} />
+                <AccountIcon name="notifications_active" size={16} />
                 推播提醒
               </SecondaryBtn>
               <SecondaryBtn href="/data-query" className="w-full">
-                <MaterialIcon name="help_outline" size={16} />
+                <AccountIcon name="help_outline" size={16} />
                 用量指南
               </SecondaryBtn>
             </div>

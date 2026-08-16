@@ -384,7 +384,7 @@ async function main() {
       [TELECOM]: {
         fup_notice:
           "歐包 49 國漫遊每日型。法國走 Orange／Bouygues。每日高速用完後降速約 128kbps，隔日重置。出網英國／波蘭 IP，支援 ChatGPT／TikTok／Gemini。古蹟室內與鄉村收訊不保證。",
-        activation_notice: "建議抵達法國或歐包覆蓋範圍後再安裝／啟用 eSIM",
+        activation_notice: "建議抵達法國覆蓋範圍後再安裝／啟用 eSIM",
       },
     },
     key_features_by_carrier: frDailyKeyFeaturesByCarrier(),
@@ -395,7 +395,7 @@ async function main() {
     subtitle: "ORANGE＋｜歐包 49 國｜每日型｜高速後約 128kbps｜90%",
     handle: HANDLE,
     description:
-      "法國每日型 eSIM，走 Orange／Bouygues 4G／5G，同一張含歐洲 49 國（英、德、義、西、瑞士、荷、比、奧、阿爾巴尼亞等）。可選每日 500MB／1GB／2GB／3GB，1／2／3／5／7／10／15／20／30 天。每日高速用完後約 128kbps 可持續使用，隔日重置。英國／波蘭 IP（APN plus），支援 ChatGPT、TikTok、Gemini 與熱點。建議抵達法國或歐包覆蓋範圍後再啟用。",
+      "法國每日型 eSIM，走 Orange／Bouygues 4G／5G，同一張含歐洲 49 國（英、德、義、西、瑞士、荷、比、奧、阿爾巴尼亞等）。可選每日 500MB／1GB／2GB／3GB，1／2／3／5／7／10／15／20／30 天。每日高速用完後約 128kbps 可持續使用，隔日重置。英國／波蘭 IP（APN plus），支援 ChatGPT、TikTok、Gemini 與熱點。建議抵達法國覆蓋範圍後再啟用。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,

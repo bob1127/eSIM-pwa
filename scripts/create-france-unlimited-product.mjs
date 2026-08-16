@@ -359,7 +359,7 @@ async function main() {
       [TELECOM]: {
         fup_notice:
           "歐包 34 國漫遊吃到飽（FUP）。法國走 Orange／Bouygues／Free Mobile。出網波蘭 IP，支援 ChatGPT／TikTok／Gemini。古蹟室內與鄉村收訊不保證。",
-        activation_notice: "建議抵達法國或歐包覆蓋範圍後再安裝／啟用 eSIM",
+        activation_notice: "建議抵達法國覆蓋範圍後再安裝／啟用 eSIM",
       },
     },
     key_features_by_carrier: frUnlimitedKeyFeaturesByCarrier(),
@@ -370,7 +370,7 @@ async function main() {
     subtitle: "ORANGE＋｜歐包 34 國｜吃到飽不限流量｜FUP｜85%",
     handle: HANDLE,
     description:
-      "法國吃到飽不限流量 eSIM，走 Orange／Bouygues／Free Mobile 4G／5G，同一張含歐洲 34 國（英、德、義、西、瑞士、荷、比、奧等）。FUP 可持續上網，波蘭 IP（APN internet／internetipv6），支援 ChatGPT、TikTok、Gemini 與熱點。可選 1、3、5、7、10、15、20、30、60、90 天。建議抵達法國或歐包覆蓋範圍後再啟用。",
+      "法國吃到飽不限流量 eSIM，走 Orange／Bouygues／Free Mobile 4G／5G，同一張含歐洲 34 國（英、德、義、西、瑞士、荷、比、奧等）。FUP 可持續上網，波蘭 IP（APN internet／internetipv6），支援 ChatGPT、TikTok、Gemini 與熱點。可選 1、3、5、7、10、15、20、30、60、90 天。建議抵達法國覆蓋範圍後再啟用。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import MaterialIcon from "@/components/MaterialIcon";
 import { bossFetch } from "@/lib/bossAdminClient";
 import { SITE_URL } from "@/lib/seo.config";
 import { buildReferralShareUrl } from "@/lib/partnerReferral";

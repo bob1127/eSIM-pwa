@@ -273,7 +273,7 @@ function PartnerHeroPanel() {
         <div className="mt-4 flex gap-8 shrink-0">
           {[
             { num: "0", label: "開店費用" },
-            { num: "20%", label: "預設加價" },
+            { num: "20%", label: "建議利潤" },
             { num: "∞", label: "分潤上限" },
           ].map((item) => (
             <div key={item.label} className="text-center">

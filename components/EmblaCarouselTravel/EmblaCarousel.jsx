@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { fetchWpPosts } from "../../lib/wordpress";
+import { stripHtml } from "@/lib/stripHtml";
 import Link from "next/link";
 import { gsap } from "gsap";
 import {
@@ -18,10 +19,6 @@ function extractFirstImageFromContent(content) {
   return match ? match[1] : null;
 }
 
-// 🔧 工具：移除 HTML 標籤
-function stripHtml(html) {
-  return html.replace(/<[^>]+>/g, "");
-}
 const ArrowIcon = () => (
   <svg
     width="14"

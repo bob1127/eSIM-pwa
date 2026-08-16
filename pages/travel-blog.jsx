@@ -6,11 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import Carousel from "../components/EmblaCarousel06/index";
 import { fetchWpPosts, normalizeWpAssetUrl } from "../lib/wordpress";
-
-function stripHtml(html) {
-  if (!html) return "";
-  return html.replace(/<[^>]*>?/gm, "").replace(/&#\d+;/gm, "");
-}
+import { stripHtml } from "@/lib/stripHtml";
 
 function extractFirstImageFromContent(content) {
   if (!content) return null;

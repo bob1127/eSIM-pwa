@@ -14,7 +14,7 @@ export function cnhkmoDailyTcKeyFeatures() {
       "**為什麼選擇中港澳每日型？**",
       "**免 VPN 社群**：新加坡出口 IP，一般可直接使用 LINE、Instagram、Facebook（實際依當下路由；非保證每位用戶／每個時段）。",
       "**每日高速額度**：可選每日 500MB／1GB／2GB／3GB；高速用完後一般降速至約 128 kbps，另有每日 1GB（約 5Mbps 續航）選項。",
-      "**支援熱點與常用 App**：熱點分享；選品標示支援 ChatGPT、TikTok、Gemini。",
+      "**支援熱點與常用 App**：熱點分享；支援 ChatGPT、TikTok、Gemini。",
       "**4G／5G 覆蓋**：大陸電信／聯通、香港 CSL、澳門 CTM，熱門城市覆蓋良好。",
       "**安裝提醒**：建議抵達覆蓋範圍後再安裝／啟用 eSIM。",
     ],

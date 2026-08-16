@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
-import MaterialIcon from "@/components/MaterialIcon";
+import AccountIcon from "@/components/account/AccountIcon";
 import RefundRequestModal from "@/components/refund/RefundRequestModal";
 import OrderRefundDetailModal from "@/components/refund/OrderRefundDetailModal";
 import { useCart } from "@/components/context/CartContext";
@@ -369,7 +369,7 @@ function ModalShell({ title, eyebrow, onClose, children, maxW = "max-w-md" }) {
             }}
             aria-label="關閉"
           >
-            <MaterialIcon name="close" size={18} />
+            <AccountIcon name="close" size={18} />
           </button>
         </div>
         <div className="p-5">{children}</div>
@@ -408,7 +408,7 @@ function PendingPaymentModal({ order, onClose }) {
               }}
             >
               <div className="flex items-center gap-2">
-                <MaterialIcon
+                <AccountIcon
                   name="store"
                   size={22}
                   style={{ color: SHOPIFY_BADGE.warning.dot }}
@@ -601,7 +601,7 @@ function OrderDetailView({
         className="flex items-center gap-1 text-sm font-bold mb-4 hover:underline"
         style={{ color: UI.dark }}
       >
-        <MaterialIcon name="arrow_back" size={18} />
+        <AccountIcon name="arrow_back" size={18} />
         訂單
       </button>
 
@@ -626,7 +626,7 @@ function OrderDetailView({
         <div className="flex items-center gap-2 flex-wrap">
           {eligibility.canApply ? (
             <SecondaryBtn onClick={() => setRefundOrder(order)}>
-              <MaterialIcon name="undo" size={16} />
+              <AccountIcon name="undo" size={16} />
               申請退款
             </SecondaryBtn>
           ) : null}
@@ -637,7 +637,7 @@ function OrderDetailView({
               }}
               href="#esim-qr"
             >
-              <MaterialIcon name="qr_code_2" size={16} />
+              <AccountIcon name="qr_code_2" size={16} />
               QR Code
             </SecondaryBtn>
           ) : null}
@@ -654,7 +654,7 @@ function OrderDetailView({
               style={{ borderBottom: `1px solid ${UI.border}` }}
             >
               <div className="flex items-center gap-2">
-                <MaterialIcon
+                <AccountIcon
                   name="sim_card"
                   size={18}
                   style={{ color: UI.mid }}
@@ -684,7 +684,7 @@ function OrderDetailView({
                         border: `1px solid ${UI.border}`,
                       }}
                     >
-                      <MaterialIcon
+                      <AccountIcon
                         name="sim_card"
                         size={22}
                         style={{ color: UI.dark }}
@@ -722,7 +722,7 @@ function OrderDetailView({
                     borderRadius: UI.radiusSm,
                   }}
                 >
-                  <MaterialIcon
+                  <AccountIcon
                     name="sim_card"
                     size={22}
                     style={{ color: UI.dark }}
@@ -739,7 +739,7 @@ function OrderDetailView({
               >
                 {qrs.length > 0 ? (
                   <SecondaryBtn onClick={() => onTabChange?.("traffic")}>
-                    <MaterialIcon name="speed" size={16} />
+                    <AccountIcon name="speed" size={16} />
                     查詢流量
                   </SecondaryBtn>
                 ) : null}
@@ -966,7 +966,7 @@ function OrderDetailView({
                       borderRadius: UI.radiusSm,
                     }}
                   >
-                    <MaterialIcon
+                    <AccountIcon
                       name="sim_card"
                       size={20}
                       className="text-white"
@@ -1026,7 +1026,7 @@ function OrderDetailView({
                       borderRadius: UI.radiusSm,
                     }}
                   >
-                    <MaterialIcon
+                    <AccountIcon
                       name="notifications_active"
                       size={20}
                       className="text-white"
@@ -1060,7 +1060,7 @@ function OrderDetailView({
                       borderRadius: UI.radiusSm,
                     }}
                   >
-                    <MaterialIcon
+                    <AccountIcon
                       name="speed"
                       size={20}
                       className="text-white"
@@ -1159,7 +1159,7 @@ function OrderDetailView({
                   onClick={() => onTabChange?.("traffic")}
                   className="w-full"
                 >
-                  <MaterialIcon name="speed" size={16} />
+                  <AccountIcon name="speed" size={16} />
                   查詢流量
                 </SecondaryBtn>
               ) : null}
@@ -1168,12 +1168,12 @@ function OrderDetailView({
                   onClick={() => setRefundOrder(order)}
                   className="w-full"
                 >
-                  <MaterialIcon name="undo" size={16} />
+                  <AccountIcon name="undo" size={16} />
                   申請退款
                 </SecondaryBtn>
               ) : null}
               <PrimaryBtn onClick={buyAgain} className="w-full">
-                <MaterialIcon name="add" size={16} />
+                <AccountIcon name="add" size={16} />
                 再次購買
               </PrimaryBtn>
             </div>
@@ -1186,7 +1186,7 @@ function OrderDetailView({
                 className="flex items-center gap-2 p-2 rounded-md hover:bg-[#f6f6f7] font-medium"
                 style={{ color: UI.dark }}
               >
-                <MaterialIcon name="menu_book" size={18} style={{ color: UI.mid }} />
+                <AccountIcon name="menu_book" size={18} style={{ color: UI.mid }} />
                 eSIM 安裝指南
               </Link>
               <Link
@@ -1194,7 +1194,7 @@ function OrderDetailView({
                 className="flex items-center gap-2 p-2 rounded-md hover:bg-[#f6f6f7] font-medium"
                 style={{ color: UI.dark }}
               >
-                <MaterialIcon name="policy" size={18} style={{ color: UI.mid }} />
+                <AccountIcon name="policy" size={18} style={{ color: UI.mid }} />
                 退換貨政策
               </Link>
             </div>
@@ -1443,7 +1443,7 @@ export default function AccountOrdersView({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <SecondaryBtn onClick={exportCsv} disabled={!filtered.length}>
-            <MaterialIcon name="download" size={16} />
+            <AccountIcon name="download" size={16} />
             匯出 CSV
           </SecondaryBtn>
           <ShopifyDropdown label="更多操作" items={moreMenu} />
@@ -1482,7 +1482,7 @@ export default function AccountOrdersView({
           style={{ borderTop: `1px solid ${UI.border}` }}
         >
           <div className="flex-1 relative">
-            <MaterialIcon
+            <AccountIcon
               name="search"
               size={18}
               className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -1501,14 +1501,14 @@ export default function AccountOrdersView({
             />
           </div>
           <SecondaryBtn onClick={() => setShowAdvanced((v) => !v)}>
-            <MaterialIcon
+            <AccountIcon
               name={showAdvanced ? "filter_list_off" : "filter_list"}
               size={16}
             />
             篩選
           </SecondaryBtn>
           <SecondaryBtn onClick={onRefresh}>
-            <MaterialIcon name="refresh" size={16} />
+            <AccountIcon name="refresh" size={16} />
             重新整理
           </SecondaryBtn>
         </div>
@@ -1622,7 +1622,7 @@ export default function AccountOrdersView({
               筆
             </p>
             <SecondaryBtn onClick={() => onTabChange?.("traffic")}>
-              <MaterialIcon name="speed" size={16} />
+              <AccountIcon name="speed" size={16} />
               查詢所選流量
             </SecondaryBtn>
           </div>
@@ -1699,7 +1699,7 @@ export default function AccountOrdersView({
                       ) : null}
                       {hasQr ? (
                         <SecondaryBtn onClick={() => setQrOrder(order)}>
-                          <MaterialIcon name="qr_code_2" size={16} />
+                          <AccountIcon name="qr_code_2" size={16} />
                         </SecondaryBtn>
                       ) : null}
                       <PrimaryBtn onClick={() => setDetailOrder(order)}>
@@ -1884,7 +1884,7 @@ export default function AccountOrdersView({
                               color: UI.dark,
                             }}
                           >
-                            <MaterialIcon name="qr_code_2" size={16} />
+                            <AccountIcon name="qr_code_2" size={16} />
                           </button>
                         ) : (
                           <span style={{ color: UI.soft }}>—</span>
@@ -1950,7 +1950,7 @@ export default function AccountOrdersView({
                                 color: UI.dark,
                               }}
                             >
-                              <MaterialIcon name="qr_code_2" size={16} />
+                              <AccountIcon name="qr_code_2" size={16} />
                             </button>
                           ) : (
                             <span className="w-8 h-8" aria-hidden />
@@ -1967,7 +1967,7 @@ export default function AccountOrdersView({
                               color: UI.dark,
                             }}
                           >
-                            <MaterialIcon name="edit" size={16} />
+                            <AccountIcon name="edit" size={16} />
                           </button>
                         </div>
                       </td>

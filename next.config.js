@@ -148,6 +148,16 @@ const nextConfig = {
         destination: "/product/thailand/:slug*",
         permanent: false,
       },
+      {
+        source: "/product/uk/uk-unlimited-10mbps-esim",
+        destination: "/product/uk/uk-unlimited-esim/",
+        permanent: false,
+      },
+      {
+        source: "/product/uk/uk-unlimited-10mbps-esim/",
+        destination: "/product/uk/uk-unlimited-esim/",
+        permanent: false,
+      },
       ...countries.flatMap((slug) => [
         {
           source: `/${slug}`,

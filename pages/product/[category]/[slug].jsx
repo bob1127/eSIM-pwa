@@ -90,8 +90,12 @@ import {
   parseKeyFeaturesByCarrier,
   resolveIntroBullets,
   resolveActualExperience,
+  stripEuPackCopy,
 } from "../../../lib/productKeyFeatures";
-import { parseSubtitleByCarrier } from "../../../lib/productSubtitleByCarrier";
+import {
+  parseSubtitleByCarrier,
+  stripInternalMarginFromSubtitle,
+} from "../../../lib/productSubtitleByCarrier";
 import {
   SpeedScenarioProvider,
   SpeedInfoChip,
@@ -2284,10 +2288,10 @@ export async function getStaticProps({ params }) {
       name: product.title,
       subtitle: product.subtitle || "",
       slug: product.handle,
-      description: product.description || "",
+      description: stripEuPackCopy(product.description || ""),
       metadata: publicMetadata,
       subtitle_by_carrier: parsedSubtitleByCarrier,
-      detailed_content: product.metadata?.detailed_content || "",
+      detailed_content: stripEuPackCopy(product.metadata?.detailed_content || ""),
       detailed_content_by_carrier:
         parseDetailedContentByCarrier(rawDetailedByCarrier),
       usage_content_by_carrier: parseUsageContentByCarrier(rawUsageByCarrier),
@@ -3000,12 +3004,14 @@ export default function ProductPage({
   const displaySubtitle = useMemo(() => {
     const stripRoamingLabel = (text) => {
       if (!text) return text;
-      return String(text)
-        .replace(/^漫遊每日型/u, "每日型")
-        .replace(/^漫遊總量型/u, "總量型")
-        .replace(/^漫遊[：:・‧·\s]+/u, "")
-        .replace(/^漫遊/u, "")
-        .trim();
+      return stripInternalMarginFromSubtitle(
+        String(text)
+          .replace(/^漫遊每日型/u, "每日型")
+          .replace(/^漫遊總量型/u, "總量型")
+          .replace(/^漫遊[：:・‧·\s]+/u, "")
+          .replace(/^漫遊/u, "")
+          .trim(),
+      );
     };
 
     const telecom = String(selectedAttributes.telecom || "").trim();

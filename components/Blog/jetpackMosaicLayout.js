@@ -306,6 +306,9 @@ const JUSTIFIED_MAX_H = {
  * 盡量維持原圖寬高比：同一列等高、撐滿容器寬。
  * 列高超出上限時才微裁（object-fit: cover）。
  */
+/** 列切法對齊閱讀寬，手機只縮放、不改拼貼 */
+const JUSTIFIED_PACK_WIDTH = 720;
+
 export function layoutJustifiedRows(
   aspects,
   containerWidth,
@@ -320,6 +323,7 @@ export function layoutJustifiedRows(
     maxH = Math.round(maxH * 0.78);
   }
   const W = Math.max(1, containerWidth);
+  const packW = JUSTIFIED_PACK_WIDTH;
   const safe = aspects.map((a) => (a > 0.05 ? a : 1));
   const rows = [];
   let items = [];
@@ -362,7 +366,7 @@ export function layoutJustifiedRows(
   safe.forEach((ar, index) => {
     const nw = targetH * ar;
     const nextW = rowW + (items.length ? gutter : 0) + nw;
-    if (items.length && nextW > W) {
+    if (items.length && nextW > packW) {
       flush(items);
       items = [];
       rowW = 0;

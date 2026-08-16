@@ -12,6 +12,7 @@ import { designControlStyle, designShellStyle, designHeightPx, gapCss, designCar
 import PartnerShareButtons from "@/components/Shop/PartnerShareButtons";
 import WpPhotoWall from "@/components/Blog/WpPhotoWall";
 import CanvasEditable from "./CanvasEditable";
+import ItsHoverIcon from "@/components/icons/ItsHoverIcon";
 
 /** 文字／HTML 元件：Enter 成段時不要空一整行 */
 const RICH_TEXT_PROSE =
@@ -1322,7 +1323,7 @@ function PartnerBlogBlockBody({
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          <div className="min-w-0" style={wallBox.frame}>
+          <div className="photo-wall-frame min-w-0" style={wallBox.frame}>
             <WpPhotoWall
               images={urls.map((src) => ({ src, href: src, alt: "" }))}
               isWide={p.wide === true}
@@ -1333,6 +1334,41 @@ function PartnerBlogBlockBody({
           </div>
         </div>
       );
+    }
+    case "icon": {
+      const size = Math.min(96, Math.max(20, Number(p.size) || 48));
+      const color = p.color || p.fill || "currentColor";
+      const iconEl = (
+        <ItsHoverIcon name={p.name || "airplane"} size={size} color={color} />
+      );
+      const caption =
+        p.label || editable ? (
+          <CanvasEditable
+            enabled={editable}
+            as="span"
+            className="text-sm text-slate-600"
+            value={p.label || ""}
+            singleLine
+            placeholder="說明文字"
+            onChange={(v) => patch({ label: v })}
+          />
+        ) : null;
+      const inner = (
+        <span className="inline-flex flex-col items-center gap-1.5">
+          {iconEl}
+          {caption}
+        </span>
+      );
+      if (p.href && !editable) {
+        return (
+          <Align value={p.align || "center"}>
+            <a href={safeHref(p.href, "#")} className="inline-flex no-underline text-inherit">
+              {inner}
+            </a>
+          </Align>
+        );
+      }
+      return <Align value={p.align || "center"}>{inner}</Align>;
     }
     case "icon-box":
       return (

@@ -4,55 +4,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import MobileCardCarousel from "./MobileCardCarousel";
 import KlookLocationMap from "./KlookLocationMap";
-import { KLOOK_HOTELS } from "../data/klook/hotels";
+import { KLOOK_HOTELS, klookHotelAff } from "../data/klook/hotels";
 
-const PARTNER_TABS = [
-  { id: "klook", label: "Jeko × Klook" },
-  { id: "partner", label: "Jeko 合作" },
-];
-
-const REGION_TABS = [
-  { id: "all", label: "全部" },
-  { id: "osaka", label: "大阪" },
-  { id: "okinawa", label: "沖繩" },
-  { id: "hokkaido", label: "北海道" },
+const COUNTRY_TABS = [
+  { id: "japan", label: "日本 🇯🇵" },
+  { id: "korea", label: "韓國 🇰🇷" },
+  { id: "thailand", label: "泰國 🇹🇭" },
+  { id: "china", label: "中國 🇨🇳" },
+  { id: "hongkong", label: "港澳 🇭🇰" },
+  { id: "vietnam", label: "越南 🇻🇳" },
 ];
 
 const PREVIEW_COUNT = 4;
 const CAROUSEL_INTERVAL_MS = 4000;
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=960&q=80";
-
-/** Google 風格：文字 + 底線 */
-function UnderlineTabs({ tabs, activeId, onChange, accent = "#1a73e8" }) {
-  return (
-    <div className="flex gap-6 sm:gap-8 overflow-x-auto scrollbar-none">
-      {tabs.map((tab) => {
-        const active = activeId === tab.id;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => onChange(tab.id)}
-            className={[
-              "relative shrink-0 pb-3 text-[15px] sm:text-base font-medium tracking-tight transition-colors",
-              active ? "text-gray-900" : "text-gray-500 hover:text-gray-800",
-            ].join(" ")}
-            style={active ? { color: accent } : undefined}
-          >
-            {tab.label}
-            {active && (
-              <span
-                className="absolute left-0 right-0 bottom-0 h-[3px] rounded-full"
-                style={{ backgroundColor: accent }}
-              />
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 const HOTEL_PLACEHOLDER_IMAGES = [
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=960&q=80",
@@ -64,9 +30,27 @@ const HOTEL_PLACEHOLDER_IMAGES = [
 ];
 
 function getHotelImages(item) {
+  const fromCatalog = Array.isArray(item?.images)
+    ? item.images.filter(Boolean)
+    : [];
+  if (fromCatalog.length) return fromCatalog;
   const idx = parseInt(item.hotelId, 10) % HOTEL_PLACEHOLDER_IMAGES.length;
   const next = (idx + 1) % HOTEL_PLACEHOLDER_IMAGES.length;
   return [HOTEL_PLACEHOLDER_IMAGES[idx], HOTEL_PLACEHOLDER_IMAGES[next]];
+}
+
+function getHotelCategory(item) {
+  if (item.category) return item.category;
+  if (item.starRating) return `${item.starRating} 星飯店`;
+  return "精選飯店";
+}
+
+function getHotelPriceLabel(item) {
+  return item.priceLabel || "TWD 入住報價 起";
+}
+
+function getHotelFooter(item) {
+  return item.footer || "立即確認 · 免費取消視方案 · 價格依日期而異";
 }
 
 function HotelImageCarousel({
@@ -210,13 +194,13 @@ function HotelModal({ item, onClose }) {
           <div className="overflow-y-auto flex-1 min-h-0 px-5 pt-4 pb-4">
             <div className="flex items-center gap-2 flex-wrap mb-2">
               <span className="text-[11px] font-bold text-[#00B259] bg-green-50 px-2 py-0.5 rounded-full">
-                {item.subtitle}
+                {getHotelCategory(item)}
               </span>
               <span className="text-[11px] text-gray-400">
                 {item.regionLabel}
               </span>
               {item.badge && (
-                <span className="text-[11px] font-bold text-[#00B259] bg-green-100 px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-bold text-white bg-[#00B259] px-2 py-0.5 rounded-full">
                   {item.badge}
                 </span>
               )}
@@ -225,9 +209,16 @@ function HotelModal({ item, onClose }) {
             <h2 className="text-lg font-black text-gray-900 leading-snug mb-1">
               {item.title}
             </h2>
-            <p className="text-sm text-gray-500 mb-3 line-through">
-              原價 {item.sellPriceLabel}
-            </p>
+            <p className="text-sm text-gray-500 mb-3">{item.subtitle}</p>
+
+            <div className="flex items-center gap-2 mb-4">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#00B259] text-[10px] font-black text-white">
+                KL
+              </span>
+              <span className="text-2xl font-black text-gray-900">
+                {getHotelPriceLabel(item)}
+              </span>
+            </div>
 
             <p className="text-sm text-gray-700 leading-relaxed mb-4">
               {item.description}
@@ -260,14 +251,16 @@ function HotelModal({ item, onClose }) {
           <div className="shrink-0 border-t border-gray-100 bg-white px-5 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between gap-4 mb-3">
               <div>
-                <p className="text-[11px] text-gray-400">優惠價格</p>
+                <p className="text-[11px] text-gray-400">預訂價格</p>
                 <p className="text-xl font-black text-gray-900">
-                  {item.priceLabel}
+                  {getHotelPriceLabel(item)}
                 </p>
               </div>
-              <p className="text-[11px] font-bold text-[#00B259] text-right">
-                {item.discountLabel}
-              </p>
+              {item.discountLabel && (
+                <p className="text-[11px] font-bold text-[#00B259] text-right">
+                  {item.discountLabel}
+                </p>
+              )}
             </div>
 
             <a
@@ -322,6 +315,9 @@ function HotelCard({ item, onClick }) {
             {item.badge}
           </span>
         )}
+        <span className="absolute bottom-2.5 left-2.5 rounded-md bg-white/90 px-2 py-0.5 text-[10px] font-bold text-slate-700 z-10">
+          {getHotelCategory(item)}
+        </span>
       </div>
 
       <div className="flex flex-1 flex-col px-4 pt-3.5 pb-4">
@@ -336,22 +332,17 @@ function HotelCard({ item, onClick }) {
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#00B259] text-[9px] font-black text-white">
             KL
           </span>
-          <div className="min-w-0">
-            <span className="text-base font-black text-gray-900">
-              {item.priceLabel}
-            </span>
-            <p className="text-[10px] text-gray-400 line-through">
-              {item.sellPriceLabel}
-            </p>
-          </div>
+          <span className="text-base font-black text-gray-900">
+            {getHotelPriceLabel(item)}
+          </span>
         </div>
 
         <div className="mt-3 border-t border-gray-100 pt-2.5 flex items-center justify-between gap-2">
-          <p className="text-[10px] text-[#00B259] font-bold">
-            {item.discountLabel}
+          <p className="text-[10px] text-gray-400 line-clamp-1 flex-1">
+            {getHotelFooter(item)}
           </p>
           <span className="shrink-0 text-[10px] font-bold text-[#00B259] group-hover:underline">
-            查看詳情
+            查看詳情 →
           </span>
         </div>
       </div>
@@ -360,18 +351,35 @@ function HotelCard({ item, onClick }) {
 }
 
 export default function AccommodationRecommendSection() {
-  const [partnerTab, setPartnerTab] = useState("klook");
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("japan");
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAll, setShowAll] = useState(false);
 
-  const filtered = useMemo(() => {
-    if (partnerTab !== "klook") return [];
-    if (activeTab === "all") return KLOOK_HOTELS;
-    return KLOOK_HOTELS.filter((h) => h.tabId === activeTab);
-  }, [partnerTab, activeTab]);
+  const filtered = useMemo(
+    () => KLOOK_HOTELS.filter((h) => h.countryId === activeTab),
+    [activeTab],
+  );
 
   const displayItems = showAll ? filtered : filtered.slice(0, PREVIEW_COUNT);
+
+  const listingUrl =
+    activeTab === "thailand"
+      ? klookHotelAff("https://www.klook.com/zh-TW/hotels/city/4-bangkok-hotels/")
+      : activeTab === "korea"
+        ? klookHotelAff("https://www.klook.com/zh-TW/hotels/city/2-seoul-hotels/")
+        : activeTab === "china"
+          ? klookHotelAff(
+              "https://www.klook.com/zh-TW/hotels/city/23301-shenzhen-city-hotels/",
+            )
+          : activeTab === "hongkong"
+            ? klookHotelAff(
+                "https://www.klook.com/zh-TW/hotels/city/2-hong-kong-hotels/",
+              )
+            : activeTab === "vietnam"
+              ? klookHotelAff(
+                  "https://www.klook.com/zh-TW/hotels/city/33-ho-chi-minh-city-hotels/",
+                )
+              : klookHotelAff("https://www.klook.com/zh-TW/hotels/city/29-tokyo-hotels/");
 
   return (
     <section
@@ -379,28 +387,21 @@ export default function AccommodationRecommendSection() {
       className="w-full bg-[#f0f1f3] pb-12 lg:pb-16 pt-4 scroll-mt-28"
     >
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        {/* 第一層：Jeko × Klook / Jeko 合作 */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-1 border-b border-gray-200/80">
-          <UnderlineTabs
-            tabs={PARTNER_TABS}
-            activeId={partnerTab}
-            onChange={(id) => {
-              setPartnerTab(id);
-              setActiveTab("all");
-              setShowAll(false);
-              setSelectedItem(null);
-            }}
-            accent="#00B259"
-          />
-          <p className="text-sm font-bold text-[#202020] shrink-0 pb-3 sm:pb-3">
-            住宿推薦
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-baseline gap-3">
+            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+              Jeko <span className="text-[#00B259]">×</span> Klook
+            </h2>
+          </div>
+          <p className="text-sm font-bold text-[#202020] shrink-0">
+            住宿 / 飯店推薦
           </p>
         </div>
 
-        {/* 第二層：地區 pill（僅 Klook） */}
-        {partnerTab === "klook" && (
-          <div className="flex flex-wrap gap-2 mt-5 mb-8">
-            {REGION_TABS.map((tab) => (
+        <div className="flex gap-6 sm:gap-8 mb-8 border-b border-gray-200/80 overflow-x-auto scrollbar-none">
+          {COUNTRY_TABS.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
               <button
                 key={tab.id}
                 type="button"
@@ -409,94 +410,92 @@ export default function AccommodationRecommendSection() {
                   setShowAll(false);
                 }}
                 className={[
-                  "rounded-full px-4 py-2 text-sm font-bold transition-all duration-200",
-                  activeTab === tab.id
-                    ? "bg-gray-900 text-white shadow-sm"
-                    : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300 hover:text-gray-900",
+                  "relative shrink-0 pb-3 text-[15px] sm:text-base font-medium tracking-tight transition-colors",
+                  active
+                    ? "text-[#1a73e8]"
+                    : "text-gray-500 hover:text-gray-800",
                 ].join(" ")}
               >
                 {tab.label}
+                {active && (
+                  <span className="absolute left-0 right-0 bottom-0 h-[3px] rounded-full bg-[#1a73e8]" />
+                )}
               </button>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
 
-        {partnerTab === "partner" ? (
-          <div className="mt-8 rounded-2xl border border-dashed border-gray-300 bg-white/70 px-6 py-16 text-center">
-            <p className="text-base font-bold text-gray-800 mb-2">
-              Jeko 合作住宿
-            </p>
-            <p className="text-sm text-gray-500 leading-relaxed max-w-md mx-auto">
-              即將上架精選合作旅宿，敬請期待。
-            </p>
-          </div>
-        ) : (
-          <>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`mobile-${activeTab}`}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25 }}
-                className="md:hidden"
-              >
-                {filtered.length > 0 ? (
-                  <MobileCardCarousel slideClassName="min-w-0 flex-[0_0_82%]">
-                    {filtered.map((item) => (
-                      <HotelCard
-                        key={item.id}
-                        item={item}
-                        onClick={() => setSelectedItem(item)}
-                      />
-                    ))}
-                  </MobileCardCarousel>
-                ) : (
-                  <p className="text-center text-gray-500 py-12 text-sm">
-                    暫無推薦住宿
-                  </p>
-                )}
-              </motion.div>
-            </AnimatePresence>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`mobile-${activeTab}`}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25 }}
+            className="md:hidden"
+          >
+            {filtered.length > 0 ? (
+              <MobileCardCarousel slideClassName="min-w-0 flex-[0_0_82%]">
+                {filtered.map((item) => (
+                  <HotelCard
+                    key={item.id}
+                    item={item}
+                    onClick={() => setSelectedItem(item)}
+                  />
+                ))}
+              </MobileCardCarousel>
+            ) : (
+              <p className="text-center text-gray-500 py-12 text-sm">
+                暫無推薦住宿
+              </p>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`desktop-${activeTab}-${showAll}`}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25 }}
-                className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5"
-              >
-                {displayItems.length > 0 ? (
-                  displayItems.map((item) => (
-                    <HotelCard
-                      key={item.id}
-                      item={item}
-                      onClick={() => setSelectedItem(item)}
-                    />
-                  ))
-                ) : (
-                  <p className="col-span-full text-center text-gray-500 py-12 text-sm">
-                    暫無推薦住宿
-                  </p>
-                )}
-              </motion.div>
-            </AnimatePresence>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`desktop-${activeTab}-${showAll}`}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25 }}
+            className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5"
+          >
+            {displayItems.length > 0 ? (
+              displayItems.map((item) => (
+                <HotelCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => setSelectedItem(item)}
+                />
+              ))
+            ) : (
+              <p className="col-span-full text-center text-gray-500 py-12 text-sm">
+                暫無推薦住宿
+              </p>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-            <div className="mt-8 hidden md:flex items-center justify-center gap-4">
-              {!showAll && filtered.length > PREVIEW_COUNT && (
-                <button
-                  type="button"
-                  onClick={() => setShowAll(true)}
-                  className="inline-flex items-center justify-center min-w-[180px] px-8 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-bold hover:border-gray-300 transition-colors"
-                >
-                  顯示全部 {filtered.length} 筆
-                </button>
-              )}
-            </div>
-          </>
-        )}
+        <div className="mt-8 hidden md:flex items-center justify-center gap-4 flex-wrap">
+          {!showAll && filtered.length > PREVIEW_COUNT && (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="inline-flex items-center justify-center min-w-[180px] px-8 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-bold hover:border-gray-300 transition-colors"
+            >
+              顯示全部
+            </button>
+          )}
+          <a
+            href={listingUrl}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="inline-flex items-center justify-center min-w-[180px] px-8 py-3.5 rounded-xl bg-[#00B259] text-white text-sm font-bold shadow-md hover:bg-[#009f4f] transition-colors"
+          >
+            Klook 查看更多住宿
+          </a>
+        </div>
       </div>
 
       {selectedItem && (

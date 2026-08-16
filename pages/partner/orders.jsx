@@ -22,6 +22,10 @@ import {
 } from "@/lib/orderDisplay";
 import { PARTNER_UI } from "@/lib/partnerUi";
 import StatusIconBadge from "@/components/partner/StatusIconBadge";
+import PartnerInfoTimeline from "@/components/partner/PartnerInfoTimeline";
+import InfoCircleIcon from "@/components/icons/info-circle-icon";
+import WalletIcon from "@/components/icons/wallet-icon";
+import ClockIcon from "@/components/icons/clock-icon";
 
 const PAGE_SIZE = 10;
 
@@ -404,42 +408,50 @@ export default function PartnerOrdersPage() {
             />
           </div>
           {!loading ? (
-            <Card
-              className="mt-3 px-3.5 py-3 text-xs leading-relaxed"
-              style={{ backgroundColor: "#f0f7ff", borderColor: "#bfdbfe" }}
-            >
-              <p className="font-bold mb-0.5" style={{ color: "#1e40af" }}>
-                為何累計分潤與可提領不同？
-              </p>
-              <p style={{ color: "#1e3a8a" }}>
-                累計分潤含「已付款＋尚未付款」。可提領僅計「已付款且滿 10
-                天」的分潤，並扣除已申請／已匯保留金額。尚未付款約{" "}
-                <span className="font-bold">{fmt(statusCounts.unpaidProfit)}</span>
-                ；其餘差額多半是保護期內訂單或已提領保留。明細請至{" "}
-                <Link
-                  href="/partner/settlement"
-                  className="font-bold underline underline-offset-2"
-                >
-                  結算與提領
-                </Link>
-                。
-              </p>
-            </Card>
+            <div className="mt-3">
+              <PartnerInfoTimeline
+                items={[
+                  {
+                    variant: "primary",
+                    title: "為何累計分潤與可提領不同？",
+                    tag: "說明",
+                    href: "/partner/settlement",
+                    icons: [WalletIcon, ClockIcon, InfoCircleIcon],
+                    body: (
+                      <>
+                        累計分潤含「已付款＋尚未付款」。可提領僅計「已付款且滿 10
+                        天」的分潤，並扣除已申請／已匯保留金額。尚未付款約{" "}
+                        <span className="font-bold">
+                          {fmt(statusCounts.unpaidProfit)}
+                        </span>
+                        ；其餘差額多半是保護期內訂單或已提領保留。
+                      </>
+                    ),
+                  },
+                ]}
+              />
+            </div>
           ) : null}
         </div>
 
         <div className="px-4 sm:px-6 pb-6 space-y-4">
-          <Card
-            className="px-3.5 py-3 sm:px-4 text-xs leading-relaxed"
-            style={{ backgroundColor: "#fffbeb", borderColor: "#fde68a" }}
-          >
-            <p className="font-bold mb-0.5" style={{ color: "#92400e" }}>
-              關於買家聯絡資訊
-            </p>
-            <p style={{ color: "#78350f" }}>
-              僅顯示姓名與 Email，方便您針對「尚未付款」訂單禮貌提醒。請勿濫發訊息或用於分潤以外用途；繳費代碼等敏感資料不會提供給夥伴。點「編輯」可查看單筆訂單詳情。
-            </p>
-          </Card>
+          <PartnerInfoTimeline
+            items={[
+              {
+                variant: "primary",
+                title: "買家聯絡資訊",
+                tag: "說明",
+                icons: [InfoCircleIcon],
+                body: "僅顯示姓名與 Email，方便您針對「尚未付款」訂單禮貌提醒。繳費代碼等敏感資料不會提供給夥伴。點「編輯」可查看單筆訂單詳情。",
+              },
+              {
+                variant: "notice",
+                title: "使用提醒",
+                tag: "注意",
+                body: "請勿濫發訊息或用於分潤以外用途。買家資料僅供本筆訂單溝通。",
+              },
+            ]}
+          />
 
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between gap-3 px-3 sm:px-4 pt-1">

@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { slugifyTitle, uniquePostSlug, validatePartnerBlogMeta, sanitizePartnerBlogSlug, pingPartnerBlogRevalidate, partnerBlogSlugError } from "@/lib/partnerBlog";
 import { mergeBlogCms } from "@/lib/partnerBlogCms";
 import { PARTNER_UI } from "@/lib/partnerUi";
+import { emptyItineraryBlock, isItineraryBlocks } from "@/lib/partnerBlogItinerary";
 import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
 import MaterialIcon from "@/components/MaterialIcon";
 import MediaUploadField, {
@@ -73,6 +74,7 @@ export default function PartnerBlogAdminPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editorKind, setEditorKind] = useState("article");
   const [tab, setTab] = useState("all");
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
@@ -216,7 +218,8 @@ export default function PartnerBlogAdminPage() {
         .filter(Boolean),
       author_name: form.author_name.trim() || partner?.name || null,
       content_html: "",
-      content_blocks: [],
+      content_blocks:
+        editorKind === "itinerary" ? [emptyItineraryBlock()] : [],
       status: "draft",
       published_at: null,
     };
@@ -490,6 +493,7 @@ export default function PartnerBlogAdminPage() {
                       ...prev,
                       category_label: prev.category_label || categories[0] || "",
                     }));
+                    setEditorKind("article");
                     setCreateOpen(true);
                   }}
                   className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-[#1E4AD1] text-white text-sm font-black hover:bg-[#1344b5]"
@@ -643,7 +647,11 @@ export default function PartnerBlogAdminPage() {
                                 {p.title || "(無標題)"}
                               </Link>
                               <p className="text-[11px] text-slate-400 mt-0.5">
-                                {hasBuilder ? "— 視覺編輯器" : "— 尚未編輯內容"}
+                                {isItineraryBlocks(p.content_blocks)
+                                  ? "— 行程規劃"
+                                  : hasBuilder
+                                    ? "— 視覺編輯器"
+                                    : "— 尚未編輯內容"}
                               </p>
                               <div className="flex gap-2 mt-1 text-[12px] md:opacity-0 md:group-hover:opacity-100">
                                 <Link
@@ -770,8 +778,38 @@ export default function PartnerBlogAdminPage() {
               </button>
             </div>
             <p className="text-[12px] text-slate-500 mb-3">
-              標題、網址 slug 與精選圖為必填，建立後進入視覺編輯器。
+              先選編輯方式，再填標題、網址與精選圖。
             </p>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setEditorKind("article")}
+                className={`text-left rounded-xl border p-3 ${
+                  editorKind === "article"
+                    ? "border-[#1E4AD1] bg-[#1E4AD1]/5 ring-1 ring-[#1E4AD1]"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <p className="text-[13px] font-black text-slate-800">一般文章</p>
+                <p className="mt-1 text-[11px] text-slate-500 leading-snug">
+                  現有視覺編輯器，自由拖元件排版。
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditorKind("itinerary")}
+                className={`text-left rounded-xl border p-3 ${
+                  editorKind === "itinerary"
+                    ? "border-[#e2498e] bg-[#e2498e]/5 ring-1 ring-[#e2498e]"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <p className="text-[13px] font-black text-slate-800">行程規劃</p>
+                <p className="mt-1 text-[11px] text-slate-500 leading-snug">
+                  按天／景點建立，前台有行程目錄。
+                </p>
+              </button>
+            </div>
             <PartnerContentDisclaimer variant="notice" className="mb-4" />
             <label className="block mb-3">
               <span className="text-xs font-bold text-slate-600">標題 *</span>

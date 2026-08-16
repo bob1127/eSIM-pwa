@@ -1,23 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronUp } from "lucide-react";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
 import { domToReact, attributesToProps } from "html-react-parser";
-import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
+import {
+  FacebookIconSvg,
+  InstagramIconSvg,
+  LineAppIconSvg,
+} from "@/components/social/SocialBrandIcons";
+import { SOCIAL_LINKS } from "@/lib/seo.config";
 import WpArticleBody from "@/components/Blog/WpArticleBody";
+import BlogCreatorEngageBar from "@/components/Blog/BlogCreatorEngageBar";
+
+import { stripHtml } from "@/lib/stripHtml";
 
 const RELATED_PER_PAGE = 6;
-
-function stripHtml(html) {
-  if (!html) return "";
-  return html
-    .replace(/<[^>]*>?/gm, "")
-    .replace(/&#\d+;/gm, "")
-    .trim();
-}
 
 function formatDateJP(isoStr) {
   if (!isoStr) return "";
@@ -339,59 +339,132 @@ function ShareBar({ url, title }) {
 }
 
 function RecommendedList({ posts }) {
+  const boxRef = useRef(null);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(5);
+
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return undefined;
+    const ROW = 88;
+    const FOOTER = 44;
+    const measure = () => {
+      const h = el.clientHeight;
+      if (h < 120) {
+        setPerPage(5);
+        return;
+      }
+      setPerPage(Math.max(3, Math.floor((h - FOOTER) / ROW)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   if (!posts?.length) {
     return <p className="text-[13px] text-[#999] py-4">目前尚無推薦文章</p>;
   }
 
-  return (
-    <ul className="divide-y divide-[#eee]">
-      {posts.slice(0, 6).map((item) => {
-        let thumb = "/images/placeholder.jpg";
-        if (item._embedded?.["wp:featuredmedia"]?.[0]?.source_url) {
-          thumb = normalizeWpAssetUrl(
-            item._embedded["wp:featuredmedia"][0].source_url,
-          );
-        }
-        const cats =
-          item._embedded?.["wp:term"]
-            ?.flat()
-            ?.filter((t) => t.taxonomy === "category")
-            ?.map((t) => t.name)
-            ?.filter((n) => n && n !== "文章") || [];
-        const catLabel = cats[0] || "旅遊";
+  const pages = Math.max(1, Math.ceil(posts.length / perPage));
+  const safePage = Math.min(page, pages);
+  const slice = posts.slice((safePage - 1) * perPage, safePage * perPage);
 
-        return (
-          <li key={item.id}>
-            <Link
-              href={`/blog/${item.slug}`}
-              className="flex gap-3 py-3.5 group"
+  return (
+    <div ref={boxRef} className="flex-1 min-h-[240px] lg:min-h-0 flex flex-col">
+      <ul className="flex-1 min-h-0">
+        {slice.map((item) => {
+          let thumb = "";
+          if (item._embedded?.["wp:featuredmedia"]?.[0]?.source_url) {
+            thumb = normalizeWpAssetUrl(
+              item._embedded["wp:featuredmedia"][0].source_url,
+            );
+          }
+          const cats =
+            item._embedded?.["wp:term"]
+              ?.flat()
+              ?.filter((t) => t.taxonomy === "category")
+              ?.map((t) => t.name)
+              ?.filter((n) => n && n !== "文章") || [];
+          const catLabel = cats[0] || "旅遊";
+
+          return (
+            <li key={item.id} className="border-b border-[#eee] last:border-0">
+              <Link
+                href={`/blog/${item.slug}`}
+                className="flex items-center gap-3 py-2.5 group"
+              >
+                <div className="w-16 h-16 shrink-0 overflow-hidden bg-[#f0f0f0]">
+                  {thumb ? (
+                    <img
+                      src={thumb}
+                      alt=""
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] text-[#999] leading-none mb-1 truncate">
+                    {catLabel}
+                  </p>
+                  <p
+                    className="text-[13px] font-bold text-[#111] leading-snug line-clamp-2 group-hover:text-[#0A6CD0] transition-colors"
+                    dangerouslySetInnerHTML={{ __html: item.title.rendered }}
+                  />
+                </div>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+      {pages > 1 ? (
+        <nav
+          className="shrink-0 pt-2 pb-1 flex items-center justify-center gap-1"
+          aria-label="推薦文章分頁"
+        >
+          <button
+            type="button"
+            disabled={safePage <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="h-7 min-w-7 text-[13px] font-bold text-[#0A6CD0] disabled:opacity-30"
+          >
+            ‹
+          </button>
+          {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setPage(n)}
+              className={`h-7 min-w-7 px-1.5 rounded-full text-[12px] font-bold ${
+                n === safePage
+                  ? "bg-[#0A6CD0] text-white"
+                  : "text-[#555] hover:bg-[#f3f3f3]"
+              }`}
             >
-              <div className="w-[88px] h-[66px] shrink-0 overflow-hidden bg-[#f5f5f5]">
-                <img
-                  src={thumb}
-                  alt=""
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] text-[#999] mb-1">{catLabel}</p>
-                <p
-                  className="text-[13px] font-bold text-[#111] leading-snug line-clamp-2 group-hover:text-[#0A6CD0] transition-colors"
-                  dangerouslySetInnerHTML={{ __html: item.title.rendered }}
-                />
-              </div>
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+              {n}
+            </button>
+          ))}
+          <button
+            type="button"
+            disabled={safePage >= pages}
+            onClick={() => setPage((p) => Math.min(pages, p + 1))}
+            className="h-7 min-w-7 text-[13px] font-bold text-[#0A6CD0] disabled:opacity-30"
+          >
+            ›
+          </button>
+        </nav>
+      ) : null}
+    </div>
   );
 }
 
-function SidebarSection({ title, href, linkLabel = "查看全部", children }) {
+function SidebarSection({ title, href, linkLabel = "查看全部", children, className = "" }) {
   return (
-    <section className="mb-10">
-      <div className="flex items-end justify-between border-b border-[#111] pb-2 mb-1">
+    <section className={`mb-10 last:mb-0 ${className}`}>
+      <div className="flex items-end justify-between border-b border-[#111] pb-2 mb-1 shrink-0">
         <h3 className="text-[16px] font-bold text-[#111] tracking-tight">
           {title}
         </h3>
@@ -404,7 +477,7 @@ function SidebarSection({ title, href, linkLabel = "查看全部", children }) {
           </Link>
         )}
       </div>
-      {children}
+      <div className="min-h-0 flex-1 flex flex-col">{children}</div>
     </section>
   );
 }
@@ -495,7 +568,7 @@ export default function ArticleBlogPostLayout({
             />
 
             {/* Meta */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[#888] mb-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[#888] mb-3">
               <span>{primaryCat}</span>
               <span>·</span>
               <time dateTime={post.date}>{formatDateMeta(post.date)}</time>
@@ -503,6 +576,8 @@ export default function ArticleBlogPostLayout({
                 <span>（更新 {formatDateMeta(post.modified)}）</span>
               )}
             </div>
+
+            <BlogCreatorEngageBar post={post} />
 
             {post.partnerContribution ? (
               <p className="mb-3 text-[13px] font-semibold text-[#1E4AD1]">
@@ -602,20 +677,22 @@ export default function ArticleBlogPostLayout({
                     </div>
                     <div className="flex items-center gap-3 text-[#555] shrink-0">
                       <a
-                        href="https://www.facebook.com"
+                        href={SOCIAL_LINKS.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Instagram"
+                        className="hover:opacity-60"
+                      >
+                        <InstagramIconSvg className="w-[18px] h-[18px]" />
+                      </a>
+                      <a
+                        href={SOCIAL_LINKS.facebook}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Facebook"
                         className="hover:opacity-60"
                       >
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                        </svg>
+                        <FacebookIconSvg className="w-[18px] h-[18px]" />
                       </a>
                       <a
                         href="https://line.me/R/ti/p/@593gvyzn"
@@ -647,8 +724,13 @@ export default function ArticleBlogPostLayout({
           </main>
 
           {/* ── 側欄 ── */}
-          <aside className="w-full lg:w-[300px] shrink-0 lg:sticky lg:top-28">
-            <SidebarSection title="#熱門標籤" href="/blog" linkLabel="標籤一覽">
+          <aside className="w-full lg:w-[300px] shrink-0 lg:sticky lg:top-28 lg:max-h-[calc(100vh-7rem)] lg:flex lg:flex-col lg:overflow-hidden">
+            <SidebarSection
+              title="#熱門標籤"
+              href="/blog"
+              linkLabel="標籤一覽"
+              className="shrink-0 mb-6"
+            >
               <ul className="py-3 flex flex-wrap gap-x-3 gap-y-2">
                 {sidebarTags.slice(0, 10).map((tag) => (
                   <li key={tag}>
@@ -664,7 +746,12 @@ export default function ArticleBlogPostLayout({
               </ul>
             </SidebarSection>
 
-            <SidebarSection title="推薦文章" href="/blog" linkLabel="查看全部">
+            <SidebarSection
+              title="推薦文章"
+              href="/blog"
+              linkLabel="查看全部"
+              className="flex-1 min-h-0 flex flex-col mb-0"
+            >
               <RecommendedList posts={relatedPosts} />
             </SidebarSection>
           </aside>

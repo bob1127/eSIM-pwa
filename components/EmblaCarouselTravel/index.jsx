@@ -1,17 +1,12 @@
 import Head from "next/head";
 import EmblaCarousel from "./EmblaCarousel";
-import { fetchWpPosts } from "../../lib/wordpress"; // 假設你的輪播組件放在這
+import { fetchWpPosts } from "../../lib/wordpress";
+import { stripHtml } from "@/lib/stripHtml";
 
-// 🔧 工具：擷取文章內第一張圖片 URL (完全沿用你的邏輯)
 function extractFirstImageFromContent(content) {
   if (!content) return null;
   const match = content.match(/<img[^>]+src=["']([^"']+)["']/i);
   return match ? match[1] : null;
-}
-
-// 🔧 工具：移除 HTML 標籤 (用於摘要)
-function stripHtml(html) {
-  return html.replace(/<[^>]+>/g, "");
 }
 
 export default function Home({ slides }) {

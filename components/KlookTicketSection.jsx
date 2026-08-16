@@ -449,7 +449,7 @@ export default function KlookTicketSection() {
               onClick={() => setShowAll(true)}
               className="inline-flex items-center justify-center min-w-[180px] px-8 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-bold hover:border-gray-300 transition-colors"
             >
-              顯示全部 {filtered.length} 筆 ↓
+              顯示全部
             </button>
           )}
           <a

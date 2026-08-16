@@ -58,7 +58,11 @@ export function createWpContentReplace({
         const cls = String(node.attribs?.class || "");
         const isWide = /alignwide|alignfull/.test(cls);
         return (
-          <WpPhotoWall images={imgs} isWide={isWide} mosaic={mosaic} />
+          <WpPhotoWall
+            images={imgs}
+            isWide={isWide}
+            layout="square"
+          />
         );
       }
 

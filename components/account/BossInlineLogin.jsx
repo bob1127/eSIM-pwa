@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import MaterialIcon from "@/components/MaterialIcon";
+import AccountIcon from "@/components/account/AccountIcon";
 import { setBossSession } from "@/lib/bossAdminClient";
 import { ACCENT } from "./AccountShell";
 
@@ -42,7 +42,7 @@ export default function BossInlineLogin({ onLoginSuccess }) {
         style={{ backgroundColor: ACCENT.sidebar }}
       >
         <div className="flex items-center gap-3 mb-3">
-          <MaterialIcon name="admin_panel_settings" size={28} className="text-blue-200" />
+          <AccountIcon name="admin_panel_settings" size={28} className="text-blue-200" />
           <div>
             <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider">
               Medusa 總部驗證

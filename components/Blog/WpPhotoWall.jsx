@@ -204,28 +204,82 @@ export const PHOTO_WALL_MAX_H = {
   full: 0,
 };
 
-function squareColumnCount(size, isWide, width) {
-  const base = { sm: 5, md: 4, lg: 3, full: 2 }[size] || 4;
-  let cols = isWide ? base + 1 : base;
-  if (width < 420) cols = Math.min(cols, 2);
-  else if (width < 720) cols = Math.min(cols, 3);
-  return Math.max(1, cols);
+function squareMaxCols(size, isWide) {
+  const base = { sm: 4, md: 3, lg: 3, full: 2 }[size] || 3;
+  const cols = isWide ? Math.min(4, base + 1) : base;
+  return Math.max(2, Math.min(4, cols));
+}
+
+/**
+ * Funliday 式正方形牆：每列格子都是 1:1，列寬撐滿，列高＝該列邊長。
+ * 張數不同就換切法（5＝上 2 大 + 下 3 小），外框永遠左右對齊。
+ */
+export function packedSquareGroups(count, maxCols = 3) {
+  const n = Math.max(0, Number(count) || 0);
+  const cap = Math.max(2, Math.min(4, maxCols));
+  if (n <= 0) return [];
+  if (n === 1) return [1];
+  if (n <= cap && n !== 4) return [n];
+  if (n === 4) return cap >= 4 ? [4] : [2, 2];
+  if (n === 5) return cap >= 3 ? [2, 3] : [2, 2, 1];
+  if (n === 7) return cap >= 4 ? [3, 4] : cap >= 3 ? [3, 2, 2] : [2, 2, 2, 1];
+  if (n === 8) return cap >= 4 ? [4, 4] : cap >= 3 ? [3, 3, 2] : [2, 2, 2, 2];
+  if (n === 11) return cap >= 4 ? [3, 4, 4] : [3, 3, 3, 2];
+
+  const groups = [];
+  let left = n;
+  while (left > 0) {
+    if (left === 1) {
+      groups.push(1);
+      break;
+    }
+    if (left === 4 && cap < 4) {
+      groups.push(2, 2);
+      break;
+    }
+    if (left === 5 && cap >= 3) {
+      groups.push(2, 3);
+      break;
+    }
+    if (left === 7 && cap >= 4) {
+      groups.push(3, 4);
+      break;
+    }
+    if (left === 8 && cap >= 4) {
+      groups.push(4, 4);
+      break;
+    }
+    const take = Math.min(cap, left);
+    if (take === 1 && groups.length) {
+      const prev = groups.pop();
+      if (prev > 2) {
+        groups.push(prev - 1, 2);
+      } else {
+        groups.push(prev, 1);
+      }
+      break;
+    }
+    groups.push(take);
+    left -= take;
+  }
+  return groups;
 }
 
 function layoutSquareRows(count, containerWidth, { size = "md", isWide = false } = {}) {
   const g = GUTTER_WIDTH;
   const W = Math.max(1, containerWidth);
-  const cols = squareColumnCount(size, isWide, W);
-  const side = (W - g * Math.max(0, cols - 1)) / cols;
+  const groups = packedSquareGroups(count, squareMaxCols(size, isWide));
   const rows = [];
-  for (let i = 0; i < count; i += cols) {
-    const n = Math.min(cols, count - i);
+  let index = 0;
+  groups.forEach((n) => {
+    const side = (W - g * Math.max(0, n - 1)) / n;
     rows.push({
       cols: Array.from({ length: n }, (_, c) => ({
-        items: [{ index: i + c, width: side, height: side }],
+        items: [{ index: index + c, width: side, height: side }],
       })),
     });
-  }
+    index += n;
+  });
   return rows;
 }
 
@@ -394,7 +448,9 @@ export default function WpPhotoWall({
     <>
       <div
         ref={wrapRef}
-        className={`tiled-gallery fl-wall my-8 md:my-10${squareLayout ? "" : " fl-wall--justified"}`}
+        className={`tiled-gallery fl-wall my-8 md:my-10${
+          squareLayout ? " fl-wall--squares" : " fl-wall--justified"
+        }`}
         style={{
           display: "flex",
           flexDirection: "column",
@@ -458,11 +514,18 @@ export default function WpPhotoWall({
             justify-content: flex-start;
             align-items: stretch;
             margin: 0 0 ${GUTTER_WIDTH}px;
-            width: max-content;
+            width: 100%;
             max-width: 100%;
             overflow: hidden;
           }
-          .fl-wall.fl-wall--justified .tiled-gallery__row {
+          @media (max-width: 767px) {
+            .photo-wall-frame {
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+          }
+          .fl-wall.fl-wall--justified .tiled-gallery__row,
+          .fl-wall.fl-wall--squares .tiled-gallery__row {
             width: 100%;
           }
           .tiled-gallery__row:last-child {

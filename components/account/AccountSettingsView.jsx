@@ -1,9 +1,10 @@
 "use client";
 
 import { MemberProfileHeader, NavyPanel, InnerTabs, ACCENT, AccountPageWrap } from "./AccountShell";
-import MaterialIcon from "@/components/MaterialIcon";
+import AccountIcon from "@/components/account/AccountIcon";
 import { useState } from "react";
 import { formatMemberEmailDisplay, isLineSyntheticEmail } from "@/lib/lineAuth";
+import AccountFollowsPanel from "./AccountFollowsPanel";
 
 export default function AccountSettingsView({
   user,
@@ -31,17 +32,16 @@ export default function AccountSettingsView({
         partnerData={partnerData}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[240px_minmax(0,1fr)] gap-6 xl:gap-8">
-        <aside className="xl:pt-1">
-          <InnerTabs
-            tabs={[
-              { id: "profile", label: "基本資料" },
-              { id: "security", label: "登入安全" },
-            ]}
-            active={tab}
-            onChange={setTab}
-          />
-        </aside>
+      <div className="space-y-6">
+        <InnerTabs
+          tabs={[
+            { id: "profile", label: "基本資料" },
+            { id: "follows", label: "追蹤創作者" },
+            { id: "security", label: "登入安全" },
+          ]}
+          active={tab}
+          onChange={setTab}
+        />
 
         <div className="min-w-0">
           {tab === "profile" && (
@@ -106,13 +106,15 @@ export default function AccountSettingsView({
                 </div>
                 {!supabaseUser && (
                   <div className="sm:col-span-2 flex gap-2 p-3 rounded-sm bg-amber-50 border border-amber-100 text-xs text-amber-800">
-                    <MaterialIcon name="info" size={18} className="shrink-0" />
+                    <AccountIcon name="info" size={18} className="shrink-0" />
                     您以 LINE 登入，個人資料請至 LINE 帳戶設定修改。
                   </div>
                 )}
               </div>
             </NavyPanel>
           )}
+
+          {tab === "follows" && <AccountFollowsPanel />}
 
           {tab === "security" && (
             <>

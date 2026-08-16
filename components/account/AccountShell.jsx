@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import MaterialIcon from "@/components/MaterialIcon";
+import AccountIcon from "@/components/account/AccountIcon";
+import AccountMemberSearch from "@/components/account/AccountMemberSearch";
 import {
   ACCOUNT_UI,
   ACCOUNT_THEME,
@@ -39,6 +40,7 @@ const breadcrumbMap = {
   dashboard: ["會員中心", "首頁總覽"],
   orders: ["會員中心", "我的 eSIM 訂單"],
   traffic: ["會員中心", "查詢流量"],
+  follows: ["會員中心", "追蹤創作者"],
   settings: ["會員中心", "帳號設定"],
   support: ["會員中心", "安裝與支援"],
   admin_dashboard: ["會員中心", "系統總控"],
@@ -56,6 +58,7 @@ export default function AccountShell({
   navItems,
   onLogout,
   orderBadge = 0,
+  orders = [],
   children,
   /** 夥伴商店：回賣場／品牌文案 */
   homeHref = "/",
@@ -64,17 +67,10 @@ export default function AccountShell({
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [navQuery, setNavQuery] = useState("");
 
   const roleLabel = getMemberRoleLabel(userRole, partnerData);
   const crumbs = breadcrumbMap[activeTab] || ["會員中心", title];
   const initials = (user?.name || "U").trim().slice(0, 1).toUpperCase();
-
-  const filteredNav = navQuery.trim()
-    ? navItems.filter((item) =>
-        item.label.toLowerCase().includes(navQuery.trim().toLowerCase()),
-      )
-    : navItems;
 
   const renderNavItem = (item) => {
     const active = activeTab === item.id && !item.external && !item.href;
@@ -92,10 +88,10 @@ export default function AccountShell({
           className="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium transition hover:bg-[#f1f1f1]"
           style={{ color: SHOPIFY_UI.sidebarTextMuted }}
         >
-          <MaterialIcon name={item.icon} size={18} />
+          <AccountIcon name={item.icon} size={18} />
           <span className="flex-1 truncate">{item.label}</span>
           {isExternal && (
-            <MaterialIcon name="open_in_new" size={14} className="opacity-50" />
+            <AccountIcon name="open_in_new" size={14} className="opacity-50" />
           )}
         </Link>
       );
@@ -116,7 +112,7 @@ export default function AccountShell({
           fontWeight: active ? 700 : 500,
         }}
       >
-        <MaterialIcon name={item.icon} size={18} />
+        <AccountIcon name={item.icon} size={18} />
         <span className="flex-1 text-left truncate">{item.label}</span>
         {badge > 0 && (
           <span
@@ -164,7 +160,7 @@ export default function AccountShell({
       </div>
 
       <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
-        {filteredNav.map(renderNavItem)}
+        {navItems.map(renderNavItem)}
       </nav>
 
       <div
@@ -179,7 +175,7 @@ export default function AccountShell({
             borderRadius: ACCOUNT_UI.radiusSm,
           }}
         >
-          <MaterialIcon name="storefront" size={18} />
+          <AccountIcon name="storefront" size={18} />
           {shopCtaLabel || "返回商城"}
         </Link>
       </div>
@@ -202,7 +198,7 @@ export default function AccountShell({
           onClick={() => setMobileOpen(true)}
           aria-label="開啟選單"
         >
-          <MaterialIcon name="menu" size={20} />
+          <AccountIcon name="menu" size={20} />
         </button>
 
         <Link
@@ -210,27 +206,22 @@ export default function AccountShell({
           className="flex items-center gap-2 shrink-0"
         >
           <div className="w-7 h-7 rounded-md bg-white flex items-center justify-center">
-            <MaterialIcon name="sim_card" size={16} className="text-[#1a1a1a]" />
+            <AccountIcon name="sim_card" size={16} className="text-[#1a1a1a]" />
           </div>
           <span className="text-white font-black text-sm tracking-tight hidden sm:inline">
             {brandLabel || "Jeko 會員"}
           </span>
         </Link>
 
-        <div className="flex-1 max-w-sm mx-auto hidden sm:block">
-          <div className="relative">
-            <MaterialIcon
-              name="search"
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-            />
-            <input
-              value={navQuery}
-              onChange={(e) => setNavQuery(e.target.value)}
-              placeholder="搜尋功能（例如：訂單、流量）"
-              className="w-full h-8 rounded-md bg-white/10 focus:bg-white text-white focus:text-[#1a1a1a] placeholder:text-gray-400 text-xs pl-8 pr-3 outline-none transition"
-            />
-          </div>
+        <div className="flex-1 min-w-0 max-w-xl mx-2 sm:mx-auto">
+          <AccountMemberSearch
+            navItems={navItems}
+            orders={orders}
+            onTabChange={(id) => {
+              onTabChange(id);
+              setMobileOpen(false);
+            }}
+          />
         </div>
 
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto">
@@ -239,14 +230,14 @@ export default function AccountShell({
             title="聯絡客服"
             className="hidden md:inline-flex items-center justify-center w-9 h-9 rounded-full text-white/90 hover:bg-white/10 transition"
           >
-            <MaterialIcon name="mail_outline" size={18} />
+            <AccountIcon name="mail_outline" size={18} />
           </Link>
           <Link
             href="/faq"
             title="使用指南"
             className="hidden md:inline-flex items-center justify-center w-9 h-9 rounded-full text-white/90 hover:bg-white/10 transition"
           >
-            <MaterialIcon name="help_outline" size={18} />
+            <AccountIcon name="help_outline" size={18} />
           </Link>
 
           <div className="relative">
@@ -272,7 +263,7 @@ export default function AccountShell({
               <span className="text-white text-xs font-bold hidden md:inline max-w-[100px] truncate">
                 {user?.name || "會員"}
               </span>
-              <MaterialIcon
+              <AccountIcon
                 name="expand_more"
                 size={16}
                 className="text-white/70 hidden md:inline"
@@ -328,7 +319,7 @@ export default function AccountShell({
                     className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2 hover:bg-[#f1f1f1]"
                     style={{ color: ACCOUNT_THEME.dark }}
                   >
-                    <MaterialIcon name="manage_accounts" size={16} />
+                    <AccountIcon name="manage_accounts" size={16} />
                     帳號設定
                   </button>
                   <button
@@ -340,7 +331,7 @@ export default function AccountShell({
                     className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2 hover:bg-[#fed3d1]/40"
                     style={{ color: SHOPIFY_BADGE.critical.dot }}
                   >
-                    <MaterialIcon name="logout" size={16} />
+                    <AccountIcon name="logout" size={16} />
                     登出
                   </button>
                 </div>
@@ -397,7 +388,7 @@ export default function AccountShell({
               >
                 {crumbs.map((c, i) => (
                   <span key={c} className="flex items-center gap-1.5 shrink-0">
-                    {i > 0 && <MaterialIcon name="chevron_right" size={14} />}
+                    {i > 0 && <AccountIcon name="chevron_right" size={14} />}
                     <span
                       className={
                         i === crumbs.length - 1 ? "font-bold truncate" : "truncate"
@@ -458,7 +449,7 @@ export default function AccountShell({
                         : "transparent",
                     }}
                   >
-                    <MaterialIcon name={item.icon} size={22} />
+                    <AccountIcon name={item.icon} size={22} />
                   </span>
                   {item.label.length > 6
                     ? item.label.slice(0, 4)
@@ -551,7 +542,7 @@ export function MemberProfileHeader({
                 borderRadius: "0.5rem",
               }}
             >
-              <MaterialIcon name="edit" size={16} />
+              <AccountIcon name="edit" size={16} />
               編輯資料
             </button>
           ) : null}
@@ -652,7 +643,7 @@ export function NavyPanel({ title, icon, action, children, className = "" }) {
         >
           <div className="flex items-center gap-2 min-w-0">
             {icon && (
-              <MaterialIcon
+              <AccountIcon
                 name={icon}
                 size={18}
                 style={{ color: ACCOUNT_THEME.mid }}
@@ -686,7 +677,7 @@ export function StatusBanner({ status = "good", title, message }) {
       }}
     >
       <div className="w-16 sm:w-20 flex items-center justify-center bg-black/10 shrink-0">
-        <MaterialIcon
+        <AccountIcon
           name={isGood ? "verified" : "warning"}
           size={32}
           className="text-white/90"
@@ -746,7 +737,7 @@ export function MetricTile({
               borderRadius: ACCOUNT_UI.radiusSm,
             }}
           >
-            <MaterialIcon name={icon} size={16} className="text-white" />
+            <AccountIcon name={icon} size={16} className="text-white" />
           </div>
         ) : null}
       </div>
@@ -831,7 +822,7 @@ export function QuickActionCard({ icon, title, desc, onClick, href }) {
           borderRadius: ACCOUNT_UI.radiusSm,
         }}
       >
-        <MaterialIcon
+        <AccountIcon
           name={icon}
           size={22}
           style={{ color: ACCOUNT_THEME.dark }}

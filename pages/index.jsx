@@ -21,7 +21,7 @@ import CarRentalCharterSection from "../components/CarRentalCharterSection.jsx";
 import JekoRecommendSection from "../components/JekoRecommendSection.jsx";
 import AccommodationRecommendSection from "../components/AccommodationRecommendSection.jsx";
 import KKdayTicketSection from "../components/KKdayTicketSection.jsx";
-import KlookTicketSection from "../components/KlookTicketSection.jsx";
+import TransportTicketSection from "../components/TransportTicketSection.jsx";
 import MobileHomePage from "../components/MobileHomePage.jsx";
 const VuckoScroll = dynamic(() => import("@/components/CodegridScroll"), {
   ssr: false,
@@ -647,7 +647,7 @@ export default function Home() {
         <CarRentalCharterSection />
         <AccommodationRecommendSection />
         <KKdayTicketSection />
-        <KlookTicketSection />
+        <TransportTicketSection />
       </div>
       {/* ══ 以上桌機專屬；以下區塊手機＋桌機共用顯示 ══ */}
 

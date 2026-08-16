@@ -15,6 +15,7 @@ import AccountOrdersView from "@/components/account/AccountOrdersView";
 import AccountTrafficView from "@/components/account/AccountTrafficView";
 import AccountSettingsView from "@/components/account/AccountSettingsView";
 import AccountSupportView from "@/components/account/AccountSupportView";
+import AccountFollowsPanel from "@/components/account/AccountFollowsPanel";
 import AccountAdminDashboardView from "@/components/account/AccountAdminDashboardView";
 
 /* ========== 輔助工具 ========== */
@@ -556,6 +557,7 @@ export default function AccountPage() {
     { id: "dashboard", label: "首頁總覽", icon: "dashboard" },
     { id: "orders", label: "我的 eSIM 訂單", icon: "qr_code_2" },
     { id: "traffic", label: "查詢流量", icon: "speed" },
+    { id: "follows", label: "追蹤創作者", icon: "notifications" },
     ...(userRole === "admin"
       ? [{ id: "admin_dashboard", label: "系統總控", icon: "admin_panel_settings" }]
       : []),
@@ -577,6 +579,7 @@ export default function AccountPage() {
     dashboard: "首頁總覽",
     orders: "我的 eSIM 訂單",
     traffic: "查詢流量",
+    follows: "追蹤創作者",
     admin_dashboard: "系統總控制台",
     partner_dashboard: "店鋪管理",
     settings: "帳號設定",
@@ -595,6 +598,7 @@ export default function AccountPage() {
         navItems={navItems}
         onLogout={handleLogout}
         orderBadge={orders.length}
+        orders={orders}
       >
       <AnimatePresence mode="wait">
         {activeTab === "dashboard" && (
@@ -877,6 +881,18 @@ export default function AccountPage() {
             exit={{ opacity: 0 }}
           >
             <AccountTrafficView orders={orders} ordersLoading={ordersLoading} />
+          </motion.div>
+        )}
+
+        {activeTab === "follows" && (
+          <motion.div
+            key="follows"
+            className="w-full"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <AccountFollowsPanel />
           </motion.div>
         )}
 

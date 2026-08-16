@@ -3,17 +3,36 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import MobileCardCarousel from "./MobileCardCarousel";
-import { KKDAY_TICKETS as TICKETS, kkdayAff as aff } from "@/data/kkday/tickets";
+import {
+  KKDAY_TICKETS as KKDAY_ONLY,
+  kkdayAff as aff,
+} from "@/data/kkday/tickets";
+import { KLOOK_JP_TICKETS } from "@/data/klook/jp";
+import { KLOOK_TH_TICKETS } from "@/data/klook/thailand";
+import { KLOOK_KR_TICKETS } from "@/data/klook/korea";
+import { KLOOK_CN_TICKETS } from "@/data/klook/china";
+import { KLOOK_HK_TICKETS } from "@/data/klook/hongkong";
 
-/* ─────────────────────────────────────────────── */
-/* 工具函式                                         */
-/* ─────────────────────────────────────────────── */
-/* ─────────────────────────────────────────────── */
-/* Tab 定義                                         */
-/* ─────────────────────────────────────────────── */
 const COUNTRY_TABS = [
   { id: "japan", label: "日本 🇯🇵" },
   { id: "korea", label: "韓國 🇰🇷" },
+  { id: "thailand", label: "泰國 🇹🇭" },
+  { id: "china", label: "中國 🇨🇳" },
+  { id: "hongkong", label: "港澳 🇭🇰" },
+  { id: "vietnam", label: "越南 🇻🇳" },
+];
+
+function withPartner(item, partner) {
+  return { ...item, partner: item.partner || partner };
+}
+
+const TICKETS = [
+  ...KKDAY_ONLY.map((t) => withPartner(t, "kkday")),
+  ...KLOOK_JP_TICKETS.map((t) => withPartner(t, "klook")),
+  ...KLOOK_TH_TICKETS.map((t) => withPartner(t, "klook")),
+  ...KLOOK_KR_TICKETS.map((t) => withPartner(t, "klook")),
+  ...KLOOK_CN_TICKETS.map((t) => withPartner(t, "klook")),
+  ...KLOOK_HK_TICKETS.map((t) => withPartner(t, "klook")),
 ];
 
 /* ─────────────────────────────────────────────── */
@@ -23,6 +42,10 @@ const PREVIEW_COUNT = 4;
 const CAROUSEL_INTERVAL_MS = 4000;
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=960&q=85";
+
+function isKlookItem(item) {
+  return (item.partner || "kkday") === "klook";
+}
 
 function uniqueImages(images, max = 2) {
   return [...new Set((images || []).filter(Boolean))].slice(0, max);
@@ -244,12 +267,8 @@ function TicketModal({ item, onClose }) {
               rel="noopener noreferrer sponsored"
               className="block w-full text-center py-4 rounded-xl bg-[#0A6CD0] hover:bg-[#095bb8] text-white text-base font-black shadow-lg transition-colors"
             >
-              立即購票
+              {isKlookItem(item) ? "立即預訂" : "立即購票"}
             </a>
-
-            <p className="mt-3 text-center text-[10px] text-gray-400">
-              聯盟行銷連結 · 票價以 KKday 官網即時顯示為準
-            </p>
           </div>
 
           {/* 關閉按鈕 */}
@@ -270,6 +289,8 @@ function TicketModal({ item, onClose }) {
 /* 商品 Card                                       */
 /* ─────────────────────────────────────────────── */
 function KKdayCard({ item, onClick }) {
+  const klook = isKlookItem(item);
+  const accent = klook ? "#00B259" : "#0A6CD0";
   return (
     <div
       role="button"
@@ -281,7 +302,8 @@ function KKdayCard({ item, onClick }) {
           onClick();
         }
       }}
-      className="group flex flex-col bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-[#0A6CD0]/25 transition-all duration-200 overflow-hidden h-full text-left w-full cursor-pointer"
+      className="group flex flex-col bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-md transition-all duration-200 overflow-hidden h-full text-left w-full cursor-pointer"
+      style={{ ["--tw-shadow-color"]: accent }}
     >
       <div className="relative overflow-hidden">
         <DualImageCarousel
@@ -293,7 +315,10 @@ function KKdayCard({ item, onClick }) {
           {item.regionLabel}
         </span>
         {item.badge && (
-          <span className="absolute top-2.5 right-2.5 z-10 rounded-md bg-[#0A6CD0] px-2 py-0.5 text-[10px] font-bold text-white">
+          <span
+            className="absolute top-2.5 right-2.5 z-10 rounded-md px-2 py-0.5 text-[10px] font-bold text-white"
+            style={{ backgroundColor: accent }}
+          >
             {item.badge}
           </span>
         )}
@@ -311,8 +336,13 @@ function KKdayCard({ item, onClick }) {
         </h3>
 
         <div className="mt-3 flex items-center gap-1.5 min-w-0">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#FFD43A] text-[9px] font-black text-slate-800">
-            KK
+          <span
+            className={[
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-black",
+              klook ? "bg-[#00B259] text-white" : "bg-[#FFD43A] text-slate-800",
+            ].join(" ")}
+          >
+            {klook ? "KL" : "KK"}
           </span>
           <span className="text-base font-black text-gray-900">
             {item.priceLabel}
@@ -323,7 +353,10 @@ function KKdayCard({ item, onClick }) {
           <p className="text-[10px] text-gray-400 line-clamp-1 flex-1">
             {item.footer}
           </p>
-          <span className="shrink-0 text-[10px] font-bold text-[#0A6CD0] group-hover:underline">
+          <span
+            className="shrink-0 text-[10px] font-bold group-hover:underline"
+            style={{ color: accent }}
+          >
             查看詳情 →
           </span>
         </div>
@@ -341,16 +374,27 @@ export default function KKdayTicketSection() {
   const [showAll, setShowAll] = useState(false);
 
   const filtered = useMemo(
-    () => TICKETS.filter((t) => t.countryId === activeTab),
+    () =>
+      TICKETS.filter(
+        (t) => t.countryId === activeTab && t.section !== "transport",
+      ),
     [activeTab],
   );
 
   const displayItems = showAll ? filtered : filtered.slice(0, PREVIEW_COUNT);
 
   const listingUrl =
-    activeTab === "japan"
-      ? aff("https://www.kkday.com/zh-tw/destination/jp-japan")
-      : aff("https://www.kkday.com/zh-tw/destination/kr-korea");
+    activeTab === "thailand"
+      ? aff("https://www.kkday.com/zh-tw/destination/th-thailand")
+      : activeTab === "korea"
+        ? aff("https://www.kkday.com/zh-tw/destination/kr-korea")
+        : activeTab === "china"
+          ? aff("https://www.kkday.com/zh-tw/destination/cn-china")
+          : activeTab === "hongkong"
+            ? aff("https://www.kkday.com/zh-tw/destination/hk-hong-kong")
+            : activeTab === "vietnam"
+              ? aff("https://www.kkday.com/zh-tw/destination/vn-vietnam")
+              : aff("https://www.kkday.com/zh-tw/destination/jp-japan");
 
   return (
     <section
@@ -362,15 +406,12 @@ export default function KKdayTicketSection() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
           <div className="flex flex-wrap items-baseline gap-3">
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
-              Jeko <span className="text-[#0A6CD0]">×</span> KKday
+              Jeko 門票推薦
             </h2>
             <span className="text-base font-semibold text-gray-500"></span>
           </div>
-          <p
-            rel="noopener noreferrer sponsored"
-            className="text-sm font-bold text-[#202020] hover:underline shrink-0"
-          >
-            門票 / 交通票券推薦
+          <p className="text-sm font-bold text-[#202020] shrink-0">
+            景點 / 體驗
           </p>
         </div>
 
@@ -412,15 +453,21 @@ export default function KKdayTicketSection() {
             transition={{ duration: 0.25 }}
             className="md:hidden"
           >
-            <MobileCardCarousel slideClassName="min-w-0 flex-[0_0_82%]">
-              {filtered.map((item) => (
-                <KKdayCard
-                  key={item.id}
-                  item={item}
-                  onClick={() => setSelectedItem(item)}
-                />
-              ))}
-            </MobileCardCarousel>
+            {filtered.length > 0 ? (
+              <MobileCardCarousel slideClassName="min-w-0 flex-[0_0_82%]">
+                {filtered.map((item) => (
+                  <KKdayCard
+                    key={item.id}
+                    item={item}
+                    onClick={() => setSelectedItem(item)}
+                  />
+                ))}
+              </MobileCardCarousel>
+            ) : (
+              <p className="text-center text-gray-500 py-12 text-sm">
+                此地區暫無門票，歡迎先看交通票券或住宿推薦
+              </p>
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -434,13 +481,19 @@ export default function KKdayTicketSection() {
             transition={{ duration: 0.25 }}
             className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5"
           >
-            {displayItems.map((item) => (
-              <KKdayCard
-                key={item.id}
-                item={item}
-                onClick={() => setSelectedItem(item)}
-              />
-            ))}
+            {displayItems.length > 0 ? (
+              displayItems.map((item) => (
+                <KKdayCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => setSelectedItem(item)}
+                />
+              ))
+            ) : (
+              <p className="col-span-full text-center text-gray-500 py-12 text-sm">
+                此地區暫無門票，歡迎先看交通票券或住宿推薦
+              </p>
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -452,7 +505,7 @@ export default function KKdayTicketSection() {
               onClick={() => setShowAll(true)}
               className="inline-flex items-center justify-center min-w-[180px] px-8 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-bold hover:border-gray-300 transition-colors"
             >
-              顯示全部 {filtered.length} 筆 ↓
+              顯示全部
             </button>
           )}
           <a
@@ -461,7 +514,7 @@ export default function KKdayTicketSection() {
             rel="noopener noreferrer sponsored"
             className="inline-flex items-center justify-center min-w-[180px] px-8 py-3.5 rounded-xl bg-[#0A6CD0] text-white text-sm font-bold shadow-md hover:bg-[#095bb8] transition-colors"
           >
-            KKday 查看更多票券
+            查看更多票券
           </a>
         </div>
       </div>

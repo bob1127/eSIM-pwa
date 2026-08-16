@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 
 function CategoryRow({ label, count, selected, onSelect, href }) {
@@ -33,6 +33,18 @@ function CategoryRow({ label, count, selected, onSelect, href }) {
   );
 }
 
+function pagerPages(current, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const set = new Set([1, total, current - 1, current, current + 1]);
+  const nums = [...set].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const out = [];
+  nums.forEach((n, i) => {
+    if (i > 0 && n - nums[i - 1] > 1) out.push("…");
+    out.push(n);
+  });
+  return out;
+}
+
 /**
  * 夥伴 Blog 右側欄（CHA 編輯風格）
  */
@@ -45,6 +57,10 @@ export default function PartnerBlogSidebar({
   selectedCategory = "",
   onSelectCategory,
   listHref,
+  extra = null,
+  showSearch = true,
+  showCategories = true,
+  fillHeight = false,
 }) {
   const domain = store?.domain;
   const base = `/p/${domain}`;
@@ -54,6 +70,8 @@ export default function PartnerBlogSidebar({
       ? articleHref(slug)
       : `${base}/blog/${slug}/`;
   const [q, setQ] = useState("");
+  const [recentPage, setRecentPage] = useState(1);
+  const RECENT_PER_PAGE = 4;
 
   const nav = [
     { key: "home", label: "首頁", href: `${base}/` },
@@ -66,7 +84,24 @@ export default function PartnerBlogSidebar({
     },
   ];
 
-  const recent = useMemo(() => posts.slice(0, 4), [posts]);
+  const recentAll = useMemo(() => {
+    const seen = new Set();
+    return posts.filter((p) => {
+      if (!p?.slug || seen.has(p.slug)) return false;
+      seen.add(p.slug);
+      return true;
+    });
+  }, [posts]);
+  const recentPages = Math.max(1, Math.ceil(recentAll.length / RECENT_PER_PAGE));
+  const safeRecentPage = Math.min(recentPage, recentPages);
+  const recent = recentAll.slice(
+    (safeRecentPage - 1) * RECENT_PER_PAGE,
+    safeRecentPage * RECENT_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setRecentPage(1);
+  }, [recentAll.length]);
   const categories = useMemo(() => {
     const map = new Map();
     posts.forEach((p) => {
@@ -87,10 +122,16 @@ export default function PartnerBlogSidebar({
   const filterInteractive = typeof onSelectCategory === "function";
 
   return (
-    <aside className="w-full lg:w-[300px] shrink-0 lg:sticky lg:top-24 lg:self-start">
-      <div className="space-y-8">
+    <aside className={`w-full ${fillHeight ? "h-full min-h-0 flex flex-col" : ""}`}>
+      <div
+        className={
+          fillHeight
+            ? "flex flex-col h-full min-h-0 gap-5"
+            : "space-y-8"
+        }
+      >
         {/* 2x2 導覽 */}
-        <nav className="border border-slate-200">
+        <nav className={`border border-slate-200 ${fillHeight ? "shrink-0" : ""}`}>
           <div className="grid grid-cols-2">
             {nav.map((item, idx) => (
               <Link
@@ -108,10 +149,12 @@ export default function PartnerBlogSidebar({
           </div>
         </nav>
 
-        {/* 搜尋 */}
+        {showSearch ? (
         <form
           onSubmit={handleSearch}
-          className="flex items-center gap-2 border border-slate-200 bg-[#faf9f6] px-3 py-2.5"
+          className={`flex items-center gap-2 border border-slate-200 bg-white px-3 py-2.5 ${
+            fillHeight ? "shrink-0" : ""
+          }`}
         >
           <Search className="w-4 h-4 text-slate-400 shrink-0" strokeWidth={1.75} />
           <input
@@ -122,10 +165,22 @@ export default function PartnerBlogSidebar({
             className="w-full text-[12px] text-slate-700 placeholder:text-slate-400 outline-none bg-transparent"
           />
         </form>
+        ) : null}
 
-        {/* 分類篩選 */}
-        {categories.length > 0 ? (
-          <div className="border border-slate-200 bg-[#faf9f6] px-4 py-4">
+        {extra ? (
+          <div
+            className={
+              fillHeight
+                ? "shrink-0 min-h-0 max-h-[min(50%,420px)] overflow-y-auto"
+                : ""
+            }
+          >
+            {extra}
+          </div>
+        ) : null}
+
+        {showCategories && categories.length > 0 ? (
+          <div className={`border border-slate-200 bg-white px-4 py-4 ${fillHeight ? "shrink-0 max-h-[28%] overflow-y-auto" : ""}`}>
             <p className="text-[12px] font-bold text-slate-500 mb-3">
               文章分類
             </p>
@@ -156,13 +211,16 @@ export default function PartnerBlogSidebar({
           </div>
         ) : null}
 
-        {/* 最新文章 */}
-        {recent.length > 0 ? (
-          <div>
-            <p className="text-[12px] font-bold text-slate-500 mb-3">
+        {recentAll.length > 0 ? (
+          <div
+            className={
+              fillHeight ? "flex-1 min-h-0 flex flex-col" : ""
+            }
+          >
+            <p className="text-[12px] font-bold text-slate-500 mb-3 shrink-0">
               最新文章
             </p>
-            <ul className="space-y-4">
+            <ul className={fillHeight ? "flex-1 min-h-0 overflow-y-auto space-y-4" : "space-y-4"}>
               {recent.map((post) => (
                 <li key={post.slug}>
                   <Link
@@ -181,10 +239,10 @@ export default function PartnerBlogSidebar({
                       ) : null}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[12px] font-bold text-slate-800 leading-snug line-clamp-2 group-hover:text-[#0A6CD0] transition-colors">
+                      <p className="text-[15px] font-bold text-slate-800 leading-snug line-clamp-2 group-hover:text-[#0A6CD0] transition-colors">
                         {post.title}
                       </p>
-                      <p className="mt-1 text-[10px] text-slate-400 tracking-wide">
+                      <p className="mt-1 text-[15px] text-slate-400 tracking-wide">
                         {post.date}{" "}
                         <span>{post.categoryLabel}</span>
                       </p>
@@ -193,6 +251,52 @@ export default function PartnerBlogSidebar({
                 </li>
               ))}
             </ul>
+            {recentPages > 1 ? (
+              <nav
+                className="shrink-0 pt-3 mt-1 pb-1 flex items-center justify-center gap-1"
+                aria-label="最新文章分頁"
+              >
+                <button
+                  type="button"
+                  disabled={safeRecentPage <= 1}
+                  onClick={() => setRecentPage((p) => Math.max(1, p - 1))}
+                  className="h-7 min-w-7 text-[13px] font-bold text-[#0A6CD0] disabled:opacity-30"
+                >
+                  ‹
+                </button>
+                {pagerPages(safeRecentPage, recentPages).map((n, i) =>
+                  n === "…" ? (
+                    <span
+                      key={`e-${i}`}
+                      className="h-7 min-w-5 text-[12px] text-slate-400 text-center"
+                    >
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setRecentPage(n)}
+                      className={`h-7 min-w-7 px-1.5 text-[12px] font-bold ${
+                        n === safeRecentPage
+                          ? "bg-[#0A6CD0] text-white"
+                          : "text-[#555] hover:bg-[#F0F1F3]"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ),
+                )}
+                <button
+                  type="button"
+                  disabled={safeRecentPage >= recentPages}
+                  onClick={() => setRecentPage((p) => Math.min(recentPages, p + 1))}
+                  className="h-7 min-w-7 text-[13px] font-bold text-[#0A6CD0] disabled:opacity-30"
+                >
+                  ›
+                </button>
+              </nav>
+            ) : null}
           </div>
         ) : null}
       </div>

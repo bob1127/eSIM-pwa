@@ -11,6 +11,10 @@ import {
 import { usePartnerSession } from "@/lib/partnerAuth";
 import { supabase } from "@/lib/supabaseClient";
 import StatusIconBadge from "@/components/partner/StatusIconBadge";
+import PartnerInfoTimeline from "@/components/partner/PartnerInfoTimeline";
+import WalletIcon from "@/components/icons/wallet-icon";
+import ClockIcon from "@/components/icons/clock-icon";
+import CreditCardIcon from "@/components/icons/credit-card-icon";
 import {
   PAYOUT_FREEZE_DAYS,
   PAYOUT_MIN_WITHDRAWAL,
@@ -643,22 +647,41 @@ export default function PartnerSettlementPage() {
           </div>
         </div>
 
-        {/* 規則說明（特殊色提示） */}
-        <Card
-          className="px-4 py-3.5 text-xs leading-relaxed"
-          style={{ backgroundColor: "#fffbeb", borderColor: "#fde68a" }}
-        >
-          <p className="font-bold mb-1" style={{ color: "#92400e" }}>
-            提領規則
-          </p>
-          <p style={{ color: "#78350f" }}>
-            訂單需滿 {PAYOUT_FREEZE_DAYS} 天、單次{" "}
-            {fmt(PAYOUT_MIN_WITHDRAWAL)}～{fmt(PAYOUT_MAX_WITHDRAWAL)}；每月第{" "}
-            {PAYOUT_FREE_WITHDRAWALS_PER_MONTH} 次免手續費，之後每次扣{" "}
-            {fmt(PAYOUT_EXTRA_WITHDRAWAL_FEE)}。
-            {scheduleHint ? ` ${scheduleHint}` : ""}
-          </p>
-        </Card>
+        <PartnerInfoTimeline
+          items={[
+            {
+              variant: "primary",
+              title: "提領規則",
+              tag: "規則",
+              href: "#partner-withdraw-form",
+              icons: [WalletIcon, ClockIcon, CreditCardIcon],
+              body: (
+                <>
+                  訂單需滿 {PAYOUT_FREEZE_DAYS} 天、單次{" "}
+                  {fmt(PAYOUT_MIN_WITHDRAWAL)}～{fmt(PAYOUT_MAX_WITHDRAWAL)}
+                  ；每月第 {PAYOUT_FREE_WITHDRAWALS_PER_MONTH}{" "}
+                  次免手續費，之後每次扣 {fmt(PAYOUT_EXTRA_WITHDRAWAL_FEE)}。
+                  {scheduleHint ? ` ${scheduleHint}` : ""}
+                </>
+              ),
+            },
+            {
+              variant: "notice",
+              title: snapshot?.blockReason ? "提領提醒" : "申請提醒",
+              tag: snapshot?.blockReason ? "注意" : "說明",
+              footerHref: "#partner-withdraw-form",
+              footerLabel: snapshot?.blockReason ? "查看申請條件" : "前往申請提領",
+              body: snapshot?.blockReason ? (
+                snapshot.blockReason
+              ) : (
+                <>
+                  達門檻後可一鍵申請。審核通過後目標{" "}
+                  {PAYOUT_REMITTANCE_WORKING_DAYS} 個工作天內匯款。
+                </>
+              ),
+            },
+          ]}
+        />
 
         {error ? (
           <div
@@ -721,7 +744,7 @@ export default function PartnerSettlementPage() {
 
         {/* 兩欄：申請提領 + 收款帳戶（比照 Shopify 主欄／側欄） */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <Card className="lg:col-span-3 p-4 space-y-3">
+          <Card id="partner-withdraw-form" className="lg:col-span-3 p-4 space-y-3">
             <div className="flex items-center gap-2">
               <div
                 className="w-8 h-8 flex items-center justify-center"
@@ -733,20 +756,6 @@ export default function PartnerSettlementPage() {
                 申請提領
               </h3>
             </div>
-
-            {snapshot?.blockReason ? (
-              <p
-                className="text-xs px-3 py-2"
-                style={{
-                  borderRadius: UI.radiusSm,
-                  backgroundColor: "#fffbeb",
-                  border: "1px solid #fde68a",
-                  color: "#92400e",
-                }}
-              >
-                {snapshot.blockReason}
-              </p>
-            ) : null}
 
             {snapshot?.nextFee > 0 ? (
               <p

@@ -11,6 +11,9 @@ import {
 } from "@/lib/partnerBlogBlocks";
 import { validatePartnerBlogMeta, pingPartnerBlogRevalidate } from "@/lib/partnerBlog";
 import PartnerBlogElementorEditor from "@/components/partner/blog-builder/PartnerBlogElementorEditor";
+import PartnerBlogItineraryEditor from "@/components/partner/blog-builder/PartnerBlogItineraryEditor";
+import { isItineraryBlocks, ensureItineraryBlocks, firstItineraryImage, getItineraryProps } from "@/lib/partnerBlogItinerary";
+import { itineraryDestinationsMissing } from "@/lib/itineraryAffiliate";
 
 const EMPTY_META = {
   title: "",
@@ -164,16 +167,41 @@ export default function PartnerBlogEditPage() {
     async (nextStatus, { silent = false } = {}) => {
       if (!post?.id || !store?.id) return false;
       if (savingRef.current) return false;
-      const { ok, errors, title, slug, image } = validatePartnerBlogMeta(meta, {
-        requireImage: nextStatus === "published",
-      });
+      const itinerary = isItineraryBlocks(blocks);
+      const coverGuess = itinerary
+        ? firstItineraryImage(blocks)
+        : "";
+      const metaForVal = {
+        ...meta,
+        og_image_url:
+          meta.og_image_url || post.cover_image_url || coverGuess || "",
+      };
+      const { ok, errors, title, slug, image } = validatePartnerBlogMeta(
+        metaForVal,
+        { requireImage: nextStatus === "published" },
+      );
       if (!ok) {
         if (!silent) alert(Object.values(errors).join("\n"));
+        setSaveHint(Object.values(errors)[0] || "無法更新");
         return false;
       }
-      const clean = sanitizeBlocks(blocks);
+      const clean = itinerary
+        ? ensureItineraryBlocks(blocks)
+        : sanitizeBlocks(blocks);
+      if (
+        itinerary &&
+        nextStatus === "published" &&
+        itineraryDestinationsMissing(getItineraryProps(clean))
+      ) {
+        if (!silent) {
+          alert("請先選擇至少一個行程地區。");
+        }
+        setSaveHint("請選擇行程地區");
+        return false;
+      }
       if (nextStatus === "published" && !clean.length) {
         if (!silent) alert("請先加入至少一個元件再發布");
+        setSaveHint("請先加入內容再更新");
         return false;
       }
 
@@ -184,7 +212,7 @@ export default function PartnerBlogEditPage() {
         .split(/[,，]/)
         .map((t) => t.trim())
         .filter(Boolean);
-      const ogImage = image || null;
+      const ogImage = image || coverGuess || null;
       const payload = {
         content_blocks: clean,
         content_html: blocksToHtml(clean),
@@ -206,60 +234,77 @@ export default function PartnerBlogEditPage() {
         tags,
         author_name: (meta.author_name || "").trim() || null,
       };
-      let { error } = await supabase
-        .from("store_blog_posts")
-        .update(payload)
-        .eq("id", post.id)
-        .eq("store_id", store.id);
-      if (
-        error &&
-        /meta_description|meta_keywords|og_title|og_image|content_blocks|column/i.test(
-          error.message || "",
-        )
-      ) {
-        const fallback = { ...payload };
-        delete fallback.meta_description;
-        delete fallback.meta_keywords;
-        delete fallback.og_title;
-        delete fallback.og_image_url;
-        delete fallback.content_blocks;
-        ({ error } = await supabase
-          .from("store_blog_posts")
-          .update(fallback)
-          .eq("id", post.id)
-          .eq("store_id", store.id));
-      }
-      savingRef.current = false;
-      setSaving(false);
-      if (error) {
-        if (!silent) alert("儲存失敗：" + error.message);
-        setSaveHint("儲存失敗");
-        return false;
-      }
-      const oldSlug = post.slug;
-      setPost((prev) => ({ ...prev, ...payload }));
-      if (slug !== meta.slug) {
-        setMeta((m) => ({ ...m, slug }));
-      }
-      savedFp.current = fingerprint(blocks, { ...meta, slug });
       try {
-        localStorage.removeItem(draftKey(post.id));
-      } catch {
-        /* ignore */
-      }
-      if (status === "published") {
-        const { data: sessionData } = await supabase.auth.getSession();
-        await pingPartnerBlogRevalidate({
-          token: sessionData?.session?.access_token,
+        let { error } = await supabase
+          .from("store_blog_posts")
+          .update(payload)
+          .eq("id", post.id)
+          .eq("store_id", store.id);
+        if (
+          error &&
+          /meta_description|meta_keywords|og_title|og_image|column/i.test(
+            error.message || "",
+          ) &&
+          !/content_blocks/i.test(error.message || "")
+        ) {
+          const fallback = { ...payload };
+          delete fallback.meta_description;
+          delete fallback.meta_keywords;
+          delete fallback.og_title;
+          delete fallback.og_image_url;
+          ({ error } = await supabase
+            .from("store_blog_posts")
+            .update(fallback)
+            .eq("id", post.id)
+            .eq("store_id", store.id));
+        }
+        if (error) {
+          if (!silent) alert("儲存失敗：" + error.message);
+          setSaveHint("儲存失敗：" + error.message);
+          return false;
+        }
+        const oldSlug = post.slug;
+        setPost((prev) => ({ ...prev, ...payload }));
+        if (slug !== meta.slug) {
+          setMeta((m) => ({ ...m, slug, og_image_url: ogImage || m.og_image_url }));
+        } else if (ogImage && ogImage !== meta.og_image_url) {
+          setMeta((m) => ({ ...m, og_image_url: ogImage }));
+        }
+        savedFp.current = fingerprint(blocks, {
+          ...meta,
           slug,
-          oldSlug,
+          og_image_url: ogImage || meta.og_image_url,
         });
+        try {
+          localStorage.removeItem(draftKey(post.id));
+        } catch {
+          /* ignore */
+        }
+        if (status === "published") {
+          const firstPublish = !post.published_at;
+          const { data: sessionData } = await supabase.auth.getSession();
+          pingPartnerBlogRevalidate({
+            token: sessionData?.session?.access_token,
+            slug,
+            oldSlug,
+            title,
+            notifyFollowers: firstPublish,
+          }).catch(() => {});
+        }
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mm = String(now.getMinutes()).padStart(2, "0");
+        setSaveHint(silent ? `已自動儲存 ${hh}:${mm}` : `已儲存 ${hh}:${mm}`);
+        return true;
+      } catch (err) {
+        const msg = err?.message || String(err);
+        if (!silent) alert("儲存失敗：" + msg);
+        setSaveHint("儲存失敗：" + msg);
+        return false;
+      } finally {
+        savingRef.current = false;
+        setSaving(false);
       }
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2, "0");
-      const mm = String(now.getMinutes()).padStart(2, "0");
-      setSaveHint(silent ? `已自動儲存 ${hh}:${mm}` : `已儲存 ${hh}:${mm}`);
-      return true;
     },
     [post, store?.id, meta, blocks],
   );
@@ -352,27 +397,51 @@ export default function PartnerBlogEditPage() {
           </div>
         </div>
       ) : null}
-      <PartnerBlogElementorEditor
-        title={meta.title || post.title}
-        blocks={blocks}
-        onChangeBlocks={setBlocks}
-        store={store}
-        meta={meta}
-        onChangeMeta={setMeta}
-        dirty={dirty}
-        saveHint={saveHint}
-        saving={saving}
-        status={post.status}
-        previewHref={
-          post.status === "published" && store?.domain
-            ? `${SITE_URL}/p/${store.domain}/blog/${meta.slug || post.slug}/`
-            : null
-        }
-        onBack={leaveToList}
-        onSave={() => persist(post.status === "published" ? "published" : "draft")}
-        onPublish={() => persist("published")}
-        onUnpublish={() => persist("draft")}
-      />
+      {isItineraryBlocks(blocks) ? (
+        <PartnerBlogItineraryEditor
+          title={meta.title || post.title}
+          blocks={blocks}
+          onChangeBlocks={setBlocks}
+          store={store}
+          meta={meta}
+          onChangeMeta={setMeta}
+          dirty={dirty}
+          saveHint={saveHint}
+          saving={saving}
+          status={post.status}
+          previewHref={
+            post.status === "published" && store?.domain
+              ? `${SITE_URL}/p/${store.domain}/blog/${meta.slug || post.slug}/`
+              : null
+          }
+          onBack={leaveToList}
+          onSave={() => persist(post.status === "published" ? "published" : "draft")}
+          onPublish={() => persist("published")}
+          onUnpublish={() => persist("draft")}
+        />
+      ) : (
+        <PartnerBlogElementorEditor
+          title={meta.title || post.title}
+          blocks={blocks}
+          onChangeBlocks={setBlocks}
+          store={store}
+          meta={meta}
+          onChangeMeta={setMeta}
+          dirty={dirty}
+          saveHint={saveHint}
+          saving={saving}
+          status={post.status}
+          previewHref={
+            post.status === "published" && store?.domain
+              ? `${SITE_URL}/p/${store.domain}/blog/${meta.slug || post.slug}/`
+              : null
+          }
+          onBack={leaveToList}
+          onSave={() => persist(post.status === "published" ? "published" : "draft")}
+          onPublish={() => persist("published")}
+          onUnpublish={() => persist("draft")}
+        />
+      )}
     </>
   );
 }

@@ -37,14 +37,7 @@ import PartnerBlogArticleView from "../../components/Shop/PartnerBlogArticleView
 import WpArticleBody from "../../components/Blog/WpArticleBody";
 import { buildLoginUrl } from "../../lib/authRedirect";
 
-// --- 🔧 工具函式：去除 HTML 標籤 (用於 SEO Description) ---
-function stripHtml(html) {
-  if (!html) return "";
-  return html
-    .replace(/<[^>]*>?/gm, "")
-    .replace(/&#\d+;/gm, "")
-    .trim();
-}
+import { stripHtml } from "@/lib/stripHtml";
 
 // 格式化日期（Supabase ISO → YYYY.MM.DD）
 function formatDate(isoStr) {
@@ -297,6 +290,7 @@ export default function PostPage({
           store={partnerArticle.store}
           post={partnerArticle.post}
           relatedPosts={partnerArticle.relatedPosts || []}
+          latestPosts={partnerArticle.latestPosts || []}
           prevPost={partnerArticle.prevPost || null}
           products={partnerArticle.products || []}
           blogCms={partnerArticle.blogCms}
@@ -360,9 +354,9 @@ export default function PostPage({
           />
 
           {/* =========================================
-              三欄式主體架構 (整體拉寬到 1600px)
+              三欄式主體架構
           ========================================= */}
-          <div className="max-w-[1800px] w-[95%] mx-auto mt-12 md:mt-20 flex flex-col xl:flex-row items-start gap-8 lg:gap-10">
+          <div className="max-w-[1480px] w-[94%] mx-auto mt-12 md:mt-20 flex flex-col xl:flex-row items-start gap-8 lg:gap-10">
             {/* -----------------------------------------
                 [左側] 延伸文章分類導覽 (Sticky)
             ----------------------------------------- */}
@@ -1232,6 +1226,7 @@ export async function getStaticProps({ params }) {
           store: bundle.store,
           post: bundle.post,
           relatedPosts: bundle.relatedPosts || [],
+          latestPosts: bundle.latestPosts || [],
           prevPost: bundle.prevPost,
           products: bundle.products || [],
           blogCms: bundle.blogCms,

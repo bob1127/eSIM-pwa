@@ -16,6 +16,7 @@ import {
   parseShareItems,
 } from "@/components/Shop/PartnerShareButtons";
 import MaterialIcon from "@/components/MaterialIcon";
+import ItsHoverIcon, { ITS_HOVER_CATALOG } from "@/components/icons/ItsHoverIcon";
 import MediaUploadField, { useBlogBuilderMedia } from "./MediaUploadField";
 
 export const WIDGET_CHROME = {
@@ -24,6 +25,7 @@ export const WIDGET_CHROME = {
   image: { accent: "#0ea5e9", icon: "image", width: 340, hint: "上傳或貼網址" },
   video: { accent: "#ef4444", icon: "videocam", width: 340, hint: "上傳或 YouTube" },
   button: { accent: "#2563eb", icon: "smart_button", width: 380, hint: "按鈕顏色、圓角、寬度" },
+  icon: { accent: "#111827", icon: "star", width: 380, hint: "Its Hover 懸停動畫圖示" },
   divider: { accent: "#64748b", icon: "horizontal_rule", width: 280, hint: "分隔線" },
   spacer: { accent: "#94a3b8", icon: "expand", width: 280, hint: "垂直間距" },
   html: { accent: "#22c55e", icon: "code", width: 420, hint: "自訂 HTML" },
@@ -631,6 +633,90 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
           placeholder="<div>…</div>"
         />
       );
+    case "icon":
+      return (
+        <>
+          <div className="flex items-center justify-center rounded-lg bg-white/5 border border-white/10 py-5 mb-3">
+            <ItsHoverIcon name={p.name || "airplane"} size={Number(p.size) || 48} color="#fff" />
+          </div>
+          <Field label="圖示">
+            <div className="grid grid-cols-5 gap-1.5 max-h-52 overflow-y-auto pr-0.5">
+              {ITS_HOVER_CATALOG.map((item) => {
+                const on = (p.name || "airplane") === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    title={item.label}
+                    onClick={() => set("name", item.id)}
+                    className={`flex flex-col items-center gap-1 rounded-lg py-2 px-1 border ${
+                      on
+                        ? "border-white bg-white/15 text-white"
+                        : "border-white/10 text-white/70 hover:border-white/40"
+                    }`}
+                  >
+                    <ItsHoverIcon name={item.id} size={22} color="currentColor" />
+                    <span className="text-[9px] font-bold leading-none truncate w-full text-center">
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+          <Field label={`尺寸 ${p.size || 48}px`}>
+            <Seg
+              value={String(p.size || 48)}
+              onChange={(id) => set("size", Number(id))}
+              options={[
+                { id: "24", label: "小" },
+                { id: "32", label: "中" },
+                { id: "48", label: "大" },
+                { id: "64", label: "更大" },
+              ]}
+            />
+          </Field>
+          <Field label="對齊">
+            <Seg
+              value={p.align || "center"}
+              onChange={(id) => set("align", id)}
+              options={[
+                { id: "left", label: "左" },
+                { id: "center", label: "中" },
+                { id: "right", label: "右" },
+              ]}
+            />
+          </Field>
+          <Field label="說明（選填）">
+            <input
+              className={inputCls}
+              value={p.label || ""}
+              onChange={(e) => set("label", e.target.value)}
+              placeholder="例如：免費 Wi-Fi"
+            />
+          </Field>
+          <Field label="連結（選填）">
+            <input
+              className={inputCls}
+              value={p.href || ""}
+              onChange={(e) => set("href", e.target.value)}
+              placeholder="https://"
+            />
+          </Field>
+          <p className="text-[10px] text-white/40">
+            動畫來自{" "}
+            <a
+              href="https://www.itshover.com"
+              target="_blank"
+              rel="noreferrer"
+              className="underline text-white/60"
+            >
+              Its Hover
+            </a>
+            ，滑過圖示會動。顏色可在下方「文字色」調整。
+          </p>
+        </>
+      );
     case "columns":
       return (
         <>
@@ -846,7 +932,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
           </Field>
           <p className="text-[10px] text-white/40 mb-2">
             {p.layout === "square"
-              ? "外層對齊、內層定寬，格子切成正方形。最多 24 張。"
+              ? "每張裁成正方形、整列撐滿對齊。5 張＝上 2 大格、下 3 小格；6 張＝兩列各 3。最多 24 張。"
               : "盡量維持原圖比例，同一列撐滿對齊，不夠齊再微裁。最多 24 張。"}
           </p>
           <MediaUploadField

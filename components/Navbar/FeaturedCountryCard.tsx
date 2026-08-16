@@ -32,6 +32,8 @@ export const CATEGORY_IMAGE_FALLBACKS: Record<string, string> = {
   uk: "/images/分類eSIM-英國.png",
   "united-kingdom": "/images/分類eSIM-英國.png",
   britain: "/images/分類eSIM-英國.png",
+  austria: "/images/分類eSIM-歐洲.png",
+  at: "/images/分類eSIM-歐洲.png",
   switzerland: "/images/分類eSIM-瑞士.png",
 };
 

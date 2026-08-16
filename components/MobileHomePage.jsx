@@ -6,7 +6,7 @@ import Image from "next/image";
 import CarRentalCharterSection from "./CarRentalCharterSection";
 import AccommodationRecommendSection from "./AccommodationRecommendSection";
 import KKdayTicketSection from "./KKdayTicketSection";
-import KlookTicketSection from "./KlookTicketSection";
+import TransportTicketSection from "./TransportTicketSection";
 import JekoRecommendSection from "./JekoRecommendSection";
 import ServiceSection from "./ServiceSection";
 
@@ -270,16 +270,16 @@ export default function MobileHomePage() {
         <AccommodationRecommendSection />
       </div>
 
-      {/* ═══ 8. 景點門票 KKday ═══ */}
+      {/* ═══ 8. 景點門票 ═══ */}
       <div className="mt-3" id="kkday-section">
-        <SectionHeader title="景點門票 · KKday" />
+        <SectionHeader title="景點門票" />
         <KKdayTicketSection />
       </div>
 
-      {/* ═══ 9. 景點體驗 Klook ═══ */}
-      <div className="mt-3">
-        <SectionHeader title="景點體驗 · Klook" />
-        <KlookTicketSection />
+      {/* ═══ 9. 交通票券 ═══ */}
+      <div className="mt-3" id="transport-section">
+        <SectionHeader title="交通票券" />
+        <TransportTicketSection />
       </div>
 
       {/* ═══ 10. 快速導覽 — 藍底資訊卡風格 ═══ */}

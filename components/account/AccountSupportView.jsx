@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import MaterialIcon from "@/components/MaterialIcon";
+import AccountIcon from "@/components/account/AccountIcon";
 import { getIosAddToHomeHint } from "@/lib/pushSupport";
 import {
   AccountPageWrap,
@@ -262,11 +262,11 @@ export default function AccountSupportView({
         </div>
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <SecondaryBtn onClick={() => onTabChange?.("orders")}>
-            <MaterialIcon name="qr_code_2" size={16} />
+            <AccountIcon name="qr_code_2" size={16} />
             我的訂單
           </SecondaryBtn>
           <PrimaryBtn onClick={onGuideClick}>
-            <MaterialIcon name="menu_book" size={16} />
+            <AccountIcon name="menu_book" size={16} />
             開啟適合我的教學
           </PrimaryBtn>
           <ShopifyDropdown label="更多操作" items={moreMenu} />
@@ -337,7 +337,7 @@ export default function AccountSupportView({
                 style={{ borderTop: `1px solid ${UI.border}` }}
               >
                 <SecondaryBtn onClick={() => onTabChange?.("traffic")}>
-                  <MaterialIcon name="speed" size={16} />
+                  <AccountIcon name="speed" size={16} />
                   查詢流量
                 </SecondaryBtn>
                 <PrimaryBtn onClick={onGuideClick}>開啟適合我的教學</PrimaryBtn>
@@ -360,7 +360,7 @@ export default function AccountSupportView({
                 className="px-4 py-10 text-center text-sm"
                 style={{ color: UI.soft }}
               >
-                <MaterialIcon
+                <AccountIcon
                   name="task_alt"
                   size={36}
                   className="mx-auto mb-2 opacity-40"
@@ -386,7 +386,7 @@ export default function AccountSupportView({
                           borderRadius: UI.radiusSm,
                         }}
                       >
-                        <MaterialIcon
+                        <AccountIcon
                           name={t.icon}
                           size={18}
                           className="text-white"
@@ -398,7 +398,7 @@ export default function AccountSupportView({
                       >
                         {t.label}
                       </span>
-                      <MaterialIcon
+                      <AccountIcon
                         name="chevron_right"
                         size={20}
                         style={{ color: UI.soft }}
@@ -439,7 +439,7 @@ export default function AccountSupportView({
                       borderRadius: UI.radiusSm,
                     }}
                   >
-                    <MaterialIcon
+                    <AccountIcon
                       name={g.icon}
                       size={18}
                       className="text-white"
@@ -478,7 +478,7 @@ export default function AccountSupportView({
                     borderRadius: UI.radiusSm,
                   }}
                 >
-                  <MaterialIcon name="info" size={18} className="text-white" />
+                  <AccountIcon name="info" size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
                   <p
@@ -547,13 +547,13 @@ export default function AccountSupportView({
                     className="flex items-center gap-2.5 p-2 rounded-md transition hover:bg-[#f6f6f7] font-medium"
                     style={{ color: UI.dark }}
                   >
-                    <MaterialIcon
+                    <AccountIcon
                       name={l.icon}
                       size={18}
                       style={{ color: UI.mid }}
                     />
                     <span className="flex-1">{l.label}</span>
-                    <MaterialIcon
+                    <AccountIcon
                       name="chevron_right"
                       size={16}
                       style={{ color: UI.soft }}
@@ -619,11 +619,11 @@ export default function AccountSupportView({
                   borderRadius: "0.5rem",
                 }}
               >
-                <MaterialIcon name="chat" size={16} />
+                <AccountIcon name="chat" size={16} />
                 LINE 官方客服
               </a>
               <SecondaryBtn href="/contact" className="w-full">
-                <MaterialIcon name="mail" size={16} />
+                <AccountIcon name="mail" size={16} />
                 Email 聯絡客服
               </SecondaryBtn>
             </div>
@@ -637,7 +637,7 @@ export default function AccountSupportView({
                   className="flex gap-2.5 py-2.5"
                   style={{ borderTop: `1px solid ${UI.border}` }}
                 >
-                  <MaterialIcon
+                  <AccountIcon
                     name="event"
                     size={16}
                     className="shrink-0 mt-0.5"

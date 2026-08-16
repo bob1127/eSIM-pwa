@@ -209,15 +209,20 @@ export default function PartnerBlogListView({
             <PartnerContentDisclaimer className="mt-10" />
           </div>
 
-          <PartnerBlogSidebar
-            store={store}
-            posts={posts}
-            active="article"
-            onSearch={setQuery}
-            selectedCategory={category}
-            onSelectCategory={selectCategory}
-            listHref={`/p/${domain}/blog/`}
-          />
+          <div className="lg:w-[300px] shrink-0 w-full lg:sticky lg:top-[148px] lg:h-[calc(100dvh-188px)] lg:max-h-[calc(100dvh-188px)] lg:self-start lg:overflow-hidden">
+            <div className="h-full overflow-hidden flex flex-col">
+              <PartnerBlogSidebar
+                store={store}
+                posts={posts}
+                active="article"
+                onSearch={setQuery}
+                selectedCategory={category}
+                onSelectCategory={selectCategory}
+                listHref={`/p/${domain}/blog/`}
+                fillHeight
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -12,7 +12,7 @@ import {
   AccountPageWrap,
   ShopifyDropdown,
 } from "./AccountShell";
-import MaterialIcon from "@/components/MaterialIcon";
+import AccountIcon from "@/components/account/AccountIcon";
 import { useUser } from "@/components/context/UserContext";
 import { orderItemSummary, refundStatusLabel } from "@/lib/refundPolicy";
 import { ACCOUNT_THEME, ACCOUNT_UI, SHOPIFY_BADGE } from "@/lib/accountUi";
@@ -225,6 +225,12 @@ export default function AccountDashboardView({
       onClick: () => onTabChange("traffic"),
     },
     {
+      id: "follows",
+      label: "追蹤創作者",
+      icon: "notifications",
+      onClick: () => onTabChange("follows"),
+    },
+    {
       id: "support",
       label: "安裝與支援",
       icon: "help_center",
@@ -258,7 +264,7 @@ export default function AccountDashboardView({
         actions={
           <>
             <SecondaryBtn onClick={() => onTabChange("orders")}>
-              <MaterialIcon name="qr_code_2" size={16} />
+              <AccountIcon name="qr_code_2" size={16} />
               我的訂單
             </SecondaryBtn>
             <ShopifyDropdown label="更多操作" items={moreMenu} />
@@ -341,7 +347,7 @@ export default function AccountDashboardView({
                           borderRadius: ACCOUNT_UI.radiusSm,
                         }}
                       >
-                        <MaterialIcon
+                        <AccountIcon
                           name="sim_card"
                           size={20}
                           style={{ color: ACCOUNT_THEME.dark }}
@@ -373,7 +379,7 @@ export default function AccountDashboardView({
                   style={{ borderTop: `1px solid ${ACCOUNT_THEME.border}` }}
                 >
                   <SecondaryBtn onClick={() => onTabChange("traffic")}>
-                    <MaterialIcon name="speed" size={16} />
+                    <AccountIcon name="speed" size={16} />
                     查詢流量
                   </SecondaryBtn>
                   <PrimaryBtn onClick={() => onTabChange("orders")}>
@@ -629,7 +635,7 @@ export default function AccountDashboardView({
                   }}
                   aria-label="編輯"
                 >
-                  <MaterialIcon name="edit" size={14} />
+                  <AccountIcon name="edit" size={14} />
                 </button>
               }
             >
@@ -728,7 +734,7 @@ export default function AccountDashboardView({
                         className="flex items-center gap-2 text-sm font-medium"
                         style={{ color: ACCOUNT_THEME.dark }}
                       >
-                        <MaterialIcon
+                        <AccountIcon
                           name={row.icon}
                           size={18}
                           style={{ color: ACCOUNT_THEME.mid }}
@@ -740,7 +746,7 @@ export default function AccountDashboardView({
                         style={{ color: ACCOUNT_THEME.dark }}
                       >
                         {row.val}
-                        <MaterialIcon
+                        <AccountIcon
                           name="chevron_right"
                           size={18}
                           style={{ color: ACCOUNT_THEME.soft }}
@@ -769,7 +775,7 @@ export default function AccountDashboardView({
                     className="flex items-center gap-2 p-2 rounded-md transition hover:bg-[#f6f6f7] font-medium"
                     style={{ color: ACCOUNT_THEME.dark }}
                   >
-                    <MaterialIcon
+                    <AccountIcon
                       name={item.icon}
                       size={18}
                       style={{ color: ACCOUNT_THEME.mid }}
@@ -856,7 +862,7 @@ export default function AccountDashboardView({
                       borderRadius: ACCOUNT_UI.radiusSm,
                     }}
                   >
-                    <MaterialIcon
+                    <AccountIcon
                       name="sim_card"
                       size={22}
                       style={{ color: ACCOUNT_THEME.dark }}
@@ -892,7 +898,7 @@ export default function AccountDashboardView({
               className="text-center py-10"
               style={{ color: ACCOUNT_THEME.soft }}
             >
-              <MaterialIcon
+              <AccountIcon
                 name="task_alt"
                 size={40}
                 className="mx-auto mb-2 opacity-40"
@@ -917,7 +923,7 @@ export default function AccountDashboardView({
                       borderRadius: ACCOUNT_UI.radius,
                     }}
                   >
-                    <MaterialIcon
+                    <AccountIcon
                       name="warning_amber"
                       size={22}
                       style={{ color: SHOPIFY_BADGE.warning.dot }}

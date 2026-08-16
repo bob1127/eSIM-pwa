@@ -10,7 +10,7 @@ import {
   BarElement,
 } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
-import MaterialIcon from "@/components/MaterialIcon";
+import AccountIcon from "@/components/account/AccountIcon";
 import { formatMb } from "@/lib/esimUsageFormat";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
@@ -82,7 +82,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
       <div className="bg-white border border-slate-200 p-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-black text-[#1E4AD1] flex items-center gap-1.5">
-            <MaterialIcon name="donut_large" size={18} />
+            <AccountIcon name="donut_large" size={18} />
             用量比例
           </h4>
           {selected && (
@@ -142,7 +142,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
           </>
         ) : (
           <div className="text-center py-8 text-slate-400 text-sm">
-            <MaterialIcon name="pie_chart" size={32} className="mx-auto mb-2 opacity-40" />
+            <AccountIcon name="pie_chart" size={32} className="mx-auto mb-2 opacity-40" />
             點選左側方案，自動查詢並顯示圖表
           </div>
         )}
@@ -150,7 +150,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
 
       <div className="bg-white border border-slate-200 p-4">
         <h4 className="text-sm font-black text-[#1E4AD1] flex items-center gap-1.5 mb-3">
-          <MaterialIcon name="bar_chart" size={18} />
+          <AccountIcon name="bar_chart" size={18} />
           各方案剩餘比較
         </h4>
         {barData ? (

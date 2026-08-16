@@ -12,17 +12,13 @@ import {
   fetchWpCategoriesFromApi,
   fetchWpPostsFromApi,
 } from "../../lib/wordpress";
+import { stripHtml } from "@/lib/stripHtml";
+
 // 🔧 工具：擷取文章內第一張圖片 URL
 function extractFirstImageFromContent(content) {
   if (!content) return null;
   const match = content.match(/<img[^>]+src=["']([^"']+)["']/i);
   return match ? match[1] : null;
-}
-
-// 🔧 工具：去除 HTML 標籤
-function stripHtml(html) {
-  if (!html) return "";
-  return html.replace(/<[^>]*>?/gm, "").replace(/&#\d+;/gm, "");
 }
 
 export default function InfoPage() {

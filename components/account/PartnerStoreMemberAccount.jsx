@@ -12,7 +12,7 @@ import AccountDashboardView from "@/components/account/AccountDashboardView";
 import AccountOrdersView from "@/components/account/AccountOrdersView";
 import AccountTrafficView from "@/components/account/AccountTrafficView";
 import AccountSettingsView from "@/components/account/AccountSettingsView";
-import AccountSupportView from "@/components/account/AccountSupportView";
+import AccountFollowsPanel from "@/components/account/AccountFollowsPanel";
 
 /**
  * 夥伴商店會員中心：共用主站旅客 views，強制 customer 角色。
@@ -212,6 +212,7 @@ export default function PartnerStoreMemberAccount({ store }) {
     { id: "dashboard", label: "首頁總覽", icon: "dashboard" },
     { id: "orders", label: "我的 eSIM 訂單", icon: "qr_code_2" },
     { id: "traffic", label: "查詢流量", icon: "speed" },
+    { id: "follows", label: "追蹤創作者", icon: "notifications" },
     { id: "settings", label: "帳號設定", icon: "manage_accounts" },
     { id: "support", label: "安裝與支援", icon: "help_center" },
   ];
@@ -220,6 +221,7 @@ export default function PartnerStoreMemberAccount({ store }) {
     dashboard: "首頁總覽",
     orders: "我的 eSIM 訂單",
     traffic: "查詢流量",
+    follows: "追蹤創作者",
     settings: "帳號設定",
     support: "安裝與支援",
   };
@@ -246,6 +248,7 @@ export default function PartnerStoreMemberAccount({ store }) {
       navItems={navItems}
       onLogout={handleLogout}
       orderBadge={orders.length}
+      orders={orders}
       homeHref={homeHref}
       brandLabel={`${storeName} 會員`}
       shopCtaLabel="返回賣場"
@@ -302,6 +305,18 @@ export default function PartnerStoreMemberAccount({ store }) {
             exit={{ opacity: 0 }}
           >
             <AccountTrafficView orders={orders} ordersLoading={ordersLoading} />
+          </motion.div>
+        )}
+
+        {activeTab === "follows" && (
+          <motion.div
+            key="follows"
+            className="w-full"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <AccountFollowsPanel />
           </motion.div>
         )}
 

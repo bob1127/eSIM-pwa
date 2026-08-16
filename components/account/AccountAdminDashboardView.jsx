@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import MaterialIcon from "@/components/MaterialIcon";
+import AccountIcon from "@/components/account/AccountIcon";
 import { buildAdminAnalytics } from "@/lib/adminAnalytics";
 import { ACCENT, InnerTabs, AccountPageWrap } from "./AccountShell";
 import AccountBossGate from "./AccountBossGate";
@@ -107,7 +107,7 @@ export default function AccountAdminDashboardView({
             target="_blank"
             className="text-xs font-bold text-[#0071EB] border border-[#0071EB] px-3 py-2 rounded-sm hover:bg-blue-50 flex items-center gap-1"
           >
-            <MaterialIcon name="open_in_new" size={14} />
+            <AccountIcon name="open_in_new" size={14} />
             獨立後台
           </Link>
         </div>
@@ -185,7 +185,7 @@ export default function AccountAdminDashboardView({
                 ].map((row) => (
                   <li key={row.label} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
                     <span className="flex items-center gap-2 text-slate-600">
-                      <MaterialIcon name={row.icon} size={18} className="text-[#0071EB]" />
+                      <AccountIcon name={row.icon} size={18} className="text-[#0071EB]" />
                       {row.label}
                     </span>
                     <span className="font-bold text-[#1E4AD1] tabular-nums">{row.val}</span>
@@ -199,7 +199,7 @@ export default function AccountAdminDashboardView({
               <ul className="space-y-2 max-h-48 overflow-y-auto">
                 {recentActivity.map((a) => (
                   <li key={a.id} className="text-[11px] text-slate-600 flex gap-2">
-                    <MaterialIcon name="receipt" size={14} className="text-slate-300 shrink-0 mt-0.5" />
+                    <AccountIcon name="receipt" size={14} className="text-slate-300 shrink-0 mt-0.5" />
                     <div className="min-w-0">
                       <p className="truncate font-medium">{a.label}</p>
                       <p className="text-slate-400">

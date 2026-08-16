@@ -13,6 +13,7 @@ export default function PartnerBlogArticlePage({
   store,
   post,
   relatedPosts,
+  latestPosts,
   prevPost,
   products,
   blogCms,
@@ -56,6 +57,7 @@ export default function PartnerBlogArticlePage({
         store={store}
         post={post}
         relatedPosts={relatedPosts}
+        latestPosts={latestPosts}
         prevPost={prevPost}
         products={products}
         blogCms={blogCms}

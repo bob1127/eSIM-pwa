@@ -51,7 +51,11 @@ function normalizeLocationTokens(raw: string): string[] {
       if (/^(BR|BRA|BRAZIL|BRASIL)$/.test(t)) return "BR";
       if (/^(FR|FRA|FRANCE)$/.test(t)) return "FR";
       if (/^(IT|ITA|ITALY)$/.test(t)) return "IT";
-      if (/^(GB|GBR|UK|UNITEDKINGDOM|UNITED KINGDOM|ENGLAND)$/.test(t))
+      if (
+        /^(GB|GBR|UK|UNITEDKINGDOM|UNITED KINGDOM|UNITED-KINGDOM|BRITAIN|GREAT BRITAIN|ENGLAND)$/.test(
+          t,
+        )
+      )
         return "GB";
       if (/^(DE|DEU|GERMANY)$/.test(t)) return "DE";
       if (/^(AT|AUT|AUSTRIA)$/.test(t)) return "AT";
@@ -102,6 +106,8 @@ type CountryConfig = {
   keywords?: string[];
   /** 名稱前綴備援（僅 pure 且 location 空白時；networkCodes 篩選也會用） */
   namePrefixes?: string[];
+  /** SKU／名稱包含即納入（在 exclude 之前，避免 Europe-43 被 EUROPE 誤殺） */
+  includeSkuIncludes?: string[];
   /**
    * 電信 networks 含「XX:」國碼即命中（歐洲多國包涵蓋波蘭／瑞士等）
    */
@@ -410,27 +416,82 @@ const COUNTRIES: Record<string, CountryConfig> = {
   },
   IT: {
     emoji: "🇮🇹",
-    name: "義大利 (純義)",
-    pure: true,
+    name: "義大利 (含歐包)",
+    pure: false,
     codes: ["IT", "ITA", "ITALY"],
-    namePrefixes: ["Italy-", "Italy "],
+    networkCodes: ["IT"],
+    namePrefixes: ["Italy-", "Italy ", "Italy("],
     keywords: [],
-    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+    exclude: ["GLOBAL", "WORLD", "ASIA"],
   },
   GB: {
     emoji: "🇬🇧",
-    name: "英國 (純英)",
+    name: "英國 (含歐43)",
     pure: true,
-    codes: ["GB", "GBR", "UK", "UNITED KINGDOM"],
+    codes: ["GB", "GBR", "UK", "UNITED KINGDOM", "UNITED-KINGDOM", "BRITAIN"],
     namePrefixes: [
       "UK-",
       "UK ",
       "United Kingdom-",
       "United Kingdom ",
+      "United-Kingdom-",
+      "United-Kingdom ",
+      "UnitedKingdom-",
       "Britain-",
+      "Great Britain-",
+      "England-",
+      "Europe-43-",
+      "Europe-43-countries-",
+      "Europe-34-",
+      "Europe-34-countries-",
+      "EU-36-",
+      "EU-36 ",
     ],
-    keywords: [],
-    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+    includeSkuIncludes: [
+      "Europe-43-",
+      "Europe-43-countries",
+      "Europe 43",
+      "43-countries",
+      "43 countries",
+      "Europe-34-",
+      "Europe-34-countries",
+      "Europe 34",
+      "34-countries",
+      "34 countries",
+      "EU-36-",
+      "EU-36-unlimited",
+      "EU 36",
+    ],
+    keywords: [
+      "UNITED-KINGDOM",
+      "UNITED KINGDOM",
+      "Europe-43-countries",
+      "Europe-34-countries",
+      "EU-36",
+    ],
+    exclude: ["GLOBAL", "ASIA"],
+  },
+  /**
+   * 批發目錄沒有 United-Kingdom-unlimited-*（官網那檔 8–20Mbps）。
+   * 吃到飽改抓：歐包 Europe-43-countries-unlimited-*（含英國）＋若之後上架的單國 unlimited。
+   */
+  GB_UNLIMITED: {
+    emoji: "🇬🇧",
+    name: "英國吃到飽 (歐包無限)",
+    pure: false,
+    defaultSortByCost: true,
+    codes: ["GB_UNLIMITED"],
+    includeSkuIncludes: [
+      "Europe-43-countries-unlimited",
+      "Europe 43 countries unlimited",
+      "Europe-34-countries-unlimited",
+      "Europe 34 countries unlimited",
+      "EU-36-unlimited",
+      "EU 36 unlimited",
+      "United-Kingdom-unlimited",
+      "United Kingdom-unlimited",
+    ],
+    exclude: ["GLOBAL", "ASIA"],
   },
   DE: {
     emoji: "🇩🇪",
@@ -493,12 +554,13 @@ const COUNTRIES: Record<string, CountryConfig> = {
   },
   ES: {
     emoji: "🇪🇸",
-    name: "西班牙 (純西)",
-    pure: true,
+    name: "西班牙 (含歐包)",
+    pure: false,
     codes: ["ES", "ESP", "SPAIN"],
-    namePrefixes: ["Spain-", "Spain "],
+    networkCodes: ["ES"],
+    namePrefixes: ["Spain-", "Spain ", "Spain("],
     keywords: [],
-    exclude: ["GLOBAL", "EUROPE", "EU ", "ASIA"],
+    exclude: ["GLOBAL", "WORLD", "ASIA"],
   },
   NL: {
     emoji: "🇳🇱",
@@ -677,6 +739,89 @@ function escapeRegExp(s: string) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function stripPlanText(s: string) {
+  return String(s || "")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .trim()
+    .toUpperCase();
+}
+
+function compactSkuHay(s: string) {
+  return stripPlanText(s).replace(/[\s_-]+/g, "");
+}
+
+function hayIncludesSku(hay: string, needle: string) {
+  const n = stripPlanText(needle);
+  if (!n) return false;
+  const h = stripPlanText(hay);
+  if (h.includes(n)) return true;
+  const nc = compactSkuHay(n);
+  return nc.length >= 5 && compactSkuHay(h).includes(nc);
+}
+
+function classifyPlanType(p: {
+  name?: string;
+  channel_dataplan_name?: string;
+  location?: string;
+  rule_desc?: string;
+}) {
+  // 只看 SKU／名稱：rule_desc 常寫「unlimited 128kbps」（每日額度後降速），
+  // 若拿來分類會把 Daily* 全部誤判成吃到飽。
+  const n = [p.name, p.channel_dataplan_name, p.location]
+    .map((x) => String(x || "").toLowerCase())
+    .join(" ");
+  if (n.includes("daily")) return "DAILY";
+  if (n.includes("unlimited")) return "UNLIMITED";
+  if (n.includes("total")) return "TOTAL";
+  return "OTHER";
+}
+
+/**
+ * MicroeSIM 的 location 常是 SKU（United-Kingdom-Total20GB-30-B0），不是 GB。
+ * 取出 SKU 開頭國名，再正規化成 ISO。
+ */
+function skuCountryTokens(raw: string): string[] {
+  const s = stripPlanText(raw);
+  if (!s) return [];
+  const m = s.match(
+    /^([A-Z][A-Z0-9]*(?:[- ][A-Z][A-Z0-9]*)*?)(?=-(?:TOTAL|DAILY|UNLIMITED|\d)|$)/,
+  );
+  const slug = (m ? m[1] : s).replace(/\s+/g, "-");
+  // 多國 SKU：France&Germany- / US&Canada-
+  if (slug.includes("&")) {
+    return slug
+      .split("&")
+      .flatMap((part) => normalizeLocationTokens(part.replace(/-/g, " ")));
+  }
+  return normalizeLocationTokens(slug.replace(/-/g, " "));
+}
+
+function planFieldTexts(p: {
+  name?: string;
+  channel_dataplan_name?: string;
+  code?: string;
+  location?: string;
+}) {
+  return [
+    p.name,
+    p.channel_dataplan_name,
+    p.location,
+    p.code,
+  ].map((x) => stripPlanText(String(x || "")));
+}
+
+function matchesNamePrefixes(
+  fields: string[],
+  prefixes?: string[],
+): boolean {
+  if (!prefixes?.length) return false;
+  return prefixes.some((prefix) => {
+    const pre = stripPlanText(prefix);
+    if (!pre) return false;
+    return fields.some((f) => f.startsWith(pre));
+  });
+}
+
 /** 方案是否符合選中的國家／區域（純單國＝location 精確單碼） */
 function planMatchesCountry(
   p: {
@@ -689,10 +834,38 @@ function planMatchesCountry(
   },
   config: CountryConfig,
 ): boolean {
-  const pName = String(p.name || p.channel_dataplan_name || "").toUpperCase();
-  const pLocRaw = String(p.code || p.location || "");
-  const tokens = normalizeLocationTokens(pLocRaw);
-  const hayForExclude = `${pName} ${pLocRaw.toUpperCase()}`;
+  const fields = planFieldTexts(p);
+  const pName = fields[0] || fields[1];
+  const pLocRaw = String(p.location || p.code || "");
+  const tokensFromLoc = normalizeLocationTokens(pLocRaw);
+  const skuTokenSets = fields
+    .map((f) => skuCountryTokens(f))
+    .filter((t) => t.length > 0);
+  const tokensFromSku =
+    skuTokenSets.find((t) => new Set(t).size === 1) || skuTokenSets[0] || [];
+  const tokens =
+    tokensFromLoc.length > 0 && !/-TOTAL|-DAILY|-UNLIMITED/i.test(pLocRaw)
+      ? tokensFromLoc
+      : tokensFromSku.length
+        ? tokensFromSku
+        : tokensFromLoc;
+  const hayForExclude = fields.join(" ");
+
+  const prefixHit = matchesNamePrefixes(fields, config.namePrefixes);
+  const aliases = normalizeAliasCodes(config.codes);
+  const uniqueTokens = Array.from(new Set(tokens));
+  const uniqueIsThisCountry =
+    uniqueTokens.length === 1 && aliases.includes(uniqueTokens[0]);
+
+  const extraSkuHit = (config.includeSkuIncludes || []).some((s) =>
+    hayIncludesSku(hayForExclude, s),
+  );
+
+  // 單國 SKU 或加掛 SKU（Europe-43 / Europe 43 countries）— exclude 之前就過
+  if (uniqueIsThisCountry || prefixHit || extraSkuHit) {
+    if (config.pure) return true;
+  }
+  if (extraSkuHit && !config.pure) return true;
 
   if (config.exclude?.length) {
     const hit = config.exclude.some((ex) =>
@@ -711,17 +884,8 @@ function planMatchesCountry(
     if (hitNet) return true;
   }
 
-  // ── 純單國：location 只能是該國一碼 ──
+  // ── 純單國：location 只能是該國一碼（UK,GB 視為同一國）──
   if (config.pure) {
-    const aliases = normalizeAliasCodes(config.codes);
-    if (tokens.length === 1 && aliases.includes(tokens[0])) return true;
-
-    // location 空白時，允許名稱前綴（如 Hong Kong-Daily…）
-    if (tokens.length === 0 && config.namePrefixes?.length) {
-      return config.namePrefixes.some((prefix) =>
-        pName.startsWith(String(prefix).toUpperCase()),
-      );
-    }
     return false;
   }
 
@@ -759,7 +923,7 @@ function planMatchesCountry(
   // 名稱關鍵字（只掃 name／SKU，不掃整包 JSON）
   if (config.keywords?.length) {
     const hitKeywords = config.keywords.filter((k) =>
-      pName.includes(String(k).toUpperCase()),
+      hayIncludesSku(hayForExclude, k) || hayIncludesSku(pName, k),
     );
     if (!hitKeywords.length) return false;
 
@@ -1525,16 +1689,7 @@ export default function GlobalPlanScanner() {
         const simpleDesc = getSimpleDesc(p.name, p.day);
         const dataValue = parseDataValue(p.name);
 
-        let planCategory = "OTHER";
-        const nLower = p.name.toLowerCase();
-        if (nLower.includes("total")) planCategory = "TOTAL";
-        else if (nLower.includes("daily") || nLower.includes("day"))
-          planCategory = "DAILY";
-        else if (
-          nLower.includes("unlimited") ||
-          p.rule_desc?.toLowerCase().includes("unlimited")
-        )
-          planCategory = "UNLIMITED";
+        let planCategory = classifyPlanType(p);
 
         const rawPrice = parseFloat(p.price || 0);
         const rate =
@@ -1880,6 +2035,18 @@ export default function GlobalPlanScanner() {
                 {selectedCountry === "TH_CP" && (
                   <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-md">
                     抓取涵蓋泰國的多國／星馬泰／亞太方案，預設依成本由低到高（通常比純泰更省）
+                  </p>
+                )}
+                {selectedCountry === "GB" && (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-md">
+                    含純英 Total，以及歐包 Europe-43／Europe-34／EU-36（Daily、Total、unlimited）。吃到飽請篩「♾️
+                    吃到飽」；EU-36-A0 通常比 43 國 B0 更省
+                  </p>
+                )}
+                {selectedCountry === "GB_UNLIMITED" && (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-md">
+                    吃到飽：Europe-43-unlimited（B0）、Europe-34-unlimited（B0）、EU-36-unlimited（A0，多為
+                    8–20Mbps、成本較低）。請依成本排序比 CP
                   </p>
                 )}
                 {!!COUNTRIES[selectedCountry]?.networkCodes?.length && (
