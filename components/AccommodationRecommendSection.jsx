@@ -273,7 +273,8 @@ function HotelModal({ item, onClose }) {
             </a>
 
             <p className="mt-2 text-center text-[10px] text-gray-400">
-              聯盟行銷連結 · 價格以 Klook 官網即時顯示為準
+              聯盟行銷連結 · 價格以{" "}
+              {item.partner === "kkday" ? "KKday" : "Klook"} 官網即時顯示為準
             </p>
           </div>
 
@@ -329,8 +330,13 @@ function HotelCard({ item, onClick }) {
         </h3>
 
         <div className="mt-3 flex items-center gap-1.5 min-w-0">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#00B259] text-[9px] font-black text-white">
-            KL
+          <span
+            className={[
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-black text-white",
+              item.partner === "kkday" ? "bg-[#FF5A1F]" : "bg-[#00B259]",
+            ].join(" ")}
+          >
+            {item.partner === "kkday" ? "KK" : "KL"}
           </span>
           <span className="text-base font-black text-gray-900">
             {getHotelPriceLabel(item)}
@@ -432,10 +438,10 @@ export default function AccommodationRecommendSection() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25 }}
-            className="md:hidden"
+            className="md:hidden -mx-4"
           >
             {filtered.length > 0 ? (
-              <MobileCardCarousel slideClassName="min-w-0 flex-[0_0_82%]">
+              <MobileCardCarousel align="center" slideClassName="min-w-0 flex-[0_0_76%]">
                 {filtered.map((item) => (
                   <HotelCard
                     key={item.id}

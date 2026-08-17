@@ -163,8 +163,21 @@ const EmblaCarousel = ({ slides = [], options }) => {
                       </div>
                     </div>
                     <div className="flex flex-col items-start justify-start p-5 md:p-6 flex-grow text-left">
-                      {slide.badge ? (
-                        <span className="mb-2 inline-flex items-center rounded-md bg-[#1E4AD1]/10 px-2.5 py-1 text-[11px] font-semibold text-[#1E4AD1]">
+                      {slide.tags?.length ? (
+                        <div className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          {slide.tags.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-slate-500"
+                            >
+                              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1f57b8]" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : slide.badge ? (
+                        <span className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1f57b8]" />
                           {slide.badge}
                         </span>
                       ) : null}
@@ -173,9 +186,30 @@ const EmblaCarousel = ({ slides = [], options }) => {
                         dangerouslySetInnerHTML={{ __html: slide.title }}
                       />
                       <p
-                        className="text-[13px] md:text-sm text-slate-500 leading-relaxed line-clamp-3 w-full"
+                        className="text-[13px] md:text-sm text-slate-500 leading-relaxed line-clamp-3 w-full flex-grow"
                         dangerouslySetInnerHTML={{ __html: slide.description }}
                       />
+                      {(slide.authorName || slide.date) && (
+                        <div className="mt-4 flex items-center gap-2.5">
+                          <img
+                            src={
+                              slide.authorAvatar || "/images/Logo/icon-192.png"
+                            }
+                            alt=""
+                            className="h-8 w-8 shrink-0 rounded-full object-cover bg-slate-100 ring-1 ring-slate-200"
+                          />
+                          <div className="min-w-0 leading-tight">
+                            <p className="truncate text-[12px] font-semibold text-slate-800">
+                              {slide.authorName || "Jeko eSIM"}
+                            </p>
+                            {slide.date ? (
+                              <p className="mt-0.5 text-[11px] text-slate-400">
+                                {slide.date}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>

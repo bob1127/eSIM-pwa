@@ -98,16 +98,16 @@ function HeroCardAction({
 
 function HeroQuickTile({ label, imageSrc, href, external, onClick }) {
   const cls =
-    "group flex flex-col items-center justify-center gap-2 bg-white rounded-xl border border-gray-200 shadow-none hover:border-gray-300 transition-colors duration-200 p-3 sm:p-4 aspect-square w-full";
+    "group flex flex-col items-center justify-center gap-1.5 sm:gap-2 bg-white rounded-xl border border-gray-200 shadow-none hover:border-gray-300 transition-colors duration-200 p-2 sm:p-3 aspect-square w-full";
 
   const inner = (
     <>
-      <span className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center">
+      <span className="w-[62%] max-w-[104px] aspect-square flex items-center justify-center">
         <img
           src={imageSrc}
           alt=""
-          width={48}
-          height={48}
+          width={96}
+          height={96}
           className="w-full h-full object-contain"
           draggable={false}
         />

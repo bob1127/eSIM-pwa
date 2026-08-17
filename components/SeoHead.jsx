@@ -8,7 +8,9 @@ import {
   absoluteUrl,
   buildJsonLdGraph,
 } from "../lib/seo.config";
+import { PRODUCT_AGGREGATE_RATING } from "../lib/productJsonLd";
 import { SITE_FAVICON } from "../lib/pwaConfig";
+import { ogImageMimeType } from "../lib/ogImages";
 
 /**
  * 全站統一 SEO Head：title / description / keywords / OG / Twitter / canonical / GEO / JSON-LD
@@ -31,6 +33,11 @@ export default function SeoHead({
   articleSection,
   articleTags,
   articleAuthor,
+  productPrice,
+  productCurrency = "TWD",
+  productAvailability,
+  productCondition,
+  productRetailerId,
 }) {
   const pageTitle = formatTitle(title);
   const metaDescription = description || "";
@@ -38,17 +45,26 @@ export default function SeoHead({
   const canonicalUrl = canonical || absoluteUrl("/");
   const imageUrl = ogImage
     ? absoluteUrl(ogImage)
-    : absoluteUrl("/icons/icon-512x512.png");
+    : absoluteUrl("/images/06.png");
   const imageAlt = ogImageAlt || pageTitle;
+  const imageType = ogImageMimeType(imageUrl);
   const robotsContent = noindex ? "noindex, nofollow" : robots;
   const tags = Array.isArray(articleTags)
     ? articleTags.filter(Boolean)
     : [];
+  const geoPosition = `${BRAND.latitude};${BRAND.longitude}`;
+  const icbm = `${BRAND.latitude}, ${BRAND.longitude}`;
 
   const ldGraph = buildJsonLdGraph({
+    title: pageTitle,
+    description: metaDescription,
+    canonical: canonicalUrl,
+    ogImage,
+    ogImageAlt: imageAlt,
     breadcrumbs,
     jsonLd,
     jsonLdTypes,
+    noindex,
   });
 
   return (
@@ -66,11 +82,15 @@ export default function SeoHead({
       {/* GEO / 地區語系 */}
       <meta name="geo.region" content={BRAND.region} />
       <meta name="geo.placename" content={BRAND.placename} />
+      <meta name="geo.position" content={geoPosition} />
+      <meta name="ICBM" content={icbm} />
+      <meta name="geo.country" content={BRAND.country} />
       <meta name="language" content={BRAND.language} />
       <meta httpEquiv="content-language" content={BRAND.language} />
       <link rel="canonical" href={canonicalUrl} />
       <link rel="alternate" hrefLang="zh-TW" href={canonicalUrl} />
       <link rel="alternate" hrefLang="x-default" href={canonicalUrl} />
+      <link rel="image_src" href={imageUrl} />
 
       {/* Open Graph */}
       <meta property="og:locale" content="zh_TW" />
@@ -86,7 +106,39 @@ export default function SeoHead({
       <meta property="og:image:alt" content={imageAlt} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:type" content="image/jpeg" />
+      <meta property="og:image:type" content={imageType} />
+
+      {ogType === "product" && (
+        <>
+          {productPrice != null && (
+            <>
+              <meta property="product:price:amount" content={String(productPrice)} />
+              <meta property="product:price:currency" content={productCurrency} />
+              <meta name="twitter:label1" content="價格" />
+              <meta name="twitter:data1" content={`NT$${productPrice}`} />
+            </>
+          )}
+          <meta
+            property="product:availability"
+            content={productAvailability || "instock"}
+          />
+          <meta
+            property="product:condition"
+            content={productCondition || "new"}
+          />
+          {productRetailerId ? (
+            <meta
+              property="product:retailer_item_id"
+              content={String(productRetailerId)}
+            />
+          ) : null}
+          <meta name="twitter:label2" content="評價" />
+          <meta
+            name="twitter:data2"
+            content={`${PRODUCT_AGGREGATE_RATING.ratingValue} / 5`}
+          />
+        </>
+      )}
 
       {ogType === "article" && (
         <>
@@ -116,7 +168,7 @@ export default function SeoHead({
         </>
       )}
 
-      {/* Twitter Card */}
+      {/* Twitter / LINE / 社群大圖卡 */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={pageTitle} />
       {metaDescription && (
@@ -127,11 +179,13 @@ export default function SeoHead({
 
       {/* GEO / AI 摘要友好 */}
       <meta name="abstract" content={SITE_AI_SUMMARY} />
-      <meta name="topic" content={articleSection || "旅遊知識"} />
+      <meta name="topic" content={articleSection || "旅遊 eSIM"} />
       <meta
         name="summary"
         content={(metaDescription || SITE_AI_SUMMARY).slice(0, 220)}
       />
+      <meta name="coverage" content="Worldwide" />
+      <meta name="distribution" content="global" />
 
       <link rel="icon" href={SITE_FAVICON} />
 

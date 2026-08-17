@@ -1152,13 +1152,13 @@ export default function EsimBottomSheet() {
         <button
           type="button"
           aria-label="關閉面板"
-          className="fixed inset-0 z-[90] bg-black/35 md:hidden"
+          className="fixed inset-0 z-[105] bg-black/35 md:hidden"
           onClick={() => setExpanded(false)}
         />
       )}
 
       <div
-        className="fixed bottom-0 left-0 right-0 z-[95] md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-[110] md:hidden"
         style={{
           height,
           transition: dragging.current

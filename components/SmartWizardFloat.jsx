@@ -129,10 +129,13 @@ export default function SmartWizardFloat() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.92 }}
           style={{ zIndex: 9000 }}
-          className="hidden md:flex fixed right-4 bottom-[13.5rem] md:right-6 md:bottom-24 flex-col items-end gap-2"
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
+          className="hidden md:flex fixed right-4 bottom-[13.5rem] md:right-6 md:bottom-24 w-fit flex-col items-end pointer-events-none"
         >
+          <div
+            className="flex flex-col items-end gap-2 w-fit pointer-events-auto"
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+          >
           <AnimatePresence>
             {hovered && showSocial && (
               <motion.div
@@ -140,7 +143,7 @@ export default function SmartWizardFloat() {
                 animate={{ opacity: 1, y: 0, height: "auto" }}
                 exit={{ opacity: 0, y: 8, height: 0 }}
                 transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                className="flex flex-col items-end gap-2 overflow-hidden"
+                className="flex flex-col items-end gap-2 overflow-hidden pointer-events-auto"
               >
                 <motion.button
                   type="button"
@@ -181,7 +184,7 @@ export default function SmartWizardFloat() {
             <button
               type="button"
               onClick={restoreSocial}
-              className="h-8 w-8 rounded-full bg-white border border-[#E5E7EB] text-[#6B7280] shadow-md text-[11px] font-bold hover:bg-[#F3F4F6]"
+              className="h-8 w-8 rounded-full bg-white border border-[#E5E7EB] text-[#6B7280] shadow-md text-[11px] font-bold hover:bg-[#F3F4F6] pointer-events-auto"
               aria-label="顯示社群選單"
               title="顯示社群"
             >
@@ -201,7 +204,7 @@ export default function SmartWizardFloat() {
               borderColor: hovered ? "#1E4AD1" : "#e5e5e5",
             }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="h-12 rounded-full border shadow-lg flex items-center justify-center gap-1 overflow-hidden"
+            className="h-12 rounded-full border shadow-lg flex items-center justify-center gap-1 overflow-hidden pointer-events-auto"
           >
             {hovered ? (
               <>
@@ -217,6 +220,7 @@ export default function SmartWizardFloat() {
               </span>
             )}
           </motion.button>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>,

@@ -13,12 +13,229 @@ import {
   fetchWpPostsFromApi,
 } from "../../lib/wordpress";
 import { stripHtml } from "@/lib/stripHtml";
+import BlogCardMeta, { BlogDotTags } from "@/components/Blog/BlogCardMeta";
 
-// 🔧 工具：擷取文章內第一張圖片 URL
+const GENERIC_TAGS = new Set([
+  "綜合文章",
+  "綜合知識",
+  "文章",
+  "未分類",
+  "Uncategorized",
+]);
+
+function pickDisplayTags(names = []) {
+  return (names || []).filter((n) => n && !GENERIC_TAGS.has(n)).slice(0, 3);
+}
+
+function extractWpAuthor(post) {
+  const author = post?._embedded?.author?.[0];
+  return {
+    authorName: author?.name || post?.yoast_head_json?.author || "Jeko eSIM",
+    authorAvatar:
+      author?.avatar_urls?.["96"] ||
+      author?.avatar_urls?.["48"] ||
+      author?.avatar_urls?.["24"] ||
+      "/images/Logo/icon-192.png",
+  };
+}
+
 function extractFirstImageFromContent(content) {
   if (!content) return null;
   const match = content.match(/<img[^>]+src=["']([^"']+)["']/i);
   return match ? match[1] : null;
+}
+
+function BlogFilterSelects({
+  tabs,
+  activeTab,
+  onTabChange,
+  subTabs = [],
+  activeSubTab,
+  onSubChange,
+  tabAriaLabel = "選擇分類",
+  subAriaLabel = "選擇地區",
+}) {
+  const selectClass =
+    "w-full min-w-[10.5rem] appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-3.5 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition hover:border-[#1f57b8]/40 focus:border-[#1f57b8] focus:ring-2 focus:ring-[#1f57b8]/20";
+
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full md:w-auto md:justify-end">
+      <label className="relative block">
+        <span className="sr-only">{tabAriaLabel}</span>
+        <select
+          value={activeTab}
+          onChange={(e) => onTabChange(e.target.value)}
+          className={selectClass}
+          aria-label={tabAriaLabel}
+        >
+          {tabs.map((tab) => (
+            <option key={tab} value={tab}>
+              {tab === "全部" ? "全部分類" : tab}
+            </option>
+          ))}
+        </select>
+        <SelectChevron />
+      </label>
+
+      {subTabs.length > 0 ? (
+        <label className="relative block">
+          <span className="sr-only">{subAriaLabel}</span>
+          <select
+            value={activeSubTab}
+            onChange={(e) => onSubChange(e.target.value)}
+            className={selectClass}
+            aria-label={subAriaLabel}
+          >
+            <option value="全部">全部地區</option>
+            {subTabs.map((sub) => (
+              <option key={sub} value={sub}>
+                {sub}
+              </option>
+            ))}
+          </select>
+          <SelectChevron />
+        </label>
+      ) : null}
+    </div>
+  );
+}
+
+function SelectChevron() {
+  return (
+    <svg
+      className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        fillRule="evenodd"
+        d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+const DESKTOP_PAGE_SIZE = 8;
+const KNOWLEDGE_PAGE_SIZE = 8;
+
+function BlogArticleCard({ slide }) {
+  return (
+    <div className="relative flex h-full flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:border-gray-200 hover:shadow-md">
+      <Link
+        href={slide.link || "#"}
+        className="group/card flex h-full w-full flex-col text-black no-underline"
+      >
+        <div className="w-full p-4 pb-0">
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl">
+            <img
+              src={slide.image}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-105"
+              loading="lazy"
+            />
+          </div>
+        </div>
+        <div className="flex flex-grow flex-col items-start p-6 text-left">
+          <BlogDotTags tags={slide.tags} />
+          <h3
+            className="mb-3 line-clamp-2 text-lg font-bold leading-snug text-slate-800 transition-colors group-hover/card:text-[#1f57b8]"
+            dangerouslySetInnerHTML={{ __html: slide.title }}
+          />
+          <p
+            className="mb-1 line-clamp-3 w-full flex-grow text-sm leading-relaxed text-slate-500"
+            dangerouslySetInnerHTML={{ __html: slide.description }}
+          />
+          <BlogCardMeta
+            date={slide.date}
+            authorName={slide.authorName}
+            authorAvatar={slide.authorAvatar}
+            showTags={false}
+          />
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+function visiblePageNumbers(current, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = new Set([1, total, current, current - 1, current + 1]);
+  if (current <= 3) {
+    pages.add(2);
+    pages.add(3);
+    pages.add(4);
+  }
+  if (current >= total - 2) {
+    pages.add(total - 1);
+    pages.add(total - 2);
+    pages.add(total - 3);
+  }
+  return [...pages].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+}
+
+function BlogPagination({ page, totalPages, onChange }) {
+  if (totalPages <= 1) return null;
+  const nums = visiblePageNumbers(page, totalPages);
+  const items = [];
+  nums.forEach((n, i) => {
+    if (i > 0 && n - nums[i - 1] > 1) items.push("ellipsis");
+    items.push(n);
+  });
+
+  const square =
+    "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-none border text-sm font-semibold transition-colors";
+
+  return (
+    <nav
+      className="mt-10 flex flex-wrap items-center justify-center gap-1.5"
+      aria-label="文章分頁"
+    >
+      <button
+        type="button"
+        disabled={page <= 1}
+        onClick={() => onChange(page - 1)}
+        aria-label="上一頁"
+        className={`${square} border-gray-300 bg-white text-slate-700 hover:border-[#1f57b8] hover:bg-[#1f57b8] hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-gray-300 disabled:hover:bg-white disabled:hover:text-slate-700`}
+      >
+        ‹
+      </button>
+      {items.map((item, i) =>
+        item === "ellipsis" ? (
+          <span
+            key={`e-${i}`}
+            className={`${square} border-transparent text-slate-400`}
+          >
+            …
+          </span>
+        ) : (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onChange(item)}
+            aria-current={item === page ? "page" : undefined}
+            className={`${square} ${
+              item === page
+                ? "border-[#1f57b8] bg-[#1f57b8] text-white"
+                : "border-gray-200 bg-white text-slate-700 hover:border-[#1f57b8] hover:text-[#1f57b8]"
+            }`}
+          >
+            {item}
+          </button>
+        ),
+      )}
+      <button
+        type="button"
+        disabled={page >= totalPages}
+        onClick={() => onChange(page + 1)}
+        aria-label="下一頁"
+        className={`${square} border-gray-300 bg-white text-slate-700 hover:border-[#1f57b8] hover:bg-[#1f57b8] hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-gray-300 disabled:hover:bg-white disabled:hover:text-slate-700`}
+      >
+        ›
+      </button>
+    </nav>
+  );
 }
 
 export default function InfoPage() {
@@ -30,8 +247,10 @@ export default function InfoPage() {
 
   const [activeArticleTab, setActiveArticleTab] = useState("全部");
   const [activeArticleSubTab, setActiveArticleSubTab] = useState("全部");
+  const [articlePage, setArticlePage] = useState(1);
   const [activeKnowledgeTab, setActiveKnowledgeTab] = useState("全部");
   const [activeKnowledgeSubTab, setActiveKnowledgeSubTab] = useState("全部");
+  const [knowledgePage, setKnowledgePage] = useState(1);
   const [activeKnowledgeId, setActiveKnowledgeId] = useState(null);
 
   useEffect(() => {
@@ -136,6 +355,7 @@ export default function InfoPage() {
             rawContent: post.content.rendered,
             image: finalImage,
             slug: post.slug,
+            ...extractWpAuthor(post),
           };
 
           if (post.slug) wpSlugs.add(post.slug);
@@ -143,14 +363,14 @@ export default function InfoPage() {
           if (isArticle)
             tempArticlePosts.push({
               ...formattedPost,
-              tags: articleSubCats.slice(0, 3),
+              tags: pickDisplayTags(articleSubCats),
               subCategories: articleSubCats,
               country: articleCountry,
             });
           if (isKnowledge)
             tempKnowledgePosts.push({
               ...formattedPost,
-              tags: knowledgeSubCats.slice(0, 3),
+              tags: pickDisplayTags(knowledgeSubCats),
               subCategories: knowledgeSubCats,
               country: knowledgeCountry,
             });
@@ -164,10 +384,16 @@ export default function InfoPage() {
         hasPartnerContribution = true;
         tempArticlePosts.push({
           ...card,
-          tags: ["合作夥伴供稿"],
+          tags: card.tags?.length ? card.tags : ["合作夥伴供稿"],
           subCategories: ["合作夥伴供稿"],
           country: null,
           partnerContribution: true,
+          authorName:
+            card.authorName ||
+            card.partnerAuthorName ||
+            card.partnerStoreName ||
+            "合作夥伴",
+          authorAvatar: card.authorAvatar || "/images/Logo/icon-192.png",
         });
       }
       if (hasPartnerContribution) {
@@ -219,9 +445,26 @@ export default function InfoPage() {
       title: item.title,
       description: item.plainExcerpt,
       link: `/blog/${item.slug}`,
-      badge: item.partnerContribution ? "合作夥伴供稿" : null,
+      date: item.date,
+      authorName: item.authorName,
+      authorAvatar: item.authorAvatar,
+      tags: item.tags,
     }));
   }, [displayArticleItems]);
+
+  const articleTotalPages = Math.max(
+    1,
+    Math.ceil(carouselSlides.length / DESKTOP_PAGE_SIZE),
+  );
+  const pagedArticleSlides = useMemo(() => {
+    const page = Math.min(articlePage, articleTotalPages);
+    const start = (page - 1) * DESKTOP_PAGE_SIZE;
+    return carouselSlides.slice(start, start + DESKTOP_PAGE_SIZE);
+  }, [carouselSlides, articlePage, articleTotalPages]);
+
+  useEffect(() => {
+    setArticlePage(1);
+  }, [activeArticleTab, activeArticleSubTab]);
 
   // 過濾知識（國家 Tab + 子分類 Tab）
   const displayKnowledgeItems = useMemo(() => {
@@ -240,6 +483,21 @@ export default function InfoPage() {
     }
     return items;
   }, [activeKnowledgeTab, activeKnowledgeSubTab, knowledgePosts]);
+
+  const knowledgeTotalPages = Math.max(
+    1,
+    Math.ceil(displayKnowledgeItems.length / KNOWLEDGE_PAGE_SIZE),
+  );
+  const pagedKnowledgeItems = useMemo(() => {
+    const page = Math.min(knowledgePage, knowledgeTotalPages);
+    const start = (page - 1) * KNOWLEDGE_PAGE_SIZE;
+    return displayKnowledgeItems.slice(start, start + KNOWLEDGE_PAGE_SIZE);
+  }, [displayKnowledgeItems, knowledgePage, knowledgeTotalPages]);
+
+  useEffect(() => {
+    setKnowledgePage(1);
+    setActiveKnowledgeId(null);
+  }, [activeKnowledgeTab, activeKnowledgeSubTab]);
 
   if (isLoading) {
     return (
@@ -284,119 +542,82 @@ export default function InfoPage() {
                 </p>
               </div>
 
-              {/* 文章區：國家 Tab */}
-              <div className="flex flex-col items-end gap-3 w-full md:w-auto">
-                <div className="flex flex-wrap gap-2 justify-end">
-                  {articleTabs.map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => {
-                        setActiveArticleTab(tab);
-                        setActiveArticleSubTab("全部");
-                      }}
-                      className={`px-4 py-2 text-sm font-semibold rounded-full transition-all duration-300 ${
-                        activeArticleTab === tab
-                          ? "bg-[#1f57b8] text-white shadow-[0_4px_12px_rgba(31,87,184,0.3)] scale-105"
-                          : "bg-white text-[#1f57b8] border border-[#1f57b8]/20 hover:bg-blue-50 hover:scale-105"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-
-                {/* 子分類 Tab（選國家後顯示，例如日本 → 東京、大阪） */}
-                <AnimatePresence>
-                  {articleSubTabs.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="flex flex-wrap gap-2 justify-end overflow-hidden"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setActiveArticleSubTab("全部")}
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                          activeArticleSubTab === "全部"
-                            ? "bg-slate-800 text-white"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
-                      >
-                        全部
-                      </button>
-                      {articleSubTabs.map((sub) => (
-                        <button
-                          key={sub}
-                          type="button"
-                          onClick={() => setActiveArticleSubTab(sub)}
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                            activeArticleSubTab === sub
-                              ? "bg-slate-800 text-white"
-                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          }`}
-                        >
-                          {sub}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              {/* 文章區：分類／地區下拉 */}
+              <BlogFilterSelects
+                tabs={articleTabs}
+                activeTab={activeArticleTab}
+                onTabChange={(tab) => {
+                  setActiveArticleTab(tab);
+                  setActiveArticleSubTab("全部");
+                }}
+                subTabs={articleSubTabs}
+                activeSubTab={activeArticleSubTab}
+                onSubChange={setActiveArticleSubTab}
+                tabAriaLabel="文章分類"
+                subAriaLabel="文章地區"
+              />
             </div>
 
-            <AnimatePresence mode="wait">
-              {displayArticleItems.length > 0 ? (
-                <motion.div
-                  key={`${activeArticleTab}-${activeArticleSubTab}`}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 30 }}
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                >
+            {displayArticleItems.length > 0 ? (
+              <>
+                <div className="md:hidden">
                   <Carousel slides={carouselSlides} />
-                </motion.div>
-              ) : (
-                <div className="text-center py-20 text-slate-500 font-medium bg-white/50 rounded-2xl border border-slate-200">
-                  此分類目前無文章...
                 </div>
-              )}
-            </AnimatePresence>
+                <div className="hidden md:block">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`${activeArticleTab}-${activeArticleSubTab}-${articlePage}`}
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 30 }}
+                      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 xl:grid-cols-4">
+                        {pagedArticleSlides.map((slide, index) => (
+                          <BlogArticleCard
+                            key={slide.link || index}
+                            slide={slide}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+                  <BlogPagination
+                    page={Math.min(articlePage, articleTotalPages)}
+                    totalPages={articleTotalPages}
+                    onChange={setArticlePage}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-20 text-slate-500 font-medium bg-white/50 rounded-2xl border border-slate-200">
+                此分類目前無文章...
+              </div>
+            )}
           </div>
         </section>
 
-        {/* 拼圖區塊 */}
-        <section className="w-full bg-[#1f57b8] relative z-50">
+        {/* 雙欄無限跑馬燈 */}
+        <section className="w-full bg-[#1f57b8] relative z-50 overflow-hidden">
           <div className="mx-auto max-w-7xl px-6 py-14 md:py-20">
             <div className="grid items-center gap-10 md:grid-cols-2">
-              <div className="relative ">
-                <div className="absolute -inset-3 rounded-[28px] border border-white/15" />
-                <div className="relative grid grid-cols-2 gap-5">
-                  <div className="grid gap-5">
-                    <Tile
-                      src="/images/blog/bb302fdcf80de8468a324fac44900180.jpg"
-                      className="h-[160px] md:h-[180px]"
+              <div className="relative px-1">
+                <div className="absolute -inset-3 rounded-[28px] border border-white/15 pointer-events-none z-10" />
+                <div className="relative h-[480px] md:h-[620px] overflow-hidden rounded-[22px]">
+                  <div className="grid h-full grid-cols-2 gap-3 md:gap-4">
+                    <VerticalMarquee
+                      items={BLOG_MARQUEE_UP}
+                      duration={28}
                     />
-                    <Tile
-                      src="/images/blog/9085c7667bb4a404dacd4e5001557fc8.jpg"
-                      className="h-[320px] md:h-[380px]"
-                    />
-                    <Tile
-                      src="/images/blog/TAIWAN__thumb-_20250304.webp"
-                      className="h-[150px] md:h-[170px]"
+                    <VerticalMarquee
+                      items={BLOG_MARQUEE_DOWN}
+                      duration={36}
+                      reverse
+                      className="pt-10 md:pt-14"
                     />
                   </div>
-                  <div className="grid gap-5 pt-10 md:pt-14">
-                    <Tile
-                      src="/images/blog/03c1c69e60c055c532de164f1dec9122.jpg"
-                      className="h-[150px] md:h-[270px]"
-                    />
-                    <Tile
-                      src="/images/blog/thum_80-Years-on-the-Journey-to-Peace_2.webp"
-                      className="h-[360px] md:h-[440px]"
-                    />
-                  </div>
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#1f57b8] to-transparent z-[5]" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#1f57b8] to-transparent z-[5]" />
                 </div>
               </div>
               <div className="text-white">
@@ -410,6 +631,16 @@ export default function InfoPage() {
               </div>
             </div>
           </div>
+          <style jsx global>{`
+            @keyframes blogMarqueeY {
+              0% {
+                transform: translateY(0);
+              }
+              100% {
+                transform: translateY(-50%);
+              }
+            }
+          `}</style>
         </section>
 
         {/* ========================================== */}
@@ -432,187 +663,143 @@ export default function InfoPage() {
                 </span>
               </div>
 
-              {/* 知識區：國家 Tab + 子分類 */}
-              <div className="flex flex-col items-end gap-3 w-full xl:w-auto">
-                <div className="flex flex-wrap gap-2 justify-end">
-                  {knowledgeTabs.map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => {
-                        setActiveKnowledgeTab(tab);
-                        setActiveKnowledgeSubTab("全部");
-                        setActiveKnowledgeId(null);
-                      }}
-                      className={`px-4 py-2 text-sm font-semibold rounded-full transition-all duration-300 ${
-                        activeKnowledgeTab === tab
-                          ? "bg-[#1f57b8] text-white shadow-[0_4px_12px_rgba(31,87,184,0.3)] scale-105"
-                          : "bg-white text-[#1f57b8] border border-[#1f57b8]/20 hover:bg-blue-50 hover:scale-105"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-
-                <AnimatePresence>
-                  {knowledgeSubTabs.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="flex flex-wrap gap-2 justify-end overflow-hidden"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setActiveKnowledgeSubTab("全部")}
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                          activeKnowledgeSubTab === "全部"
-                            ? "bg-slate-800 text-white"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
-                      >
-                        全部
-                      </button>
-                      {knowledgeSubTabs.map((sub) => (
-                        <button
-                          key={sub}
-                          type="button"
-                          onClick={() => {
-                            setActiveKnowledgeSubTab(sub);
-                            setActiveKnowledgeId(null);
-                          }}
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                            activeKnowledgeSubTab === sub
-                              ? "bg-slate-800 text-white"
-                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          }`}
-                        >
-                          {sub}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              {/* 知識區：分類／地區下拉 */}
+              <BlogFilterSelects
+                tabs={knowledgeTabs}
+                activeTab={activeKnowledgeTab}
+                onTabChange={(tab) => {
+                  setActiveKnowledgeTab(tab);
+                  setActiveKnowledgeSubTab("全部");
+                  setActiveKnowledgeId(null);
+                }}
+                subTabs={knowledgeSubTabs}
+                activeSubTab={activeKnowledgeSubTab}
+                onSubChange={(sub) => {
+                  setActiveKnowledgeSubTab(sub);
+                  setActiveKnowledgeId(null);
+                }}
+                tabAriaLabel="知識分類"
+                subAriaLabel="知識地區"
+              />
             </div>
 
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`${activeKnowledgeTab}-${activeKnowledgeSubTab}`}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="space-y-3 sm:space-y-4"
-              >
-                {displayKnowledgeItems.length === 0 ? (
-                  <div className="text-center py-20 text-slate-500 font-medium bg-white rounded-2xl border border-slate-200 shadow-sm">
-                    此分類目前無知識文章...
-                  </div>
-                ) : (
-                  displayKnowledgeItems.map((it) => {
-                    const open = it.id === activeKnowledgeId;
-                    return (
-                      <article
-                        key={it.id}
-                        className={[
-                          "rounded-2xl border transition-shadow overflow-hidden",
-                          open
-                            ? "border-slate-200 shadow-sm bg-slate-50"
-                            : "border-slate-200 bg-white",
-                        ].join(" ")}
-                      >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setActiveKnowledgeId(open ? null : it.id)
-                          }
-                          className="w-full text-left"
+            {displayKnowledgeItems.length === 0 ? (
+              <div className="text-center py-20 text-slate-500 font-medium bg-white rounded-2xl border border-slate-200 shadow-sm">
+                此分類目前無知識文章...
+              </div>
+            ) : (
+              <>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={`${activeKnowledgeTab}-${activeKnowledgeSubTab}-${knowledgePage}`}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -30 }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="space-y-3 sm:space-y-4"
+                  >
+                    {pagedKnowledgeItems.map((it) => {
+                      const open = it.id === activeKnowledgeId;
+                      return (
+                        <article
+                          key={it.id}
+                          className={[
+                            "rounded-2xl border transition-shadow overflow-hidden",
+                            open
+                              ? "border-slate-200 shadow-sm bg-slate-50"
+                              : "border-slate-200 bg-white",
+                          ].join(" ")}
                         >
-                          <div className="p-5 sm:p-7 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-6">
-                            <div className="flex items-center justify-between sm:block">
-                              <div className="text-xs sm:text-sm text-slate-400 min-w-0 sm:min-w-[110px]">
-                                {it.date}
-                              </div>
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex flex-wrap gap-2">
-                                {it.tags.map((t) => (
-                                  <span
-                                    key={t}
-                                    className="inline-flex items-center rounded-md bg-sky-50 px-3 py-1 text-[11px] sm:text-xs font-semibold text-sky-700"
-                                  >
-                                    {t}
-                                  </span>
-                                ))}
-                              </div>
-                              <h3
-                                className="mt-3 text-[16px] sm:text-[18px] font-semibold leading-7 text-slate-900"
-                                dangerouslySetInnerHTML={{ __html: it.title }}
-                              />
-                            </div>
-                            <div className="hidden sm:block pt-1">
-                              <div
-                                className={`grid h-12 w-12 place-items-center rounded-full bg-sky-500 text-white transition-transform duration-300 ${open ? "rotate-90" : "rotate-0"}`}
-                              >
-                                <span className="text-xl leading-none">→</span>
-                              </div>
-                            </div>
-                          </div>
-                        </button>
-                        <div
-                          className={`grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
-                        >
-                          <div className="min-h-0">
-                            <div className="border-t border-slate-200 px-5 sm:px-7 py-5 sm:py-6">
-                              <div className="grid gap-5 sm:gap-6 md:grid-cols-[280px_1fr]">
-                                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                                  <div className="aspect-[16/9] md:aspect-auto h-full">
-                                    <img
-                                      src={it.image}
-                                      alt=""
-                                      className="h-full w-full object-cover md:h-[340px]"
-                                    />
-                                  </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActiveKnowledgeId(open ? null : it.id)
+                            }
+                            className="w-full text-left"
+                          >
+                            <div className="p-5 sm:p-7 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-6">
+                              <div className="flex items-center justify-between sm:block">
+                                <div className="text-xs sm:text-sm text-slate-400 min-w-0 sm:min-w-[110px]">
+                                  {it.date}
                                 </div>
-                                <div>
-                                  <div
-                                    className="text-sm leading-7 text-slate-600 prose prose-sm max-w-none"
-                                    dangerouslySetInnerHTML={{
-                                      __html: it.excerptHTML,
-                                    }}
-                                  />
-                                  <div className="mt-5 flex flex-col sm:flex-row gap-3">
-                                    <Link
-                                      href={`/blog/${it.slug}`}
-                                      className="inline-flex justify-center items-center rounded-full bg-[#1f57b8] px-5 py-2 text-sm font-semibold text-white hover:bg-blue-800 w-full sm:w-auto"
-                                    >
-                                      閱讀全文
-                                    </Link>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setActiveKnowledgeId(null);
+                              </div>
+                              <div className="flex-1">
+                                <BlogDotTags tags={it.tags} />
+                                <h3
+                                  className="mt-3 text-[16px] sm:text-[18px] font-semibold leading-7 text-slate-900"
+                                  dangerouslySetInnerHTML={{ __html: it.title }}
+                                />
+                              </div>
+                              <div className="hidden sm:block pt-1">
+                                <div
+                                  className={`grid h-12 w-12 place-items-center rounded-full bg-sky-500 text-white transition-transform duration-300 ${open ? "rotate-90" : "rotate-0"}`}
+                                >
+                                  <span className="text-xl leading-none">→</span>
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                          <div
+                            className={`grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+                          >
+                            <div className="min-h-0">
+                              <div className="border-t border-slate-200 px-5 sm:px-7 py-5 sm:py-6">
+                                <div className="grid gap-5 sm:gap-6 md:grid-cols-[280px_1fr]">
+                                  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                                    <div className="aspect-[16/9] md:aspect-auto h-full">
+                                      <img
+                                        src={it.image}
+                                        alt=""
+                                        className="h-full w-full object-cover md:h-[340px]"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div
+                                      className="text-sm leading-7 text-slate-600 prose prose-sm max-w-none"
+                                      dangerouslySetInnerHTML={{
+                                        __html: it.excerptHTML,
                                       }}
-                                      className="inline-flex justify-center items-center rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 w-full sm:w-auto"
-                                    >
-                                      收合文章
-                                    </button>
+                                    />
+                                    <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                                      <Link
+                                        href={`/blog/${it.slug}`}
+                                        className="inline-flex justify-center items-center rounded-full bg-[#1f57b8] px-5 py-2 text-sm font-semibold text-white hover:bg-blue-800 w-full sm:w-auto"
+                                      >
+                                        閱讀全文
+                                      </Link>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setActiveKnowledgeId(null);
+                                        }}
+                                        className="inline-flex justify-center items-center rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 w-full sm:w-auto"
+                                      >
+                                        收合文章
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      </article>
-                    );
-                  })
-                )}
-              </motion.div>
-            </AnimatePresence>
+                        </article>
+                      );
+                    })}
+                  </motion.div>
+                </AnimatePresence>
+                <BlogPagination
+                  page={Math.min(knowledgePage, knowledgeTotalPages)}
+                  totalPages={knowledgeTotalPages}
+                  onChange={(next) => {
+                    setKnowledgePage(next);
+                    setActiveKnowledgeId(null);
+                  }}
+                />
+              </>
+            )}
           </div>
         </section>
       </div>
@@ -620,20 +807,52 @@ export default function InfoPage() {
   );
 }
 
-function Tile({ src, className = "" }) {
+function VerticalMarquee({
+  items = [],
+  duration = 30,
+  reverse = false,
+  className = "",
+}) {
+  const loop = [...items, ...items];
   return (
-    <div
-      className={[
-        "overflow-hidden rounded-[22px] bg-white/10 shadow-[0_18px_40px_rgba(0,0,0,0.22)]",
-        className,
-      ].join(" ")}
-    >
-      <img
-        src={src}
-        alt=""
-        className="h-full w-full object-cover"
-        loading="lazy"
-      />
+    <div className={["h-full overflow-hidden", className].filter(Boolean).join(" ")}>
+      <div
+        className="flex flex-col gap-3 md:gap-4 will-change-transform"
+        style={{
+          animation: `blogMarqueeY ${duration}s linear infinite`,
+          animationDirection: reverse ? "reverse" : "normal",
+        }}
+      >
+        {loop.map((item, i) => (
+          <div
+            key={`${item.src}-${i}`}
+            className="overflow-hidden rounded-[18px] bg-white/10 shadow-[0_14px_32px_rgba(0,0,0,0.22)] shrink-0"
+          >
+            <img
+              src={item.src}
+              alt={item.alt || ""}
+              className="block w-full h-auto aspect-[3/4] object-cover"
+              loading="lazy"
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
+const BLOG_MARQUEE_UP = [
+  { src: "/images/japan-esim-banner.jpg", alt: "日本 eSIM" },
+  { src: "/images/korea-esim-banner.jpg", alt: "韓國 eSIM" },
+  { src: "/images/hongkung-esim-banner.jpg", alt: "香港 eSIM" },
+  { src: "/images/01.png", alt: "Jeko eSIM" },
+];
+
+const BLOG_MARQUEE_DOWN = [
+  { src: "/images/tailand-esim-banner.jpg", alt: "泰國 eSIM" },
+  { src: "/images/malaysia-esim-banner.jpg", alt: "馬來西亞 eSIM" },
+  {
+    src: "/images/Generated-Image-November-15,-2025---5_19PM.png",
+    alt: "旅遊配件",
+  },
+];

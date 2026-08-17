@@ -10,7 +10,7 @@ const LINE_OA = CONTACT_INFO.lineUrl;
  */
 export default function PromoWelcomeRules() {
   return (
-    <section className="mt-14 md:mt-16 pb-4" aria-labelledby="promo-rules-heading">
+    <section className="mt-2 md:mt-4 pb-8" aria-labelledby="promo-rules-heading">
       <div className="text-center mb-8 max-w-2xl mx-auto">
         <p className="text-[11px] font-bold tracking-widest text-[#1a56db] uppercase mb-2">
           Terms

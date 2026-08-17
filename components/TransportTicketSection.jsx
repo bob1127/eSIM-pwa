@@ -446,10 +446,10 @@ export default function TransportTicketSection() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25 }}
-            className="md:hidden"
+            className="md:hidden -mx-4"
           >
             {filtered.length > 0 ? (
-              <MobileCardCarousel slideClassName="min-w-0 flex-[0_0_82%]">
+              <MobileCardCarousel align="center" slideClassName="min-w-0 flex-[0_0_76%]">
                 {filtered.map((item) => (
                   <KKdayCard
                     key={item.id}

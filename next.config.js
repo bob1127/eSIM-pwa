@@ -158,6 +158,12 @@ const nextConfig = {
         destination: "/product/uk/uk-unlimited-esim/",
         permanent: false,
       },
+      {
+        source: "/promo",
+        has: [{ type: "query", key: "tab", value: "missions" }],
+        destination: "/missions",
+        permanent: false,
+      },
       ...countries.flatMap((slug) => [
         {
           source: `/${slug}`,

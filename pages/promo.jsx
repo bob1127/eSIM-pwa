@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import Layout from "./Layout";
 import MaterialIcon from "@/components/MaterialIcon";
@@ -14,9 +12,9 @@ export default function PromoPage() {
   return (
     <Layout
       seo={{
-        title: "最新優惠・限時特惠｜Jeko eSIM",
+        title: "最新優惠｜Jeko eSIM",
         description:
-          "Jeko eSIM 最新優惠：新會員折 50（須加入官方 LINE 方可使用）、優惠拉霸抽獎；同一禮遇不疊加。",
+          "Jeko eSIM 最新優惠：新會員折 50、拉霸抽獎；加入官方 LINE 解鎖更多禮遇。",
       }}
     >
       <div
@@ -26,8 +24,8 @@ export default function PromoPage() {
             "linear-gradient(180deg, #F7F8FA 0%, #EEF1F6 45%, #F7F8FA 100%)",
         }}
       >
-        <div className="max-w-[1500px] w-[94%] mx-auto">
-          <nav className="flex items-center gap-1.5 text-xs text-slate-400 mb-6 md:mb-8">
+        <div className="content-wrap">
+          <nav className="flex items-center gap-1.5 text-xs text-slate-400 mb-6 md:mb-8 pt-6 md:pt-8">
             <Link
               href="/"
               className="hover:text-[#3768C7] flex items-center gap-1"
@@ -64,7 +62,7 @@ export default function PromoPage() {
           </a>
         </div>
 
-        <div className="max-w-[1500px] w-[94%] mx-auto">
+        <div id="promo-panels" className="content-wrap">
           <PromoWelcomeRules />
         </div>
       </div>

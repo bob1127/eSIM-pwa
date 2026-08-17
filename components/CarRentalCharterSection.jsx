@@ -81,10 +81,6 @@ function CharterPhotoCard() {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-black/10" />
 
-      <p className="absolute top-2 sm:top-3 left-0 right-0 text-center text-[10px] sm:text-[11px] font-bold text-white/95 tracking-wide z-10">
-        家庭出遊・商務接送・一日遊包車
-      </p>
-
       <div className="absolute inset-0 flex items-center justify-center z-10 px-4">
         <div className="rounded-lg border-2 border-white px-4 py-2 sm:px-6 sm:py-3 text-center bg-black/10 backdrop-blur-[2px]">
           <p className="text-base sm:text-lg font-black text-white tracking-widest leading-tight">
@@ -117,8 +113,8 @@ export default function CarRentalCharterSection() {
         </div>
 
         {/* 手機版輪播 */}
-        <div className="md:hidden">
-          <MobileCardCarousel slideClassName="min-w-0 flex-[0_0_88%]">
+        <div className="md:hidden -mx-4">
+          <MobileCardCarousel align="center" slideClassName="min-w-0 flex-[0_0_76%]">
             <PromoCard />
             <VehicleTypesCard />
             <CharterPhotoCard />

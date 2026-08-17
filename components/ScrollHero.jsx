@@ -247,7 +247,7 @@ export default function ScrollHero() {
             ref={heroContentRef}
           >
             <SVGIMAGE />
-            <div className="hero-content-block is-inset-right">
+            <div className="hero-content-block is-inset-right is-copy-connect">
               <div className="hero-content-copy">
                 <h2>抵達即連線，旅途不中斷</h2>
                 <p>
@@ -259,13 +259,13 @@ export default function ScrollHero() {
             </div>
             <div className="hero-content-block is-inset-left">
               <div className="hero-content-copy">
-                <h2 className="!text-[30px]">
+                <h2>
                   無論你去哪裡，<br></br>Jeko 陪你一路在線
                 </h2>
                 <p>
                   涵蓋全球多國熱門旅遊目的地，提供彈性流量與吃到飽方案。
                   <br></br>
-                  支援主流 iPhone／Android，即買即用，讓連線像呼吸一樣自然。
+                  支援主流 iPhone／Android，即買即用。
                 </p>
               </div>
             </div>
@@ -327,16 +327,18 @@ export default function ScrollHero() {
 
           h1,
           h2 {
-            font-weight: 400;
-            line-height: 1.1;
+            line-height: 1.2;
             margin: 0;
           }
 
           h1 {
+            font-weight: 400;
             font-size: clamp(3rem, 4vw, 5rem);
           }
           h2 {
-            font-size: clamp(1.5rem, 2.25vw, 3rem);
+            font-weight: 700;
+            font-size: clamp(1.35rem, 2vw, 1.85rem);
+            letter-spacing: 0.02em;
           }
           p {
             font-size: 1.125rem;
@@ -437,10 +439,17 @@ export default function ScrollHero() {
             will-change: transform;
           }
 
-          .outro {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+          .window-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+            transition: none;
+          }
+
+          .window-container img:hover {
+            transform: none;
+            filter: none;
           }
 
           /* hero-img.jpg 本身也是飛機窗圖，疊在 window.png 孔洞後會形成窗中窗；隱藏以免重複 */
@@ -613,6 +622,9 @@ export default function ScrollHero() {
             padding-right: clamp(5rem, 24vw, 16rem);
             padding-left: clamp(3rem, 18vw, 12rem);
           }
+          .hero-content .hero-content-block.is-copy-connect {
+            padding-right: clamp(9rem, 34vw, 24rem);
+          }
           .hero-content .hero-content-block.is-inset-center {
             justify-content: center;
             align-items: center;
@@ -698,6 +710,9 @@ export default function ScrollHero() {
             .hero-content .hero-content-block.is-inset-right {
               padding-right: clamp(3rem, 18vw, 5.5rem);
               padding-left: clamp(2.5rem, 14vw, 4rem);
+            }
+            .hero-content .hero-content-block.is-copy-connect {
+              padding-right: clamp(5rem, 26vw, 8rem);
             }
             .hero-content .hero-content-copy {
               width: min(78%, 18rem);

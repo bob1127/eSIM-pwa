@@ -9,3 +9,9 @@ node_modules/
 
 # local medusa bootstrap ids (contains publishable key)
 scripts/.medusa-jeko-ids.json
+
+# database backups (never commit)
+*.dump
+*.dump.enc
+*.sql.gz
+backups/

@@ -1,17 +1,13 @@
 "use client";
 
 /**
- * 移植自 PikFun：pickleball-storefront/components/PickleballGrowthSection.jsx
- * 曲線圖版型不變；文案／里程碑改為「台灣旅遊 eSIM」
+ * 曲線圖版型不變；文案改為「未來 eSIM 趨勢」與「智慧手機支援 eSIM」
  *
- * 台灣相關數據來源（有憑據）：
- * - Klook 2026/1 台灣旅客出國網路偏好調查：每 2 人就有 1 人首選 eSIM
- * - 交通部觀光署：自由行出境旅客約 75%
- * - 遠傳觀察：2025 台灣出境人次年增約 12%
- * 全球產值對照：
- * - Juniper：旅遊 eSIM 約 $1.8bn（2025）→ $8.7bn（2030）
+ * 數據原則：不寫產值「幾億美元」；以倍數、年增％、採用占比呈現。
+ * - Juniper：旅遊 eSIM 2025→2030 約 4.8 倍；期間年增約 85%
  * - GSMA 等：2030 智慧手機連線約 55%+ 採 eSIM
- * 註：台灣公開管道幾乎無「旅遊 eSIM 產值億美元」；全球數字僅作對照。
+ * - Klook 2026/1：台灣旅客出國上網每 2 人就有 1 人首選 eSIM
+ * - 交通部觀光署：自由行出境旅客約 75%
  */
 import { motion } from "framer-motion";
 import Copy from "@/components/MaskText";
@@ -42,62 +38,62 @@ const buildPath = (t0, t1, offset = 0, steps = 90) => {
 const MILESTONES = [
   { type: "v", label: "eSIM技術登場", lift: 56 },
   { type: "h", title: "ORIGIN", sub: "eSIM Arrives", lift: 44 },
-  { type: "v", label: "手機內建普及", lift: 70 },
+  { type: "v", label: "手機開始內建", lift: 70 },
   { type: "h", title: "DEVICE", sub: "Phones Go eSIM", lift: 48 },
-  { type: "v", label: "疫後出國回溫", lift: 60 },
-  { type: "h", title: "REOPEN", sub: "Travel Rebound", lift: 46 },
-  { type: "v", label: "旅遊eSIM竄起", lift: 76 },
-  { type: "h", title: "TRAVEL", sub: "Travel eSIM Boom", lift: 50 },
-  { type: "v", label: "半數旅客首選", lift: 64 },
-  { type: "h", title: "ADOPT", sub: "1 in 2 Prefer eSIM", lift: 48 },
-  { type: "v", label: "通路全面鋪開", lift: 78 },
-  { type: "h", title: "MARKET", sub: "Channels Expand", lift: 52 },
-  { type: "v", label: "夥伴生態成形", lift: 66 },
-  { type: "h", title: "SCALE", sub: "Partner Economy", lift: 48 },
+  { type: "v", label: "旅遊eSIM竄起", lift: 60 },
+  { type: "h", title: "TRAVEL", sub: "Travel eSIM Boom", lift: 46 },
+  { type: "v", label: "2026半數首選", lift: 76 },
+  { type: "h", title: "2026", sub: "1 in 2 Prefer eSIM", lift: 50 },
+  { type: "v", label: "雙eSIM成常態", lift: 64 },
+  { type: "h", title: "DUAL", sub: "Dual eSIM Default", lift: 48 },
+  { type: "v", label: "新機支援過半", lift: 78 },
+  { type: "h", title: "SHIP", sub: "Most New Phones", lift: 52 },
+  { type: "v", label: "2030過半連線", lift: 66 },
+  { type: "h", title: "2030", sub: "55%+ Connections", lift: 48 },
 ];
 
 const T_START = 0.035;
 const T_STEP = 0.93 / (MILESTONES.length - 1);
 
-const TW_STATS = [
+const FUTURE_STATS = [
   {
-    label: "台灣旅客出國上網首選",
+    label: "旅遊 eSIM 市場（2025→2030）",
+    value: "約 4.8 倍",
+    unit: "規模翻倍",
+    note: "Juniper Research",
+  },
+  {
+    label: "相對前一年成長",
+    value: "+85%",
+    unit: "年增（約 2025）",
+    note: "Juniper 旅遊 eSIM 觀察",
+  },
+  {
+    label: "2026 台灣旅客首選",
     value: "每2人1人",
     unit: "選 eSIM",
     note: "Klook 調查（2026/1）",
   },
-  {
-    label: "出境自由行占比",
-    value: "約 75%",
-    unit: "自由行",
-    note: "交通部觀光署調查摘要",
-  },
-  {
-    label: "出境旅遊動能",
-    value: "+12%",
-    unit: "年增（2025）",
-    note: "電信業觀察出境人次",
-  },
 ];
 
-const GLOBAL_STATS = [
-  {
-    label: "全球旅遊 eSIM 營收",
-    value: "約 18 億",
-    unit: "美元／2025",
-    note: "年增約 85% · Juniper",
-  },
-  {
-    label: "2030 全球旅遊 eSIM",
-    value: "約 87 億",
-    unit: "美元",
-    note: "約 4.8 倍成長 · Juniper",
-  },
+const PHONE_STATS = [
   {
     label: "2030 智慧手機連線",
     value: "55%+",
     unit: "採 eSIM",
     note: "GSMA 等機構預估",
+  },
+  {
+    label: "美區新 iPhone",
+    value: "eSIM-only",
+    unit: "該市場新機",
+    note: "帶動全球取消實體卡槽",
+  },
+  {
+    label: "雙 eSIM 機種",
+    value: "成常態",
+    unit: "旗艦／中高階",
+    note: "2026 起支援率持續拉升",
   },
 ];
 
@@ -196,23 +192,23 @@ export default function EsimFutureTrendsSection() {
           <div className="flex items-center gap-2 mb-6">
             <span className="w-[7px] h-[7px] rounded-full bg-[#1E4AD1] inline-block" />
             <span className="text-[11px] font-bold tracking-[0.15em] text-gray-800 uppercase">
-              eSIM Trends in Taiwan
+              Future eSIM · Device Support
             </span>
           </div>
           <Copy blockColor="#1E4AD1">
             <h2 className="text-2xl md:text-3xl lg:text-[32px] font-bold text-gray-900 leading-[1.6] tracking-wide mb-8">
-              台灣旅遊 eSIM 近年發展趨勢
+              未來 eSIM 趨勢，與智慧手機支援浪潮
             </h2>
           </Copy>
           <Copy blockColor="#1E4AD1" stagger={0.12}>
             <p className="text-gray-600 leading-[2.2] text-[14px] md:text-[15px] text-justify max-w-[760px] mb-4">
-              台灣公開資料以旅客調查與出境動能為主；全球則有研究機構對旅遊 eSIM
-              產值的預估。以下並排對照——左側看台灣採用率，右側看全球商機規模——協助夥伴掌握市場方向。
+              2026
+              年，旅遊 eSIM 正從「出國備案」變成「出發標配」。市場規模用倍數看、採用率用百分比看——手機越支援，旅客越少帶卡，通路與夥伴的成長曲線也會跟著變陡。
             </p>
           </Copy>
         </motion.div>
 
-        {/* ---------- 台灣調查 ％ ｜ 全球產值 並排 ---------- */}
+        {/* ---------- 未來 eSIM ｜ 手機支援 並排 ---------- */}
         <motion.div
           {...fadeUpProps}
           transition={{ delay: 0.08, duration: 0.8 }}
@@ -221,25 +217,25 @@ export default function EsimFutureTrendsSection() {
           <div>
             <div className="flex items-center gap-2 mb-5">
               <span className="text-[11px] font-black tracking-[0.14em] text-[#1E4AD1] uppercase">
-                Taiwan
+                Future
               </span>
               <span className="text-[13px] font-bold text-[#111]">
-                台灣調查與動能
+                未來 eSIM 趨勢
               </span>
             </div>
-            <StatGrid items={TW_STATS} />
+            <StatGrid items={FUTURE_STATS} />
           </div>
 
           <div className="lg:border-l lg:border-slate-200 lg:pl-10">
             <div className="flex items-center gap-2 mb-5">
               <span className="text-[11px] font-black tracking-[0.14em] text-[#1E4AD1] uppercase">
-                Global
+                Devices
               </span>
               <span className="text-[13px] font-bold text-[#111]">
-                全球旅遊 eSIM 產值
+                智慧手機支援 eSIM
               </span>
             </div>
-            <StatGrid items={GLOBAL_STATS} />
+            <StatGrid items={PHONE_STATS} />
           </div>
         </motion.div>
         {/* ---------- 成長曲線圖（手機可橫向捲動） ---------- */}
@@ -252,7 +248,7 @@ export default function EsimFutureTrendsSection() {
             viewBox="0 0 1440 640"
             className="min-w-[1100px] w-full h-auto select-none"
             role="img"
-            aria-label="台灣旅遊 eSIM 發展趨勢成長曲線圖"
+            aria-label="未來 eSIM 與智慧手機支援趨勢成長曲線圖"
           >
             <defs>
               <marker
@@ -304,7 +300,7 @@ export default function EsimFutureTrendsSection() {
               letterSpacing="2"
               transform={`rotate(-3 ${curveX(0.19)} ${curveY(0.19) + 30})`}
             >
-              台灣旅遊 eSIM 萌芽期
+              eSIM 導入期
             </text>
 
             <text
@@ -315,7 +311,7 @@ export default function EsimFutureTrendsSection() {
               letterSpacing="2"
               transform={`rotate(-33 ${curveX(0.78)} ${curveY(0.78) + 96})`}
             >
-              旅客採用／快速成長期
+              2026 加速成長期
             </text>
 
             {[
@@ -391,12 +387,11 @@ export default function EsimFutureTrendsSection() {
         </motion.div>
 
         <p className="mt-3 text-[11px] text-[#9AA3AE] font-medium max-w-[960px]">
-          台灣：Klook 出國網路偏好調查、交通部觀光署旅遊狀況調查摘要、電信業出境觀察。
-          全球：Juniper Research（旅遊 eSIM 營收 2025→2030）、GSMA／ABI 等智慧手機 eSIM
-          連線預估。台灣尚無公開等價「產值億美元」報告；右側為全球對照，非台灣產值。曲線為趨勢示意。
+          倍數與年增％：Juniper Research（旅遊 eSIM 2025→2030）。連線占比：GSMA 等對 2030
+          智慧手機 eSIM 連線預估。台灣採用：Klook 2026/1 出國網路偏好調查、交通部觀光署、電信業出境觀察。不列產值金額。曲線為趨勢示意。
         </p>
 
-        {/* ---------- 下方兩欄：發展動能 ---------- */}
+        {/* ---------- 下方兩欄：未來趨勢 ---------- */}
         <motion.div
           {...fadeUpProps}
           transition={{ delay: 0.25, duration: 0.8 }}
@@ -404,22 +399,22 @@ export default function EsimFutureTrendsSection() {
         >
           <div>
             <h3 className="text-[#1E4AD1] text-lg font-bold tracking-wider mb-4">
-              需求擴散動能
+              未來 eSIM 趨勢
             </h3>
             <p className="text-[13px] leading-[2] text-gray-800">
-              自由行占比提高 / 即買即用與不怕遺失成首選理由 / 出國前一週內下單占比高
-              / 找路、叫車、掃碼付款依賴連線 / 日韓短天數吃到飽接受度高 /
-              OTA、蝦皮與社群通路擴散
+              2026 成為「掃碼即走」的轉折年 / 旅遊 eSIM 市場 2025→2030 約翻 4.8 倍
+              / 近一年年增約 85% / 自由行旅客把連線當出發清單，而不是落地再買卡 /
+              原生高速與多國方案並行，通路與夥伴分潤跟著放大
             </p>
           </div>
           <div>
             <h3 className="text-[#1E4AD1] text-lg font-bold tracking-wider mb-4">
-              市場成長動能
+              智慧手機支援 eSIM
             </h3>
             <p className="text-[13px] leading-[2] text-gray-800">
-              出境旅遊回溫（年增雙位數）/ 手機 eSIM 支援率提升 /
-              原生與漫遊多線路商品矩陣 / 夥伴分潤與專屬商店帶動通路 /
-              客服行銷 SEO 後勤支援降低經營門檻 / 電信原號漫遊與旅遊 eSIM 並存競合
+              旗艦機普遍內建 eSIM，雙 eSIM 逐漸成常態 / 部分市場已走 eSIM-only
+              新機 / 支援率拉高後，旅遊 eSIM 轉換成本下降 / 預估 2030
+              智慧手機連線過半數（55%+）走 eSIM / 手機越支援，旅客越少帶實體卡
             </p>
           </div>
         </motion.div>

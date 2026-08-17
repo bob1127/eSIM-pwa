@@ -350,19 +350,15 @@ iframe .cover{
   display: none !important;
   
 }
-.fixed {
-    left: 0 !important;
-}
 
 
 /* realized  */
 
 @layer base {
-    /* font style  */
+    /* 區塊間距；左右 padding 不要寫在這裡，否則有背景色的 section 會縮進去露出白邊 */
     section.section{
-      @apply mt-[50px]   px-[20px]  md:mt-[80px]
-  
-}
+      @apply mt-[50px] md:mt-[80px]
+    }
 
 
 
@@ -375,6 +371,21 @@ iframe .cover{
   }
   .flex-col-center{
     @apply flex justify-center items-center  flex-col
+  }
+
+  /* 內文寬度：放在有背景的區塊「裡面」，不要包住整頁 */
+  .content-wrap{
+    @apply w-full max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8
+  }
+
+  /* 避開固定膠囊 Navbar：padding 寫在第一層內容，背景可延伸到螢幕頂端 */
+  .layout-below-nav > :first-child {
+    padding-top: 96px;
+  }
+  @media (min-width: 1024px) {
+    .layout-below-nav > :first-child {
+      padding-top: 148px;
+    }
   }
 
   .container{

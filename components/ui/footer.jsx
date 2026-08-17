@@ -1,7 +1,9 @@
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { BrandSocialIconLinks } from "@/components/social/SocialBrandIcons";
 import { SUPPORT_EMAIL, COMPANY_EMAIL, COMPANY_NAME } from "@/lib/contactUi";
+import { SITE_NAV_LINKS } from "@/lib/seo.config";
 
 /**
  * @param {{ forceShow?: boolean, hideLinkColumns?: boolean }} [props]
@@ -9,14 +11,16 @@ import { SUPPORT_EMAIL, COMPANY_EMAIL, COMPANY_NAME } from "@/lib/contactUi";
  * hideLinkColumns: 隱藏 PRODUCTS / SUPPORT / TAG 三欄（夥伴賣場用）
  */
 export default function Footer({
-  forceShow = false,
+  forceShow: _forceShow = false,
   hideLinkColumns = false,
 } = {}) {
+  const [shopeeComingSoon, setShopeeComingSoon] = useState(false);
+
   return (
     <footer
-      className={`${
-        forceShow ? "block" : "hidden md:block"
-      } bg-white text-gray-800 border-t relative z-[99] border-gray-200`}
+      className={`block bg-white text-gray-800 border-t relative border-gray-200 pb-24 md:pb-0 ${
+        shopeeComingSoon ? "z-[10050]" : "z-[99]"
+      }`}
     >
       <div className=" lg:max-w-[1300px] w-full md:w-[90%] 2xl:max-w-[1500px] mx-auto px-6 py-12">
         {/* ================= 上半部：Logo、橫向選單、社群圖示 ================= */}
@@ -33,10 +37,35 @@ export default function Footer({
               </span>
             </Link>
 
-            {/* 頂部橫向選單 (仿照左上角小字選單) */}
+            {/* 頂部橫向選單 */}
+            <nav
+              className="flex flex-wrap gap-x-6 gap-y-2 text-[12px] font-medium text-gray-500"
+              aria-label="網站導覽"
+            >
+              {SITE_NAV_LINKS.map((item) =>
+                item.path === "/shopee-qrcode" ? (
+                  <button
+                    key={item.path}
+                    type="button"
+                    onClick={() => setShopeeComingSoon(true)}
+                    className="hover:text-gray-900 transition-colors text-left"
+                  >
+                    {item.name}
+                  </button>
+                ) : (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    className="hover:text-gray-900 transition-colors"
+                  >
+                    {item.name}
+                  </Link>
+                ),
+              )}
+            </nav>
             <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[12px] font-medium text-gray-500">
               <Link
-                href="/company"
+                href="/about"
                 className="hover:text-gray-900 transition-colors"
               >
                 關於我們
@@ -92,7 +121,7 @@ export default function Footer({
               <ul className="flex flex-col gap-3">
                 <li>
                   <Link
-                    href="/esim/all"
+                    href="/product"
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >
                     所有 eSIM 方案
@@ -108,7 +137,7 @@ export default function Footer({
                 </li>
                 <li>
                   <Link
-                    href="/esim/japan"
+                    href="/product/japan"
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >
                     日本原生 eSIM
@@ -116,7 +145,7 @@ export default function Footer({
                 </li>
                 <li>
                   <Link
-                    href="/esim/korea"
+                    href="/product/korea"
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >
                     韓國高速 eSIM
@@ -124,18 +153,18 @@ export default function Footer({
                 </li>
                 <li>
                   <Link
-                    href="/esim/asia"
+                    href="/product/china"
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >
-                    亞洲多國共用
+                    中國 eSIM
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="/esim/global"
+                    href="/product/thailand"
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >
-                    歐美長途方案
+                    亞洲多國共用
                   </Link>
                 </li>
               </ul>
@@ -152,7 +181,7 @@ export default function Footer({
               <ul className="grid grid-cols-2 gap-y-3 gap-x-4">
                 <li>
                   <Link
-                    href="/guide"
+                    href="/operation-ios"
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >
                     安裝教學
@@ -168,7 +197,7 @@ export default function Footer({
                 </li>
                 <li>
                   <Link
-                    href="/data-usage"
+                    href="/data-query"
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >
                     查詢數據用量
@@ -176,11 +205,20 @@ export default function Footer({
                 </li>
                 <li>
                   <Link
-                    href="/devices"
+                    href="/support"
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >
                     支援裝置列表
                   </Link>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setShopeeComingSoon(true)}
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    蝦皮快速兌換
+                  </button>
                 </li>
                 <li>
                   <Link
@@ -192,7 +230,15 @@ export default function Footer({
                 </li>
                 <li>
                   <Link
-                    href="/cooperation"
+                    href="/missions"
+                    className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    任務牆
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/register-distributor?mode=referral"
                     className="text-[13px] text-gray-600 hover:text-gray-900 transition-colors"
                   >
                     成為合作夥伴
@@ -218,21 +264,36 @@ export default function Footer({
                 熱門關鍵字
               </span>
               <div className="flex flex-wrap gap-x-3 gap-y-2">
-                <span className="text-[13px] text-gray-600">
+                <Link
+                  href="/product/japan"
+                  className="text-[13px] text-gray-600 hover:text-gray-900"
+                >
                   <span className="text-sky-500 mr-0.5">#</span>日本eSIM
-                </span>
-                <span className="text-[13px] text-gray-600">
+                </Link>
+                <Link
+                  href="/product?tags=不降速吃到飽"
+                  className="text-[13px] text-gray-600 hover:text-gray-900"
+                >
                   <span className="text-sky-500 mr-0.5">#</span>不降速吃到飽
-                </span>
-                <span className="text-[13px] text-gray-600">
-                  <span className="text-sky-500 mr-0.5">#</span>韓國上網
-                </span>
-                <span className="text-[13px] text-gray-600">
+                </Link>
+                <Link
+                  href="/product/korea"
+                  className="text-[13px] text-gray-600 hover:text-gray-900"
+                >
+                  <span className="text-sky-500 mr-0.5">#</span>韓國原生eSIM
+                </Link>
+                <Link
+                  href="/product"
+                  className="text-[13px] text-gray-600 hover:text-gray-900"
+                >
                   <span className="text-sky-500 mr-0.5">#</span>免換卡
-                </span>
-                <span className="text-[13px] text-gray-600">
+                </Link>
+                <Link
+                  href="/product/japan"
+                  className="text-[13px] text-gray-600 hover:text-gray-900"
+                >
                   <span className="text-sky-500 mr-0.5">#</span>原生線路
-                </span>
+                </Link>
               </div>
             </div>
           </div>
@@ -374,6 +435,32 @@ export default function Footer({
           </div>
         </div>
       </div>
+
+      {shopeeComingSoon ? (
+        <div
+          className="fixed inset-0 z-[10050] flex items-center justify-center bg-black/40 px-5"
+          onClick={() => setShopeeComingSoon(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-slate-100 p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-black text-slate-900 mb-2">
+              蝦皮快速兌換
+            </h3>
+            <p className="text-sm text-slate-500 leading-relaxed mb-5">
+              即將上線，敬請期待！
+            </p>
+            <button
+              type="button"
+              onClick={() => setShopeeComingSoon(false)}
+              className="w-full h-11 rounded-full bg-[#0A6CD0] text-white text-sm font-bold hover:bg-[#0859ad] transition"
+            >
+              知道了
+            </button>
+          </div>
+        </div>
+      ) : null}
     </footer>
   );
 }

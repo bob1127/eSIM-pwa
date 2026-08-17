@@ -13,7 +13,7 @@ import AdminRefundsPanel from "@/components/admin/AdminRefundsPanel";
 import AdminWithdrawalsPanel from "@/components/admin/AdminWithdrawalsPanel";
 import AccountBossPartnersPanel from "@/components/account/AccountBossPartnersPanel";
 import BossSalesAnalyticsPanel from "@/components/admin/BossSalesAnalyticsPanel";
-import BossInlineLogin from "@/components/account/BossInlineLogin";
+import AdminMissionsPanel from "@/components/admin/AdminMissionsPanel";
 
 function BossLoginPage({ onLoginSuccess, embed }) {
   return (
@@ -48,7 +48,8 @@ export default function AdminBossDashboard() {
       tab === "partners" ||
       tab === "refunds" ||
       tab === "sales" ||
-      tab === "withdrawals"
+      tab === "withdrawals" ||
+      tab === "missions"
     ) {
       setBossTab(tab);
     }
@@ -154,6 +155,7 @@ export default function AdminBossDashboard() {
   const tabs = [
     { id: "sales", label: "銷售分析" },
     { id: "partners", label: "夥伴審核" },
+    { id: "missions", label: "任務牆" },
     { id: "refunds", label: "退款審核" },
     { id: "withdrawals", label: "提領審核" },
   ];
@@ -165,7 +167,9 @@ export default function AdminBossDashboard() {
         ? "退款審核"
         : bossTab === "withdrawals"
           ? "提領審核"
-          : "夥伴審核";
+          : bossTab === "missions"
+            ? "任務牆"
+            : "夥伴審核";
 
   const content = (
     <>
@@ -199,6 +203,8 @@ export default function AdminBossDashboard() {
       {bossTab === "refunds" && <AdminRefundsPanel />}
 
       {bossTab === "withdrawals" && <AdminWithdrawalsPanel />}
+
+      {bossTab === "missions" && <AdminMissionsPanel />}
 
       {bossTab === "partners" && (
         <>

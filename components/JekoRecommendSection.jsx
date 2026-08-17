@@ -5,23 +5,38 @@ import SafeImage from "./SafeImage";
 import MobileCardCarousel from "./MobileCardCarousel";
 
 const NATIVE_IP_TAG = "/images/原生ip-tag.png";
-const NATIVE_IP_SLIDES = new Set(["/images/九州01.png", "/images/韓國01.png"]);
+const NATIVE_IP_SLIDES = new Set([
+  "/images/九州01.png",
+  "/images/韓國01.png",
+  "/images/泰國原生eSIM.png",
+]);
 
+const JAPAN_HREF = "/product/japan";
 const KYUSHU_HREF =
   "/product/japan/japan-unlimited-esim?telecom=au-kddi&days=5";
 const KOREA_HREF =
   "/product/korea/korea-unlimited-esim?telecom=sk-native&days=5";
+const THAILAND_HREF =
+  "/product/thailand/thailand-unlimited-esim?telecom=truemove&days=8";
+const CHINA_HREF =
+  "/product/china/china-unlimited-esim?telecom=cmcc-70&days=5";
+const MEMBER_PROMO_HREF = "/promo";
 
 const RECOMMEND_SLIDES = [
+  { src: "/images/日本eSIM.png", href: JAPAN_HREF },
   { src: "/images/九州01.png", href: KYUSHU_HREF },
-  { src: "/images/中國.png" },
+  { src: "/images/中國.png", href: CHINA_HREF },
   {
     src: "/images/加入會員_加入line官方_優惠-Jeko eSIM_多國旅遊eSIM.png",
+    href: MEMBER_PROMO_HREF,
   },
   { src: "/images/韓國01.png", href: KOREA_HREF },
+  { src: "/images/泰國原生eSIM.png", href: THAILAND_HREF },
+  { src: "/images/日本eSIM.png", href: JAPAN_HREF },
   { src: "/images/九州01.png", href: KYUSHU_HREF },
-  { src: "/images/中國.png" },
+  { src: "/images/中國.png", href: CHINA_HREF },
   { src: "/images/韓國01.png", href: KOREA_HREF },
+  { src: "/images/泰國原生eSIM.png", href: THAILAND_HREF },
 ];
 
 function RecommendSlide({ src, href, index, sizes }) {
@@ -88,8 +103,8 @@ export default function JekoRecommendSection() {
         </div>
 
         {/* 手機版：與租車包車區相同，單張 88% 露出下一張 */}
-        <div className="md:hidden">
-          <MobileCardCarousel slideClassName="min-w-0 flex-[0_0_88%]">
+        <div className="md:hidden -mx-4">
+          <MobileCardCarousel align="center" slideClassName="min-w-0 flex-[0_0_76%]">
             {renderSlides()}
           </MobileCardCarousel>
         </div>
@@ -100,6 +115,7 @@ export default function JekoRecommendSection() {
             slideClassName="min-w-0 flex-[0_0_50%]"
             slidesToScroll={2}
             autoplayDelay={5000}
+            align="start"
             loop
           >
             {renderSlides()}

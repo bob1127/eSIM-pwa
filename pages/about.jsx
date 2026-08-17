@@ -55,23 +55,18 @@ export default function Home() {
               </p>
               <div className="mb-6">
                 <span className="text-gray-900 font-bold text-lg lg:text-2xl block lg:inline">
-                  美加旅遊 | 日本旅遊 ｜ 韓國旅遊 ｜中國旅遊
+                  台灣在地｜日本・韓國原生高速｜泰國・越南・中國・香港
                 </span>
               </div>
 
               {/* 內文區域：手機垂直堆疊，桌機水平排列 */}
               <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 max-w-[1500px]">
                 <div className="flex-1 text-stone-800 text-[16px] tracking-widest leading-relaxed">
-                  Jeko
-                  接口 eSIM，成為你與世界的接口——我們專注於全球行動連線，
-                  以 eSIM
-                  技術打破地域界限，讓你在世界各地都能輕鬆上網。透過與多國電信合作，提供
-                  彈性方案、即時啟用、透明價格
-                  的數據服務，讓旅行與通訊更自由、更智能。網路不只是連線工具，更是通往世界的接口；讓每一段旅程、每一次溝通都無縫順暢，這就是我們的使命。
+                  Jeko 接口 eSIM 是一家台灣在地公司。我們從旅人真正會用到的連線開始，提供各類 eSIM：日本、韓國原生高速吃到飽，泰國、越南、中國、香港等熱門目的地方案齊全，熱銷種類多達
+                  200 種以上。購買後即可取得 QR Code，掃描安裝、免換卡、免等待實體寄送，落地就能上網。
                 </div>
                 <div className="flex-1 text-stone-800 text-[16px] tracking-widest leading-relaxed">
-                  無論你身處何地，連線只需一瞬。Jeko 接口 eSIM
-                  以創新技術，讓旅人、商務人士與數位生活家，輕鬆擁抱全球高速網路。免換卡、免等待、免煩惱——世界，從此隨手可連。
+                  連線只是起點。Jeko 也整合住宿、包車與旅遊服務，努力打造一個適合旅遊夥伴們一起成長的平台。
                 </div>
               </div>
             </div>
@@ -87,7 +82,7 @@ export default function Home() {
             placeholder="empty" // 如果有 blurDataURL 改用 blur
             loading="lazy"
             fill
-            className="object-cover hover:scale-105 duration-700 transition-transform"
+            className="object-cover"
           />
         </div>
       </section>
@@ -156,6 +151,74 @@ export default function Home() {
                 </span>
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= Section 3: 旅遊平台與合作 ================= */}
+      <section className="section-company-intro">
+        <div className="mx-auto w-full max-w-[1500px] px-6 lg:px-10 py-12 lg:py-16">
+          <p className="text-sm font-bold tracking-[0.2em] text-stone-500">
+            03 ／ PARTNERS
+          </p>
+          <h2 className="mt-3 text-3xl md:text-5xl font-bold text-gray-900 leading-tight">
+            給旅人一個接口，
+            <br />
+            也給夥伴一個舞台
+          </h2>
+          <p className="mt-4 text-lg md:text-xl font-semibold text-stone-600">
+            從一張 eSIM，長成一整趟旅程的後勤。
+          </p>
+
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12 items-start">
+            <div>
+              <p className="text-xs font-bold tracking-widest text-[#0A6CD0] mb-2">
+                01 ／ 旅客
+              </p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3 min-h-[1.75rem]">
+                出發前一次備齊
+              </h3>
+              <p className="text-stone-700 text-[15px] leading-relaxed tracking-wide">
+                先選目的地 eSIM，再配住宿與包車。日本、韓國要原生高速吃到飽，東南亞與中港要穩定覆蓋——熱銷方案超過 200 種，讓行程少一個臨時找網的變數。
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-bold tracking-widest text-[#0A6CD0] mb-2">
+                02 ／ 夥伴
+              </p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3 min-h-[1.75rem]">
+                把你的服務接上來
+              </h3>
+              <p className="text-stone-700 text-[15px] leading-relaxed tracking-wide">
+                民宿、司機、旅行社、地陪與內容創作者都歡迎。Jeko 希望做成適合旅遊夥伴一起接單、曝光與分潤的平台，而不是只賣一張卡。
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-bold tracking-widest text-[#0A6CD0] mb-2">
+                03 ／ 合作
+              </p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3 min-h-[1.75rem]">
+                台灣團隊，好溝通
+              </h3>
+              <p className="text-stone-700 text-[15px] leading-relaxed tracking-wide">
+                我們在台灣，時差、語言與售後都走得近。有通路、有車隊、有內容，或只是想讓旅客多一個可靠選項——來聊聊，我們一起把旅程接好。
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-10 flex flex-col sm:flex-row gap-3">
+            <Link
+              href="/cooperation"
+              className="inline-flex items-center justify-center rounded-full bg-[#0A6CD0] px-7 py-3 text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 hover:-translate-y-0.5"
+            >
+              了解合作方式
+            </Link>
+            <Link
+              href="/contact"
+              className="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white px-7 py-3 text-sm font-semibold text-slate-800 transition-all duration-300 hover:border-[#0A6CD0] hover:text-[#0A6CD0]"
+            >
+              聯絡我們
+            </Link>
           </div>
         </div>
       </section>

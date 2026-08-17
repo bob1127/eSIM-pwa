@@ -653,7 +653,7 @@ export default function Home() {
 
         <section
           id="how-to-install"
-          className="relative rounded-[32px] z-[99] bg-white/40 border border-white/30 backdrop-blur-[25px] shadow-[0_30px_80px_rgba(36,57,69,0.15)] px-4 sm:px-10 mx-auto mt-[50px] w-[95%] lg:w-[96%] pt-[30px] lg:py-[100px]"
+          className="relative rounded-[20px] md:rounded-[32px] z-[99] bg-white/40 border border-white/30 backdrop-blur-[25px] shadow-[0_30px_80px_rgba(36,57,69,0.15)] px-2 sm:px-10 mx-auto mt-6 md:mt-[50px] w-full md:w-[95%] lg:w-[96%] pt-4 md:pt-[30px] lg:py-[100px]"
         >
           <MaskText blockColor="#0A6CD0">
             <div className="main-title max-w-[1000px] mx-auto flex justify-center flex-col items-center text-center">
@@ -661,9 +661,9 @@ export default function Home() {
               <p className="mt-3">[ 幾個簡易步驟直接開始使用 ] </p>
             </div>
           </MaskText>
-          <div className="rounded-2xl  py-10 lg:py-20 max-w-[1500px] mx-auto flex justify-center flex-col items-center mt-8">
-            <div className="mb-10 w-full flex justify-around">
-              <div className="flex flex-col lg:flex-row w-[90%] lg:w-[80%] mx-auto gap-8 lg:gap-0">
+          <div className="rounded-2xl py-4 md:py-10 lg:py-20 max-w-[1500px] mx-auto flex justify-center flex-col items-center mt-4 md:mt-8">
+            <div className="mb-6 md:mb-10 w-full flex justify-around">
+              <div className="flex flex-col lg:flex-row w-full lg:w-[80%] mx-auto gap-6 lg:gap-0">
                 <div className="w-full lg:w-1/2 flex lg:pr-10 items-center flex-col text-center lg:text-left">
                   <div>
                     <div className="max-w-full lg:max-w-[280px] mx-auto lg:mx-0">
@@ -681,11 +681,11 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
-                <div className="w-full lg:w-1/2 lg:pr-10">
+                <div className="w-[86%] mx-auto lg:mx-0 lg:w-1/2 lg:pr-10">
                   <Image
                     src="/images/操作簡單立即使用_jeko-esim_日本韓國_多國eSIM方案.png"
                     alt="操作簡單立即使用 Jeko eSIM"
-                    className=""
+                    className="h-auto w-full"
                     width={800}
                     height={1000}
                   />
@@ -693,8 +693,8 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="border-t lg:border-t-0   w-full flex justify-around pt-10 lg:pt-0">
-              <div className="flex flex-col lg:flex-row w-[90%] lg:w-[80%] mx-auto gap-8 lg:gap-0">
+            <div className="border-t lg:border-t-0 w-full flex justify-around pt-6 md:pt-10 lg:pt-0">
+              <div className="flex flex-col lg:flex-row w-full lg:w-[80%] mx-auto gap-6 lg:gap-0">
                 <div className="w-full lg:w-[80] flex items-start flex-col text-center lg:text-left">
                   <div>
                     <h3 className="text-2xl mb-4 lg:text-3xl font-bold leading-snug">
@@ -735,7 +735,7 @@ export default function Home() {
                     ))}
                   </div>
                 </div>
-                <div className="w-full px-5 lg:w-[20%]">
+                <div className="w-full px-0 md:px-5 lg:w-[20%]">
                   <div className="flex flex-col gap-3">
                     <QuickLinkButton text="查看支援裝置列表" active />
                     <QuickLinkButton text="產品相關政策及規範" />
@@ -748,13 +748,13 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="bg-white rounded-[20px] w-[90%] lg:w-[80%] mx-auto p-6 lg:p-10 mt-16 shadow-sm border border-slate-100">
+            <div className="bg-white rounded-[16px] md:rounded-[20px] w-full md:w-[90%] lg:w-[80%] mx-auto p-2 sm:p-6 lg:p-10 mt-6 md:mt-16 shadow-sm border border-slate-100">
               <MaskText blockColor="#0A6CD0">
                 <div className="main-title max-w-[1000px] mx-auto flex justify-center flex-col items-center text-center">
                   <h2 className="text-2xl lg:text-3xl font-bold">啟用設定</h2>
                 </div>
               </MaskText>
-              <div className="flex justify-center mt-4 mb-10">
+              <div className="flex justify-center mt-3 mb-5 sm:mt-4 sm:mb-10">
                 <div className="bg-[#EBEEEF] p-1 rounded-full inline-flex">
                   <button
                     onClick={() => setActiveSystem("ios")}
@@ -771,11 +771,11 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-3 sm:gap-6">
                 {currentSteps.map((item, index) => (
                   <div
                     key={index}
-                    className="step group border-b border-gray-100 py-4 lg:py-6 last:border-b-0 transition-all duration-300 hover:bg-slate-50 rounded-xl px-2 lg:px-4"
+                    className="step group border-b border-gray-100 py-3 lg:py-6 last:border-b-0 transition-all duration-300 hover:bg-slate-50 rounded-xl px-0 lg:px-4"
                   >
                     {item.isAccordion ? (
                       <div className="w-full">
@@ -811,7 +811,7 @@ export default function Home() {
                         </button>
 
                         {openInstallSteps[item.step] && (
-                          <div className="mt-4 pl-0 lg:pl-[82px]">
+                          <div className="mt-3 pl-0 lg:pl-[82px]">
                             <p className="text-sm lg:text-base text-slate-600 leading-relaxed mb-6">
                               {item.desc}
                             </p>
@@ -845,13 +845,16 @@ export default function Home() {
                             )}
 
                             {item.methods?.length > 0 && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-8">
                                 {item.methods.map((method) => (
-                                  <div key={method.image} className="min-w-0">
-                                    <h4 className="text-base font-bold text-slate-800 mb-2">
+                                  <div
+                                    key={method.image}
+                                    className="min-w-0 w-[90%] mx-auto sm:w-full sm:mx-0"
+                                  >
+                                    <h4 className="text-base font-bold text-slate-800 mb-1.5">
                                       {method.title}
                                     </h4>
-                                    <p className="text-sm text-slate-600 leading-relaxed mb-3">
+                                    <p className="text-sm text-slate-600 leading-relaxed mb-2">
                                       {method.desc}
                                     </p>
                                     <button
@@ -859,15 +862,16 @@ export default function Home() {
                                       onClick={() =>
                                         setImageLightbox(method.image)
                                       }
-                                      className="relative w-full aspect-[4/5] cursor-pointer rounded-lg overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#147AD7]"
+                                      className="block w-full cursor-pointer overflow-hidden rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#147AD7]"
                                       aria-label={`放大檢視：${getImageAlt(method.image)}`}
                                     >
                                       <Image
                                         src={method.image}
                                         alt={getImageAlt(method.image)}
-                                        fill
-                                        sizes="(max-width: 640px) 100vw, 360px"
-                                        className="object-cover"
+                                        width={1600}
+                                        height={1000}
+                                        sizes="(max-width: 640px) 90vw, 360px"
+                                        className="h-auto w-full"
                                       />
                                     </button>
                                   </div>
@@ -879,15 +883,16 @@ export default function Home() {
                               <button
                                 type="button"
                                 onClick={() => setImageLightbox(item.image)}
-                                className="relative w-full max-w-md aspect-[4/5] cursor-pointer rounded-lg overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#147AD7]"
+                                className="relative mt-1 block w-full overflow-hidden rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#147AD7]"
                                 aria-label={`放大檢視：${getImageAlt(item.image)}`}
                               >
                                 <Image
                                   src={item.image}
                                   alt={getImageAlt(item.image)}
-                                  fill
+                                  width={1200}
+                                  height={1500}
                                   sizes="(max-width: 640px) 100vw, 360px"
-                                  className="object-cover"
+                                  className="h-auto w-full"
                                 />
                               </button>
                             )}
@@ -933,15 +938,16 @@ export default function Home() {
                             <button
                               type="button"
                               onClick={() => setImageLightbox(item.image)}
-                              className="relative w-full max-w-md aspect-[4/5] cursor-pointer rounded-lg overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#147AD7]"
+                              className="relative mt-1 block w-full overflow-hidden rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#147AD7]"
                               aria-label={`放大檢視：${getImageAlt(item.image)}`}
                             >
                               <Image
                                 src={item.image}
                                 alt={getImageAlt(item.image)}
-                                fill
+                                width={1200}
+                                height={1500}
                                 sizes="(max-width: 640px) 100vw, 360px"
-                                className="object-cover"
+                                className="h-auto w-full"
                               />
                             </button>
                           </div>

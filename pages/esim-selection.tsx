@@ -1377,6 +1377,7 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
     isNative,
     carrier,
     carrierBadge,
+    isTrueUnlimited,
     throttle,
     throttleClass,
     supportChatGPT,
@@ -1490,6 +1491,8 @@ export default function GlobalPlanScanner() {
   const [filterIP, setFilterIP] = useState("ALL");
   const [filterDayRange, setFilterDayRange] = useState("ALL");
   const [filterType, setFilterType] = useState("ALL");
+  /** ALL | TRUE_UNLIMITED */
+  const [filterThrottle, setFilterThrottle] = useState("ALL");
   /** ALL | NO_EKYC | EKYC_REQUIRED | UNKNOWN */
   const [filterEkyc, setFilterEkyc] = useState("ALL");
 
@@ -1805,10 +1808,16 @@ export default function GlobalPlanScanner() {
     return { none, required, unknown, all: baseProcessedPlans.length };
   }, [baseProcessedPlans]);
 
+  const trueUnlimitedCount = useMemo(
+    () => baseProcessedPlans.filter((p) => p.isTrueUnlimited).length,
+    [baseProcessedPlans],
+  );
+
   useEffect(() => {
     setFilterName("ALL");
     setFilterCarrier("ALL");
     setFilterType("ALL");
+    setFilterThrottle("ALL");
     setFilterEkyc("ALL");
     const cfg = COUNTRIES[selectedCountry];
     if (cfg?.defaultSortByCost) {
@@ -1838,6 +1847,8 @@ export default function GlobalPlanScanner() {
         result = result.filter((p) => p.planCategory === "TOTAL");
       if (filterType === "UNLIMITED")
         result = result.filter((p) => p.planCategory === "UNLIMITED");
+      if (filterThrottle === "TRUE_UNLIMITED")
+        result = result.filter((p) => p.isTrueUnlimited);
       if (filterEkyc === "NO_EKYC")
         result = result.filter((p) => p.ekycStatus === "none");
       if (filterEkyc === "EKYC_REQUIRED")
@@ -1880,6 +1891,7 @@ export default function GlobalPlanScanner() {
     filterIP,
     filterDayRange,
     filterType,
+    filterThrottle,
     filterEkyc,
     sortStack,
     showSavedOnly,
@@ -2378,6 +2390,35 @@ export default function GlobalPlanScanner() {
                 <option value="TOTAL">📦 總量型</option>
                 <option value="UNLIMITED">♾️ 吃到飽</option>
               </select>
+
+              <div className="flex items-center gap-1 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg px-1 py-0.5">
+                <span className="text-xs font-bold text-purple-800 px-1.5 whitespace-nowrap">
+                  速度
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFilterThrottle("ALL")}
+                  className={`px-2 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                    filterThrottle === "ALL"
+                      ? "bg-gray-800 text-white"
+                      : "text-purple-900 hover:bg-white"
+                  }`}
+                >
+                  全部
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterThrottle("TRUE_UNLIMITED")}
+                  className={`px-2 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                    filterThrottle === "TRUE_UNLIMITED"
+                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm"
+                      : "text-purple-800 hover:bg-white"
+                  }`}
+                  title="只顯示 API 標為 high speed／max speed、且沒有鎖 Mbps 的真不限速方案（不含 10Mbps 限速吃到飽）"
+                >
+                  🔥 真．不限速 {trueUnlimitedCount}
+                </button>
+              </div>
 
               <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-lg px-1 py-0.5">
                 <span className="text-xs font-bold text-emerald-800 px-1.5 whitespace-nowrap">

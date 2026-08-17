@@ -15,6 +15,7 @@ import {
   shouldBypassImageOptimization,
 } from "../../lib/resolveMedusaImageUrl";
 import { withUsEsimDefaultImage } from "../../lib/usEsimDefaultImage";
+import { buildAllProductsSeo } from "../../lib/seo.config";
 import {
   getMedusaBackendUrl,
   getMedusaPublishableKey,
@@ -203,8 +204,13 @@ const AllProductsPage = ({ initialProducts }) => {
     });
   }, [currentProducts, router]);
 
+  const pageSeo = useMemo(
+    () => buildAllProductsSeo(initialProducts || []),
+    [initialProducts],
+  );
+
   return (
-    <Layout>
+    <Layout seo={pageSeo}>
       <div className="flex flex-col bg-[#f9f9fa]">
         <div className="filter-wrap flex lg:flex-row flex-col sm:px-4 px-3 md:px-8 lg:px-10 min-h-screen gap-0 lg:gap-3 max-w-[1400px] mx-auto w-full">
           <div className="filter_bar w-full lg:w-[22%] lg:max-w-[260px] lg:shrink-0 bg-white mt-[24px] lg:mt-[30px] rounded-xl border border-slate-100 lg:border-0 lg:self-start lg:sticky lg:top-28 lg:z-20 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">

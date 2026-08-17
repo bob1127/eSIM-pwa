@@ -11,14 +11,15 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
  */
 export default function MobileCardCarousel({
   children,
-  slideClassName = "min-w-0 flex-[0_0_85%]",
-  gap = 16,
+  slideClassName = "min-w-0 flex-[0_0_76%]",
+  gap = 6,
   slidesToScroll = 1,
   showArrows = true,
   showDots = true,
   autoplay = true,
   autoplayDelay = 4000,
   loop = true,
+  align = "center",
   className = "",
 }) {
   const slides = Children.toArray(children);
@@ -35,7 +36,7 @@ export default function MobileCardCarousel({
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
       loop,
-      align: "start",
+      align,
       containScroll: loop ? false : "trimSnaps",
       dragFree: false,
       slidesToScroll,
@@ -78,6 +79,18 @@ export default function MobileCardCarousel({
   const dotCount = scrollSnaps.length > 0 ? scrollSnaps.length : slides.length;
   const activeDot =
     dotCount > 0 ? ((selectedIndex % dotCount) + dotCount) % dotCount : 0;
+  const useCompactPager = dotCount > 7;
+  const thumbPct = Math.max(18, 100 / dotCount);
+  const thumbLeft =
+    ((activeDot / Math.max(dotCount - 1, 1)) * (100 - thumbPct));
+
+  const jumpFromBar = (event) => {
+    if (!emblaApi || dotCount < 2) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    const index = Math.round(ratio * (dotCount - 1));
+    scrollTo(index);
+  };
 
   return (
     <div className={className}>
@@ -88,7 +101,7 @@ export default function MobileCardCarousel({
               type="button"
               onClick={scrollPrev}
               aria-label="上一張"
-              className="absolute left-0 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-md border border-gray-100 text-stone-900 active:scale-95"
+              className="absolute left-[8%] top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-md border border-gray-100 text-stone-900 active:scale-95"
             >
               <ChevronLeftIcon className="h-5 w-5" />
             </button>
@@ -96,14 +109,14 @@ export default function MobileCardCarousel({
               type="button"
               onClick={scrollNext}
               aria-label="下一張"
-              className="absolute right-0 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-md border border-gray-100 text-stone-900 active:scale-95"
+              className="absolute right-[8%] top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-md border border-gray-100 text-stone-900 active:scale-95"
             >
               <ChevronRightIcon className="h-5 w-5" />
             </button>
           </>
         )}
 
-        <div className="overflow-hidden px-1" ref={emblaRef}>
+        <div className="overflow-hidden" ref={emblaRef}>
           <div
             className="flex touch-pan-y"
             style={{ marginLeft: -gap / 2, marginRight: -gap / 2 }}
@@ -121,7 +134,7 @@ export default function MobileCardCarousel({
         </div>
       </div>
 
-      {showDots && dotCount > 1 && (
+      {showDots && dotCount > 1 && !useCompactPager && (
         <div className="mt-4 flex justify-center gap-1.5">
           {Array.from({ length: dotCount }).map((_, index) => (
             <button
@@ -135,6 +148,25 @@ export default function MobileCardCarousel({
               ].join(" ")}
             />
           ))}
+        </div>
+      )}
+
+      {showDots && useCompactPager && (
+        <div className="mt-3 flex items-center justify-center gap-3 px-8">
+          <button
+            type="button"
+            aria-label={`第 ${activeDot + 1} / ${dotCount} 張`}
+            onClick={jumpFromBar}
+            className="relative h-1 w-[132px] rounded-full bg-gray-200"
+          >
+            <span
+              className="absolute top-0 h-1 rounded-full bg-[#0A6CD0] transition-all duration-200"
+              style={{ width: `${thumbPct}%`, left: `${thumbLeft}%` }}
+            />
+          </button>
+          <span className="text-[11px] tabular-nums font-medium text-gray-400">
+            {activeDot + 1} / {dotCount}
+          </span>
         </div>
       )}
     </div>

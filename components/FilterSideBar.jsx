@@ -7,7 +7,7 @@ import { parseHotSaleTelecoms } from "@/lib/productHotSale";
 
 /**
  * 篩選維度：只保留商品規格裡真的有的欄位
- * （對齊 Medusa options：使用天數／數據量／電信商／線路／熱銷）
+ * （對齊 Medusa options：使用天數／數據量／線路／熱銷）
  */
 const FILTER_GROUPS = [
   {
@@ -56,6 +56,11 @@ const FILTER_GROUPS = [
         match: (t) => /吃到飽|無限流量|無限|unlimited/i.test(t),
       },
       {
+        label: "不降速吃到飽",
+        value: "不降速吃到飽",
+        match: (t) => TRUE_UNLIMITED_TAG_RE.test(t),
+      },
+      {
         label: "每日型",
         value: "每日型",
         match: (t) => /每日|每天|daily/i.test(t),
@@ -93,70 +98,6 @@ const FILTER_GROUPS = [
       },
     ],
   },
-  {
-    key: "carrier",
-    label: "電信商",
-    multi: true,
-    options: [
-      {
-        label: "AU (KDDI)",
-        value: "AU(KDDI)",
-        match: (t) =>
-          /AU\s*\(?\s*KDDI\s*\)?/i.test(t) ||
-          (/^au$/i.test(t) && !/10\s*Mbps/i.test(t)),
-      },
-      {
-        label: "AU(KDDI) 高速數據",
-        value: "AU(KDDI) 高速數據",
-        match: (t) => /AU.*高速|高速數據/i.test(t),
-      },
-      {
-        label: "AU(KDDI) 10Mbps",
-        value: "AU(KDDI) 10Mbps",
-        match: (t) => /AU.*KDDI/i.test(t) && /10\s*Mbps/i.test(t),
-      },
-      {
-        label: "SoftBank",
-        value: "SoftBank",
-        match: (t) =>
-          /SoftBank/i.test(t) &&
-          !/KDDI/i.test(t) &&
-          !/10\s*Mbps/i.test(t),
-      },
-      {
-        label: "SoftBank / KDDI",
-        value: "SoftBank / KDDI",
-        match: (t) =>
-          /SoftBank/i.test(t) &&
-          /KDDI/i.test(t) &&
-          !/Docomo|DOCOMO|三網/i.test(t) &&
-          !/10\s*Mbps/i.test(t),
-      },
-      {
-        label: "KDDI / SoftBank / Docomo +",
-        value: "KDDI / SoftBank / Docomo +",
-        match: (t) =>
-          /KDDI/i.test(t) &&
-          /SoftBank/i.test(t) &&
-          /Docomo|DOCOMO/i.test(t),
-      },
-      {
-        label: "SoftBank / KDDI 10Mbps",
-        value: "SoftBank / KDDI 10Mbps",
-        match: (t) => /SoftBank/i.test(t) && /10\s*Mbps/i.test(t),
-      },
-      {
-        label: "IIJ Docomo",
-        value: "IIJ Docomo",
-        match: (t) => /IIJ/i.test(t) || (/Docomo|NTT/i.test(t) && !/SoftBank|KDDI/i.test(t)),
-      },
-      {
-        label: "其他／全球",
-        value: "全球",
-        match: (t) => /Global|全球|自動切換|其他/i.test(t),
-      },
-    ],
-  },
 ];
 
 function parseDayNumber(tag) {
@@ -168,6 +109,49 @@ function parseDayNumber(tag) {
 function matchDayRange(tag, min, max) {
   const n = parseDayNumber(tag);
   return n != null && n >= min && n <= max;
+}
+
+/** 真．不限速吃到飽：只認明確標示，不含總量／FUP／10Mbps */
+const TRUE_UNLIMITED_TAG_RE =
+  /不降速吃到飽|不降速|真[．・.]?\s*不限速|真吃到飽|真高速吃到飽|unlimited\s*(high|max)\s*speed|AU\s*\(?\s*KDDI\s*\)?\s*高速數據|SK電信[（(]韓國IP[）)]|Truemove H 當地號碼/i;
+
+function isTrueUnlimitedText(text) {
+  const t = String(text || "");
+  if (!t || !TRUE_UNLIMITED_TAG_RE.test(t)) return false;
+  // 越南等「總量型／用完斷網」即使文案有「高速數據」也不算
+  if (
+    /總量型|用完後斷網|用完即斷網/.test(t) &&
+    !/AU\s*\(?\s*KDDI\s*\)?\s*高速數據|SK電信[（(]韓國IP[）)]|Truemove H 當地號碼|不降速|真[．・.]?\s*不限速/i.test(
+      t,
+    )
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function collectProductSearchText(product, tagsSet) {
+  const parts = [...tagsSet];
+  parts.push(
+    product?.title,
+    product?.name,
+    product?.subtitle,
+    product?.description,
+  );
+  const meta = product?.metadata;
+  if (meta && typeof meta === "object") {
+    for (const v of Object.values(meta)) {
+      if (typeof v === "string") parts.push(v);
+      else if (v && typeof v === "object") {
+        try {
+          parts.push(JSON.stringify(v));
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }
+  return parts.filter(Boolean).join(" ");
 }
 
 /**
@@ -258,6 +242,10 @@ export function buildFilterTagsFromProduct(product) {
     product?.metadata?.hotsale === true
   ) {
     tags.add("hotsale");
+  }
+
+  if (isTrueUnlimitedText(collectProductSearchText(product, tags))) {
+    tags.add("不降速吃到飽");
   }
 
   // 國家／地區分類（供 /product 外層篩選）
@@ -422,6 +410,10 @@ export function buildDisplayTagsFromProduct(product, _filterTags = []) {
 
 function productMatchesFilterOption(product, opt) {
   const tags = product?.tags || [];
+  if (opt.value === "不降速吃到飽") {
+    const title = String(product?.title || product?.name || "");
+    if (/總量型/.test(title)) return false;
+  }
   if (tags.some((t) => opt.match(String(t)))) return true;
 
   // 國家分類：相容只有 category_slug、尚未寫入 country: tag 的舊資料

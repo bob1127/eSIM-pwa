@@ -19,6 +19,7 @@ import {
 } from "../../../lib/productOverviewNotices";
 import { useProductAdmin } from "../../../hooks/useProductAdmin";
 import ProductReviewsSection from "../../../components/product/ProductReviewsSection";
+import ProductRatingBadge from "../../../components/product/ProductRatingBadge";
 import ProductPromoOfferBanner from "../../../components/product/ProductPromoOfferBanner";
 import NetworkCoverageSection from "../../../components/product/NetworkCoverageSection";
 import { resolveCoverageCountry } from "../../../lib/networkCoverageCountries";
@@ -3254,6 +3255,7 @@ export default function ProductPage({
     { ...product, subtitle: displaySubtitle || "" },
     currentVariation,
     router.query.category,
+    { variations },
   );
 
   const breadcrumbCategorySlug = String(
@@ -3706,22 +3708,15 @@ export default function ProductPage({
                     <div className="mb-3" />
                   )}
 
-                  <a
+                  <ProductRatingBadge
+                    productId={product.id}
                     href="#product-reviews"
-                    className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-[#0A6CD0] mb-4 w-fit"
-                  >
-                    <span className="inline-flex items-center gap-0.5 text-[#3B9EFF]">
-                      {[...Array(5)].map((_, i) => (
-                        <MaterialIcon key={i} name="star" size={16} filled />
-                      ))}
-                    </span>
-                    <span className="underline underline-offset-2 decoration-slate-300">
-                      查看用戶評論
-                    </span>
-                  </a>
+                    className="mb-4"
+                    starColor="text-[#3B9EFF]"
+                  />
 
                   {introBullets[0] ? (
-                    <p className="text-[15px] font-bold text-[#0A6CD0] leading-relaxed mb-2">
+                    <p className="product-seo-summary text-[15px] font-bold text-[#0A6CD0] leading-relaxed mb-2">
                       <FeatureBulletText>{introBullets[0]}</FeatureBulletText>
                     </p>
                   ) : null}
@@ -4268,7 +4263,7 @@ export default function ProductPage({
                     {product.name}
                   </h1>
                   {displaySubtitle ? (
-                    <p className="text-[15px] sm:text-base font-semibold text-[#00befa] leading-snug mb-1">
+                    <p className="product-seo-summary text-[15px] sm:text-base font-semibold text-[#00befa] leading-snug mb-1">
                       {displaySubtitle}
                     </p>
                   ) : null}
@@ -4280,17 +4275,12 @@ export default function ProductPage({
                     <div className="mb-3" />
                   )}
 
-                  <a
+                  <ProductRatingBadge
+                    productId={product.id}
                     href="#product-reviews"
-                    className="inline-flex items-center gap-1.5 text-sm text-[#00befa] font-semibold hover:underline mb-5 w-fit"
-                  >
-                    <span className="inline-flex items-center gap-0.5 text-amber-400">
-                      {[...Array(5)].map((_, i) => (
-                        <MaterialIcon key={i} name="star" size={16} filled />
-                      ))}
-                    </span>
-                    查看用戶評論
-                  </a>
+                    className="mb-5"
+                    starColor="text-amber-400"
+                  />
 
                   {/* 價格區 */}
                   <div className="flex flex-wrap items-center gap-3 mb-4 pb-5 border-b border-gray-100">

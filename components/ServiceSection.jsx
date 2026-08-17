@@ -353,8 +353,8 @@ export default function PickUpJobsSection() {
 
           {/* 手機版輪播 */}
           <AnimatePresence mode="wait">
-            <div key={`mobile-${active}`} className="md:hidden">
-              <MobileCardCarousel slideClassName="min-w-0 flex-[0_0_88%]" autoplayDelay={4500}>
+            <div key={`mobile-${active}`} className="md:hidden -mx-4">
+              <MobileCardCarousel align="center" slideClassName="min-w-0 flex-[0_0_76%]" autoplayDelay={4500}>
                 {cards.map((c, i) => (
                   <JobCard
                     key={`${active}-m-${i}`}

@@ -277,7 +277,8 @@ export default function DataQueryPage() {
               <div
                 className="absolute inset-0 bg-cover bg-no-repeat bg-[70%_20%]"
                 style={{
-                  backgroundImage: "url('/images/fv_img01.webp')",
+                  backgroundImage:
+                    "url('/images/7bf7a01a-6740-4390-800c-566683623985.png')",
                 }}
                 aria-hidden
               />
@@ -443,9 +444,7 @@ export default function DataQueryPage() {
                         className="p-4 font-black border-b text-center"
                         style={{
                           borderColor: C.line,
-                          backgroundColor: plan.highlight
-                            ? C.primary
-                            : C.page,
+                          backgroundColor: plan.highlight ? C.primary : C.page,
                           color: plan.highlight ? "#FFFFFF" : C.text,
                         }}
                       >
