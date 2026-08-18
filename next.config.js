@@ -68,7 +68,8 @@ const withPWA = require("@ducanh2912/next-pwa").default({
 
 // 圖片策略（避免再打爆 Vercel Image Optimization → 402、圖全掛）：
 // - Vercel／正式站：一律 images.unoptimized，禁止走 /_next/image
-// - 正式站壓縮改走 SafeImage → Cloudflare /cdn-cgi/image（format=auto）
+// - webpack 把 next/image alias 到 SafeImage → Cloudflare /cdn-cgi/image（format=auto）
+// - 原生 <img> 由 _document 的 bootstrap 改寫
 // - 僅本機 `next dev` 開 Next Image Optimization（用量不計 Vercel）
 // （Next 13.4 + next-pwa 下 images.loader:"custom" 在 SSG 常漏掛 → missing loader）
 const disableVercelImageOptimization =
@@ -234,10 +235,25 @@ const nextConfig = {
   },
 
   webpack(config) {
+    // 整站 next/image → SafeImage（正式站走 Cloudflare /cdn-cgi/image）
+    // 不設 images.loader:"custom"：Next 13.4 + next-pwa 的 SSG 常漏掛 loader
+    const cfImage = path.join(__dirname, "components/SafeImage.jsx");
+    if (Array.isArray(config.resolve.alias)) {
+      config.resolve.alias.push(
+        { name: "next/image", alias: cfImage },
+        { name: "next/image.js", alias: cfImage },
+      );
+    } else {
+      config.resolve.alias = {
+        ...(config.resolve.alias || {}),
+        "next/image": cfImage,
+        "next/image.js": cfImage,
+      };
+    }
     config.module.rules.push({
       test: /\.(glsl|vs|fs|vert|frag)$/,
       exclude: /node_modules/,
-      use: ["raw-loader"], 
+      use: ["raw-loader"],
     });
     return config;
   },

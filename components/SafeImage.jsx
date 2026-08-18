@@ -1,38 +1,28 @@
 import { useCallback, useState } from "react";
-import Image from "next/image";
-import cfImageLoader from "../lib/cfImageLoader";
+// 不可 import 'next/image'：webpack 會 alias 回這個檔案，造成循環
+import NextImage from "next/dist/shared/lib/image-external";
+import cfImageLoader, {
+  isCfImagesEnabled,
+  shouldSkipCfImage,
+} from "../lib/cfImageLoader";
 
-function isCfImagesEnabled() {
-  const flag = process.env.NEXT_PUBLIC_CF_IMAGES;
-  return flag === "1" || flag === "true";
-}
-
-function isAppLocalSrc(src) {
-  return (
-    typeof src === "string" &&
-    src.startsWith("/") &&
-    !src.startsWith("//") &&
-    !src.startsWith("/_next/")
-  );
-}
+const Image = NextImage.default || NextImage;
 
 function pickWidth(props) {
   const w = Number(props.width);
   if (Number.isFinite(w) && w > 0) return w;
-  // fill / 未指定寬度：用最大 deviceSize bucket
   return 1280;
 }
 
 /**
- * 與 next/image 相同介面。
+ * 與 next/image 相同介面；webpack 已把 next/image 指到這裡，整站 Image 都會走 Cloudflare。
  *
  * - 正式站／Vercel：絕不走 /_next/image（會吃 Vercel Image Optimization 額度 → 402）
- * - 正式站 + CF：src 改寫成 /cdn-cgi/image/...（format=auto → WebP/AVIF）
- * - 僅本機 next dev：/public 圖可用 Next Image Optimization
+ * - 正式站：src 改寫成 /cdn-cgi/image/...（format=auto → WebP/AVIF）
+ * - 本機 next dev：走 Next Image Optimization（含遠端 R2／正式站圖）
  * - 失敗 onError 回退原圖（寧可原圖，也不要空白）
  */
 function isOnVercelRuntime() {
-  // NEXT_PUBLIC_ 才能進瀏覽器 bundle；建置時 VERCEL=1 也會進 server
   return (
     process.env.VERCEL === "1" ||
     Boolean(process.env.VERCEL_ENV) ||
@@ -52,7 +42,6 @@ export default function SafeImage({
 }) {
   const [useOriginal, setUseOriginal] = useState(false);
   const cfOn = isCfImagesEnabled();
-  const localSrc = isAppLocalSrc(src);
   const onVercel = isOnVercelRuntime();
 
   const handleError = useCallback(
@@ -65,16 +54,17 @@ export default function SafeImage({
 
   if (!src) return null;
 
-  // 僅本機 next dev + /public：可用 Next optimizer。Vercel／正式站一律禁用。
+  const skipCf = shouldSkipCfImage(typeof src === "string" ? src : "");
+
+  // 本機 next dev：本地＋遠端都走 Next optimizer，才會轉成 WebP
   const useNextOptimizer =
     !useOriginal &&
-    localSrc &&
     !onVercel &&
     process.env.NODE_ENV === "development" &&
-    unoptimizedProp !== true;
+    unoptimizedProp !== true &&
+    !skipCf;
 
-  // 正式站／遠端：CF format=auto；本機 local 已走 Next 時不再繞 CF
-  const useCf = !useOriginal && cfOn && !useNextOptimizer;
+  const useCf = !useOriginal && cfOn && !useNextOptimizer && !skipCf;
 
   let resolvedSrc = src;
   let unoptimized = true;
@@ -82,7 +72,7 @@ export default function SafeImage({
   if (useNextOptimizer) {
     resolvedSrc = src;
     unoptimized = false;
-  } else if (useCf) {
+  } else if (useCf && typeof src === "string") {
     resolvedSrc = cfImageLoader({
       src,
       width: pickWidth({ width, fill }),
@@ -106,3 +96,5 @@ export default function SafeImage({
     />
   );
 }
+
+export { unstable_getImgProps } from "next/dist/shared/lib/image-external";

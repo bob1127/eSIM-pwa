@@ -17,6 +17,7 @@ import WpSlideshow, {
   readAutoplay,
 } from "@/components/Blog/WpSlideshow";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
+import { cfImgSrc } from "@/lib/cfImageLoader";
 import { domToReact, attributesToProps } from "html-react-parser";
 
 export function createWpContentReplace({
@@ -77,7 +78,7 @@ export function createWpContentReplace({
           return null;
         }
         const globalIndex = imageCursor++;
-        const src = normalizeUrl(node.attribs.src);
+        const src = cfImgSrc(normalizeUrl(node.attribs.src), 960);
         const alt = node.attribs.alt || "";
         const clickable = typeof onOpenLightbox === "function";
 
