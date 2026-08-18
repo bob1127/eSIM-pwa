@@ -1,0 +1,33 @@
+# 對齊 GitHub 會推的「必要原始碼」：Vercel 會自己 npm install / next build
+node_modules
+.next
+.vercel
+.env*
+.DS_Store
+*.zip
+*.psd
+*.docx
+*.pdf
+*.dump
+*.dump.enc
+*.sql.gz
+*.FBX
+*.ai
+backups
+
+# 舊版 export，正式站不需要帶上去
+_next
+build
+
+# 設計參考稿
+參考
+public/參考
+
+# 根目錄字體複本（實際引用的是 /public/fonts）
+/fonts
+
+# 舊站影片，eSIM 頁面未使用
+public/videos
+
+# 內部文件
+資訊

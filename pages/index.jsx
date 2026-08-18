@@ -764,7 +764,7 @@ export default function Home() {
                   </button>
                   <button
                     onClick={() => setActiveSystem("android")}
-                    className={`px-8 py-3 rounded-full font-bold transition-all duration-300 ${activeSystem === "android" ? "bg-[#30ae99] text-white shadow-md" : "text-gray-500 hover:text-stone-900"}`}
+                    className={`px-8 py-3 rounded-full font-bold transition-all duration-300 ${activeSystem === "android" ? "bg-[#1A7A6A] text-white shadow-md" : "text-gray-600 hover:text-stone-900"}`}
                   >
                     Android
                   </button>

@@ -110,6 +110,9 @@ export default function PartnerShopLayout({
         articleTags={seo?.articleTags}
         articleAuthor={seo?.articleAuthor || storeName}
       />
+      <a href="#main-content" className="skip-link">
+        跳到主要內容
+      </a>
       <ShopNavbar
         primaryNav={primaryNav}
         secondaryNav={secondaryNav}
@@ -132,7 +135,7 @@ export default function PartnerShopLayout({
         searchDomain={domain}
         cartMode="esim"
       />
-      <main className="min-h-screen bg-white">{children}</main>
+      <main id="main-content" tabIndex={-1} className="min-h-screen bg-white">{children}</main>
       <PartnerFooter store={store} />
       <PartnerCartSidebar storeDomain={domain} storeId={store?.id} />
     </>

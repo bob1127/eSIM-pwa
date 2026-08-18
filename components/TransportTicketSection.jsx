@@ -211,7 +211,7 @@ function TicketModal({ item, onClose }) {
               <span className="text-[11px] font-bold text-[#0A6CD0] bg-blue-50 px-2 py-0.5 rounded-full">
                 {item.category}
               </span>
-              <span className="text-[11px] text-gray-400">
+              <span className="text-[11px] text-gray-600">
                 {item.regionLabel}
               </span>
               {item.badge && (
@@ -328,7 +328,7 @@ function KKdayCard({ item, onClick }) {
       </div>
 
       <div className="flex flex-1 flex-col px-4 pt-3.5 pb-4">
-        <p className="text-[11px] text-gray-400 line-clamp-1">
+        <p className="text-[11px] text-gray-600 line-clamp-1">
           {item.subtitle}
         </p>
         <h3 className="mt-1 text-[15px] font-black text-gray-900 leading-snug line-clamp-2 min-h-[2.5rem]">
@@ -350,7 +350,7 @@ function KKdayCard({ item, onClick }) {
         </div>
 
         <div className="mt-3 border-t border-gray-100 pt-2.5 flex items-center justify-between gap-2">
-          <p className="text-[10px] text-gray-400 line-clamp-1 flex-1">
+          <p className="text-[10px] text-gray-600 line-clamp-1 flex-1">
             {item.footer}
           </p>
           <span

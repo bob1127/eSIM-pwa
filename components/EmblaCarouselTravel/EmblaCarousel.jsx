@@ -220,7 +220,7 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
             <div className="absolute inset-0 h-full w-full rounded-full bg-[#0891b2] opacity-0 transition-all duration-300 group-hover:translate-x-1.5 group-hover:translate-y-1.5 group-hover:opacity-100" />
 
             {/* 主按鈕層 */}
-            <div className="relative z-10 inline-flex items-center justify-center overflow-hidden rounded-full bg-[#30AE99] px-8 py-3.5 font-bold text-white shadow-lg shadow-[#384a72] first-letter:transition-all duration-300 group-hover:-translate-x-1 group-hover:-translate-y-1 group-hover:shadow-[#0960c3]">
+            <div className="relative z-10 inline-flex items-center justify-center overflow-hidden rounded-full bg-[#1A7A6A] px-8 py-3.5 font-bold text-white shadow-lg shadow-[#384a72] first-letter:transition-all duration-300 group-hover:-translate-x-1 group-hover:-translate-y-1 group-hover:shadow-[#0960c3]">
               {/* 動畫效果 2 (文字傾斜滑動) */}
               <span className="relative inline-flex overflow-hidden">
                 {/* 第一組內容：原本顯示的。Hover 時向右滑出並傾斜 */}

@@ -18,28 +18,28 @@ const KOREA_HREF =
   "/product/korea/korea-unlimited-esim?telecom=sk-native&days=5";
 const THAILAND_HREF =
   "/product/thailand/thailand-unlimited-esim?telecom=truemove&days=8";
-const CHINA_HREF =
-  "/product/china/china-unlimited-esim?telecom=cmcc-70&days=5";
+const CHINA_HREF = "/product/china/china-unlimited-esim?telecom=cmcc-70&days=5";
 const MEMBER_PROMO_HREF = "/promo";
 
 const RECOMMEND_SLIDES = [
-  { src: "/images/日本eSIM.png", href: JAPAN_HREF },
-  { src: "/images/九州01.png", href: KYUSHU_HREF },
-  { src: "/images/中國.png", href: CHINA_HREF },
+  { src: "/images/日本eSIM.png", href: JAPAN_HREF, alt: "日本 eSIM 方案" },
+  { src: "/images/九州01.png", href: KYUSHU_HREF, alt: "九州不限速 eSIM 方案" },
+  { src: "/images/中國.png", href: CHINA_HREF, alt: "中國 eSIM 方案" },
   {
     src: "/images/加入會員_加入line官方_優惠-Jeko eSIM_多國旅遊eSIM.png",
     href: MEMBER_PROMO_HREF,
+    alt: "加入會員與 LINE 官方帳號優惠",
   },
-  { src: "/images/韓國01.png", href: KOREA_HREF },
-  { src: "/images/泰國原生eSIM.png", href: THAILAND_HREF },
-  { src: "/images/日本eSIM.png", href: JAPAN_HREF },
-  { src: "/images/九州01.png", href: KYUSHU_HREF },
-  { src: "/images/中國.png", href: CHINA_HREF },
-  { src: "/images/韓國01.png", href: KOREA_HREF },
-  { src: "/images/泰國原生eSIM.png", href: THAILAND_HREF },
+  { src: "/images/韓國01.png", href: KOREA_HREF, alt: "韓國原生 eSIM 方案" },
+  { src: "/images/泰國原生eSIM.png", href: THAILAND_HREF, alt: "泰國原生 eSIM 方案" },
+  { src: "/images/日本eSIM.png", href: JAPAN_HREF, alt: "日本 eSIM 方案" },
+  { src: "/images/九州01.png", href: KYUSHU_HREF, alt: "九州不限速 eSIM 方案" },
+  { src: "/images/中國.png", href: CHINA_HREF, alt: "中國 eSIM 方案" },
+  { src: "/images/韓國01.png", href: KOREA_HREF, alt: "韓國原生 eSIM 方案" },
+  { src: "/images/泰國原生eSIM.png", href: THAILAND_HREF, alt: "泰國原生 eSIM 方案" },
 ];
 
-function RecommendSlide({ src, href, index, sizes }) {
+function RecommendSlide({ src, href, alt, index, sizes }) {
   const showNativeIpTag = NATIVE_IP_SLIDES.has(src);
 
   const inner = (
@@ -47,7 +47,7 @@ function RecommendSlide({ src, href, index, sizes }) {
       <div className="relative w-full aspect-[16/9] sm:aspect-[16/8] overflow-hidden rounded-[15px] bg-black">
         <SafeImage
           src={src}
-          alt={`Jeko 推薦 ${index + 1}`}
+          alt={alt}
           fill
           className="object-cover object-center"
           sizes={sizes}
@@ -82,6 +82,7 @@ export default function JekoRecommendSection() {
         key={`recommend-${index}`}
         src={slide.src}
         href={slide.href}
+        alt={slide.alt}
         index={index}
         sizes="(max-width: 768px) 88vw, 50vw"
       />
@@ -97,14 +98,18 @@ export default function JekoRecommendSection() {
           <h2 className="text-2xl sm:text-[28px] font-black text-gray-900 tracking-tight">
             Jeko 推薦專區
           </h2>
-          <p className="text-sm text-gray-500 font-medium">
+          <p className="text-sm text-gray-600 font-medium">
             精選 eSIM 方案・旅遊優惠・出國必備
           </p>
         </div>
 
         {/* 手機版：與租車包車區相同，單張 88% 露出下一張 */}
         <div className="md:hidden -mx-4">
-          <MobileCardCarousel align="center" slideClassName="min-w-0 flex-[0_0_76%]">
+          <MobileCardCarousel
+            align="center"
+            slideClassName="min-w-0 flex-[0_0_76%]"
+            label="Jeko 推薦專區輪播"
+          >
             {renderSlides()}
           </MobileCardCarousel>
         </div>
@@ -117,6 +122,7 @@ export default function JekoRecommendSection() {
             autoplayDelay={5000}
             align="start"
             loop
+            label="Jeko 推薦專區輪播"
           >
             {renderSlides()}
           </MobileCardCarousel>

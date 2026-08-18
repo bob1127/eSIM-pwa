@@ -31,7 +31,7 @@ export default function Footer({
         >
           <div className="flex flex-col gap-6">
             {/* Logo */}
-            <Link href="/" className="inline-block select-none">
+            <Link href="/" className="inline-block select-none" aria-label="Jeko eSIM 首頁">
               <span className="text-[42px] md:text-[48px] font-black tracking-tight text-[#0A6CD0] leading-none">
                 JEKO
               </span>
@@ -39,7 +39,7 @@ export default function Footer({
 
             {/* 頂部橫向選單 */}
             <nav
-              className="flex flex-wrap gap-x-6 gap-y-2 text-[12px] font-medium text-gray-500"
+              className="flex flex-wrap gap-x-6 gap-y-2 text-[12px] font-medium text-gray-600"
               aria-label="網站導覽"
             >
               {SITE_NAV_LINKS.map((item) =>
@@ -63,7 +63,7 @@ export default function Footer({
                 ),
               )}
             </nav>
-            <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[12px] font-medium text-gray-500">
+            <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[12px] font-medium text-gray-600">
               <Link
                 href="/about"
                 className="hover:text-gray-900 transition-colors"
@@ -306,17 +306,17 @@ export default function Footer({
             <Link
               href="/"
               className="inline-block select-none shrink-0 mt-0.5"
-              aria-label="JEKO 首頁"
+              aria-label="Jeko eSIM 首頁"
             >
               <Image
                 src="/images/Logo/logo-no-bg.png"
-                alt="JEKO"
+                alt=""
                 width={48}
                 height={48}
                 className="object-contain h-10 w-10"
               />
             </Link>
-            <div className="text-[11px] text-gray-500 leading-relaxed font-medium">
+            <div className="text-[11px] text-gray-600 leading-relaxed font-medium">
               <p className="text-gray-900 font-bold mb-1 text-[12px]">
                 {COMPANY_NAME}
               </p>
@@ -403,7 +403,9 @@ export default function Footer({
           {/* 右側：版權與回到頂部 */}
           <div className="flex flex-col items-start md:items-end gap-4 w-full md:w-auto">
             <button
+              type="button"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              aria-label="回到頁面頂端"
               className="text-[12px] font-bold text-gray-900 flex items-center gap-1.5 hover:text-sky-500 transition-colors"
             >
               PAGE TOP
@@ -425,11 +427,11 @@ export default function Footer({
               href="https://www.jeek-webdesign.com.tw"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[11px]  mb-0 text-gray-400 hover:text-stone-800 duration-300"
+              className="text-[11px]  mb-0 text-gray-600 hover:text-stone-800 duration-300"
             >
               Design by 極客網頁設計
             </a>
-            <p className="text-[11px] text-gray-400">
+            <p className="text-[11px] text-gray-600">
               © 2025 Jeko Inc. All Rights Reserved.
             </p>
           </div>

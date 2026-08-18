@@ -165,7 +165,7 @@ export default function HeroCountryPlanPicker() {
             aria-expanded={dropdownOpen}
             aria-haspopup="listbox"
             aria-label="搜尋國家或方案關鍵字"
-            className="min-w-0 flex-1 bg-transparent px-2 py-1 text-sm font-bold text-[#1d5cc5] placeholder:font-medium placeholder:text-slate-400 outline-none"
+            className="min-w-0 flex-1 bg-transparent px-2 py-1 text-sm font-bold text-[#1d5cc5] placeholder:font-medium placeholder:text-slate-600 outline-none"
           />
           {query ? (
             <button
@@ -174,7 +174,7 @@ export default function HeroCountryPlanPicker() {
                 setQuery("");
                 inputRef.current?.focus();
               }}
-              className="shrink-0 p-0.5 text-slate-400 hover:text-slate-600"
+              className="shrink-0 p-0.5 text-slate-500 hover:text-slate-700"
               aria-label="清除搜尋"
             >
               <MaterialIcon name="close" size={18} />
@@ -230,7 +230,7 @@ export default function HeroCountryPlanPicker() {
 
       <div className="mt-3 bg-white rounded-lg overflow-hidden">
         {loading ? (
-          <div className="px-4 py-8 text-center text-sm text-slate-400 font-medium animate-pulse">
+          <div className="px-4 py-8 text-center text-sm text-slate-600 font-medium animate-pulse">
             方案載入中…
           </div>
         ) : plans.length === 0 ? (
@@ -284,7 +284,7 @@ export default function HeroCountryPlanPicker() {
                     <MaterialIcon
                       name="chevron_right"
                       size={18}
-                      className="text-slate-400 inline-block group-hover:translate-x-0.5 transition-transform"
+                      className="text-slate-500 inline-block group-hover:translate-x-0.5 transition-transform"
                     />
                   </span>
                 </Link>

@@ -21,17 +21,31 @@ export default function MobileCardCarousel({
   loop = true,
   align = "center",
   className = "",
+  label = "卡片輪播",
 }) {
   const slides = Children.toArray(children);
+  const [reduceMotion, setReduceMotion] = useState(true);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduceMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  const enableAutoplay = autoplay && !reduceMotion;
+
   const autoplayPlugin = useRef(
     Autoplay({
       delay: autoplayDelay,
       stopOnInteraction: false,
       stopOnMouseEnter: true,
+      stopOnFocusIn: true,
     }),
   );
 
-  const plugins = autoplay ? [autoplayPlugin.current] : [];
+  const plugins = enableAutoplay ? [autoplayPlugin.current] : [];
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
@@ -93,7 +107,12 @@ export default function MobileCardCarousel({
   };
 
   return (
-    <div className={className}>
+    <div
+      className={className}
+      role="region"
+      aria-roledescription="carousel"
+      aria-label={label}
+    >
       <div className="relative">
         {showArrows && slides.length > 1 && (
           <>
@@ -103,7 +122,7 @@ export default function MobileCardCarousel({
               aria-label="上一張"
               className="absolute left-[8%] top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-md border border-gray-100 text-stone-900 active:scale-95"
             >
-              <ChevronLeftIcon className="h-5 w-5" />
+              <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -111,7 +130,7 @@ export default function MobileCardCarousel({
               aria-label="下一張"
               className="absolute right-[8%] top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-md border border-gray-100 text-stone-900 active:scale-95"
             >
-              <ChevronRightIcon className="h-5 w-5" />
+              <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
             </button>
           </>
         )}
@@ -141,6 +160,7 @@ export default function MobileCardCarousel({
               key={index}
               type="button"
               aria-label={`第 ${index + 1} 張`}
+              aria-current={index === activeDot ? "true" : undefined}
               onClick={() => scrollTo(index)}
               className={[
                 "h-1.5 rounded-full transition-all duration-200",
@@ -164,7 +184,7 @@ export default function MobileCardCarousel({
               style={{ width: `${thumbPct}%`, left: `${thumbLeft}%` }}
             />
           </button>
-          <span className="text-[11px] tabular-nums font-medium text-gray-400">
+          <span className="text-[11px] tabular-nums font-medium text-gray-600" aria-live="polite">
             {activeDot + 1} / {dotCount}
           </span>
         </div>

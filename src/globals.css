@@ -2,6 +2,37 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* 跳過導覽（鍵盤／螢幕閱讀器） */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 10050;
+  padding: 0.5rem 1rem;
+  background: #0a6cd0;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  transform: translateY(-180%);
+  transition: transform 0.15s ease;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* 鍵盤焦點可見（滑鼠點擊不強制外框） */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid #0a6cd0;
+  outline-offset: 2px;
+}
+
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
@@ -1223,13 +1254,10 @@ img {
       'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     letter-spacing: 0.01em;
   }
-  /* 全站：點擊 focus 時不顯示外框／ring */
-  input:focus,
-  input:focus-visible,
-  textarea:focus,
-  textarea:focus-visible,
-  select:focus,
-  select:focus-visible {
+  /* 全站：滑鼠點擊不顯示外框；鍵盤 Tab 仍保留焦點可見 */
+  input:focus:not(:focus-visible),
+  textarea:focus:not(:focus-visible),
+  select:focus:not(:focus-visible) {
     outline: none !important;
     box-shadow: none !important;
     --tw-ring-offset-shadow: 0 0 #0000 !important;

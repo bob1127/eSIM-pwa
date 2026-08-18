@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
+import { cfImgSrc } from "@/lib/cfImageLoader";
 import MediaGalleryLightbox from "@/components/MediaGalleryLightbox";
 import {
   GUTTER_WIDTH,
@@ -481,7 +482,7 @@ export default function WpPhotoWall({
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={img.thumb}
+                            src={cfImgSrc(img.thumb, Math.round(cell.width) || 640)}
                             alt={img.alt || ""}
                             loading="lazy"
                             data-width={Math.round(cell.width)}

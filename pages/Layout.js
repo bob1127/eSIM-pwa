@@ -65,18 +65,23 @@ export default function RootLayout({
         <NextUIProvider>
           <NextThemesProvider attribute="class" defaultTheme="light">
             <UserProvider>
+              <a href="#main-content" className="skip-link">
+                跳到主要內容
+              </a>
               {/* ✅ 提早包住所有元件 */}
               {!hideNavbar && <Navbar />}
               <Sidebar sidebarProduct={sidebarProduct} onAddToCart={handleAddToCart} />
 
               {/* 浮動 Navbar 佔高：padding 加在第一層內容上，頁面底色才能貼頂、不露出白邊 */}
-              <div
+              <main
+                id="main-content"
+                tabIndex={-1}
                 className={
                   !hideNavbar && !flushTop ? "layout-below-nav" : undefined
                 }
               >
                 {children}
-              </div>
+              </main>
 
               <SmartWizardFloat />
               <AiChatWidget />

@@ -1464,6 +1464,10 @@ export default function AiChatWidget() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            id="ai-chat-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ai-chat-title"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
@@ -1478,7 +1482,7 @@ export default function AiChatWidget() {
                   className="h-9 w-9 rounded-full object-contain bg-white p-0.5 border border-white/40"
                 />
                 <div className="text-left">
-                  <h3 className="font-bold text-[14px]">
+                  <h3 id="ai-chat-title" className="font-bold text-[14px]">
                     J寶 - 您的旅行小幫手
                   </h3>
                   <div className="text-[11px] opacity-80 flex items-center gap-1 mt-0.5">
@@ -1488,7 +1492,9 @@ export default function AiChatWidget() {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
+                aria-label="關閉聊天"
                 className="p-1 hover:bg-white/20 rounded-full"
               >
                 <X className="w-5 h-5" />
@@ -1876,11 +1882,13 @@ export default function AiChatWidget() {
                       ? "補充說明（可選）..."
                       : "輸入問題或上傳截圖..."
                   }
+                  aria-label="輸入訊息"
                   className="flex-1 bg-transparent px-2 border-none outline-none focus:ring-0 text-sm text-slate-700"
                   disabled={isLoading}
                 />
                 <button
                   type="submit"
+                  aria-label="送出訊息"
                   disabled={(!input.trim() && !pendingMedia) || isLoading}
                   className="bg-blue-600 text-white p-2.5 rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
@@ -1896,12 +1904,16 @@ export default function AiChatWidget() {
         )}
       </AnimatePresence>
 
-      <motion.div
+      <motion.button
+        type="button"
         initial="rest"
         whileHover="hover"
         animate="rest"
-        className="pointer-events-auto hidden md:flex items-center gap-3 cursor-pointer group"
+        className="pointer-events-auto hidden md:flex items-center gap-3 cursor-pointer group bg-transparent border-0 p-0"
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-controls="ai-chat-panel"
+        aria-label={isOpen ? "關閉客服聊天" : "開啟客服聊天"}
       >
         <AnimatePresence>
           {!isOpen && (
@@ -1927,9 +1939,13 @@ export default function AiChatWidget() {
               : "bg-gradient-to-r from-blue-600 to-cyan-500 text-white"
           }`}
         >
-          {isOpen ? <X className="w-6 h-6" /> : <Bot className="w-7 h-7" />}
+          {isOpen ? (
+            <X className="w-6 h-6" aria-hidden="true" />
+          ) : (
+            <Bot className="w-7 h-7" aria-hidden="true" />
+          )}
         </motion.div>
-      </motion.div>
+      </motion.button>
     </div>
   );
 }

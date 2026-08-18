@@ -156,7 +156,7 @@ function ProductMediaSlide({
     return (
       <SafeImage
         src={item.src}
-        alt={item.alt || "product"}
+        alt={item.alt || "商品圖片"}
         fill
         sizes="(max-width: 1024px) 100vw, 55vw"
         className={className}
@@ -169,7 +169,7 @@ function ProductMediaSlide({
   return (
     <SafeImage
       src={item.src}
-      alt={item.alt || "product"}
+      alt={item.alt || "商品圖片"}
       width={1200}
       height={1200}
       sizes="(max-width: 1024px) 100vw, 55vw"
@@ -3574,7 +3574,12 @@ export default function ProductPage({
                             aria-label={`放大檢視第 ${idx + 1} 張圖片`}
                           >
                             <ProductMediaSlide
-                              item={item}
+                              item={{
+                                ...item,
+                                alt:
+                                  item.alt ||
+                                  `${product.name || "商品"} 第 ${idx + 1} 張`,
+                              }}
                               fill
                               className="object-contain pointer-events-none"
                               priority={idx === 0}
@@ -3615,7 +3620,7 @@ export default function ProductPage({
                         ) : (
                           <SafeImage
                             src={item.src}
-                            alt=""
+                            alt={item.alt || `${product.name || "商品"} 縮圖 ${idx + 1}`}
                             fill
                             sizes="80px"
                             className="object-contain bg-white"
@@ -3829,7 +3834,8 @@ export default function ProductPage({
                                 alt="熱銷推薦"
                                 width={56}
                                 height={56}
-                                className="absolute -top-3 right-3 z-10 w-14 h-auto pointer-events-none drop-shadow-sm"
+                                className="absolute -top-3 right-3 z-10 w-14 pointer-events-none drop-shadow-sm"
+                                style={{ width: "auto", height: "auto" }}
                               />
                             ) : null}
                             <button
@@ -4417,7 +4423,8 @@ export default function ProductPage({
                                 alt="熱銷推薦"
                                 width={56}
                                 height={56}
-                                className="absolute -top-3 right-3 z-10 w-14 h-auto pointer-events-none drop-shadow-sm"
+                                className="absolute -top-3 right-3 z-10 w-14 pointer-events-none drop-shadow-sm"
+                                style={{ width: "auto", height: "auto" }}
                               />
                             ) : null}
                             <button
@@ -4684,7 +4691,7 @@ export default function ProductPage({
                       <div className="relative w-16 sm:w-[72px] aspect-[3/4] shrink-0 overflow-hidden bg-white border border-gray-200">
                         <SafeImage
                           src={images[0]?.src || "/default-image.jpg"}
-                          alt=""
+                          alt={images[0]?.alt || product.name || "已選商品"}
                           fill
                           sizes="72px"
                           className="object-contain p-1"

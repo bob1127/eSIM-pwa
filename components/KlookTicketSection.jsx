@@ -184,7 +184,7 @@ function TicketModal({ item, onClose }) {
               <span className="text-[11px] font-bold text-[#00B259] bg-green-50 px-2 py-0.5 rounded-full">
                 {item.category}
               </span>
-              <span className="text-[11px] text-gray-400">
+              <span className="text-[11px] text-gray-600">
                 {item.regionLabel}
               </span>
               {item.badge && (
@@ -205,7 +205,7 @@ function TicketModal({ item, onClose }) {
 
             {item.features?.length > 0 && (
               <div className="mb-4">
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                <p className="text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2">
                   票券特色
                 </p>
                 <ul className="space-y-1.5">
@@ -230,7 +230,7 @@ function TicketModal({ item, onClose }) {
           <div className="shrink-0 border-t border-gray-100 bg-white px-5 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between gap-4 mb-3">
               <div>
-                <p className="text-[11px] text-gray-400">最低價格</p>
+                <p className="text-[11px] text-gray-600">最低價格</p>
                 <p className="text-xl font-black text-gray-900">
                   {item.priceLabel}
                 </p>
@@ -249,7 +249,7 @@ function TicketModal({ item, onClose }) {
               立即購票
             </a>
 
-            <p className="mt-2 text-center text-[10px] text-gray-400">
+            <p className="mt-2 text-center text-[10px] text-gray-600">
               聯盟行銷連結 · 票價以 Klook 官網即時顯示為準
             </p>
           </div>
@@ -305,7 +305,7 @@ function KlookCard({ item, onClick }) {
       </div>
 
       <div className="flex flex-1 flex-col px-4 pt-3.5 pb-4">
-        <p className="text-[11px] text-gray-400 line-clamp-1">
+        <p className="text-[11px] text-gray-600 line-clamp-1">
           {item.subtitle}
         </p>
         <h3 className="mt-1 text-[15px] font-black text-gray-900 leading-snug line-clamp-2 min-h-[2.5rem]">
@@ -322,7 +322,7 @@ function KlookCard({ item, onClick }) {
         </div>
 
         <div className="mt-3 border-t border-gray-100 pt-2.5 flex items-center justify-between gap-2">
-          <p className="text-[10px] text-gray-400 line-clamp-1 flex-1">
+          <p className="text-[10px] text-gray-600 line-clamp-1 flex-1">
             {item.footer}
           </p>
           <span className="shrink-0 text-[10px] font-bold text-[#00B259] group-hover:underline">

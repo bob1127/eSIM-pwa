@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
+import { cfImgSrc } from "@/lib/cfImageLoader";
 
 /** Jetpack / WP「投影片」區塊 */
 export function isWpSlideshowNode(node) {
@@ -101,7 +102,7 @@ export default function WpSlideshow({
   if (!slides.length) return null;
 
   const current = slides[index];
-  const src = normalizeWpAssetUrl(current.src);
+  const src = cfImgSrc(normalizeWpAssetUrl(current.src), 1280);
   const canOpenLightbox = typeof onOpenLightbox === "function";
 
   return (

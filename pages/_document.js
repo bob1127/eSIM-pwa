@@ -5,11 +5,16 @@ import {
   SITE_APPLE_TOUCH_ICON,
   PWA_LOGO,
 } from "../lib/pwaConfig";
+import { CF_IMG_BOOTSTRAP } from "../lib/cfImageBootstrap";
+import { isCfImagesEnabled } from "../lib/cfImageLoader";
 
 export default function Document() {
   return (
     <Html lang="zh-TW">
       <Head>
+        {isCfImagesEnabled() ? (
+          <script dangerouslySetInnerHTML={{ __html: CF_IMG_BOOTSTRAP }} />
+        ) : null}
         <link rel="icon" href={SITE_FAVICON} type="image/png" sizes="32x32" />
         <link rel="icon" href={SITE_FAVICON_16} type="image/png" sizes="16x16" />
         <link rel="shortcut icon" href="/favicon.ico" />

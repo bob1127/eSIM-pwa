@@ -151,6 +151,49 @@ const fullMenuLinks = [
   { key: "sale", label: "限時特惠", href: "#" },
 ];
 
+/** 精選 Mega Menu 第二列：真．不限速吃到飽 */
+const UNLIMITED_SPEED_PLANS: FeaturedCountry[] = [
+  {
+    id: "unlimited-jp-au-kddi",
+    name: "日本 AU(KDDI)",
+    slug: "japan",
+    description: "au KDDI 原生 IP・真．不限速吃到飽",
+    imageSrc: "/images/分類eSIM-日本.png",
+    productCount: 0,
+    minPrice: null,
+    regionLabel: "日本",
+    badge: "真．不限速",
+    href: "/product/japan/japan-unlimited-esim?telecom=au-kddi",
+    footerText: "日本三大電信原生高速上網",
+  },
+  {
+    id: "unlimited-kr-sk-phone",
+    name: "韓國 SK電信（含門號）",
+    slug: "korea",
+    description: "SK 原生 IP・實名後可接聽／收簡訊",
+    imageSrc: "/images/分類eSIM-韓國.png",
+    productCount: 0,
+    minPrice: null,
+    regionLabel: "韓國",
+    badge: "含當地門號",
+    href: "/product/korea/korea-unlimited-esim?telecom=sk-native",
+    footerText: "真．不限速・當地電話可用",
+  },
+  {
+    id: "unlimited-th-truemove-8-15",
+    name: "泰國 Truemove 8／15天",
+    slug: "thailand",
+    description: "Truemove H 當地號碼・8 天與 15 天",
+    imageSrc: "/images/分類eSIM-泰國.png",
+    productCount: 2,
+    minPrice: null,
+    regionLabel: "泰國",
+    badge: "8／15天",
+    href: "/product/thailand/thailand-unlimited-esim?telecom=truemove&days=8",
+    footerText: "真．不限速・免費接聽與收簡訊",
+  },
+];
+
 // --- 3. Navbar 主元件 ---
 export default function Navbar({ className }: NavbarProps) {
   const router = useRouter();
@@ -286,6 +329,16 @@ export default function Navbar({ className }: NavbarProps) {
     router.push("/login");
   };
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpenMega("none");
+      setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   // 背景遮罩：桌面 mega menu 時遮罩在 navbar 下方，避免攔截 hover
   const showOverlay = openMega !== "none" || mobileOpen;
 
@@ -304,6 +357,7 @@ export default function Navbar({ className }: NavbarProps) {
               setOpenMega("none");
               setMobileOpen(false);
             }}
+            aria-hidden="true"
             className={cn(
               "fixed inset-0 bg-black/40 backdrop-blur-[2px] cursor-pointer",
               mobileOpen ? "z-[9999]" : "z-[998]",
@@ -344,6 +398,7 @@ export default function Navbar({ className }: NavbarProps) {
             {/* Logo */}
             <Link
               href="/"
+              aria-label="Jeko eSIM 首頁"
               className="flex items-center gap-1 select-none shrink-0"
             >
               <span className="text-[20px] lg:text-[22px] font-black tracking-tighter">
@@ -371,7 +426,7 @@ export default function Navbar({ className }: NavbarProps) {
                       {userImage ? (
                         <img
                           src={userImage}
-                          alt="Avatar"
+                          alt={`${userName} 的頭像`}
                           className="w-6 h-6 rounded-full object-cover border border-slate-200"
                         />
                       ) : (
@@ -390,6 +445,7 @@ export default function Navbar({ className }: NavbarProps) {
                     </Link>
                     {/* 登出按鈕 */}
                     <button
+                      type="button"
                       onClick={handleLogout}
                       className="text-sm font-bold text-slate-500 hover:text-red-500 transition-colors"
                     >
@@ -410,6 +466,7 @@ export default function Navbar({ className }: NavbarProps) {
               {/* 購物車 (粉色按鈕) */}
               <Link
                 href="/Cart"
+                aria-label="進入購物車"
                 className="bg-[#F4596A] hover:bg-[#e04556] text-white text-xs font-bold px-3 py-2 lg:px-6 lg:py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
               >
                 <ShoppingCartIcon className="w-4 h-4" />
@@ -422,7 +479,11 @@ export default function Navbar({ className }: NavbarProps) {
 
               {/* 手機版：動畫漢堡選單 */}
               <button
+                type="button"
                 onClick={() => setMobileOpen(!mobileOpen)}
+                aria-label={mobileOpen ? "關閉選單" : "開啟選單"}
+                aria-expanded={mobileOpen}
+                aria-controls="mobile-nav-menu"
                 className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors ml-1"
               >
                 <div className="relative w-4 h-3">
@@ -477,6 +538,13 @@ export default function Navbar({ className }: NavbarProps) {
                     <Link
                       href={link.href}
                       className="text-white text-sm font-bold tracking-wide"
+                      aria-expanded={
+                        link.hasMega ? openMega === link.key : undefined
+                      }
+                      aria-haspopup={link.hasMega ? "true" : undefined}
+                      aria-controls={
+                        link.hasMega ? "nav-mega-menu" : undefined
+                      }
                     >
                       {link.label}
                     </Link>
@@ -498,23 +566,26 @@ export default function Navbar({ className }: NavbarProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
-                className="absolute top-full left-0 -mt-px w-full bg-white rounded-b-2xl shadow-2xl pt-4 pb-10 z-40 hidden lg:block border border-t-0 border-gray-300"
+                id="nav-mega-menu"
+                role="region"
+                aria-label="精選 eSIM 方案"
+                className="absolute top-full left-0 -mt-px w-full bg-white rounded-b-2xl shadow-2xl pt-3 pb-4 z-40 hidden lg:block border border-t-0 border-gray-300 max-h-[calc(100dvh-9.5rem)] overflow-y-auto overscroll-contain"
               >
                 <div className="px-10 max-w-[1200px] mx-auto">
                   {openMega === "categories" && (
                     <>
-                      <div className="flex flex-wrap items-end justify-between gap-3 mb-5 border-b border-gray-100 pb-3">
+                      <div className="flex flex-wrap items-end justify-between gap-3 mb-3 border-b border-gray-100 pb-2">
                         <div>
-                          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                          <p className="text-xs font-bold text-gray-600 uppercase tracking-widest">
                             精選eSIM
                           </p>
-                          <p className="mt-1 text-sm text-gray-500">
+                          <p className="mt-1 text-sm text-gray-600">
                             熱門旅遊目的地 eSIM 方案
                           </p>
                         </div>
                         <div className="flex items-center gap-3 min-w-0 flex-1 justify-end">
                           <label className="relative flex items-center min-w-0 w-full max-w-[280px]">
-                            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 h-4 w-4 text-slate-400" />
+                            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 h-4 w-4 text-slate-500" />
                             <input
                               type="search"
                               value={countryQuery}
@@ -532,13 +603,13 @@ export default function Navbar({ className }: NavbarProps) {
                               placeholder="搜尋國家或城市，例如 維也納"
                               autoComplete="off"
                               aria-label="搜尋國家或城市"
-                              className="w-full rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-9 text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A6CD0] focus:bg-white focus:ring-2 focus:ring-[#0A6CD0]/15"
+                              className="w-full rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-9 text-sm font-medium text-slate-800 placeholder:text-slate-600 outline-none focus:border-[#0A6CD0] focus:bg-white focus:ring-2 focus:ring-[#0A6CD0]/15"
                             />
                             {countryQuery ? (
                               <button
                                 type="button"
                                 onClick={() => setCountryQuery("")}
-                                className="absolute right-2.5 p-0.5 text-slate-400 hover:text-slate-600"
+                                className="absolute right-2.5 p-0.5 text-slate-500 hover:text-slate-700"
                                 aria-label="清除搜尋"
                               >
                                 <XMarkIcon className="h-4 w-4" />
@@ -556,12 +627,12 @@ export default function Navbar({ className }: NavbarProps) {
                       </div>
                       {loadingCats ? (
                         <div className="flex justify-center items-center py-12">
-                          <span className="text-gray-400 font-bold animate-pulse">
+                          <span className="text-gray-600 font-bold animate-pulse">
                             載入中...
                           </span>
                         </div>
                       ) : visibleCountries.length > 0 ? (
-                        <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
+                        <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
                           {visibleCountries.map((country) => (
                             <FeaturedCountryCard
                               key={country.id}
@@ -571,13 +642,34 @@ export default function Navbar({ className }: NavbarProps) {
                           ))}
                         </div>
                       ) : featuredCountries.length > 0 ? (
-                        <p className="text-gray-400 text-sm py-8 text-center">
+                        <p className="text-gray-600 text-sm py-8 text-center">
                           找不到「{countryQuery}」相關國家，試試倫敦、首爾、維也納
                         </p>
                       ) : (
-                        <p className="text-gray-400 text-sm py-8 text-center">
+                        <p className="text-gray-600 text-sm py-8 text-center">
                           尚未建立國家分類
                         </p>
+                      )}
+                      {!countryQuery.trim() && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <div className="mb-2">
+                            <p className="text-xs font-bold text-[#0A6CD0] uppercase tracking-widest">
+                              吃到飽
+                            </p>
+                            <p className="mt-1 text-sm font-black text-gray-900">
+                              真．不限速 高速上網
+                            </p>
+                          </div>
+                          <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
+                            {UNLIMITED_SPEED_PLANS.map((plan) => (
+                              <FeaturedCountryCard
+                                key={plan.id}
+                                country={plan}
+                                onNavigate={() => setOpenMega("none")}
+                              />
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </>
                   )}
@@ -607,6 +699,8 @@ export default function Navbar({ className }: NavbarProps) {
               damping: 38,
               mass: 0.85,
             }}
+            id="mobile-nav-menu"
+            aria-label="手機選單"
             className="fixed top-[80px] left-0 right-0 w-[94%] mx-auto z-[10001] lg:hidden rounded-2xl bg-white shadow-2xl border border-black/5 p-5 overflow-y-auto max-h-[80vh]"
           >
             <div className="flex flex-col gap-6">
@@ -623,7 +717,7 @@ export default function Navbar({ className }: NavbarProps) {
                   {isLoggedIn && userImage ? (
                     <img
                       src={userImage}
-                      alt="Avatar"
+                      alt={`${userName} 的頭像`}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -642,12 +736,12 @@ export default function Navbar({ className }: NavbarProps) {
 
               {/* 🌟 購物與方案區 */}
               <div className="grid grid-cols-1 gap-2.5">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-2 mb-1">
+                <p className="text-[11px] font-bold text-slate-600 uppercase tracking-widest pl-2 mb-1">
                   精選eSIM
                 </p>
                 {!loadingCats && featuredCountries.length > 0 && (
                   <label className="relative flex items-center mb-2">
-                    <MagnifyingGlassIcon className="pointer-events-none absolute left-3 h-4 w-4 text-slate-400" />
+                    <MagnifyingGlassIcon className="pointer-events-none absolute left-3 h-4 w-4 text-slate-500" />
                     <input
                       type="search"
                       value={countryQuery}
@@ -655,13 +749,13 @@ export default function Navbar({ className }: NavbarProps) {
                       placeholder="搜尋國家或城市"
                       autoComplete="off"
                       aria-label="搜尋國家或城市"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-9 text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0A6CD0] focus:bg-white"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-9 text-sm font-medium text-slate-800 placeholder:text-slate-600 outline-none focus:border-[#0A6CD0] focus:bg-white"
                     />
                     {countryQuery ? (
                       <button
                         type="button"
                         onClick={() => setCountryQuery("")}
-                        className="absolute right-2.5 p-0.5 text-slate-400"
+                        className="absolute right-2.5 p-0.5 text-slate-500"
                         aria-label="清除搜尋"
                       >
                         <XMarkIcon className="h-4 w-4" />
@@ -686,10 +780,30 @@ export default function Navbar({ className }: NavbarProps) {
                 {!loadingCats &&
                   featuredCountries.length > 0 &&
                   visibleCountries.length === 0 && (
-                    <p className="text-slate-400 text-xs px-2 mb-2">
+                    <p className="text-slate-600 text-xs px-2 mb-2">
                       找不到「{countryQuery}」相關國家
                     </p>
                   )}
+                {!countryQuery.trim() && (
+                  <div className="pt-2">
+                    <p className="text-[11px] font-bold text-[#0A6CD0] uppercase tracking-widest pl-2 mb-1">
+                      吃到飽
+                    </p>
+                    <p className="text-sm font-black text-slate-800 pl-2 mb-2">
+                      真．不限速 高速上網
+                    </p>
+                    <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 mb-2">
+                      {UNLIMITED_SPEED_PLANS.map((plan) => (
+                        <FeaturedCountryCard
+                          key={plan.id}
+                          country={plan}
+                          compact
+                          onNavigate={() => setMobileOpen(false)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <MobileSimpleNavItem
                   icon={<GlobeAsiaAustraliaIcon className="w-5 h-5" />}
                   label="瀏覽全部國家方案"
@@ -706,7 +820,7 @@ export default function Navbar({ className }: NavbarProps) {
 
               {/* 🌟 教學與工具區 */}
               <div className="grid grid-cols-1 gap-2.5 pt-2 border-t border-slate-100">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-2 mb-1">
+                <p className="text-[11px] font-bold text-slate-600 uppercase tracking-widest pl-2 mb-1">
                   教學與工具
                 </p>
                 <MobileSimpleNavItem
@@ -737,7 +851,7 @@ export default function Navbar({ className }: NavbarProps) {
 
               {/* 🌟 支援與聯絡區 */}
               <div className="grid grid-cols-1 gap-2.5 pt-2 border-t border-slate-100">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-2 mb-1">
+                <p className="text-[11px] font-bold text-slate-600 uppercase tracking-widest pl-2 mb-1">
                   追蹤我們
                 </p>
                 <SocialIconLinksMobile
@@ -746,7 +860,7 @@ export default function Navbar({ className }: NavbarProps) {
               </div>
 
               <div className="grid grid-cols-1 gap-2.5 pt-2 border-t border-slate-100">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-2 mb-1">
+                <p className="text-[11px] font-bold text-slate-600 uppercase tracking-widest pl-2 mb-1">
                   支援與聯絡
                 </p>
                 <MobileSimpleNavItem
@@ -890,7 +1004,7 @@ function MobileSimpleNavItem({
   if (comingSoon || !href) {
     return (
       <button type="button" onClick={onClick} className={className}>
-        <div className="text-slate-400">{icon}</div>
+        <div className="text-slate-500">{icon}</div>
         <span className="text-[13px] font-black text-slate-700">{label}</span>
         <span className="ml-auto text-[10px] font-bold text-[#0A6CD0] bg-blue-50 px-2 py-0.5 rounded-full">
           即將上線
@@ -901,7 +1015,7 @@ function MobileSimpleNavItem({
 
   return (
     <Link href={href} onClick={onClick} className={className}>
-      <div className="text-slate-400">{icon}</div>
+      <div className="text-slate-500">{icon}</div>
       <span className="text-[13px] font-black text-slate-700">{label}</span>
     </Link>
   );

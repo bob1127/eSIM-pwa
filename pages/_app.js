@@ -17,7 +17,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   return (
     <>
       <Head>
-        <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#147AD7" />
         <link rel="icon" href={SITE_FAVICON} type="image/png" sizes="32x32" />
         <link rel="shortcut icon" href="/favicon.ico" />

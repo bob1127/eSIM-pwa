@@ -7,6 +7,7 @@ import MaterialIcon from "../MaterialIcon";
 import MediaGalleryLightbox from "../MediaGalleryLightbox";
 import { supabase } from "../../lib/supabaseClient";
 import { isAdminEmail } from "../../lib/productAdminConfig";
+import { buildLoginUrl } from "../../lib/authRedirect";
 import {
   validateReviewContent,
   getCooldownRemainingMs,
@@ -303,7 +304,7 @@ function ReviewCard({
   memberProfile,
   isAdmin,
   isLoggedIn,
-  loginHref,
+  loginHref = "/login",
   replyingTo,
   setReplyingTo,
   replyContent,
@@ -652,6 +653,7 @@ export default function ProductReviewsSection({
   const [gallery, setGallery] = useState({ isOpen: false, items: [], index: 0 });
   const [sortKey, setSortKey] = useState("newest");
   const [filterKey, setFilterKey] = useState("all");
+  const [loginHref, setLoginHref] = useState("/login");
 
   const isAdmin = isAdminEmail(currentUser?.email);
   const memberProfile = useMemo(
@@ -797,6 +799,11 @@ export default function ProductReviewsSection({
       media.forEach((m) => URL.revokeObjectURL(m.previewUrl));
     };
   }, [media]);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    setLoginHref(buildLoginUrl(router.asPath || "/"));
+  }, [router.isReady, router.asPath]);
 
   const handleFileChange = (e) => {
     const newFiles = Array.from(e.target.files || []);
@@ -1076,7 +1083,6 @@ export default function ProductReviewsSection({
     else fetchReviews(currentUser?.id);
   };
 
-  const loginHref = `/login?callbackUrl=${encodeURIComponent(router.asPath || "/")}`;
   const listForDisplay = isNissin ? filteredSortedReviews : reviews;
   const visibleReviews = listForDisplay.slice(0, visibleCount);
 

@@ -107,7 +107,7 @@ export default function CarRentalCharterSection() {
           <h2 className="text-2xl sm:text-[28px] font-black text-gray-900 tracking-tight">
             租車包車服務
           </h2>
-          <p className="text-sm text-gray-500 font-medium">
+          <p className="text-sm text-gray-600 font-medium">
             機場接送・包車觀光・自駕租車，一站式預約
           </p>
         </div>
@@ -128,7 +128,7 @@ export default function CarRentalCharterSection() {
           <CharterPhotoCard />
         </div>
 
-        <p className="mt-4 text-center text-[11px] text-gray-400">
+        <p className="mt-4 text-center text-[11px] text-gray-600">
           包車合作夥伴預約連結
         </p>
       </div>

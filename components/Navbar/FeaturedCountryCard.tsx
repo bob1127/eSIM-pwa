@@ -42,14 +42,12 @@ export function resolveCategoryImageSrc(
   remoteSrc?: string | null,
 ) {
   const mapped = CATEGORY_IMAGE_FALLBACKS[slug];
-  if (mapped) return mapped;
-
   const local = "/images/jeko-esim.png";
-  // 外部 Storage 目前回 402，精選卡優先用本地圖
+  // Supabase Storage 目前常回 402，略過；Medusa /static 或本機路徑優先
   if (remoteSrc && !/supabase\.co\/storage/i.test(remoteSrc)) {
     return remoteSrc;
   }
-  return local;
+  return mapped || local;
 }
 
 export interface FeaturedCountry {
@@ -62,6 +60,8 @@ export interface FeaturedCountry {
   minPrice: number | null;
   regionLabel?: string;
   badge?: string;
+  href?: string;
+  footerText?: string;
 }
 
 function formatPrice(amount: number) {
@@ -84,83 +84,79 @@ export default function FeaturedCountryCard({
     () => resolveCategoryImageSrc(country.slug, country.imageSrc),
   );
   const priceText = country.minPrice ? formatPrice(country.minPrice) : null;
-  const regionTag = country.regionLabel || country.name;
   const subtitle =
     country.description?.trim() ||
     `探索 ${country.name} 熱門 eSIM 上網方案`;
   const footerText =
-    country.productCount > 0
+    country.footerText ||
+    (country.productCount > 0
       ? `共 ${country.productCount} 款方案可選`
-      : "即將上架更多方案";
+      : "即將上架更多方案");
+  const cardHref = country.href || `/product/${country.slug}`;
 
   return (
     <Link
-      href={`/product/${country.slug}`}
+      href={cardHref}
       onClick={onNavigate}
       className={[
         "flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm",
         "overflow-hidden shrink-0",
-        compact ? "w-[200px]" : "w-[220px] sm:w-[240px]",
+        compact ? "w-[168px]" : "w-[188px] sm:w-[200px]",
       ].join(" ")}
     >
       {/* 圖片區 */}
-      <div className="relative aspect-[4/3] bg-slate-50 overflow-hidden">
+      <div
+        className={[
+          "relative bg-slate-50 overflow-hidden flex items-center justify-center",
+          compact ? "aspect-[16/9] p-1.5" : "aspect-[16/10] p-2",
+        ].join(" ")}
+      >
         <img
           src={imgSrc}
-          alt={country.name}
-          className="w-full h-full object-cover"
+          alt={`${country.name} eSIM`}
+          className="w-full h-full object-contain"
           onError={() => {
             if (imgSrc !== fallbackSrc) setImgSrc(fallbackSrc);
           }}
         />
-
-        <span className="absolute top-2.5 left-2.5 rounded-md bg-black/85 px-2 py-0.5 text-[10px] font-bold text-white tracking-wide">
-          {regionTag}
-        </span>
-
-        {country.badge && (
-          <span className="absolute top-2.5 right-2.5 rounded-md bg-[#0A6CD0] px-2 py-0.5 text-[10px] font-bold text-white">
-            {country.badge}
-          </span>
-        )}
       </div>
 
       {/* 內容區 */}
-      <div className="flex flex-1 flex-col px-3.5 pt-3 pb-3.5">
-        <p className="text-[11px] text-gray-400 line-clamp-1 leading-snug">
+      <div className="flex flex-1 flex-col px-2.5 pt-1.5 pb-2">
+        <p className="text-[10px] text-gray-600 line-clamp-1 leading-snug">
           {subtitle}
         </p>
-        <h3 className="mt-1 text-[15px] font-black text-gray-900 leading-tight line-clamp-2 min-h-[2.5rem]">
+        <h3 className="mt-0.5 text-[13px] font-black text-gray-900 leading-tight line-clamp-1">
           {country.name}
         </h3>
 
-        <div className="mt-2.5 flex items-center justify-between gap-2">
+        <div className="mt-1.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#FFD43A]/90 text-[9px] font-black text-slate-800">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FFD43A]/90 text-[8px] font-black text-slate-800">
               NT
             </span>
             {priceText ? (
               <div className="flex items-baseline gap-0.5 min-w-0">
-                <span className="text-[10px] text-gray-500 shrink-0">NT$</span>
-                <span className="text-lg font-black text-gray-900 truncate">
+                <span className="text-[10px] text-gray-600 shrink-0">NT$</span>
+                <span className="text-base font-black text-gray-900 truncate">
                   {priceText}
                 </span>
-                <span className="text-[10px] text-gray-400 shrink-0">起</span>
+                <span className="text-[10px] text-gray-600 shrink-0">起</span>
               </div>
             ) : (
-              <span className="text-sm font-bold text-gray-500">查看方案</span>
+              <span className="text-xs font-bold text-gray-600">查看方案</span>
             )}
           </div>
 
           {country.productCount > 0 && (
-            <span className="shrink-0 rounded-full bg-[#0A6CD0] px-2 py-0.5 text-[10px] font-bold text-white whitespace-nowrap">
+            <span className="shrink-0 rounded-full bg-[#0A6CD0] px-1.5 py-0.5 text-[10px] font-bold text-white whitespace-nowrap">
               {country.productCount} 款
             </span>
           )}
         </div>
 
-        <div className="mt-3 border-t border-gray-100 pt-2">
-          <p className="text-[10px] text-gray-400 line-clamp-1">{footerText}</p>
+        <div className="mt-1.5 border-t border-gray-100 pt-1">
+          <p className="text-[10px] text-gray-600 line-clamp-1">{footerText}</p>
         </div>
       </div>
     </Link>

@@ -232,7 +232,7 @@ export default function NavbarSiteSearch({
             <MagnifyingGlassIcon
               className={cn(
                 "pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4",
-                isBar ? "text-[#1E4AD1]" : "text-slate-400",
+                isBar ? "text-[#1E4AD1]" : "text-slate-500",
               )}
             />
             <input
@@ -248,7 +248,7 @@ export default function NavbarSiteSearch({
               aria-expanded={showPanel}
               className={
                 isBar
-                  ? "w-full h-9 rounded-full bg-[#EAF1FB] border-0 pl-9 pr-8 text-[13px] text-slate-800 placeholder:text-slate-400 outline-none ring-0 focus:outline-none focus:ring-1 focus:ring-[#1E4AD1]/35 [&::-webkit-search-cancel-button]:appearance-none"
+                  ? "w-full h-9 rounded-full bg-[#EAF1FB] border-0 pl-9 pr-8 text-[13px] text-slate-800 placeholder:text-slate-600 outline-none ring-0 focus:outline-none focus:ring-1 focus:ring-[#1E4AD1]/35 [&::-webkit-search-cancel-button]:appearance-none"
                   : cn(inputClassName, "pr-3")
               }
             />
@@ -260,7 +260,7 @@ export default function NavbarSiteSearch({
                   setResults([]);
                   inputRef.current?.focus();
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-500 hover:text-slate-700"
                 aria-label="清除"
               >
                 <XMarkIcon className="w-4 h-4" />
@@ -322,7 +322,7 @@ export default function NavbarSiteSearch({
             aria-autocomplete="list"
             aria-controls={listId}
             aria-expanded={showPanel}
-            className="w-full h-9 rounded-full bg-[#EAF1FB] border-0 pl-9 pr-8 text-[13px] text-slate-800 placeholder:text-slate-400 outline-none focus:ring-1 focus:ring-[#1E4AD1]/35 [&::-webkit-search-cancel-button]:appearance-none"
+            className="w-full h-9 rounded-full bg-[#EAF1FB] border-0 pl-9 pr-8 text-[13px] text-slate-800 placeholder:text-slate-600 outline-none focus:ring-1 focus:ring-[#1E4AD1]/35 [&::-webkit-search-cancel-button]:appearance-none"
           />
           {query ? (
             <button
@@ -332,7 +332,7 @@ export default function NavbarSiteSearch({
                 setResults([]);
                 inputRef.current?.focus();
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-500 hover:text-slate-700"
               aria-label="清除"
             >
               <XMarkIcon className="w-4 h-4" />
@@ -377,7 +377,7 @@ export default function NavbarSiteSearch({
         <div className="absolute right-0 top-[calc(100%+8px)] z-[70] w-[min(92vw,360px)] rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
                 ref={inputRef}
                 type="text"
@@ -398,7 +398,7 @@ export default function NavbarSiteSearch({
                     setResults([]);
                     inputRef.current?.focus();
                   }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-500 hover:text-slate-700"
                   aria-label="清除"
                 >
                   <XMarkIcon className="w-4 h-4" />
@@ -406,7 +406,7 @@ export default function NavbarSiteSearch({
               ) : null}
             </div>
           </div>
-          <p className="mt-2 text-[10px] text-slate-400 px-0.5">{hint}</p>
+          <p className="mt-2 text-[10px] text-slate-600 px-0.5">{hint}</p>
           {panel ? (
             <div className="relative mt-1">
               <div className="relative left-0 right-0 top-0 max-h-[min(60vh,360px)] overflow-y-auto rounded-lg border border-slate-100">
