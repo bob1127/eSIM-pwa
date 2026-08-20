@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import crypto from "crypto";
 
-const CHANNEL_ID = "2007568484";
-const CHANNEL_SECRET = "cb183f20b331f6c246755708eef99437";
-// Sandbox 用這個： "https://sandbox-api-pay.line.me"
-const LINEPAY_BASE = "https://api-pay.line.me";
+const CHANNEL_ID = process.env.LINEPAY_CHANNEL_ID || "";
+const CHANNEL_SECRET = process.env.LINEPAY_CHANNEL_SECRET || "";
+// Sandbox: https://sandbox-api-pay.line.me, 正式: https://api-pay.line.me
+const LINEPAY_BASE = process.env.LINEPAY_API_BASE || "https://api-pay.line.me";
 
 function sign(uri: string, rawBody: string, nonce: string) {
   return crypto
@@ -15,6 +15,9 @@ function sign(uri: string, rawBody: string, nonce: string) {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
+    if (!CHANNEL_ID || !CHANNEL_SECRET) {
+      return res.status(503).json({ error: "LINE Pay 金鑰未設定" });
+    }
     const txParam = req.query.transactionId;
     const orderParam = req.query.orderId;
     const amtParam = req.query.amount;

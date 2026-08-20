@@ -1,16 +1,19 @@
 // /pages/api/linepay/reserve.js
 import crypto from "crypto";
 
-const CHANNEL_ID = "2007568484";
-const CHANNEL_SECRET = "cb183f20b331f6c246755708eef99437";
-// Sandbox 用這個： "https://sandbox-api-pay.line.me"；正式用 "https://api-pay.line.me"
-const LINEPAY_BASE = "https://api-pay.line.me";
+const CHANNEL_ID = process.env.LINEPAY_CHANNEL_ID || "";
+const CHANNEL_SECRET = process.env.LINEPAY_CHANNEL_SECRET || "";
+// Sandbox: https://sandbox-api-pay.line.me, 正式: https://api-pay.line.me
+const LINEPAY_BASE = process.env.LINEPAY_API_BASE || "https://api-pay.line.me";
 
 const roundInt = (n) => Math.round(Number(n) || 0);
 
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") return res.status(405).end("Method Not Allowed");
+    if (!CHANNEL_ID || !CHANNEL_SECRET) {
+      return res.status(503).json({ error: "LINE Pay 金鑰未設定" });
+    }
 
     const { cartItems = [], discount = 0 } = req.body || {};
 

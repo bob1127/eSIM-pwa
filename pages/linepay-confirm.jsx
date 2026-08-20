@@ -9,7 +9,7 @@ export default function LinePayConfirmPage() {
   const [status, setStatus] = useState("確認付款中...");
   const [processing, setProcessing] = useState(false);
 
-  const confirmPayment = async (transactionId, amount, orderId) => {
+  const confirmPayment = async (transactionId, orderNo) => {
     if (processing) return;
     setProcessing(true);
     setStatus("✅ 已發送付款確認請求...");
@@ -18,23 +18,20 @@ export default function LinePayConfirmPage() {
       const res = await fetch("/api/linepay/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId, amount }),
+        body: JSON.stringify({ transactionId, orderNo }),
       });
 
       const result = await res.json();
       console.log("✅ LINE Pay confirm 回傳結果:", result);
 
-      if (result.returnCode === "0000") {
+      if (result.success) {
         setStatus("🎉 付款成功，前往完成頁...");
         router.replace(
-          `/thank-you?status=success&method=linepay&tx=${encodeURIComponent(
-            transactionId
-          )}&amount=${amount}${
-            orderId ? `&oid=${encodeURIComponent(orderId)}` : ""
-          }`
+          result.redirectUrl ||
+            `/thank-you?status=success&method=linepay&tx=${encodeURIComponent(transactionId)}`
         );
       } else {
-        setStatus(`❌ 付款失敗：${result.returnMessage || "未知錯誤"}`);
+        setStatus(`❌ 付款失敗：${result.message || "未知錯誤"}`);
       }
     } catch (error) {
       console.error("❌ 發生錯誤:", error);
@@ -47,18 +44,16 @@ export default function LinePayConfirmPage() {
   useEffect(() => {
     if (!router.isReady || processing) return;
 
-    const { transactionId, amount, orderId } = router.query;
+    const { transactionId, orderNo } = router.query;
     const tid = Array.isArray(transactionId) ? transactionId[0] : transactionId;
-    const amtStr = Array.isArray(amount) ? amount[0] : amount;
-    const oid = Array.isArray(orderId) ? orderId[0] : orderId;
-    const amt = amtStr ? parseInt(amtStr, 10) : NaN;
+    const ono = Array.isArray(orderNo) ? orderNo[0] : orderNo;
 
-    if (!tid || Number.isNaN(amt)) {
+    if (!tid || !ono) {
       setStatus("❌ 缺少付款資訊（可能是 LINE Pay redirect URL 錯誤）");
       return;
     }
 
-    confirmPayment(tid, amt, oid || "");
+    confirmPayment(tid, ono || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady, processing]);
 

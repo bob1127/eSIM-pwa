@@ -175,9 +175,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const startHostedCheckout = async ({ methods = [], paymentLabel = "藍新金流" } = {}) => {
     if (
       !formData.name ||
       !formData.email ||
@@ -237,7 +235,11 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
       }
 
       const { orderId, amount } = orderResult;
-      console.log("✅ 3. 拿到 Medusa Order ID:", orderId, "準備跳轉藍新金流…");
+      console.log(
+        "✅ 3. 拿到 Medusa Order ID:",
+        orderId,
+        `準備跳轉 ${paymentLabel}…`,
+      );
 
       localStorage.removeItem("medusa_cart_id");
 
@@ -256,7 +258,11 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
         JSON.stringify({
           orderId,
           amount,
-          orderInfo: formData,
+          orderInfo: {
+            ...formData,
+            methods,
+            payment_method: methods?.[0] || "CREDIT",
+          },
         }),
       );
 
@@ -271,12 +277,84 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
     }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await startHostedCheckout({
+      methods: ["CREDIT", "VACC", "WEBATM"],
+      paymentLabel: "藍新金流",
+    });
+  };
+
   const handleLinePaySubmit = async () => {
-    if (!formData.name || !formData.email || !formData.phone) {
-      alert("請填寫所有必填欄位（姓名、Email、手機）");
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.address
+    ) {
+      alert("請填寫所有必填欄位 (含地址)");
       return;
     }
-    alert("目前 LINE Pay 尚未完全對接 Medusa，請先使用藍新金流結帳");
+
+    if (!cartId || cartItems.length === 0) {
+      alert("購物車為空或尚未與伺服器連線");
+      return;
+    }
+
+    if (isSubmittingLock) {
+      console.log("⏳ 系統處理中，已攔截重複點擊！");
+      return;
+    }
+
+    isSubmittingLock = true;
+    setIsSubmitting(true);
+
+    try {
+      await persistProfileIfNeeded();
+
+      const orderRes = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cartId: cartId,
+          orderInfo: {
+            ...formData,
+            customerId: memberInfo?.id || supabaseUser?.id || null,
+          },
+        }),
+      });
+      const orderResult = await orderRes.json();
+      if (!orderResult.success) {
+        throw new Error(orderResult.message || "建立訂單失敗");
+      }
+
+      localStorage.removeItem("medusa_cart_id");
+
+      const linepayRes = await fetch("/api/linepay/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cartId: orderResult.orderId,
+          orderInfo: {
+            ...formData,
+            methods: ["LINEPAY"],
+            payment_method: "LINEPAY",
+          },
+        }),
+      });
+      const linepayData = await linepayRes.json();
+      if (!linepayRes.ok || !linepayData?.success || !linepayData?.paymentUrl) {
+        throw new Error(linepayData?.message || "LINE Pay 建單失敗");
+      }
+
+      window.location.href = linepayData.paymentUrl;
+    } catch (err) {
+      console.error("❌ LINE Pay 結帳流程出錯:", err);
+      alert(`LINE Pay 結帳失敗：${err.message}`);
+    } finally {
+      isSubmittingLock = false;
+      setIsSubmitting(false);
+    }
   };
 
   useEffect(() => {
