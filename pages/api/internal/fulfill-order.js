@@ -1,16 +1,16 @@
 // pages/api/internal/fulfill-order.js
 //
-// 受保護的內部 API：只給 esim-backend 的 /newebpay/notify 呼叫（付款確認後
-// 觸發發貨），用共用密鑰驗證來源（比照 esim-backend 既有的
-// PRODUCT_CONTENT_ADMIN_SECRET 保護模式），不對外公開。
-//
-// 沿用既有 pages/api/fulfillment/send-esim.js 的 microesim 供應商邏輯，
-// 但改成直接接收 { orderId, items, email }，不再依賴 Supabase orders 表
-// （付款狀態與 QRCode 現在都存在 Medusa order.metadata 裡）。
+// 受保護的內部 API：只給 esim-backend 的付款確認（LINE Pay / 藍新 notify）呼叫。
 import axios from "axios";
 import FormData from "form-data";
 import PLAN_ID_MAP from "../../../lib/esim/planMap";
 import { sendMail } from "../../../lib/mailTransporter";
+import { buildEsimProfileFromTopupDetail } from "../../../lib/esimProfile";
+import {
+  buildEsimFulfillmentEmailHtml,
+  buildEsimFulfillmentEmailText,
+} from "../../../lib/esimFulfillmentEmail";
+import { getPublicSiteUrl } from "../../../lib/siteUrl";
 import {
   ESIM_ACCOUNT as ACCOUNT,
   ESIM_BASE_URL as BASE_URL,
@@ -19,13 +19,25 @@ import {
   shouldForceTestPlan,
 } from "../../../lib/esim/microesimClient";
 
-async function sendEsimEmail(to, orderNumber, imagesHtml) {
+async function sendEsimEmail(to, orderNumber, profiles) {
+  const site = getPublicSiteUrl().replace(/\/$/, "");
+  const merchantNo = String(orderNumber || "").replace(/^order_/, "");
+  const webOrderUrl = `${site}/thank-you?status=success&orderNo=${encodeURIComponent(merchantNo)}`;
+
   await sendMail({
     to,
     fromName: "Jeko eSIM",
-    subject: `🎉 您的 eSIM 訂單已準備就緒！（訂單 ${orderNumber}）`,
-    html: `<div style="font-family: sans-serif;"><h2>您好！</h2><p>您的 eSIM 如下：</p>${imagesHtml}</div>`,
-    text: `您的 eSIM 訂單 ${orderNumber} 已準備就緒，請至信箱 HTML 版本查看 QR Code。`,
+    subject: `🎉 您的 eSIM 已準備就緒！（訂單 ${merchantNo}）`,
+    html: buildEsimFulfillmentEmailHtml({
+      orderNumber: merchantNo,
+      profiles,
+      webOrderUrl,
+      siteName: "Jeko eSIM",
+    }),
+    text: buildEsimFulfillmentEmailText({
+      orderNumber: merchantNo,
+      profiles,
+    }),
   });
 }
 
@@ -51,7 +63,25 @@ export default async function handler(req, res) {
 
   try {
     const qrcodes = [];
-    const allImagesHtml = [];
+    /** @type {any[]} */
+    let planList = [];
+
+    try {
+      const listSig = signHeaders();
+      const listRes = await axios.get(`${BASE_URL}/allesim/v1/esimDataplanList`, {
+        headers: {
+          "Content-Type": "application/json",
+          "MICROESIM-ACCOUNT": ACCOUNT,
+          "MICROESIM-NONCE": listSig.nonce,
+          "MICROESIM-TIMESTAMP": listSig.timestamp,
+          "MICROESIM-SIGN": listSig.signature,
+        },
+        timeout: 10000,
+      });
+      planList = Array.isArray(listRes.data?.result) ? listRes.data.result : [];
+    } catch (e) {
+      console.warn("⚠️ [fulfill-order] 方案清單取得失敗，APN 可能缺漏");
+    }
 
     for (const item of items) {
       const rawPlanId = item.sku || item.planId;
@@ -63,31 +93,15 @@ export default async function handler(req, res) {
         continue;
       }
 
+      const planMeta = planList.find((p) => p.channel_dataplan_id === finalPlanId) || {};
+      let active_type = planMeta.active_type || "ACTIVEDBYDEVICE";
+
       console.log(
         `📡 [fulfill-order] 使用帳號 ${ACCOUNT} 向供應商連線: ${BASE_URL}` +
           `（訂單 ${orderId}` +
           (shouldForceTestPlan() ? `，測試方案 ${finalPlanId}` : `，plan ${finalPlanId}`) +
           `）`,
       );
-
-      let active_type = "ACTIVEDBYDEVICE";
-      try {
-        const listSig = signHeaders();
-        const listRes = await axios.get(`${BASE_URL}/allesim/v1/esimDataplanList`, {
-          headers: {
-            "Content-Type": "application/json",
-            "MICROESIM-ACCOUNT": ACCOUNT,
-            "MICROESIM-NONCE": listSig.nonce,
-            "MICROESIM-TIMESTAMP": listSig.timestamp,
-            "MICROESIM-SIGN": listSig.signature,
-          },
-          timeout: 10000,
-        });
-        const found = listRes.data.result?.find((p) => p.channel_dataplan_id === finalPlanId);
-        if (found) active_type = found.active_type || "ACTIVEDBYDEVICE";
-      } catch (e) {
-        console.warn("⚠️ 獲取方案清單失敗，預設 ACTIVEDBYDEVICE");
-      }
 
       const { timestamp, nonce, signature } = signHeaders();
       const form = new FormData();
@@ -109,7 +123,10 @@ export default async function handler(req, res) {
       };
 
       try {
-        const subscribeRes = await axios.post(`${BASE_URL}/allesim/v1/esimSubscribe`, form, { headers, timeout: 15000 });
+        const subscribeRes = await axios.post(`${BASE_URL}/allesim/v1/esimSubscribe`, form, {
+          headers,
+          timeout: 15000,
+        });
         const result = subscribeRes.data;
 
         if (result.code === 1 && result.result?.topup_id) {
@@ -130,13 +147,28 @@ export default async function handler(req, res) {
           });
 
           const detail = detailRes.data;
-          if (detail.code === 1 && detail.result?.qrcode) {
-            const raw = String(detail.result.qrcode);
-            const src = raw.startsWith("http") ? raw : `data:image/png;base64,${raw}`;
-            qrcodes.push({ name: item.name || "eSIM", src });
-            allImagesHtml.push(
-              `<div><strong>${item.name || "eSIM"}</strong><br/><img src="${src}" style="max-width:300px;margin-bottom:10px;" /></div>`,
-            );
+          if (detail.code === 1 && detail.result) {
+            // 一次訂閱可能回多張（quantity>1）時，部分供應商把多筆放在 list
+            const detailRows = Array.isArray(detail.result)
+              ? detail.result
+              : Array.isArray(detail.result?.list)
+                ? detail.result.list
+                : [detail.result];
+
+            for (const row of detailRows) {
+              if (!row?.qrcode && !row?.qr_code && !detail.result?.qrcode) continue;
+              const rowWithQr = row.qrcode || row.qr_code ? row : detail.result;
+              const profile = await buildEsimProfileFromTopupDetail({
+                productName: item.name || "eSIM",
+                detailResult: rowWithQr,
+                planMeta,
+                topupId: topup_id,
+              });
+              if (!profile.src && !profile.lpa) {
+                throw new Error(`獲取 QR／LPA 失敗: ${JSON.stringify(detail)}`);
+              }
+              qrcodes.push(profile);
+            }
           } else {
             throw new Error(`獲取 QR Code 失敗: ${JSON.stringify(detail)}`);
           }
@@ -155,7 +187,7 @@ export default async function handler(req, res) {
 
     if (email) {
       try {
-        await sendEsimEmail(email, orderId, allImagesHtml.join("<hr style='margin:16px 0'/>"));
+        await sendEsimEmail(email, orderId, qrcodes);
       } catch (mailErr) {
         console.error("⚠️ [fulfill-order] 寄信失敗:", mailErr?.message || mailErr);
       }

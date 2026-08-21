@@ -115,8 +115,22 @@ const CartPage = () => {
     process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@391huuts",
   );
   const [welcomeHint, setWelcomeHint] = useState("");
+  const [paymentBusy, setPaymentBusy] = useState(null); // null | "linepay" | "newebpay"
 
   const payableTotal = Math.max(0, Number(displayTotal || 0) - Number(discount || 0));
+
+  useEffect(() => {
+    const onBusy = (e) => {
+      const detail = e?.detail || {};
+      if (detail.active) {
+        setPaymentBusy(detail.method === "newebpay" ? "newebpay" : "linepay");
+      } else {
+        setPaymentBusy(null);
+      }
+    };
+    window.addEventListener("esim-checkout-busy", onBusy);
+    return () => window.removeEventListener("esim-checkout-busy", onBusy);
+  }, []);
 
   // 三步驟都在同一 /Cart：用 URL ?step= 與 sessionStorage 記住進度
   // （LINE 授權重載頁面後才能回到「填寫資料」）
@@ -565,10 +579,10 @@ const CartPage = () => {
   };
 
   // 🌟 已修正：移除參數的 :number, :string 等型別標註
-  const handleRemoveWithAnimation = (index, id, color, size) => {
+  const handleRemoveWithAnimation = (index, id) => {
     setRemovingIndex(index);
     setTimeout(() => {
-      removeFromCart(id, color, size);
+      removeFromCart(id);
       setRemovingIndex(null);
     }, 300);
   };
@@ -684,45 +698,44 @@ const CartPage = () => {
                                 </span>
                                 <div className="flex items-center border border-gray-300 rounded-md">
                                   <button
-                                    className="px-3 py-1 hover:bg-gray-100"
+                                    type="button"
+                                    className="px-3 py-1 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
                                     onClick={() =>
                                       updateQuantity(
-                                        item.id,
-                                        item.color,
-                                        item.size,
+                                        item.variant_id || item.id,
                                         item.quantity - 1,
                                       )
                                     }
                                     disabled={item.quantity <= 1}
+                                    aria-label="減少數量"
                                   >
                                     -
                                   </button>
-                                  <span className="px-3 text-sm">
+                                  <span className="px-3 text-sm min-w-[2rem] text-center">
                                     {item.quantity}
                                   </span>
                                   <button
+                                    type="button"
                                     className="px-3 py-1 hover:bg-gray-100"
                                     onClick={() =>
                                       updateQuantity(
-                                        item.id,
-                                        item.color,
-                                        item.size,
+                                        item.variant_id || item.id,
                                         item.quantity + 1,
                                       )
                                     }
+                                    aria-label="增加數量"
                                   >
                                     +
                                   </button>
                                 </div>
                               </div>
                               <button
+                                type="button"
                                 className="text-red-500 text-sm font-medium hover:underline"
                                 onClick={() =>
                                   handleRemoveWithAnimation(
                                     index,
-                                    item.id,
-                                    item.color,
-                                    item.size,
+                                    item.variant_id || item.id,
                                   )
                                 }
                               >
@@ -1072,18 +1085,33 @@ const CartPage = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <button
                             type="button"
+                            disabled={Boolean(paymentBusy)}
                             onClick={() => {
+                              setPaymentBusy("linepay");
                               window.dispatchEvent(
                                 new CustomEvent("esim-checkout-linepay"),
                               );
                             }}
-                            className="w-full bg-[#00C300] hover:bg-[#009f00] text-white font-bold py-3.5 px-4 rounded-md transition-colors text-base"
+                            className={`w-full bg-[#00C300] text-white font-bold py-3.5 px-4 rounded-md transition-colors text-base inline-flex items-center justify-center gap-2 ${
+                              paymentBusy
+                                ? "opacity-70 cursor-not-allowed"
+                                : "hover:bg-[#009f00]"
+                            }`}
                           >
-                            LINE Pay 結帳
+                            {paymentBusy === "linepay" ? (
+                              <>
+                                <span className="inline-block h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                正在前往 LINE Pay…
+                              </>
+                            ) : (
+                              "LINE Pay 結帳"
+                            )}
                           </button>
                           <button
                             type="button"
+                            disabled={Boolean(paymentBusy)}
                             onClick={() => {
+                              setPaymentBusy("newebpay");
                               const formElement =
                                 document.getElementById("checkout-form");
                               if (
@@ -1092,12 +1120,24 @@ const CartPage = () => {
                               ) {
                                 formElement.requestSubmit();
                               } else {
+                                setPaymentBusy(null);
                                 alert("無法送出表單，請重新整理頁面後再試");
                               }
                             }}
-                            className="w-full bg-[#1e40af] hover:bg-[#1e3a8a] text-white font-bold py-3.5 px-4 rounded-md transition-colors text-base"
+                            className={`w-full bg-[#1e40af] text-white font-bold py-3.5 px-4 rounded-md transition-colors text-base inline-flex items-center justify-center gap-2 ${
+                              paymentBusy
+                                ? "opacity-70 cursor-not-allowed"
+                                : "hover:bg-[#1e3a8a]"
+                            }`}
                           >
-                            藍新金流結帳
+                            {paymentBusy === "newebpay" ? (
+                              <>
+                                <span className="inline-block h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                正在前往藍新金流…
+                              </>
+                            ) : (
+                              "藍新金流結帳"
+                            )}
                           </button>
                         </div>
                       </div>
@@ -1106,6 +1146,27 @@ const CartPage = () => {
                 </div>
               </motion.div>
             )}
+
+            {paymentBusy ? (
+              <div
+                className="fixed inset-0 z-[100] bg-slate-900/35 backdrop-blur-[1px] flex items-center justify-center px-6"
+                role="alertdialog"
+                aria-busy="true"
+                aria-live="assertive"
+              >
+                <div className="bg-white rounded-xl shadow-xl px-6 py-5 max-w-sm w-full text-center">
+                  <div className="mx-auto mb-3 h-10 w-10 border-[3px] border-slate-200 border-t-[#2e5fff] rounded-full animate-spin" />
+                  <p className="text-base font-bold text-slate-900">
+                    {paymentBusy === "linepay"
+                      ? "正在連線 LINE Pay"
+                      : "正在連線藍新金流"}
+                  </p>
+                  <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
+                    訂單處理中，請稍候，勿關閉或重新整理此頁面
+                  </p>
+                </div>
+              </div>
+            ) : null}
 
             {/* ========================================== */}
             {/* STEP 2: 完成訂單 */}

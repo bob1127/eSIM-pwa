@@ -65,7 +65,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.NZ_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-多國.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("紐西蘭esim.png")}`;
 
 const SPEED_RULE = "總量高速用完後降速約 128kbps 持續使用";
 const DATA_ORDER = ["3GB", "5GB", "10GB", "20GB", "30GB", "50GB"];

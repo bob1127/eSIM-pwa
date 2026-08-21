@@ -64,7 +64,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.UK_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-英國.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("英國esim.png")}`;
 
 const SPEED_RULE = "總量高速額度用完後斷網";
 const NETWORK_LABEL = "EE／Three／Vodafone／O2 4G/5G";

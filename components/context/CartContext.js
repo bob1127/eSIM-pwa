@@ -122,8 +122,10 @@ const tryMedusaAddItem = async (cartId, variantId, qty, specLabel, itemType) => 
   }
 };
 
-const tryMedusaRemoveItem = async (cartId, lineItemId) => {
+const tryMedusaRemoveItem = async (cartId, idOrVariantId) => {
   try {
+    const lineItemId = await resolveMedusaLineItemId(cartId, idOrVariantId);
+    if (!lineItemId) return;
     await fetch(
       `${MEDUSA_URL_ENV}/store/carts/${cartId}/line-items/${lineItemId}`,
       { method: "DELETE", headers: medusaHeaders() },
@@ -133,8 +135,31 @@ const tryMedusaRemoveItem = async (cartId, lineItemId) => {
   }
 };
 
-const tryMedusaUpdateQty = async (cartId, lineItemId, qty) => {
+const resolveMedusaLineItemId = async (cartId, idOrVariantId) => {
+  const key = String(idOrVariantId || "");
+  if (!key) return null;
   try {
+    const res = await fetch(`${MEDUSA_URL_ENV}/store/carts/${cartId}`, {
+      headers: medusaHeaders(),
+    });
+    if (!res.ok) return null;
+    const { cart } = await res.json();
+    const line = (cart?.items || []).find(
+      (i) =>
+        i.id === key ||
+        i.variant_id === key ||
+        i.variant?.id === key,
+    );
+    return line?.id || null;
+  } catch {
+    return null;
+  }
+};
+
+const tryMedusaUpdateQty = async (cartId, idOrVariantId, qty) => {
+  try {
+    const lineItemId = await resolveMedusaLineItemId(cartId, idOrVariantId);
+    if (!lineItemId) return;
     await fetch(
       `${MEDUSA_URL_ENV}/store/carts/${cartId}/line-items/${lineItemId}`,
       {

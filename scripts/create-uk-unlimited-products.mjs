@@ -59,7 +59,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.UK_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-英國.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("英國esim.png")}`;
 
 const HANDLE = "uk-unlimited-esim";
 const TITLE = "英國 吃到飽 eSIM";

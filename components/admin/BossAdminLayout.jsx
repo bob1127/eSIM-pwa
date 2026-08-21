@@ -10,6 +10,7 @@ import {
   BanknotesIcon,
   CurrencyDollarIcon,
   ClipboardDocumentCheckIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { clearBossSession, getBossEmail } from "@/lib/bossAdminClient";
 import { StatCard } from "@/components/partner/PartnerAdminLayout";
@@ -24,6 +25,12 @@ const NAV_ITEMS = [
     href: "/admin-boss?tab=withdrawals",
     label: "提領審核",
     icon: CurrencyDollarIcon,
+  },
+  {
+    id: "settings",
+    href: "/admin-boss?tab=settings",
+    label: "平台設定",
+    icon: Cog6ToothIcon,
   },
 ];
 

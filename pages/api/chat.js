@@ -1,9 +1,9 @@
 import {
   checkRateLimit,
+  checkVisionRateLimit,
   checkOrigin,
   detectInjection,
   checkTopic,
-  isTopicRelevant,
   validatePayload,
   getClientIp,
   stripClientOverrides,
@@ -42,7 +42,7 @@ const BASE_SYSTEM_PROMPT = `你是 Jeko eSIM 的專屬 AI 旅行小幫手【J寶
    G. 若以上都沒有可用依據：明確說尚無法確認；禁止憑印象列出飯店或票券名單
    H. 有商城或聯盟推薦時，回答結尾可簡短引導點卡片（Jeko 商城／合作夥伴）
 3. 專業優先：針對旅行問題提供具體建議（如：日本通關提 Visit Japan Web 的 QR Code）。
-4. 若使用者提供截圖或影片，先描述你看到的關鍵畫面（設定頁、錯誤訊息、訊號、QR 等），再逐步說明如何排除。
+4. 若使用者提供截圖，先描述你看到的關鍵畫面（設定頁、錯誤訊息、訊號、QR 等），再逐步說明如何排除。目前不支援影片判讀；若對方只提到影片，請引導改傳截圖，或於人工客服時段改傳官方 LINE。
 5. 【導購語氣｜極重要｜先幫再說】
    - 先寫「基本實用資訊」（規格、注意事項、怎麼選），至少 2～4 句，讓客人覺得有被幫助。
    - 再自然帶出可選商品；不要一開場就硬推價格與購買路徑。
@@ -127,6 +127,58 @@ function parseDataUrl(dataUrl) {
   return { mimeType: match[1], data: match[2] };
 }
 
+/** 免費路線：Groq 多模型 → Gemini Flash 文字備援（不預設走付費 OpenAI） */
+const GROQ_MODEL_DEFAULT = "openai/gpt-oss-120b";
+const GROQ_MODEL_FALLBACKS = [
+  "qwen/qwen3.6-27b",
+  "openai/gpt-oss-20b",
+];
+/** 免費額度看圖／文字：新帳號請用 3.x Flash（2.5 對 new users 已停） */
+const GEMINI_TEXT_MODEL_DEFAULT = "gemini-3.6-flash";
+const GEMINI_VISION_FALLBACKS = [
+  "gemini-3.6-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-flash-latest",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
+];
+
+function getGroqModels() {
+  const preferred = (process.env.GROQ_MODEL || "").trim();
+  const list = [preferred || GROQ_MODEL_DEFAULT, ...GROQ_MODEL_FALLBACKS].filter(
+    Boolean,
+  );
+  return [...new Set(list)];
+}
+
+function getGeminiTextModels() {
+  const preferred = (process.env.GEMINI_TEXT_MODEL || "").trim();
+  const list = [
+    preferred ||
+      process.env.GEMINI_VISION_MODEL ||
+      GEMINI_TEXT_MODEL_DEFAULT,
+    ...GEMINI_VISION_FALLBACKS,
+  ].filter(Boolean);
+  return [...new Set(list)];
+}
+
+/** 截圖判讀：多模型輪詢，避開單一 Flash 高負載／停用 */
+function getGeminiVisionModels({ advanced = false } = {}) {
+  const preferred = advanced
+    ? (process.env.GEMINI_ADVANCED_MODEL || "").trim()
+    : (process.env.GEMINI_VISION_MODEL || "").trim();
+  const list = [preferred || GEMINI_TEXT_MODEL_DEFAULT, ...GEMINI_VISION_FALLBACKS].filter(
+    Boolean,
+  );
+  return [...new Set(list)];
+}
+
+function isTransientModelError(errMsg = "") {
+  return /does not exist|not have access|no longer available|decommissioned|deprecated|model_not_found|rate.?limit|quota|overloaded|unavailable|temporarily|high demand|try again later|429|503|502/i.test(
+    String(errMsg),
+  );
+}
+
 async function chatWithGroq({ message, history, systemPrompt }) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("Missing GROQ_API_KEY");
@@ -137,41 +189,67 @@ async function chatWithGroq({ message, history, systemPrompt }) {
     { role: "user", content: message },
   ];
 
-  const response = await fetch(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: allMessages,
-        temperature: 0.5,
-        max_tokens: 1500,
-      }),
-    }
-  );
+  const models = getGroqModels();
+  let lastError = null;
 
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error?.message || "Groq API 請求失敗");
+  for (const model of models) {
+    try {
+      const response = await fetch(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: allMessages,
+            temperature: 0.5,
+            max_tokens: 1500,
+          }),
+        },
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        return {
+          reply: finalizeReply(
+            data.choices?.[0]?.message?.content ||
+              "暫時無法回答，請稍後再試。🌼",
+          ),
+          provider: `groq:${model}`,
+        };
+      }
+
+      const errMsg =
+        data.error?.message || `Groq API 請求失敗（${response.status}）`;
+      lastError = new Error(errMsg);
+      if (!isTransientModelError(errMsg) && response.status < 500) break;
+      console.warn(`[chat] Groq skip (${model}): ${errMsg}`);
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      console.warn(`[chat] Groq network skip (${model}): ${lastError.message}`);
+    }
   }
-  return finalizeReply(
-    data.choices?.[0]?.message?.content || "暫時無法回答，請稍後再試。🌼"
-  );
+
+  throw lastError || new Error("Groq API 請求失敗");
 }
 
-async function chatWithGemini({ message, history, media, advanced, systemPrompt }) {
+async function chatWithGemini({
+  message,
+  history,
+  media,
+  advanced,
+  systemPrompt,
+  textOnly = false,
+}) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
 
-  const model = advanced
-    ? process.env.GEMINI_ADVANCED_MODEL ||
-      process.env.GEMINI_VISION_MODEL ||
-      "gemini-flash-latest"
-    : process.env.GEMINI_VISION_MODEL || "gemini-flash-latest";
+  const models = textOnly
+    ? getGeminiTextModels()
+    : getGeminiVisionModels({ advanced: Boolean(advanced) });
 
   const promptToUse = systemPrompt || BASE_SYSTEM_PROMPT;
 
@@ -203,41 +281,92 @@ async function chatWithGemini({ message, history, media, advanced, systemPrompt 
     });
   }
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: promptToUse }],
+  let lastError = null;
+  for (const model of models) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-goog-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: promptToUse }],
+            },
+            contents: [{ role: "user", parts }],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 2048,
+            },
+          }),
         },
-        contents: [{ role: "user", parts }],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 2048,
-        },
-      }),
-    }
-  );
+      );
 
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(
-      data.error?.message || `Gemini API 請求失敗（${response.status}）`
-    );
+      const data = await response.json();
+      if (response.ok) {
+        const text = data.candidates?.[0]?.content?.parts
+          ?.map((p) => p.text)
+          .filter(Boolean)
+          .join("\n");
+        return {
+          reply: finalizeReply(
+            text || "我已收到媒體，但暫時無法判讀，請再描述一下狀況。🌼",
+          ),
+          provider: `gemini:${model}`,
+        };
+      }
+
+      const errMsg =
+        data.error?.message || `Gemini API 請求失敗（${response.status}）`;
+      lastError = new Error(errMsg);
+      if (!isTransientModelError(errMsg) && response.status < 500) break;
+      console.warn(`[chat] Gemini skip (${model}): ${errMsg}`);
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      console.warn(
+        `[chat] Gemini network skip (${model}): ${lastError.message}`,
+      );
+    }
   }
 
-  const text = data.candidates?.[0]?.content?.parts
-    ?.map((p) => p.text)
-    .filter(Boolean)
-    .join("\n");
+  throw lastError || new Error("Gemini API 請求失敗");
+}
 
-  return finalizeReply(
-    text || "我已收到媒體，但暫時無法判讀，請再描述一下狀況。🌼"
+/** 純文字：免費 Groq 優先，失敗改走免費 Gemini Flash */
+async function chatTextWithFreeProviders({ message, history, systemPrompt }) {
+  const errors = [];
+
+  if (process.env.GROQ_API_KEY) {
+    try {
+      return await chatWithGroq({ message, history, systemPrompt });
+    } catch (e) {
+      errors.push(`groq: ${e?.message || e}`);
+      console.warn("[chat] Groq cascade failed, trying Gemini text backup");
+    }
+  } else {
+    errors.push("groq: missing GROQ_API_KEY");
+  }
+
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      return await chatWithGemini({
+        message,
+        history,
+        systemPrompt,
+        textOnly: true,
+      });
+    } catch (e) {
+      errors.push(`gemini: ${e?.message || e}`);
+    }
+  } else {
+    errors.push("gemini: missing GEMINI_API_KEY");
+  }
+
+  throw new Error(
+    `免費備援皆失敗（${errors.slice(0, 3).join(" | ")}）`.slice(0, 500),
   );
 }
 
@@ -337,19 +466,28 @@ export default async function handler(req, res) {
 
     const isVideo = mediaPayload?.mimeType?.startsWith("video/");
     const isImage = mediaPayload?.mimeType?.startsWith("image/");
-    const useVision = Boolean(mediaPayload && (isImage || isVideo));
-    // advanced 只由伺服器依「是否為影片」決定，客戶端無法強制升級貴模型
-    const useAdvanced = Boolean(isVideo);
+    // 影片判讀已關閉（成本控管）；僅截圖走視覺模型
+    if (isVideo) {
+      return res.status(400).json({
+        error:
+          "目前僅支援截圖判讀。請改傳錯誤畫面或設定頁截圖；若需傳影片，請於人工客服時段（每日 09:00–23:00）透過官方 LINE 聯繫。🌼",
+      });
+    }
+    const useVision = Boolean(mediaPayload && isImage);
+    const useAdvanced = false;
 
-    // ── 7. 付費 API 守門（Gemini）────────────────────────────────────────
-    // 純圖片無文字視為允許（讓 J寶 看圖判斷）；有文字但明顯無關則拒絕。
+    // ── 7. 截圖獨立限流（比文字更嚴，保護 Gemini 額度）────────────────
     if (useVision) {
-      const relevance = isTopicRelevant(msgText);
-      if (!relevance.relevant) {
-        return res.status(400).json({
-          error:
-            "J寶 的截圖／影片功能僅用於旅行與 eSIM 安裝問題。請描述你的旅行或 eSIM 狀況後再上傳。🌼",
-        });
+      const visionRate = checkVisionRateLimit(clientIp);
+      if (visionRate.blocked) {
+        res.setHeader("Retry-After", String(visionRate.retryAfter ?? 60));
+        const msg =
+          visionRate.reason === "vision_day"
+            ? "今日截圖判讀次數已達上限，請改以文字描述問題，或稍後再試。也可透過官方 LINE 聯繫客服。🌼"
+            : visionRate.reason === "vision_hour"
+              ? "截圖判讀稍後再用（本小時次數已滿），請先用文字說明，或稍後再傳圖。🌼"
+              : "截圖傳送太頻繁，請稍候再試。🌼";
+        return res.status(429).json({ error: msg });
       }
     }
 
@@ -472,17 +610,23 @@ export default async function handler(req, res) {
     let provider;
 
     if (useVision) {
-      reply = await chatWithGemini({
+      const vision = await chatWithGemini({
         message: msgText,
         history,
         media: mediaPayload,
         advanced: useAdvanced,
         systemPrompt,
       });
-      provider = useAdvanced ? "gemini-advanced" : "gemini-vision";
+      reply = vision.reply;
+      provider = vision.provider || (useAdvanced ? "gemini-advanced" : "gemini-vision");
     } else {
-      reply = await chatWithGroq({ message: msgText, history, systemPrompt });
-      provider = "groq";
+      const textResult = await chatTextWithFreeProviders({
+        message: msgText,
+        history,
+        systemPrompt,
+      });
+      reply = textResult.reply;
+      provider = textResult.provider || "groq";
     }
 
     return res.status(200).json({

@@ -870,7 +870,8 @@ export default function Home() {
                                         alt={getImageAlt(method.image)}
                                         width={1600}
                                         height={1000}
-                                        sizes="(max-width: 640px) 90vw, 360px"
+                                        quality={90}
+                                        sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 720px"
                                         className="h-auto w-full"
                                       />
                                     </button>
@@ -889,9 +890,10 @@ export default function Home() {
                                 <Image
                                   src={item.image}
                                   alt={getImageAlt(item.image)}
-                                  width={1200}
-                                  height={1500}
-                                  sizes="(max-width: 640px) 100vw, 360px"
+                                  width={1600}
+                                  height={2000}
+                                  quality={90}
+                                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 80vw, 960px"
                                   className="h-auto w-full"
                                 />
                               </button>
@@ -944,9 +946,10 @@ export default function Home() {
                               <Image
                                 src={item.image}
                                 alt={getImageAlt(item.image)}
-                                width={1200}
-                                height={1500}
-                                sizes="(max-width: 640px) 100vw, 360px"
+                                width={1600}
+                                height={2000}
+                                quality={90}
+                                sizes="(max-width: 640px) 92vw, (max-width: 1024px) 80vw, 960px"
                                 className="h-auto w-full"
                               />
                             </button>
@@ -1168,9 +1171,10 @@ export default function Home() {
             <Image
               src={imageLightbox}
               alt={getImageAlt(imageLightbox)}
-              width={1000}
-              height={1250}
-              sizes="(max-width: 768px) 95vw, 900px"
+              width={1600}
+              height={2000}
+              quality={92}
+              sizes="(max-width: 768px) 95vw, 1200px"
               className="mx-auto max-h-[90vh] w-auto h-auto object-contain rounded-lg"
               priority
             />

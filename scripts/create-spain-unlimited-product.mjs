@@ -57,7 +57,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.ES_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-西班牙.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("西班牙esim.png")}`;
 
 const HANDLE = "spain-unlimited-esim";
 const TITLE = "西班牙 吃到飽 eSIM";

@@ -129,9 +129,7 @@ const Sidebar = () => {
                           <button
                             onClick={() =>
                               updateQuantity(
-                                item.id,
-                                item.color,
-                                item.size,
+                                item.variant_id || item.id,
                                 item.quantity - 1
                               )
                             }
@@ -142,9 +140,7 @@ const Sidebar = () => {
                           <button
                             onClick={() =>
                               updateQuantity(
-                                item.id,
-                                item.color,
-                                item.size,
+                                item.variant_id || item.id,
                                 item.quantity + 1
                               )
                             }
@@ -154,7 +150,7 @@ const Sidebar = () => {
                         </p>
                         <button
                           onClick={() =>
-                            removeFromCart(item.id, item.color, item.size)
+                            removeFromCart(item.variant_id || item.id)
                           }
                           className="text-red-500"
                         >

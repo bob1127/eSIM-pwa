@@ -65,7 +65,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.FR_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-法國.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("法國esim.png")}`;
 
 const SPEED_RULE = "每日高速用完後降速約 128kbps 持續使用";
 const NETWORK_LABEL = "Orange／Bouygues 4G/5G（歐包 49 國）";

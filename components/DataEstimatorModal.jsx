@@ -797,23 +797,17 @@ export default function DataEstimatorModal({
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   {item.isBestMatch ? (
-                                    <span className="text-[10px] font-bold uppercase tracking-wide text-[#2d62cc] bg-white border border-[#2d62cc]/30 px-1.5 py-0.5 rounded">
+                                    <span className="text-[10px] font-bold text-slate-700">
                                       最推薦
                                     </span>
                                   ) : null}
                                   {item.isHotSale ? (
-                                    <span className="text-[10px] font-bold uppercase tracking-wide text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
+                                    <span className="text-[10px] font-bold text-slate-700">
                                       HOT SALE
                                     </span>
                                   ) : null}
                                   {item.productLabel ? (
-                                    <span
-                                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded border bg-white ${
-                                        item.isCurrentProduct
-                                          ? "text-emerald-700 border-emerald-200"
-                                          : "text-slate-600 border-slate-200"
-                                      }`}
-                                    >
+                                    <span className="text-[10px] font-bold text-slate-700">
                                       {item.isCurrentProduct
                                         ? `本商品 · ${item.productLabel}`
                                         : item.productLabel}

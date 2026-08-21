@@ -60,7 +60,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.CH_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-瑞士.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("瑞士esim.png")}`;
 
 const HANDLE = "switzerland-unlimited-esim";
 const TITLE = "瑞士 吃到飽 eSIM";

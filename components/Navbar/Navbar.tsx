@@ -184,7 +184,7 @@ const UNLIMITED_SPEED_PLANS: FeaturedCountry[] = [
     name: "泰國 Truemove 8／15天",
     slug: "thailand",
     description: "Truemove H 當地號碼・8 天與 15 天",
-    imageSrc: "/images/分類eSIM-泰國.png",
+    imageSrc: "/images/sim/分類/分類eSIM-泰國.png",
     productCount: 2,
     minPrice: null,
     regionLabel: "泰國",

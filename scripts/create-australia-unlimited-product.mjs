@@ -65,7 +65,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.AUSTRALIA_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-多國.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("澳洲esim.png")}`;
 
 const SPEED_RULE = "吃到飽不限流量（FUP，繁忙時段可能降速）";
 

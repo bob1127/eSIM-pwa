@@ -12,7 +12,6 @@ import { resolvePageSeo } from "@/lib/seo.config";
 import SmartWizardFloat from "@/components/SmartWizardFloat"; // 引入新元件 ✅
 import Sidebar from "@/components/Sidebar.js"; // 引入側邊欄組件
 import { UserProvider } from "../components/context/UserContext";
-import AiChatWidget from "../components/AiChatWidget";
 import EsimBottomSheet from "../components/EsimBottomSheet";
 
 export default function RootLayout({
@@ -84,7 +83,7 @@ export default function RootLayout({
               </main>
 
               <SmartWizardFloat />
-              <AiChatWidget />
+              {/* AiChatWidget 已移至 _app，避免換頁卸載中斷請求 */}
               {/* 手機版全域上拉選單：我的 eSIM（/shop 路徑內不顯示） */}
               <EsimBottomSheet />
               <Footer

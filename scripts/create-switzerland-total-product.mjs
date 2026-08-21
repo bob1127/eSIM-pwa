@@ -64,7 +64,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.CH_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-瑞士.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("瑞士esim.png")}`;
 
 const SPEED_RULE = "總量高速額度用完後斷網";
 const NETWORK_LABEL = "Swisscom／Sunrise／Salt 4G/5G";

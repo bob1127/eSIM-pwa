@@ -28,6 +28,10 @@ import {
 
 import { getPublicSiteUrl } from "../lib/siteUrl";
 import { buildLoginUrl } from "../lib/authRedirect";
+import {
+  isSupportBusinessHours,
+  SUPPORT_HOURS_LABEL,
+} from "../lib/supportHours";
 import { useAuth } from "../hooks/useAuth";
 import AffiliateChatOffers from "./affiliate/AffiliateChatOffers";
 import ShopChatOffers from "./Shop/ShopChatOffers";
@@ -35,11 +39,23 @@ import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import { useRouter } from "next/router";
 
 /** LINE OA Basic ID（含 @），用於 oaMessage 預填文字 */
-const LINE_OA_ID = process.env.NEXT_PUBLIC_LINE_OA_ID || "@593gvyzn";
+function resolveLineOaId() {
+  const raw = (process.env.NEXT_PUBLIC_LINE_OA_ID || "").trim();
+  if (raw) return raw.startsWith("@") ? raw : `@${raw}`;
+  const url = process.env.NEXT_PUBLIC_LINE_OA_URL || "";
+  const m = String(url).match(/@[\w.-]+/);
+  if (m) return m[0];
+  return "@593gvyzn";
+}
+const LINE_OA_ID = resolveLineOaId();
+/** 僅加好友／開啟官方帳號（無預填文字；桌機／手機通用後備） */
+const LINE_OA_FRIEND_URL =
+  process.env.NEXT_PUBLIC_LINE_OA_URL ||
+  `https://line.me/R/ti/p/${encodeURIComponent(LINE_OA_ID)}`;
 
 /**
  * MicroeSIM WhatsApp（選填國際號碼，無 + 號，例：8615999587946）。
- * 未設定時開啟 WhatsApp 僅帶預填文字，由客服自行選群組貼上。
+ * 未設定時開啟 WhatsApp 僅帶預填文字，由客服自行選聯絡人／群組。
  */
 const MICROESIM_WA =
   (process.env.NEXT_PUBLIC_MICROESIM_WHATSAPP || "").replace(/\D/g, "");
@@ -48,9 +64,10 @@ const MICROESIM_WA =
 const WELCOME_TEXT =
   "🌼 嗨！我是 J寶，Jeko 的旅行小幫手～\n" +
   "目前最拿手的是 eSIM 上網與景點行程相關問題，需要什麼直接跟我說～\n" +
+  "（可上傳截圖協助排查；影片請改傳官方 LINE 真人客服。）\n" +
   "（備註：住宿、包車、3C 與旅行用品即將上線，敬請期待。）";
 
-const WELCOME_TEXT_VERSION = 3; // 變更歡迎詞時 +1，自動替換快取中的舊歡迎詞
+const WELCOME_TEXT_VERSION = 4; // 變更歡迎詞時 +1，自動替換快取中的舊歡迎詞
 
 /** 歡迎詞下方的優惠／活動輪播（圖卡，可之後改成 API） */
 const WELCOME_PROMO_CARDS = [
@@ -103,6 +120,7 @@ const WELCOME_PROMO_CARDS = [
 
 /**
  * 開 LINE 官方帳號聊天，並把文字預填進輸入框（使用者只需按送出）。
+ * 使用 https://line.me/R/…（手機開 App、電腦開 LINE／網頁皆可）。
  * 官方文件：https://developers.line.biz/en/docs/messaging-api/using-line-url-scheme/
  */
 function buildLineOaMessageUrl(text) {
@@ -110,6 +128,45 @@ function buildLineOaMessageUrl(text) {
   const body = String(text || "").slice(0, 900);
   const id = encodeURIComponent(LINE_OA_ID);
   return `https://line.me/R/oaMessage/${id}/?${encodeURIComponent(body)}`;
+}
+
+/**
+ * 桌機＋手機通用開啟 LINE：
+ * - 優先新分頁（不關掉網站聊天室）
+ * - 被擋彈窗時改同頁導向（手機／內建瀏覽器較穩）
+ */
+function openOfficialLine(url) {
+  const target = url || LINE_OA_FRIEND_URL;
+  try {
+    const win = window.open(target, "_blank", "noopener,noreferrer");
+    if (win) return "tab";
+  } catch {
+    /* ignore */
+  }
+  window.location.assign(target);
+  return "navigate";
+}
+
+/** 手機／平板：深層連結較穩；桌機瀏覽器常被導到 line.me 官網 → 改掃 QR */
+function prefersLineAppDeepLink() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  return /Android|iPhone|iPod|iPad|Mobile/i.test(ua);
+}
+
+/**
+ * 桌機主 QR：指向手機中繼頁（短網址才掃得穩）。
+ * 手機開中繼頁後再帶提問進 LINE（電腦剪貼簿無法同步到手機）。
+ */
+function buildLineHandoffQrImageUrl(pageUrl) {
+  const data = encodeURIComponent(pageUrl || LINE_OA_FRIEND_URL);
+  return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=L&margin=12&data=${data}`;
+}
+
+/** QR 落地頁必須與產生票券的同一台伺服器（本機票券在 localhost 記憶體） */
+function getHandoffQrOrigin() {
+  if (typeof window === "undefined") return getPublicSiteUrl();
+  return window.location.origin;
 }
 
 /** WhatsApp 分享（預填文字；有號碼則開該對話，否則讓使用者選聯絡人／群組） */
@@ -152,6 +209,37 @@ function buildHandoffSummary(messages, { userLabel = "訪客" } = {}) {
     lines.join("\n") +
     (hasMedia ? "\n────────\n（對話含截圖／影片，請一併確認）" : "")
   );
+}
+
+/** 給使用者轉官方 LINE 的預填訊息（可順便加入好友） */
+function buildCustomerLineMessage(messages, { userLabel = "訪客" } = {}) {
+  const recent = messages
+    .filter((m) => m.role === "user" || m.role === "ai")
+    .slice(-6)
+    .map((m) => {
+      const label = m.role === "user" ? "我" : "J寶";
+      const max = 120;
+      const text =
+        String(m.content || "").length > max
+          ? String(m.content).slice(0, max) + "…"
+          : String(m.content || "");
+      return `${label}：${text}`;
+    });
+
+  return (
+    `您好，我想請專人客服協助（來自官網 J寶）。\n` +
+    `來賓：${userLabel}\n` +
+    `────────\n` +
+    (recent.length ? `${recent.join("\n")}\n────────\n` : "") +
+    `（若尚未加入好友，請先加入官方帳號後再按送出）`
+  );
+}
+
+/**
+ * 桌機剪貼簿用的提問摘要（完整一點；QR 本身不塞這段，否則掃不出）。
+ */
+function buildCustomerLineMessageForQr(messages, { userLabel = "訪客" } = {}) {
+  return buildCustomerLineMessage(messages, { userLabel });
 }
 
 
@@ -365,7 +453,29 @@ async function persistChatLog({ sessionId, userId, guestId, messages }) {
 const SITE = getPublicSiteUrl();
 const JEKO_LOGO = "/images/Logo/logo-no-bg.png";
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
-const MAX_VIDEO_BYTES = 10 * 1024 * 1024;
+
+const VIDEO_LINE_PREFILL =
+  "您好，我想傳操作影片請真人客服協助（網站 J寶目前僅支援截圖判讀）。";
+
+function buildVideoRejectedReply() {
+  const inHours = isSupportBusinessHours();
+  if (inHours) {
+    return {
+      content:
+        "🌼 目前 J寶 先支援「截圖」判讀，影片暫時關閉。\n\n" +
+        "建議改傳錯誤畫面／設定頁截圖，我可以立刻幫你看。\n\n" +
+        `若一定要傳影片，現在是人工客服時段（${SUPPORT_HOURS_LABEL}），可點下方按鈕到官方 LINE 傳影片給我們。`,
+      lineCta: true,
+    };
+  }
+  return {
+    content:
+      "🌼 目前 J寶 先支援「截圖」判讀，影片暫時關閉。\n\n" +
+      "請改傳錯誤畫面／設定頁截圖，我就能立刻幫你看。\n\n" +
+      `影片請於人工客服時段（${SUPPORT_HOURS_LABEL}）傳到官方 LINE，我們再協助。`,
+    lineCta: false,
+  };
+}
 
 /** 手機版聊天室為全螢幕（與 Tailwind md 斷點對齊） */
 function isMobileChatViewport() {
@@ -383,6 +493,18 @@ function isProductPagePath(pathOrUrl) {
   } catch {
     return false;
   }
+}
+
+/** 後台／LIFF 等頁不顯示 J寶（掛在 _app 後需自行隱藏） */
+function shouldHideAiChat(pathname = "") {
+  const p = String(pathname || "").split("?")[0];
+  return (
+    /^\/partner(\/|$)/.test(p) ||
+    /^\/admin(\/|$)/.test(p) ||
+    /^\/admin-boss(\/|$)/.test(p) ||
+    /^\/line(\/|$)/.test(p) ||
+    /^\/api(\/|$)/.test(p)
+  );
 }
 
 /** 寫入關閉狀態，避免跳轉商品頁後又從 IndexedDB 還原成開啟 */
@@ -1010,7 +1132,9 @@ export default function AiChatWidget() {
             pendingMedia: saved.pendingMedia,
           });
         }
-        if (saved.pendingMedia) setPendingMedia(saved.pendingMedia);
+        if (saved.pendingMedia?.kind === "image") {
+          setPendingMedia(saved.pendingMedia);
+        }
       }
       setChatHydrated(true);
     })();
@@ -1037,6 +1161,12 @@ export default function AiChatWidget() {
   const [handoffSummary, setHandoffSummary] = useState("");
   const [handoffCopied, setHandoffCopied] = useState(false);
   const [handoffToast, setHandoffToast] = useState(null); // { kind: 'line'|'wa'|'copy', hasMedia?: bool }
+  /** 桌機轉專人：顯示 QR，避免被導到 line.me 官網 */
+  const [lineQrOpen, setLineQrOpen] = useState(false);
+  const [lineQrText, setLineQrText] = useState("");
+  const [lineQrCopied, setLineQrCopied] = useState(false);
+  const [lineQrPageUrl, setLineQrPageUrl] = useState("");
+  const [lineQrError, setLineQrError] = useState("");
 
   const fileInputRef = useRef(null);
 
@@ -1063,23 +1193,90 @@ export default function AiChatWidget() {
   }, [isLoggedIn, user, session]);
 
   /**
-   * 點「聯繫真人客服」：開啟半自動交接面板
-   * - 產生對話摘要
-   * - 一鍵複製 / 開 WhatsApp（貼 MicroeSIM 群）
-   * - 可同時開 LINE 官方客服給客人
+   * 使用者轉專人客服：
+   * - 手機：直接開 LINE App（深層連結）
+   * - 桌機：顯示 QR（掃碼加入），避免瀏覽器被導到 line.me 官網
+   * - Shift／Alt：內部 WhatsApp 工具
    */
   const handleContactAgent = useCallback(
-    (e) => {
+    async (e) => {
       e.preventDefault();
-      const summary = buildHandoffSummary(messages, {
-        userLabel: userDisplayName || "訪客",
-      });
-      setHandoffSummary(summary);
+      const userLabel = userDisplayName || "訪客";
+      const staffSummary = buildHandoffSummary(messages, { userLabel });
+      setHandoffSummary(staffSummary);
       setHandoffCopied(false);
-      setHandoffOpen(true);
+
+      if (e.shiftKey || e.altKey) {
+        setLineQrOpen(false);
+        setHandoffOpen(true);
+        return;
+      }
+
+      setHandoffOpen(false);
+      const hasMedia = messages.some(
+        (m) => m.mediaPreview || m.mediaKind === "video" || m.hadMedia,
+      );
+
+      if (prefersLineAppDeepLink()) {
+        setLineQrOpen(false);
+        const lineText = buildCustomerLineMessage(messages, { userLabel });
+        openOfficialLine(buildLineOaMessageUrl(lineText));
+        setHandoffToast({ kind: "line", hasMedia });
+        setTimeout(() => setHandoffToast(null), 4500);
+        return;
+      }
+
+      // 桌機：短 QR → 手機中繼頁 → LINE 預填（剪貼簿無法跨裝置）
+      const qrText = buildCustomerLineMessageForQr(messages, { userLabel });
+      setLineQrText(qrText);
+      setLineQrCopied(false);
+      setLineQrError("");
+      setLineQrPageUrl("");
+      setLineQrOpen(true);
+      setHandoffToast(null);
+      try {
+        const res = await fetch("/api/line/handoff", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: qrText }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.id) {
+          throw new Error(data?.error || "無法產生轉介");
+        }
+        const pageUrl = `${getHandoffQrOrigin()}/line/handoff/${data.id}`;
+        setLineQrPageUrl(pageUrl);
+      } catch {
+        setLineQrError(
+          "無法產生掃碼轉介，請改用手機開啟本站後再點「轉專人客服」。",
+        );
+      }
     },
     [messages, userDisplayName],
   );
+
+  const copyLineQrText = useCallback(async () => {
+    const text = lineQrText || "";
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setLineQrCopied(true);
+      setTimeout(() => setLineQrCopied(false), 2500);
+    } catch {
+      /* ignore */
+    }
+  }, [lineQrText]);
 
   const copyHandoffSummary = useCallback(async () => {
     const text = handoffSummary || "";
@@ -1123,7 +1320,7 @@ export default function AiChatWidget() {
 
   const openHandoffLine = useCallback(() => {
     const url = buildLineOaMessageUrl(handoffSummary);
-    window.location.href = url;
+    openOfficialLine(url);
     const hasMedia = /截圖|影片/.test(handoffSummary);
     setHandoffToast({ kind: "line", hasMedia });
     setTimeout(() => setHandoffToast(null), 3500);
@@ -1234,19 +1431,34 @@ export default function AiChatWidget() {
 
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
-    if (!isImage && !isVideo) {
+
+    if (isVideo) {
+      const reply = buildVideoRejectedReply();
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now(),
           role: "ai",
-          content: "目前僅支援圖片截圖或短影片（建議 15 秒內）。",
+          content: reply.content,
+          lineCta: reply.lineCta,
         },
       ]);
       return;
     }
 
-    if (isImage && file.size > MAX_IMAGE_BYTES) {
+    if (!isImage) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: "ai",
+          content: "目前僅支援圖片截圖。請上傳錯誤畫面或設定頁截圖。",
+        },
+      ]);
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
       setMessages((prev) => [
         ...prev,
         {
@@ -1258,27 +1470,13 @@ export default function AiChatWidget() {
       return;
     }
 
-    if (isVideo && file.size > MAX_VIDEO_BYTES) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          role: "ai",
-          content: "影片太大了，請裁成短片（建議 10MB／約 15 秒內）。",
-        },
-      ]);
-      return;
-    }
-
     try {
-      const dataUrl = isImage
-        ? await compressImageFile(file)
-        : await fileToDataUrl(file);
+      const dataUrl = await compressImageFile(file);
       setPendingMedia({
         dataUrl,
-        mimeType: isImage ? "image/jpeg" : file.type,
+        mimeType: "image/jpeg",
         name: file.name,
-        kind: isImage ? "image" : "video",
+        kind: "image",
       });
     } catch {
       setMessages((prev) => [
@@ -1297,11 +1495,31 @@ export default function AiChatWidget() {
     const trimmed = (text || "").trim();
     if ((!trimmed && !media) || isLoading) return;
 
+    // 舊快取若殘留影片附件：不送 API，改引導截圖／LINE
+    if (media?.kind === "video") {
+      setPendingMedia(null);
+      const reply = buildVideoRejectedReply();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: "user",
+          content: trimmed || "（已上傳影片）",
+        },
+        {
+          id: Date.now() + 1,
+          role: "ai",
+          content: reply.content,
+          lineCta: reply.lineCta,
+        },
+      ]);
+      return;
+    }
+
     const displayContent =
       typeof options.displayContent === "string" && options.displayContent.trim()
         ? options.displayContent.trim()
-        : trimmed ||
-          (media?.kind === "video" ? "（已上傳影片）" : "（已上傳截圖）");
+        : trimmed || "（已上傳截圖）";
 
     stickToBottomRef.current = true;
 
@@ -1356,9 +1574,6 @@ export default function AiChatWidget() {
         history,
       };
       if (media?.kind === "image") payload.image = media.dataUrl;
-      if (media?.kind === "video") {
-        payload.video = media.dataUrl;
-      }
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -1453,6 +1668,11 @@ export default function AiChatWidget() {
     processChat(apiPrompt, null, { displayContent });
   };
 
+  // 後台／LIFF：不渲染浮動客服（狀態仍保留在記憶體，避免換頁中斷）
+  if (shouldHideAiChat(router.pathname)) {
+    return null;
+  }
+
   return (
     <div
       className={`fixed font-sans ${
@@ -1516,7 +1736,7 @@ export default function AiChatWidget() {
                     <>
                       <p className="font-bold">摘要已複製</p>
                       <p className="mt-0.5 leading-snug">
-                        可到 WhatsApp MicroeSIM 客服群直接貼上。
+                        可貼到 WhatsApp 與供應商／團隊溝通（內部用）。
                       </p>
                     </>
                   )}
@@ -1530,17 +1750,17 @@ export default function AiChatWidget() {
                   )}
                   {handoffToast.kind === "wa" && (
                     <>
-                      <p className="font-bold">已開啟 WhatsApp</p>
+                      <p className="font-bold">已開啟 WhatsApp（內部）</p>
                       <p className="mt-0.5 leading-snug">
-                        請選擇 MicroeSIM 客服群後送出；摘要也已複製到剪貼簿備援。
+                        請選供應商／團隊對話後送出；摘要也已複製備援。
                       </p>
                     </>
                   )}
                   {handoffToast.kind === "line" && (
                     <>
-                      <p className="font-bold">已開啟 LINE 客服</p>
+                      <p className="font-bold">正在開啟官方 LINE</p>
                       <p className="mt-0.5 leading-snug">
-                        對話摘要已預填在輸入框，直接按送出即可。
+                        手機將開啟 LINE App。尚未加入可先加好友，訊息預填後再送出。
                         {handoffToast.hasMedia && (
                           <span className="block mt-0.5 text-emerald-800">
                             截圖請在 LINE 中另行上傳。
@@ -1549,20 +1769,131 @@ export default function AiChatWidget() {
                       </p>
                     </>
                   )}
+                  {handoffToast.kind === "line-desktop-try" && (
+                    <>
+                      <p className="font-bold">已嘗試開啟 LINE 電腦版</p>
+                      <p className="mt-0.5 leading-snug">
+                        若仍跳到官網，請改用上方 QR 用手機掃描加入。
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* 半自動交接面板 */}
+            {/* 桌機轉專人：掃 QR 加官方 LINE（避免被導到 line.me 官網） */}
+            {lineQrOpen && (
+              <div className="mx-3 mt-2 rounded-2xl border border-[#06C755]/40 bg-white shadow-md overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2.5 bg-[#06C755]/10 border-b border-[#06C755]/20">
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold text-slate-800 inline-flex items-center gap-1.5">
+                      <LineIconSvg className="w-4 h-4 text-[#06C755]" />
+                      用手機掃碼轉專人客服
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
+                      掃碼後手機會開啟轉介頁，再自動把提問帶進官方 LINE（電腦複製無法同步到手機）
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLineQrOpen(false)}
+                    className="p-1 rounded-full hover:bg-white text-slate-500 shrink-0"
+                    aria-label="關閉"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="p-3 space-y-3">
+                  {lineQrError && (
+                    <p className="text-[12px] text-red-600 leading-relaxed">
+                      {lineQrError}
+                    </p>
+                  )}
+                  {!lineQrPageUrl && !lineQrError && (
+                    <p className="text-[12px] text-slate-500">正在產生掃碼…</p>
+                  )}
+                  {lineQrPageUrl && (
+                    <div className="flex flex-col sm:flex-row gap-3 items-center sm:items-start">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={buildLineHandoffQrImageUrl(lineQrPageUrl)}
+                        alt="轉專人客服 QR Code"
+                        width={200}
+                        height={200}
+                        className="w-[160px] h-[160px] sm:w-[180px] sm:h-[180px] rounded-xl border border-slate-100 bg-white shrink-0"
+                      />
+                      <div className="flex-1 min-w-0 space-y-2 text-left w-full">
+                        <ol className="text-[11px] text-slate-600 space-y-1 list-decimal list-inside leading-relaxed">
+                          <li>用手機相機或 LINE 掃描左側 QR</li>
+                          <li>手機會開啟轉介頁，再自動帶入提問到官方 LINE</li>
+                          <li>確認預填內容後按送出即可</li>
+                        </ol>
+                        <a
+                          href={lineQrPageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex text-[11px] font-semibold text-[#06C755] underline underline-offset-2 break-all"
+                        >
+                          或用手機開啟此轉介連結
+                        </a>
+                        {/localhost|127\.0\.0\.1/.test(lineQrPageUrl) && (
+                          <p className="text-[10px] text-amber-700 leading-relaxed">
+                            本機網址手機通常掃不到。請用區網 IP 開站（例如
+                            http://192.168.x.x:3000），或部署後再測。
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-500 mb-1">
+                      將帶入手機 LINE 的提問
+                    </p>
+                    <textarea
+                      readOnly
+                      value={lineQrText}
+                      rows={4}
+                      className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-700"
+                    />
+                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={copyLineQrText}
+                        className="inline-flex items-center justify-center rounded-xl bg-slate-800 text-white text-[12px] font-semibold py-2.5 hover:bg-slate-700"
+                      >
+                        {lineQrCopied ? "已複製 ✓" : "複製訊息（備援）"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          openOfficialLine(buildLineOaMessageUrl(lineQrText));
+                          setHandoffToast({ kind: "line-desktop-try" });
+                          setTimeout(() => setHandoffToast(null), 4000);
+                        }}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#06C755] text-[#06C755] text-[12px] font-semibold py-2.5 hover:bg-[#06C755]/5"
+                      >
+                        <LineIconSvg className="w-3.5 h-3.5" />
+                        已裝電腦版？嘗試開啟
+                      </button>
+                    </div>
+                    <p className="mt-2 text-[10px] text-slate-400 leading-relaxed">
+                      電腦複製無法貼到手機 LINE；請一定用手機掃 QR／開轉介連結。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 內部交接面板（Shift／Alt 點「轉專人客服」開啟；WhatsApp 僅內部用） */}
             {handoffOpen && (
               <div className="mx-3 mt-2 rounded-2xl border border-slate-200 bg-white shadow-md overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-2.5 bg-slate-50 border-b border-slate-100">
                   <div>
                     <p className="text-[13px] font-bold text-slate-800">
-                      轉真人客服（半自動）
+                      內部溝通工具
                     </p>
                     <p className="text-[10px] text-slate-500 mt-0.5">
-                      產生摘要 → 複製／開 WhatsApp 貼群，或開 LINE 給客人
+                      WhatsApp／複製摘要給供應商或團隊（使用者走官方 LINE）
                     </p>
                   </div>
                   <button
@@ -1610,11 +1941,11 @@ export default function AiChatWidget() {
                     className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#06C755] text-[#06C755] text-[12px] font-semibold py-2.5 hover:bg-[#06C755]/5 transition-colors"
                   >
                     <LineIconSvg className="w-3.5 h-3.5" />
-                    開啟 LINE 官方客服（給客人）
+                    預覽：開啟官方 LINE（同使用者路徑）
                   </button>
                   <p className="text-[10px] text-slate-400 leading-relaxed">
-                    WhatsApp
-                    無法自動進群，請開啟後選「MicroeSIM 客服群」再送出。摘要會一併複製。
+                    使用者一般點擊會直接開 LINE；此面板僅內部用（按住
+                    Shift 再點「轉專人客服」開啟）。
                   </p>
                 </div>
               </div>
@@ -1682,6 +2013,17 @@ export default function AiChatWidget() {
                             ? renderMessageContent(msg.content)
                             : msg.content}
                         </div>
+                        {!isUser && msg.lineCta && (
+                          <a
+                            href={buildLineOaMessageUrl(VIDEO_LINE_PREFILL)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#06C755] px-3 py-2.5 text-[12px] font-semibold text-white hover:bg-[#05b34c] transition-colors"
+                          >
+                            <LineIconSvg className="w-3.5 h-3.5" />
+                            開啟官方 LINE 傳影片
+                          </a>
+                        )}
                       </div>
                       {/* 商品推薦卡 */}
                       {!isUser && msg.shopCards && (
@@ -1697,20 +2039,16 @@ export default function AiChatWidget() {
                       {!isUser && msg.promoCards && (
                         <PromoCardCarousel cards={msg.promoCards} />
                       )}
-                      {/* 聯繫客服按鈕 — 每則 AI 訊息底部 */}
+                      {/* 轉專人客服：手機開 App；桌機改顯示 QR */}
                       {!isUser && (
                         <button
+                          type="button"
                           onClick={handleContactAgent}
-                          className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-green-600 transition-colors select-none cursor-pointer bg-transparent border-0 p-0"
+                          title="手機直接開 LINE；電腦顯示 QR 掃碼"
+                          className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-900 transition-colors select-none cursor-pointer bg-transparent border-0 p-0"
                         >
-                          <svg
-                            viewBox="0 0 24 24"
-                            className="w-3 h-3 fill-current"
-                            aria-hidden="true"
-                          >
-                            <path d="M12 2C6.477 2 2 6.062 2 11.063c0 2.742 1.313 5.194 3.381 6.853-.148.548-.96 3.302-.99 3.538-.038.283.103.56.372.68.083.037.172.056.26.056.195 0 .378-.078.51-.217.175-.183 3.028-2.018 3.685-2.456.566.08 1.141.12 1.72.12 5.523 0 10-4.06 10-9.063S17.523 2 12 2z" />
-                          </svg>
-                          J寶答不出來？轉真人客服
+                          <LineIconSvg className="w-3 h-3 shrink-0" />
+                          答不出來嗎？幫你轉專人客服
                         </button>
                       )}
                     </div>
@@ -1819,26 +2157,18 @@ export default function AiChatWidget() {
             <div className="p-4 bg-white border-t border-gray-100 shrink-0">
               {pendingMedia && (
                 <div className="mb-2 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/80 px-2 py-1.5">
-                  {pendingMedia.kind === "image" ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={pendingMedia.dataUrl}
-                      alt="預覽"
-                      className="h-10 w-10 rounded-md object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-white text-blue-600">
-                      <Film className="w-5 h-5" />
-                    </div>
-                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={pendingMedia.dataUrl}
+                    alt="預覽"
+                    className="h-10 w-10 rounded-md object-cover"
+                  />
                   <div className="min-w-0 flex-1 text-left">
                     <p className="truncate text-[11px] font-medium text-slate-700">
                       {pendingMedia.name}
                     </p>
                     <p className="text-[10px] text-slate-500">
-                      {pendingMedia.kind === "video"
-                        ? "將使用進階視覺模型"
-                        : "將使用 Gemini 判讀截圖"}
+                      將判讀截圖
                     </p>
                   </div>
                   <button
@@ -1859,7 +2189,7 @@ export default function AiChatWidget() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*,video/*"
+                  accept="image/*"
                   className="hidden"
                   onChange={onPickMedia}
                 />
@@ -1868,8 +2198,8 @@ export default function AiChatWidget() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isLoading}
                   className="shrink-0 rounded-full p-2.5 text-slate-500 hover:bg-white hover:text-blue-600 transition-colors"
-                  title="上傳截圖或短影片"
-                  aria-label="上傳截圖或短影片"
+                  title="上傳截圖"
+                  aria-label="上傳截圖"
                 >
                   <ImagePlus className="w-4 h-4" />
                 </button>

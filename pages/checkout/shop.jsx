@@ -13,6 +13,7 @@ import {
   mergeCheckoutForm,
   saveCheckoutProfile,
 } from "@/lib/checkoutProfile";
+import { isLineSyntheticEmail } from "@/lib/lineAuth";
 import { ChevronRight, Tag, Shield, Truck, RotateCcw } from "lucide-react";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
@@ -288,7 +289,13 @@ export default function ShopCheckoutPage() {
       supabaseUser: user,
       nextAuthUser: nextAuthSession?.user || null,
     });
-    setForm((prev) => mergeCheckoutForm(prev, patches));
+    setForm((prev) => {
+      const merged = mergeCheckoutForm(prev, patches);
+      if (isLineSyntheticEmail(merged.email)) {
+        return { ...merged, email: "" };
+      }
+      return merged;
+    });
   }, [
     authReady,
     user?.email,
@@ -390,6 +397,8 @@ export default function ShopCheckoutPage() {
   const validate = () => {
     const errs = {};
     if (!form.email) errs.email = "請輸入 Email";
+    else if (isLineSyntheticEmail(form.email))
+      errs.email = "請填寫真實 Email，以便寄送訂單通知";
     else if (!/^\S+@\S+\.\S+$/.test(form.email))
       errs.email = "Email 格式不正確";
     if (!form.name) errs.name = "請輸入姓名";
@@ -613,6 +622,11 @@ export default function ShopCheckoutPage() {
                 type="email"
                 placeholder="your@email.com"
               />
+              {isLoggedIn && !form.email ? (
+                <p className="mt-2 text-[12px] text-amber-700 bg-amber-50 border border-amber-100 rounded-md px-3 py-2">
+                  LINE 登入不會提供真實 Email，請填寫可收件信箱（訂單通知會寄到這裡）
+                </p>
+              ) : null}
             </section>
 
             {/* 配送地址 */}

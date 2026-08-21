@@ -61,13 +61,16 @@ export default async function handler(req, res) {
     }
 
     const addressPayload = {
-      first_name: orderInfo.name,
-      last_name: orderInfo.name,
-      address_1: orderInfo.address,
-      city: orderInfo.city || "Taipei",
+      first_name: orderInfo?.name || "eSIM",
+      last_name: orderInfo?.name || "Customer",
+      // eSIM 數位交付：地址非必填，Medusa cart 仍需要 address 欄位
+      address_1:
+        String(orderInfo?.address || "").trim() ||
+        "eSIM digital delivery (no shipping)",
+      city: String(orderInfo?.city || "").trim() || "Taipei",
       country_code: "tw",
-      postal_code: orderInfo.postalCode || "000",
-      phone: orderInfo.phone,
+      postal_code: String(orderInfo?.postalCode || "").trim() || "100",
+      phone: orderInfo?.phone || "",
     };
 
     // 專屬推薦連結：綁定 Medusa cart ↔ 夥伴。
@@ -98,7 +101,11 @@ export default async function handler(req, res) {
 
     console.log(`[Next.js API] 🚚 步驟 2: 抓取並設定運費方案...`);
     const shipOptionsData = await fetchMedusa("取得運費選項", `${MEDUSA_URL}/store/shipping-options?cart_id=${cartId}`, { headers });
-    if (!shipOptionsData.shipping_options || shipOptionsData.shipping_options.length === 0) throw new Error("無可用運費");
+    if (!shipOptionsData.shipping_options || shipOptionsData.shipping_options.length === 0) {
+      throw new Error(
+        "無可用運費：請在 Medusa 後台為台灣區設定「eSIM Digital Delivery」免運方案（或執行 ensure-tw-digital-shipping 腳本）。"
+      );
+    }
     await fetchMedusa("套用運費", `${MEDUSA_URL}/store/carts/${cartId}/shipping-methods`, { method: "POST", headers, body: JSON.stringify({ option_id: shipOptionsData.shipping_options[0].id }) });
 
     console.log(`[Next.js API] 💰 步驟 3: 取得最終金額...`);

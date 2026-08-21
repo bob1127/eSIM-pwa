@@ -12,6 +12,8 @@ import {
   mergeCheckoutForm,
   saveCheckoutProfile,
 } from "@/lib/checkoutProfile";
+import { isLineSyntheticEmail } from "@/lib/lineAuth";
+import { CONTACT_INFO } from "@/lib/contactUi";
 import { supabase } from "@/lib/supabaseClient";
 
 // --- Component: 浮動標籤輸入框 (Shopify 風格核心) ---
@@ -73,7 +75,6 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
     address: "",
     postalCode: "",
     saveInfo: true,
-    newsOffers: true,
   });
 
   const [memberInfo, setMemberInfo] = useState(null);
@@ -118,7 +119,14 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
         }
         return next;
       });
-      const merged = mergeCheckoutForm(prev, safePatches);
+      let merged = mergeCheckoutForm(prev, safePatches);
+      // 若欄位仍是 LINE 虛擬信箱（舊快取），清掉並改請使用者填真實 Email
+      if (
+        !touchedRef.current.email &&
+        isLineSyntheticEmail(merged.email)
+      ) {
+        merged = { ...merged, email: "" };
+      }
       if (merged !== prev) {
         const filled = ["email", "name", "phone", "address", "city"].filter(
           (k) =>
@@ -132,6 +140,13 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
                 ? "會員帳號"
                 : "先前儲存資料";
           setAutofillNote(`已自動帶入${via}資料，可直接修改`);
+        } else if (
+          isLineSyntheticEmail(prev.email) &&
+          !String(merged.email || "").trim()
+        ) {
+          setAutofillNote(
+            "LINE 登入不會提供真實 Email，請填寫可收件信箱（eSIM QR 會寄到這裡）",
+          );
         }
       }
       return merged;
@@ -175,18 +190,52 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
     }
   };
 
+  /** 不阻塞結帳：本機儲存同步做，Supabase 背景寫 */
+  const persistProfileInBackground = () => {
+    if (formData.saveInfo) {
+      saveCheckoutProfile(formData);
+    }
+    if (supabaseUser && (formData.name || formData.phone)) {
+      void supabase.auth
+        .updateUser({
+          data: {
+            full_name: formData.name || undefined,
+            phone: formData.phone || undefined,
+            checkout_city: formData.city || undefined,
+            checkout_address: formData.address || undefined,
+            checkout_postal_code: formData.postalCode || undefined,
+          },
+        })
+        .catch((err) => {
+          console.warn("[checkout] 同步會員資料略過:", err?.message || err);
+        });
+    }
+  };
+
+  const setCheckoutBusy = (active, method = "linepay") => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("esim-checkout-busy", {
+        detail: { active: Boolean(active), method },
+      }),
+    );
+  };
+
   const startHostedCheckout = async ({ methods = [], paymentLabel = "藍新金流" } = {}) => {
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.address
-    ) {
-      alert("請填寫所有必填欄位 (含地址)");
+    if (!formData.email || !formData.name || !formData.phone) {
+      setCheckoutBusy(false, "newebpay");
+      alert("請填寫 Email、姓名與手機號碼");
+      return;
+    }
+
+    if (isLineSyntheticEmail(formData.email)) {
+      setCheckoutBusy(false, "newebpay");
+      alert("請填寫真實 Email，以便寄送 eSIM QR 與訂單通知");
       return;
     }
 
     if (!cartId || cartItems.length === 0) {
+      setCheckoutBusy(false, "newebpay");
       alert("購物車為空或尚未與伺服器連線");
       return;
     }
@@ -198,6 +247,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
 
     isSubmittingLock = true;
     setIsSubmitting(true);
+    setCheckoutBusy(true, "newebpay");
 
     try {
       await persistProfileIfNeeded();
@@ -274,6 +324,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
     } finally {
       isSubmittingLock = false;
       setIsSubmitting(false);
+      setCheckoutBusy(false, "newebpay");
     }
   };
 
@@ -286,17 +337,20 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
   };
 
   const handleLinePaySubmit = async () => {
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.address
-    ) {
-      alert("請填寫所有必填欄位 (含地址)");
+    if (!formData.email || !formData.name || !formData.phone) {
+      setCheckoutBusy(false, "linepay");
+      alert("請填寫 Email、姓名與手機號碼");
+      return;
+    }
+
+    if (isLineSyntheticEmail(formData.email)) {
+      setCheckoutBusy(false, "linepay");
+      alert("請填寫真實 Email，以便寄送 eSIM QR 與訂單通知");
       return;
     }
 
     if (!cartId || cartItems.length === 0) {
+      setCheckoutBusy(false, "linepay");
       alert("購物車為空或尚未與伺服器連線");
       return;
     }
@@ -308,35 +362,20 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
 
     isSubmittingLock = true;
     setIsSubmitting(true);
+    setCheckoutBusy(true, "linepay");
 
     try {
-      await persistProfileIfNeeded();
+      persistProfileInBackground();
 
-      const orderRes = await fetch("/api/orders/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cartId: cartId,
-          orderInfo: {
-            ...formData,
-            customerId: memberInfo?.id || supabaseUser?.id || null,
-          },
-        }),
-      });
-      const orderResult = await orderRes.json();
-      if (!orderResult.success) {
-        throw new Error(orderResult.message || "建立訂單失敗");
-      }
-
-      localStorage.removeItem("medusa_cart_id");
-
+      // 單一 API：準備地址／運費 + LINE Pay 建單（少一次瀏覽器往返）
       const linepayRes = await fetch("/api/linepay/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cartId: orderResult.orderId,
+          cartId,
           orderInfo: {
             ...formData,
+            customerId: memberInfo?.id || supabaseUser?.id || null,
             methods: ["LINEPAY"],
             payment_method: "LINEPAY",
           },
@@ -344,13 +383,25 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
       });
       const linepayData = await linepayRes.json();
       if (!linepayRes.ok || !linepayData?.success || !linepayData?.paymentUrl) {
+        if (linepayData?.code === "CART_COMPLETED") {
+          localStorage.removeItem("medusa_cart_id");
+          alert(
+            linepayData.message ||
+              "購物車已結帳完成，請重新整理後再試。",
+          );
+          window.location.reload();
+          return;
+        }
         throw new Error(linepayData?.message || "LINE Pay 建單失敗");
       }
 
+      localStorage.removeItem("medusa_cart_id");
       window.location.href = linepayData.paymentUrl;
+      return;
     } catch (err) {
       console.error("❌ LINE Pay 結帳流程出錯:", err);
       alert(`LINE Pay 結帳失敗：${err.message}`);
+      setCheckoutBusy(false, "linepay");
     } finally {
       isSubmittingLock = false;
       setIsSubmitting(false);
@@ -404,85 +455,45 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
             </p>
           ) : null}
           <FloatingInput
-            label="電子郵件 (Email)"
+            label="電子郵件 (Email) *"
             name="email"
             type="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="電子郵件"
+            placeholder="請填寫可收件的 Email"
             required
           />
-          <div className="mt-3 flex items-center">
-            <input
-              id="newsOffers"
-              name="newsOffers"
-              type="checkbox"
-              checked={formData.newsOffers}
-              onChange={handleChange}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-            />
-            <label
-              htmlFor="newsOffers"
-              className="ml-2 block text-sm text-gray-600 cursor-pointer"
-            >
-              訂閱最新優惠與消息
-            </label>
-          </div>
+          {isLoggedIn && !formData.email ? (
+            <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-md px-3 py-2">
+              LINE 登入不會提供真實 Email，請填寫可收件信箱（eSIM QR 與訂單通知會寄到這裡）
+            </p>
+          ) : null}
+          <a
+            href={CONTACT_INFO.lineUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 block text-sm text-gray-600 hover:text-gray-800"
+          >
+            加入官方 LINE，接收最新優惠與消息
+          </a>
         </div>
 
         <div className="mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">運送地址</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-1">聯絡人</h2>
+          <p className="text-xs text-gray-500 mb-4">
+            eSIM 以 Email 數位交付，無需填寫運送地址
+          </p>
           <div className="space-y-3">
-            <div className="relative">
-              <select
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md px-3 pt-5 pb-2 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none"
-              >
-                <option value="Taiwan">台灣 (Taiwan)</option>
-              </select>
-              <label className="absolute left-3 top-1 text-xs text-gray-500 pointer-events-none">
-                國家/地區
-              </label>
-            </div>
-
             <FloatingInput
-              label="收件人姓名"
+              label="姓名 *"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="收件人姓名"
+              placeholder="姓名"
               required
             />
             <FloatingInput
-              label="地址 (路段、街、號)"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              placeholder="地址"
-              required
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <FloatingInput
-                label="城市 / 縣市"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                placeholder="城市"
-              />
-              <FloatingInput
-                label="郵遞區號"
-                name="postalCode"
-                value={formData.postalCode}
-                onChange={handleChange}
-                placeholder="郵遞區號"
-              />
-            </div>
-
-            <FloatingInput
-              label="手機號碼"
+              label="手機號碼 *"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
@@ -517,24 +528,38 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
                 type="button"
                 onClick={handleLinePaySubmit}
                 disabled={isSubmitting}
-                className={`bg-[#00C300] text-white py-3.5 rounded-md font-bold text-base flex justify-center items-center transition-colors shadow-sm ${
+                className={`bg-[#00C300] text-white py-3.5 rounded-md font-bold text-base flex justify-center items-center gap-2 transition-colors shadow-sm ${
                   isSubmitting
                     ? "opacity-50 cursor-not-allowed"
                     : "hover:bg-[#009f00]"
                 }`}
               >
-                LINE Pay 結帳
+                {isSubmitting ? (
+                  <>
+                    <span className="inline-block h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    正在前往 LINE Pay…
+                  </>
+                ) : (
+                  "LINE Pay 結帳"
+                )}
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`bg-[#1e40af] text-white py-3.5 rounded-md font-bold text-base flex justify-center items-center shadow-md transition-all ${
+                className={`bg-[#1e40af] text-white py-3.5 rounded-md font-bold text-base flex justify-center items-center gap-2 shadow-md transition-all ${
                   isSubmitting
                     ? "opacity-60 cursor-not-allowed"
                     : "hover:bg-[#1e3a8a]"
                 }`}
               >
-                {isSubmitting ? "正在前往藍新金流…" : "藍新金流結帳"}
+                {isSubmitting ? (
+                  <>
+                    <span className="inline-block h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    正在前往藍新金流…
+                  </>
+                ) : (
+                  "藍新金流結帳"
+                )}
               </button>
             </div>
             <button

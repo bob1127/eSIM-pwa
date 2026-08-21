@@ -60,7 +60,7 @@ const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const CATEGORY_IDS = ["pcat_01KZJNBXZCA6X5PRVYMW5ZAZ0F"]; // singapore
 const THUMB =
   process.env.SINGAPORE_PRODUCT_THUMB ||
-  "https://www.jeko-esim.com.tw/images/malaysia-esim-banner.jpg";
+  "https://www.jeko-esim.com.tw/images/新加坡esim.png";
 
 function retailFromCost(costTwd, profitPercent) {
   const margin = 1 + profitPercent / 100;

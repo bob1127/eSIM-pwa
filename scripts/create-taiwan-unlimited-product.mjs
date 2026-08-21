@@ -66,7 +66,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.TAIWAN_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-台灣.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("台灣esim.png")}`;
 
 const FUP_5 = "每日約 2GB 高速後限速約 5Mbps 吃到飽（台灣時間 00:00 重置）";
 const FUP_10 = "每日約 1GB 高速後限速約 10Mbps 吃到飽（台灣時間 00:00 重置）";

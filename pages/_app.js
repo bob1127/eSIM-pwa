@@ -12,6 +12,7 @@ import PWARegister from "../components/PWARegister";
 import ReferralCapture from "../components/ReferralCapture";
 import WelcomeGiftPopup from "../components/WelcomeGiftPopup";
 import LineInviteGuestPopup from "../components/LineInviteGuestPopup";
+import AiChatWidget from "../components/AiChatWidget";
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   return (
@@ -41,6 +42,8 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
               <LineInviteGuestPopup />
               <WelcomeGiftPopup />
               <Component {...pageProps} />
+              {/* 掛在 _app：換頁不卸載，AI 思考中請求不會被中斷 */}
+              <AiChatWidget />
             </CartProvider>
           </NextUIProvider>
         </UserProvider>

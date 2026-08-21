@@ -4,6 +4,12 @@ import FormData from "form-data";
 import PLAN_ID_MAP from "../../../lib/esim/planMap";
 import { sendMail } from "../../../lib/mailTransporter";
 import { notifyOrderStatus } from "../../../lib/orderNotify";
+import { buildEsimProfileFromTopupDetail } from "../../../lib/esimProfile";
+import {
+  buildEsimFulfillmentEmailHtml,
+  buildEsimFulfillmentEmailText,
+} from "../../../lib/esimFulfillmentEmail";
+import { getPublicSiteUrl } from "../../../lib/siteUrl";
 import {
   ESIM_ACCOUNT as ACCOUNT,
   ESIM_BASE_URL as BASE_URL,
@@ -110,11 +116,12 @@ export default async function handler(req, res) {
 
           const detail = detailRes.data;
           if (detail.code === 1 && detail.result?.qrcode) {
-             fulfilledCodes.push({
+             const profile = await buildEsimProfileFromTopupDetail({
                productName: item.name,
-               qrcodeUrl: detail.result.qrcode,
-               topupId: topup_id
+               detailResult: detail.result,
+               topupId: topup_id,
              });
+             fulfilledCodes.push(profile);
           } else {
              throw new Error(`獲取 QR Code 失敗: ${JSON.stringify(detail)}`);
           }
@@ -142,20 +149,23 @@ export default async function handler(req, res) {
       console.error("[send-esim] fulfilled notify:", notifyErr?.message || notifyErr);
     }
 
-    // 寄信
-    const qrCodeHtml = fulfilledCodes.map(code => `
-      <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
-         <h3 style="margin-top: 0;">${code.productName}</h3>
-         <img src="${code.qrcodeUrl}" alt="eSIM QR Code" style="max-width: 250px;"/>
-      </div>
-    `).join("");
+    const site = getPublicSiteUrl().replace(/\/$/, "");
+    const webOrderUrl = `${site}/thank-you?status=success&orderNo=${encodeURIComponent(String(orderId))}`;
 
     await sendMail({
       to: customerEmail,
       fromName: "Jeko eSIM 自動發貨",
       subject: `🎉 您的 eSIM 訂單已準備就緒！`,
-      html: `<div style="font-family: sans-serif;"><h2>您好！</h2><p>您的 eSIM 如下：</p>${qrCodeHtml}</div>`,
-      text: "您的 eSIM 訂單已準備就緒，請至信箱 HTML 版本查看 QR Code。",
+      html: buildEsimFulfillmentEmailHtml({
+        orderNumber: String(orderId),
+        profiles: fulfilledCodes,
+        webOrderUrl,
+        siteName: "Jeko eSIM",
+      }),
+      text: buildEsimFulfillmentEmailText({
+        orderNumber: String(orderId),
+        profiles: fulfilledCodes,
+      }),
     });
 
     return res.status(200).json({ success: true, message: "發貨完成", codes: fulfilledCodes });

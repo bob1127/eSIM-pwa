@@ -66,7 +66,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.FR_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-法國.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("法國esim.png")}`;
 
 const SPEED_RULE = "吃到飽不限流量（FUP，繁忙時段可能降速）";
 const NETWORK_LABEL = "Orange／Bouygues／Free 4G/5G（歐包 34 國）";

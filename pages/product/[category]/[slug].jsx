@@ -2838,7 +2838,7 @@ export default function ProductPage({
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = ({ openSidebar = true } = {}) => {
     if (!currentVariation) return;
     const specLabel = [
       selectedAttributes.telecom,
@@ -2848,36 +2848,42 @@ export default function ProductPage({
       .filter(Boolean)
       .join(" · ");
 
-    addToCart({
-      id: currentVariation.id,
-      variant_id: currentVariation.id,
-      parentId: product.id,
-      name: product.name,
-      price: currentVariation.price,
-      sku: currentVariation.sku,
-      planId: currentVariation.plan_id,
-      image: product.image_url || "/images/jeko-esim.png",
-      slug: product.slug || product.handle,
-      categorySlug:
-        router.query.category ||
-        product.category_slug ||
-        product.categories?.[0]?.slug ||
-        "japan",
-      quantity,
-      options: specLabel,
-      specLabel,
-      type: "esim",
-      ...(isPartnerShell
-        ? {
-            store_id: store.id,
-          }
-        : {}),
-    });
-    window.dispatchEvent(new Event("open-cart-sidebar"));
+    addToCart(
+      {
+        id: currentVariation.id,
+        variant_id: currentVariation.id,
+        parentId: product.id,
+        name: product.name,
+        price: currentVariation.price,
+        sku: currentVariation.sku,
+        planId: currentVariation.plan_id,
+        image: product.image_url || "/images/jeko-esim.png",
+        slug: product.slug || product.handle,
+        categorySlug:
+          router.query.category ||
+          product.category_slug ||
+          product.categories?.[0]?.slug ||
+          "japan",
+        quantity,
+        options: specLabel,
+        specLabel,
+        type: "esim",
+        ...(isPartnerShell
+          ? {
+              store_id: store.id,
+            }
+          : {}),
+      },
+      { open: openSidebar },
+    );
+    if (openSidebar) {
+      window.dispatchEvent(new Event("open-cart-sidebar"));
+    }
   };
 
   const performBuyNow = () => {
-    handleAddToCart();
+    // 立即購買：只導向購物車，不要開側邊欄
+    handleAddToCart({ openSidebar: false });
     if (isPartnerShell) {
       router.push(`/p/${store.domain}/cart/`);
     } else {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { toSameOriginImagePath } from "@/lib/resolveMedusaImageUrl";
 
 /** Medusa 分類 metadata 圖常連到外部 Storage；失效時改用本地圖 */
 export const CATEGORY_IMAGE_FALLBACKS: Record<string, string> = {
@@ -15,11 +16,11 @@ export const CATEGORY_IMAGE_FALLBACKS: Record<string, string> = {
   malaysia: "/images/分類eSIM-馬來西亞.png",
   singapore: "/images/分類eSIM-新馬.png",
   vietnam: "/images/分類eSIM-越南.png",
-  usa: "/images/分類eSIM-美國.png",
-  america: "/images/分類eSIM-美國.png",
-  "us-canada": "/images/分類eSIM-美加-.png",
-  "us-ca": "/images/分類eSIM-美加-.png",
-  "north-america": "/images/分類eSIM-美加墨.png",
+  usa: "/images/sim/分類/分類eSIM-美國.png",
+  america: "/images/sim/分類/分類eSIM-美國.png",
+  "us-canada": "/images/sim/分類/分類eSIM-美加-.png",
+  "us-ca": "/images/sim/分類/分類eSIM-美加-.png",
+  "north-america": "/images/sim/分類/分類eSIM-美加墨.png",
   taiwan: "/images/分類eSIM-台灣.png",
   france: "/images/分類eSIM-法國.png",
   turkey: "/images/分類eSIM-歐洲.png",
@@ -43,9 +44,9 @@ export function resolveCategoryImageSrc(
 ) {
   const mapped = CATEGORY_IMAGE_FALLBACKS[slug];
   const local = "/images/jeko-esim.png";
-  // Supabase Storage 目前常回 402，略過；Medusa /static 或本機路徑優先
+  // Supabase Storage 目前常回 402，略過；站內圖改相對路徑並套用舊路徑 rewrite
   if (remoteSrc && !/supabase\.co\/storage/i.test(remoteSrc)) {
-    return remoteSrc;
+    return toSameOriginImagePath(remoteSrc) || mapped || local;
   }
   return mapped || local;
 }

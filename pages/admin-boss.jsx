@@ -14,6 +14,7 @@ import AdminWithdrawalsPanel from "@/components/admin/AdminWithdrawalsPanel";
 import AccountBossPartnersPanel from "@/components/account/AccountBossPartnersPanel";
 import BossSalesAnalyticsPanel from "@/components/admin/BossSalesAnalyticsPanel";
 import AdminMissionsPanel from "@/components/admin/AdminMissionsPanel";
+import BossPlatformSettingsPanel from "@/components/admin/BossPlatformSettingsPanel";
 
 function BossLoginPage({ onLoginSuccess, embed }) {
   return (
@@ -49,7 +50,8 @@ export default function AdminBossDashboard() {
       tab === "refunds" ||
       tab === "sales" ||
       tab === "withdrawals" ||
-      tab === "missions"
+      tab === "missions" ||
+      tab === "settings"
     ) {
       setBossTab(tab);
     }
@@ -158,6 +160,7 @@ export default function AdminBossDashboard() {
     { id: "missions", label: "任務牆" },
     { id: "refunds", label: "退款審核" },
     { id: "withdrawals", label: "提領審核" },
+    { id: "settings", label: "平台設定" },
   ];
 
   const title =
@@ -169,7 +172,9 @@ export default function AdminBossDashboard() {
           ? "提領審核"
           : bossTab === "missions"
             ? "任務牆"
-            : "夥伴審核";
+            : bossTab === "settings"
+              ? "平台設定"
+              : "夥伴審核";
 
   const content = (
     <>
@@ -205,6 +210,8 @@ export default function AdminBossDashboard() {
       {bossTab === "withdrawals" && <AdminWithdrawalsPanel />}
 
       {bossTab === "missions" && <AdminMissionsPanel />}
+
+      {bossTab === "settings" && <BossPlatformSettingsPanel />}
 
       {bossTab === "partners" && (
         <>

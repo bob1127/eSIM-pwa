@@ -5,6 +5,7 @@ import {
 } from "../../../lib/partnerServer";
 import { upsertMedusaProductToSupabase } from "../../../lib/medusaProductSync";
 import { applyPartnerB2BMarkup } from "../../../lib/medusaPartnerPricing";
+import { loadB2BMarkupMultiplier } from "../../../lib/platformSettings";
 import { validateCustomPricesInput } from "../../../lib/partnerPricing";
 import { logPricingAudit } from "../../../lib/partnerPricingAudit";
 import { fetchMedusaHotSaleMapByIds } from "../../../lib/medusaStoreApi";
@@ -46,6 +47,8 @@ export default async function handler(req, res) {
   if (!supabase) {
     return res.status(500).json({ error: "伺服器設定不完整" });
   }
+
+  await loadB2BMarkupMultiplier();
 
   const user = await getAuthUserFromBearer(req);
   if (!user) {

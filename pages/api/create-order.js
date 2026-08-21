@@ -1,23 +1,15 @@
 // 檔案位置：pages/api/create-order.js
 import { createClient } from "@supabase/supabase-js";
-import {
-  resolveActiveReferralPartner,
-  profitFromReferralPartner,
-} from "../../lib/resolveReferralPartner";
-import { getVerifiedReferralCodeFromRequest } from "../../lib/referralSignature";
 import { notifyOrderStatus } from "../../lib/orderNotify";
 import {
   computeAuthoritativeStoreOrder,
   PricingError,
 } from "../../lib/partnerOrderPricing";
-import { resolvePartnerRatePercentFromCartItems } from "../../lib/resolveCartPartnerTerms";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
 );
-
-const MAX_SANE_AMOUNT = 5_000_000;
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ""));
@@ -33,9 +25,6 @@ export default async function handler(req, res) {
   try {
     const {
       store_id,
-      total_amount,
-      b2b_cost,
-      partner_profit,
       coupon_id,
       partner_id,
       items,
@@ -140,50 +129,16 @@ export default async function handler(req, res) {
       finalItemDetails = priced.items;
       }
     } else {
-      // ── 非商店（主站／推薦連結）訂單：目前尚未有逐項 SKU 來源可重算，
-      //    僅信任伺服器簽章過的推薦 Cookie 做歸因，並對金額做基本邊界檢查。
-      const referralCode = getVerifiedReferralCodeFromRequest(req);
-      let computedProfit = 0;
-      if (!finalPartnerId && referralCode) {
-        const refPartner = await resolveActiveReferralPartner(referralCode);
-        if (refPartner) {
-          finalPartnerId = refPartner.id;
-          const rateFromItems =
-            resolvePartnerRatePercentFromCartItems(items) || null;
-          computedProfit = await profitFromReferralPartner(
-            refPartner,
-            total_amount,
-            b2b_cost,
-            { admin: supabase, ratePercent: rateFromItems },
-          );
-        }
-      }
-
-      const amountNum = Number(total_amount);
-      const costNum = Number(b2b_cost);
-      if (
-        !Number.isFinite(amountNum) ||
-        amountNum < 0 ||
-        amountNum > MAX_SANE_AMOUNT
-      ) {
-        return res
-          .status(400)
-          .json({ success: false, message: "訂單金額無效" });
-      }
-
-      finalTotalAmount = amountNum;
-      finalB2bCost = Number.isFinite(costNum) ? Math.max(0, costNum) : 0;
-      finalProfit = finalPartnerId
-        ? computedProfit
-        : Math.max(
-            0,
-            Math.min(
-              Number.isFinite(Number(partner_profit))
-                ? Number(partner_profit)
-                : 0,
-              amountNum,
-            ),
-          );
+      // ── 安全封鎖：沒有 store_id 就不建立訂單。──
+      //    這條路徑過去信任前端傳來的 total_amount／b2b_cost（底價），
+      //    無法保證「底價/平台利潤不被竄改」，與商業規則牴觸。
+      //    目前正規下單一律經夥伴商店（帶 store_id，走上方伺服器權威重算），
+      //    主站推薦訂單則走 Medusa + referral_cart_links 歸屬，不經過此 API。
+      //    故此處直接拒絕，杜絕任何以偽造金額建單的可能。
+      return res.status(400).json({
+        success: false,
+        message: "訂單缺少商店資訊，無法建立（請由商店頁面下單）",
+      });
     }
 
     const { data: newOrder, error } = await supabase

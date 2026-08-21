@@ -90,7 +90,7 @@ const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const CATEGORY_IDS = ["pcat_01KZJNBX7K2X5KN4KP41T4F60D"]; // thailand
 const THUMB =
   process.env.THAILAND_PRODUCT_THUMB ||
-  "https://www.jeko-esim.com.tw/images/tailand-esim-banner.jpg";
+  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/medusa-migrated/1787195111145-qsneqouh.png";
 
 function retailFromCost(costTwd, profitPercent) {
   const margin = 1 + profitPercent / 100;

@@ -200,12 +200,11 @@ export default function PartnerCart({ store }) {
                               </span>
                               <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
                                 <button
-                                  className="px-3 py-1 bg-gray-50 hover:bg-gray-100 transition text-gray-600"
+                                  type="button"
+                                  className="px-3 py-1 bg-gray-50 hover:bg-gray-100 transition text-gray-600 disabled:opacity-40"
                                   onClick={() =>
                                     updateQuantity(
-                                      item.id,
-                                      item.color,
-                                      item.size,
+                                      item.variant_id || item.id,
                                       item.quantity - 1,
                                     )
                                   }
@@ -217,12 +216,11 @@ export default function PartnerCart({ store }) {
                                   {item.quantity}
                                 </span>
                                 <button
+                                  type="button"
                                   className="px-3 py-1 bg-gray-50 hover:bg-gray-100 transition text-gray-600"
                                   onClick={() =>
                                     updateQuantity(
-                                      item.id,
-                                      item.color,
-                                      item.size,
+                                      item.variant_id || item.id,
                                       item.quantity + 1,
                                     )
                                   }

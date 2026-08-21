@@ -4,6 +4,7 @@ import {
   getGlobalB2BCostRate,
 } from "../../../lib/medusaPartnerPricing";
 import { getSupabaseAdmin } from "../../../lib/partnerServer";
+import { loadB2BMarkupMultiplier } from "../../../lib/platformSettings";
 
 // 選品管理會反覆開關，Medusa 目錄短時間內幾乎不變；
 // 記憶體快取可讓同溫執行環境內第二次開啟秒開。
@@ -105,6 +106,8 @@ export default async function handler(req, res) {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).end("Method Not Allowed");
   }
+
+  await loadB2BMarkupMultiplier();
 
   try {
     const force = req.query.refresh === "1";

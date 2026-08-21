@@ -68,7 +68,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.TAIWAN_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-台灣.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("台灣esim.png")}`;
 
 const SPEED_RULE_CHT = "總量高速額度用完斷網（非降速吃到飽）";
 const SPEED_RULE_DUAL = "總量高速用完後降速約 128kbps 持續使用";

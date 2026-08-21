@@ -96,6 +96,15 @@ export default function DataQueryPage() {
   useEffect(() => {
     const saved = localStorage.getItem(ICCID_STORAGE_KEY);
     if (saved) setIccid(saved);
+
+    if (typeof window === "undefined") return;
+    const fromUrl = new URLSearchParams(window.location.search).get("iccid");
+    if (!fromUrl) return;
+    const normalized = normalizeIccid(fromUrl);
+    if (!normalized) return;
+    setIccid(normalized);
+    localStorage.setItem(ICCID_STORAGE_KEY, normalized);
+    navigator.clipboard?.writeText(normalized).catch(() => {});
   }, []);
 
   useEffect(() => {

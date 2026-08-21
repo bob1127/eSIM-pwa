@@ -64,7 +64,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.ES_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-西班牙.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("西班牙esim.png")}`;
 
 const SPEED_RULE = "每日高速用完後降速約 128kbps 持續使用，隔日重置";
 const NETWORK_LABEL = "Orange 4G/5G";

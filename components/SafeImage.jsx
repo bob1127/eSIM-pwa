@@ -4,6 +4,7 @@ import NextImage from "next/dist/shared/lib/image-external";
 import cfImageLoader, {
   isCfImagesEnabled,
   shouldSkipCfImage,
+  unwrapCfImageSrc,
 } from "../lib/cfImageLoader";
 
 const Image = NextImage.default || NextImage;
@@ -20,7 +21,7 @@ function pickWidth(props) {
  * - 正式站／Vercel：絕不走 /_next/image（會吃 Vercel Image Optimization 額度 → 402）
  * - 正式站：src 改寫成 /cdn-cgi/image/...（format=auto → WebP/AVIF）
  * - 本機 next dev：走 Next Image Optimization（含遠端 R2／正式站圖）
- * - 失敗 onError 回退原圖（寧可原圖，也不要空白）
+ * - 失敗／額度用完：回退原圖（寧可未壓縮，也不要空白死圖）
  */
 function isOnVercelRuntime() {
   return (
@@ -54,7 +55,11 @@ export default function SafeImage({
 
   if (!src) return null;
 
-  const skipCf = shouldSkipCfImage(typeof src === "string" ? src : "");
+  const originalSrc =
+    typeof src === "string" ? unwrapCfImageSrc(src) : src;
+  const skipCf = shouldSkipCfImage(
+    typeof originalSrc === "string" ? originalSrc : "",
+  );
 
   // 本機 next dev：本地＋遠端都走 Next optimizer，才會轉成 WebP
   const useNextOptimizer =
@@ -66,20 +71,20 @@ export default function SafeImage({
 
   const useCf = !useOriginal && cfOn && !useNextOptimizer && !skipCf;
 
-  let resolvedSrc = src;
+  let resolvedSrc = originalSrc;
   let unoptimized = true;
 
   if (useNextOptimizer) {
-    resolvedSrc = src;
+    resolvedSrc = originalSrc;
     unoptimized = false;
-  } else if (useCf && typeof src === "string") {
+  } else if (useCf && typeof originalSrc === "string") {
     resolvedSrc = cfImageLoader({
-      src,
+      src: originalSrc,
       width: pickWidth({ width, fill }),
     });
     unoptimized = true;
   } else {
-    resolvedSrc = src;
+    resolvedSrc = originalSrc;
     unoptimized = true;
   }
 

@@ -68,7 +68,7 @@ const SITE_ORIGIN = (
 ).replace(/\/$/, "");
 const THUMB =
   process.env.TAIWAN_PRODUCT_THUMB ||
-  `${SITE_ORIGIN}/images/${encodeURIComponent("分類eSIM-台灣.png")}`;
+  `${SITE_ORIGIN}/images/${encodeURIComponent("台灣esim.png")}`;
 
 const SPEED_128 = "每日高速用完後降速約 128kbps 持續使用";
 const SPEED_5 = "每日 1GB 高速後限速約 5Mbps 持續使用";
