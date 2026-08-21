@@ -6,8 +6,8 @@ import Layout from "./Layout";
 import MaterialIcon from "@/components/MaterialIcon";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 import PushNotificationSection from "@/components/PushNotificationSection";
+import JekoPillButton from "@/components/ui/JekoPillButton";
 import { DATA_PLANS, USAGE_ROWS } from "@/lib/dataUsageTable";
 import { ICCID_STORAGE_KEY, normalizeIccid } from "@/lib/pushBind";
 
@@ -24,37 +24,6 @@ const C = {
   muted: "#777777",
   line: "#E8E8E8",
 };
-
-function PrimaryButton({
-  children,
-  type = "button",
-  disabled,
-  showArrow = true,
-  className = "",
-  ...props
-}) {
-  return (
-    <button
-      type={type}
-      disabled={disabled}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 text-white text-sm font-bold rounded-lg px-6 py-3 transition-colors disabled:opacity-60",
-        className,
-      )}
-      style={{ backgroundColor: C.primary }}
-      onMouseEnter={(e) => {
-        if (!disabled) e.currentTarget.style.backgroundColor = C.primaryDark;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = C.primary;
-      }}
-      {...props}
-    >
-      {children}
-      {showArrow && <MaterialIcon name="arrow_forward" size={18} />}
-    </button>
-  );
-}
 
 const HOW_IT_WORKS = [
   {
@@ -221,13 +190,9 @@ export default function DataQueryPage() {
                       className="flex-1 bg-transparent border-none outline-none text-sm font-medium min-w-0 text-stone-800 placeholder:text-stone-400"
                     />
                   </div>
-                  <PrimaryButton
-                    type="submit"
-                    disabled={queryLoading}
-                    className="w-full rounded-xl py-3.5"
-                  >
+                  <JekoPillButton type="submit" disabled={queryLoading}>
                     {queryLoading ? "查詢中…" : "立即查詢"}
-                  </PrimaryButton>
+                  </JekoPillButton>
                 </form>
 
                 <a
@@ -310,13 +275,12 @@ export default function DataQueryPage() {
                 <p className="text-[13px] md:text-sm leading-relaxed text-white/85 mb-6 max-w-md">
                   無需重新購買 eSIM，一鍵恢復原有流量，出國上網不中斷。
                 </p>
-                <PrimaryButton
+                <JekoPillButton
                   type="button"
                   onClick={() => alert("此功能即將上線")}
-                  className="w-full rounded-xl py-3.5 opacity-95"
                 >
                   前往充值方案
-                </PrimaryButton>
+                </JekoPillButton>
               </div>
             </section>
           </div>

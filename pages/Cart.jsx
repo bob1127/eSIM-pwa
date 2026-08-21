@@ -20,6 +20,7 @@ import { PENDING_COUPON_KEY } from "@/lib/partnerReferralDiscount";
 import { useLineBind } from "@/hooks/useLineBind";
 import { maybeMarkWelcomeGiftOnFirstClaim } from "@/lib/welcomeGiftPopup";
 import { buildLoginUrl } from "@/lib/authRedirect";
+import JekoPillButton from "@/components/ui/JekoPillButton";
 
 const CART_STEP_KEY = "jeko_cart_active_step";
 
@@ -779,12 +780,13 @@ const CartPage = () => {
                             </span>
                           </div>
 
-                          <button
+                          <JekoPillButton
+                            type="button"
+                            variant="primary"
                             onClick={handleNext}
-                            className="w-full bg-[#1e40af] hover:bg-[#1e3a8a] text-white font-bold py-3.5 px-6 rounded-lg transition-colors text-lg"
                           >
                             前往結帳
-                          </button>
+                          </JekoPillButton>
                         </div>
                       </div>
                     </div>
@@ -965,7 +967,7 @@ const CartPage = () => {
                               )}
 
                               {needLineFriend && isLoggedIn && (
-                                <div className="rounded-xl border border-[#06C755]/35 bg-[#06C755]/10 px-3.5 py-3">
+                                <div className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-3">
                                   <p className="text-[13px] font-bold text-slate-800 leading-snug">
                                     需連結 LINE 才能使用折扣
                                   </p>
@@ -985,7 +987,7 @@ const CartPage = () => {
                                         lineBindStatus === "loading" ||
                                         isApplyingCoupon
                                       }
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2 disabled:opacity-60"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-white text-[12px] font-bold px-4 py-2 disabled:opacity-60"
                                     >
                                       <LineIconSvg className="w-3.5 h-3.5" />
                                       {lineBindStatus === "loading"
@@ -996,7 +998,7 @@ const CartPage = () => {
                                       href={lineOaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#06C755] bg-white text-[#06C755] text-[12px] font-bold px-4 py-2"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-400 bg-white text-slate-700 text-[12px] font-bold px-4 py-2 hover:bg-slate-100"
                                     >
                                       尚未加好友？點此加入官方 LINE
                                     </a>
@@ -1083,8 +1085,10 @@ const CartPage = () => {
                           選擇付款方式
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <button
+                          <JekoPillButton
                             type="button"
+                            variant="primary"
+                            tone="line"
                             disabled={Boolean(paymentBusy)}
                             onClick={() => {
                               setPaymentBusy("linepay");
@@ -1092,23 +1096,14 @@ const CartPage = () => {
                                 new CustomEvent("esim-checkout-linepay"),
                               );
                             }}
-                            className={`w-full bg-[#00C300] text-white font-bold py-3.5 px-4 rounded-md transition-colors text-base inline-flex items-center justify-center gap-2 ${
-                              paymentBusy
-                                ? "opacity-70 cursor-not-allowed"
-                                : "hover:bg-[#009f00]"
-                            }`}
                           >
-                            {paymentBusy === "linepay" ? (
-                              <>
-                                <span className="inline-block h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                正在前往 LINE Pay…
-                              </>
-                            ) : (
-                              "LINE Pay 結帳"
-                            )}
-                          </button>
-                          <button
+                            {paymentBusy === "linepay"
+                              ? "正在前往 LINE Pay…"
+                              : "LINE Pay 結帳"}
+                          </JekoPillButton>
+                          <JekoPillButton
                             type="button"
+                            variant="primary"
                             disabled={Boolean(paymentBusy)}
                             onClick={() => {
                               setPaymentBusy("newebpay");
@@ -1124,21 +1119,11 @@ const CartPage = () => {
                                 alert("無法送出表單，請重新整理頁面後再試");
                               }
                             }}
-                            className={`w-full bg-[#1e40af] text-white font-bold py-3.5 px-4 rounded-md transition-colors text-base inline-flex items-center justify-center gap-2 ${
-                              paymentBusy
-                                ? "opacity-70 cursor-not-allowed"
-                                : "hover:bg-[#1e3a8a]"
-                            }`}
                           >
-                            {paymentBusy === "newebpay" ? (
-                              <>
-                                <span className="inline-block h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                正在前往藍新金流…
-                              </>
-                            ) : (
-                              "藍新金流結帳"
-                            )}
-                          </button>
+                            {paymentBusy === "newebpay"
+                              ? "正在前往藍新金流…"
+                              : "藍新金流結帳"}
+                          </JekoPillButton>
                         </div>
                       </div>
                     </div>

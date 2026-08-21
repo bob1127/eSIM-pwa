@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import EsimFutureTrendsSection from "../components/EsimFutureTrendsSection";
 import CooperationInfoModal from "../components/cooperation/CooperationInfoModal";
 import Copy from "@/components/MaskText";
+import JekoPillButton from "@/components/ui/JekoPillButton";
 
 /** 下方區塊文案：隨專屬連結 / 專屬商店切換（版型不變） */
 const MODE_COPY = {
@@ -711,26 +712,21 @@ export default function Home() {
             </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-            <Link
+            <JekoPillButton
               href={registerHref}
-              className="group relative flex items-center justify-center w-full sm:w-[320px] bg-[#1E4AD1] text-white py-4 rounded-full font-bold text-[16px] md:text-[18px] shadow-[0_4px_14px_rgba(30,74,209,0.35)] hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(30,74,209,0.45)] transition-all"
+              variant="primary"
+              className="sm:w-[320px]"
             >
               立即填寫表單申請
-              <span className="absolute right-6 w-5 h-5 border-2 border-[#FADE2B] rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                <ChevronRightIcon className="w-3 h-3 text-[#FADE2B]" />
-              </span>
-            </Link>
-            <a
+            </JekoPillButton>
+            <JekoPillButton
               href="https://lin.ee/y6tdx5q"
-              target="_blank"
-              rel="noreferrer"
-              className="group relative flex items-center justify-center w-full sm:w-[320px] bg-white text-[#1E4AD1] border-2 border-[#1E4AD1] py-4 rounded-full font-bold text-[16px] md:text-[18px] hover:bg-[#EFF6FC] transition-all"
+              external
+              variant="secondary"
+              className="sm:w-[320px]"
             >
               LINE快速聯繫
-              <span className="absolute right-6 w-5 h-5 border-2 border-[#1E4AD1] bg-[#FADE2B] rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                <ChevronRightIcon className="w-3 h-3 text-[#1E4AD1]" />
-              </span>
-            </a>
+            </JekoPillButton>
           </div>
         </div>
       </section>
@@ -971,18 +967,17 @@ export default function Home() {
             {/* =========================================
               右側：新聞列表 (List News)
           ========================================= */}
-            <div className="flex flex-col gap-4 md:gap-5 justify-between">
+            <div className="flex flex-col gap-4 md:gap-5 md:h-full">
               {subNews.map((news) => (
                 <button
                   key={news.id}
                   type="button"
                   onClick={() => setInfoModalId(news.id)}
-                  className="group flex h-[120px] md:h-auto md:flex-1 bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 text-left w-full cursor-pointer"
+                  className="group grid grid-cols-[38%_1fr] md:grid-cols-[40%_1fr] [grid-template-rows:1fr] min-h-[120px] md:flex-1 md:h-full bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 text-left w-full cursor-pointer"
                 >
-                  {/* 縮圖區域 (模擬黃色 TSUNORU 圖案) */}
-                  <div className="w-[35%] md:w-[40%] bg-[#F2CC40] flex flex-col items-center justify-center shrink-0 relative overflow-hidden">
+                  {/* 左側黃底：與卡片同高鋪滿 */}
+                  <div className="h-full min-h-full self-stretch bg-[#F2CC40] flex flex-col items-center justify-center relative overflow-hidden">
                     <div className="relative z-10 flex flex-col items-center transform group-hover:scale-105 transition-transform duration-300">
-                      {/* 模擬白色圈圈 Logo */}
                       <div className="flex -space-x-3 mb-2">
                         <div className="w-10 h-10 rounded-full border-[3px] border-white"></div>
                         <div className="w-10 h-10 rounded-full border-[3px] border-white"></div>
@@ -994,15 +989,13 @@ export default function Home() {
                         Jeko
                       </span>
                     </div>
-                    {/* 淡淡的漸層裝飾 */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none"></div>
                   </div>
 
-                  {/* 資訊區域 */}
-                  <div className="flex-1 p-4 md:p-6 flex flex-col justify-center">
+                  <div className="p-4 md:p-6 flex flex-col justify-center min-w-0">
                     <h4 className="text-[14px] md:text-[15px] font-bold text-[#111] mb-3 md:mb-4 leading-[1.6] line-clamp-2 group-hover:text-[#0071EB] transition-colors">
-                        {news.title}
-                      </h4>
+                      {news.title}
+                    </h4>
                     <div className="flex items-center text-[12px] md:text-[13px] font-medium text-[#111]">
                       <span>{news.date}</span>
                       <span className="text-[#FADE2B] mx-2 font-black">#</span>

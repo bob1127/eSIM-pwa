@@ -245,6 +245,13 @@ export default function PartnerSettingsPage() {
     setSaving(false);
     if (error) return alert("儲存失敗：" + error.message);
     setStore(data);
+    // 同步舊文章的編輯者名稱 → 當前分店顯示名稱（前台也會即時用 store_name）
+    if (payload.store_name && store?.id) {
+      await supabase
+        .from("store_blog_posts")
+        .update({ author_name: payload.store_name })
+        .eq("store_id", store.id);
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };

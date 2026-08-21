@@ -11,7 +11,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
  */
 export default function MobileCardCarousel({
   children,
-  slideClassName = "min-w-0 flex-[0_0_76%]",
+  slideClassName = "box-border shrink-0 flex-[0_0_76%] min-w-[76%] max-w-[76%]",
   gap = 6,
   slidesToScroll = 1,
   showArrows = true,
@@ -146,7 +146,7 @@ export default function MobileCardCarousel({
                 className={slideClassName}
                 style={{ paddingLeft: gap / 2, paddingRight: gap / 2 }}
               >
-                {slide}
+                <div className="h-full w-full min-w-0">{slide}</div>
               </div>
             ))}
           </div>

@@ -15,6 +15,7 @@ import {
 import { isLineSyntheticEmail } from "@/lib/lineAuth";
 import { CONTACT_INFO } from "@/lib/contactUi";
 import { supabase } from "@/lib/supabaseClient";
+import JekoPillButton from "@/components/ui/JekoPillButton";
 
 // --- Component: 浮動標籤輸入框 (Shopify 風格核心) ---
 const FloatingInput = ({
@@ -557,43 +558,22 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
           <div className="mt-10 space-y-3">
             <p className="text-xs text-center text-gray-500">選擇付款方式</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
+              <JekoPillButton
                 type="button"
+                variant="primary"
+                tone="line"
                 onClick={handleLinePaySubmit}
                 disabled={isSubmitting}
-                className={`bg-[#00C300] text-white py-3.5 rounded-md font-bold text-base flex justify-center items-center gap-2 transition-colors shadow-sm ${
-                  isSubmitting
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-[#009f00]"
-                }`}
               >
-                {isSubmitting ? (
-                  <>
-                    <span className="inline-block h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    正在前往 LINE Pay…
-                  </>
-                ) : (
-                  "LINE Pay 結帳"
-                )}
-              </button>
-              <button
+                {isSubmitting ? "正在前往 LINE Pay…" : "LINE Pay 結帳"}
+              </JekoPillButton>
+              <JekoPillButton
                 type="submit"
+                variant="primary"
                 disabled={isSubmitting}
-                className={`bg-[#1e40af] text-white py-3.5 rounded-md font-bold text-base flex justify-center items-center gap-2 shadow-md transition-all ${
-                  isSubmitting
-                    ? "opacity-60 cursor-not-allowed"
-                    : "hover:bg-[#1e3a8a]"
-                }`}
               >
-                {isSubmitting ? (
-                  <>
-                    <span className="inline-block h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    正在前往藍新金流…
-                  </>
-                ) : (
-                  "藍新金流結帳"
-                )}
-              </button>
+                {isSubmitting ? "正在前往藍新金流…" : "藍新金流結帳"}
+              </JekoPillButton>
             </div>
             <button
               type="button"

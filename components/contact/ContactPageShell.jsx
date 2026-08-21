@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { CONTACT_UI, CONTACT_TABS, CONTACT_INFO } from "@/lib/contactUi";
 import MaterialIcon from "@/components/MaterialIcon";
-import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
 
 export default function ContactPageShell({ activeTab, onTabChange, children }) {
   return (
@@ -59,11 +58,11 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
             href={`mailto:${CONTACT_INFO.companyEmail}`}
             className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#2563eb] hover:shadow-sm transition"
           >
-            <div className="w-11 h-11 rounded-xl bg-[#2b579a]/10 flex items-center justify-center shrink-0">
-              <MaterialIcon
-                name="corporate_fare"
-                size={22}
-                className="text-[#2b579a]"
+            <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 bg-white flex items-center justify-center border border-slate-100">
+              <img
+                src="/images/Logo/logo-no-bg.png"
+                alt={CONTACT_INFO.companyName}
+                className="w-9 h-9 object-contain"
               />
             </div>
             <div className="min-w-0">
@@ -82,7 +81,11 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
             className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#06C755] hover:shadow-sm transition"
           >
             <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0">
-              <LineAppIconSvg className="w-11 h-11" />
+              <img
+                src="/images/line.png"
+                alt="官方 LINE"
+                className="w-11 h-11 object-cover"
+              />
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">

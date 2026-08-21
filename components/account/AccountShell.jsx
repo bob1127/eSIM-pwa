@@ -7,6 +7,7 @@ import AccountMemberSearch from "@/components/account/AccountMemberSearch";
 import {
   ACCOUNT_UI,
   ACCOUNT_THEME,
+  ACCOUNT_BADGE,
   SHOPIFY_UI,
   SHOPIFY_BADGE,
 } from "@/lib/accountUi";
@@ -463,16 +464,17 @@ export default function AccountShell({
   );
 }
 
-/** Shopify 狀態徽章（小圓角） */
+/** Jeko 藍／黃狀態徽章（對齊膠囊按鈕色系） */
 export function AccountBadge({ tone = "neutral", children }) {
-  const t = SHOPIFY_BADGE[tone] || SHOPIFY_BADGE.neutral;
+  const t = ACCOUNT_BADGE[tone] || ACCOUNT_BADGE.neutral;
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-bold whitespace-nowrap"
+      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap"
       style={{
         backgroundColor: t.bg,
         color: t.text,
-        borderRadius: ACCOUNT_UI.radiusSm,
+        borderRadius: ACCOUNT_UI.radiusBadge,
+        border: `1px solid ${t.border || "transparent"}`,
       }}
     >
       <span

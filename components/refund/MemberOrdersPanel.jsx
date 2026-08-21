@@ -38,14 +38,37 @@ function getEsimQRCodes(order) {
 function orderStatusBadge(status) {
   const s = String(status || "").toLowerCase();
   const map = {
-    completed: { label: "已發貨", cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-    pending: { label: "尚未付款", cls: "bg-amber-100 text-amber-700 border-amber-200" },
-    cancelled: { label: "已取消", cls: "bg-slate-100 text-slate-600 border-slate-200" },
-    failed: { label: "付款失敗", cls: "bg-red-100 text-red-700 border-red-200" },
-    refund_pending: { label: "退款審核中", cls: "bg-amber-100 text-amber-800 border-amber-200" },
-    refunded: { label: "已退款", cls: "bg-slate-100 text-slate-600 border-slate-200" },
+    completed: {
+      label: "已發貨",
+      cls: "bg-[#E8EEFC] text-[#1E4AD1] border-[#C5D2F7]",
+    },
+    pending: {
+      label: "尚未付款",
+      cls: "bg-[#FFF6C8] text-[#1E4AD1] border-[#FADE2B]",
+    },
+    cancelled: {
+      label: "已取消",
+      cls: "bg-[#F1F3F7] text-[#5B6570] border-[#E3E7EE]",
+    },
+    failed: {
+      label: "付款失敗",
+      cls: "bg-[#FFF0D6] text-[#1E4AD1] border-[#F2CC40]",
+    },
+    refund_pending: {
+      label: "退款審核中",
+      cls: "bg-[#FFF6C8] text-[#1E4AD1] border-[#FADE2B]",
+    },
+    refunded: {
+      label: "已退款",
+      cls: "bg-[#F1F3F7] text-[#5B6570] border-[#E3E7EE]",
+    },
   };
-  return map[s] || { label: status, cls: "bg-slate-100 text-slate-700 border-slate-200" };
+  return (
+    map[s] || {
+      label: status,
+      cls: "bg-[#F1F3F7] text-[#5B6570] border-[#E3E7EE]",
+    }
+  );
 }
 
 function formatNTD(val) {

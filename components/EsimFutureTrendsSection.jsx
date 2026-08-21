@@ -99,19 +99,19 @@ const PHONE_STATS = [
 
 function StatGrid({ items }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-5 min-w-0">
       {items.map((s) => (
-        <div key={s.label}>
-          <p className="text-[12px] font-bold tracking-wider text-[#8B96A5] mb-2">
+        <div key={s.label} className="min-w-0">
+          <p className="text-[12px] font-bold tracking-wider text-[#8B96A5] mb-2 break-words">
             {s.label}
           </p>
-          <p className="text-[26px] md:text-[30px] font-black text-[#111] leading-none tracking-tight">
+          <p className="text-[22px] sm:text-[26px] md:text-[30px] font-black text-[#111] leading-tight tracking-tight break-words">
             {s.value}
             <span className="ml-1.5 text-[12px] md:text-[13px] font-bold text-[#5B6570]">
               {s.unit}
             </span>
           </p>
-          <p className="mt-2 text-[12px] font-semibold text-[#1E4AD1]">
+          <p className="mt-2 text-[12px] font-semibold text-[#1E4AD1] break-words">
             {s.note}
           </p>
         </div>
@@ -185,37 +185,41 @@ export default function EsimFutureTrendsSection() {
   const blueSwoosh = buildPath(0.01, 0.4, 42);
 
   return (
-    <section className="relative bg-white pb-24 pt-8 border-t border-slate-200 z-20 font-sans">
-      <div className="max-w-[1440px] mx-auto px-6 md:px-16">
+    <section className="relative bg-white pb-24 pt-8 border-t border-slate-200 z-20 font-sans overflow-x-clip">
+      <div className="max-w-[1440px] mx-auto w-full px-4 sm:px-6 md:px-16">
         {/* ---------- 標題區 ---------- */}
-        <motion.div {...fadeUpProps}>
+        <motion.div {...fadeUpProps} className="min-w-0 max-w-full">
           <div className="flex items-center gap-2 mb-6">
-            <span className="w-[7px] h-[7px] rounded-full bg-[#1E4AD1] inline-block" />
+            <span className="w-[7px] h-[7px] rounded-full bg-[#1E4AD1] inline-block shrink-0" />
             <span className="text-[11px] font-bold tracking-[0.15em] text-gray-800 uppercase">
               Future eSIM · Device Support
             </span>
           </div>
-          <Copy blockColor="#1E4AD1">
-            <h2 className="text-2xl md:text-3xl lg:text-[32px] font-bold text-gray-900 leading-[1.6] tracking-wide mb-8">
-              未來 eSIM 趨勢，與智慧手機支援浪潮
-            </h2>
-          </Copy>
-          <Copy blockColor="#1E4AD1" stagger={0.12}>
-            <p className="text-gray-600 leading-[2.2] text-[14px] md:text-[15px] text-justify max-w-[760px] mb-4">
-              2026
-              年，旅遊 eSIM 正從「出國備案」變成「出發標配」。市場規模用倍數看、採用率用百分比看——手機越支援，旅客越少帶卡，通路與夥伴的成長曲線也會跟著變陡。
-            </p>
-          </Copy>
+          <div className="overflow-hidden max-w-full">
+            <Copy blockColor="#1E4AD1">
+              <h2 className="text-[22px] sm:text-2xl md:text-3xl lg:text-[32px] font-bold text-gray-900 leading-[1.45] sm:leading-[1.6] tracking-wide mb-8 break-words">
+                未來 eSIM 趨勢，與智慧手機支援浪潮
+              </h2>
+            </Copy>
+          </div>
+          <div className="overflow-hidden max-w-full">
+            <Copy blockColor="#1E4AD1" stagger={0.12}>
+              <p className="text-gray-600 leading-[1.9] sm:leading-[2.2] text-[14px] md:text-[15px] text-left sm:text-justify max-w-[760px] mb-4 break-words">
+                2026
+                年，旅遊 eSIM 正從「出國備案」變成「出發標配」。市場規模用倍數看、採用率用百分比看——手機越支援，旅客越少帶卡，通路與夥伴的成長曲線也會跟著變陡。
+              </p>
+            </Copy>
+          </div>
         </motion.div>
 
         {/* ---------- 未來 eSIM ｜ 手機支援 並排 ---------- */}
         <motion.div
           {...fadeUpProps}
           transition={{ delay: 0.08, duration: 0.8 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 border-y border-slate-200 py-10 mb-10"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 border-y border-slate-200 py-10 mb-10 min-w-0"
         >
-          <div>
-            <div className="flex items-center gap-2 mb-5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-5 flex-wrap">
               <span className="text-[11px] font-black tracking-[0.14em] text-[#1E4AD1] uppercase">
                 Future
               </span>
@@ -226,8 +230,8 @@ export default function EsimFutureTrendsSection() {
             <StatGrid items={FUTURE_STATS} />
           </div>
 
-          <div className="lg:border-l lg:border-slate-200 lg:pl-10">
-            <div className="flex items-center gap-2 mb-5">
+          <div className="lg:border-l lg:border-slate-200 lg:pl-10 min-w-0">
+            <div className="flex items-center gap-2 mb-5 flex-wrap">
               <span className="text-[11px] font-black tracking-[0.14em] text-[#1E4AD1] uppercase">
                 Devices
               </span>
@@ -238,18 +242,19 @@ export default function EsimFutureTrendsSection() {
             <StatGrid items={PHONE_STATS} />
           </div>
         </motion.div>
-        {/* ---------- 成長曲線圖（手機可橫向捲動） ---------- */}
+        {/* ---------- 成長曲線圖（僅圖表區橫向捲動，不撐破整頁） ---------- */}
         <motion.div
           {...fadeUpProps}
           transition={{ delay: 0.15, duration: 0.8 }}
-          className="overflow-x-auto"
+          className="w-full max-w-full min-w-0"
         >
-          <svg
-            viewBox="0 0 1440 640"
-            className="min-w-[1100px] w-full h-auto select-none"
-            role="img"
-            aria-label="未來 eSIM 與智慧手機支援趨勢成長曲線圖"
-          >
+          <div className="w-full max-w-full overflow-x-auto overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch]">
+            <svg
+              viewBox="0 0 1440 640"
+              className="block w-[720px] sm:w-[900px] md:w-full md:min-w-[1100px] h-auto max-w-none select-none"
+              role="img"
+              aria-label="未來 eSIM 與智慧手機支援趨勢成長曲線圖"
+            >
             <defs>
               <marker
                 id="esim-pf-arrow"
@@ -384,6 +389,10 @@ export default function EsimFutureTrendsSection() {
               );
             })}
           </svg>
+          </div>
+          <p className="mt-2 text-[11px] text-[#9AA3AE] md:hidden">
+            ← 左右滑動可看完整曲線圖 →
+          </p>
         </motion.div>
 
         <p className="mt-3 text-[11px] text-[#9AA3AE] font-medium max-w-[960px]">
@@ -395,23 +404,23 @@ export default function EsimFutureTrendsSection() {
         <motion.div
           {...fadeUpProps}
           transition={{ delay: 0.25, duration: 0.8 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 mt-6 md:mt-2 md:px-10"
+          className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 mt-6 md:mt-2 md:px-10 min-w-0"
         >
-          <div>
+          <div className="min-w-0">
             <h3 className="text-[#1E4AD1] text-lg font-bold tracking-wider mb-4">
               未來 eSIM 趨勢
             </h3>
-            <p className="text-[13px] leading-[2] text-gray-800">
+            <p className="text-[13px] leading-[2] text-gray-800 break-words">
               2026 成為「掃碼即走」的轉折年 / 旅遊 eSIM 市場 2025→2030 約翻 4.8 倍
               / 近一年年增約 85% / 自由行旅客把連線當出發清單，而不是落地再買卡 /
               原生高速與多國方案並行，通路與夥伴分潤跟著放大
             </p>
           </div>
-          <div>
+          <div className="min-w-0">
             <h3 className="text-[#1E4AD1] text-lg font-bold tracking-wider mb-4">
               智慧手機支援 eSIM
             </h3>
-            <p className="text-[13px] leading-[2] text-gray-800">
+            <p className="text-[13px] leading-[2] text-gray-800 break-words">
               旗艦機普遍內建 eSIM，雙 eSIM 逐漸成常態 / 部分市場已走 eSIM-only
               新機 / 支援率拉高後，旅遊 eSIM 轉換成本下降 / 預估 2030
               智慧手機連線過半數（55%+）走 eSIM / 手機越支援，旅客越少帶實體卡

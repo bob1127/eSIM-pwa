@@ -41,6 +41,7 @@ import DataExhaustReminderModal, {
 } from "../../../components/product/DataExhaustReminderModal";
 import MaterialIcon from "../../../components/MaterialIcon";
 import { checkPlanAvailableClient } from "../../../lib/esim/checkPlanClient";
+import JekoPillButton from "../../../components/ui/JekoPillButton";
 import MediaGalleryLightbox from "../../../components/MediaGalleryLightbox";
 import {
   resolveDetailedContent,
@@ -181,29 +182,29 @@ function ProductMediaSlide({
   );
 }
 
-/** 流量試算 CTA：參考圖深藍 + 金黃配色（手機版只顯示主標） */
+/** 流量試算 CTA：淺灰底，不搶主購買按鈕視覺權重 */
 function DataEstimatorCta({ onClick, className = "" }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`mt-4 w-full text-left rounded-full border border-[#2556b8] bg-[#2d62cc] px-5 py-3 sm:px-6 sm:py-4 shadow-sm hover:bg-[#2556b8] transition-colors group ${className}`}
+      className={`mt-4 w-full text-left rounded-full border border-[#E3E7EE] bg-[#F1F3F7] px-5 py-3 sm:px-6 sm:py-4 shadow-sm hover:bg-[#E8EBEF] hover:border-[#D0D5DE] transition-colors group ${className}`}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm sm:text-[15px] font-bold text-[#f1d13d] leading-snug flex items-center gap-1.5">
+          <p className="text-sm sm:text-[15px] font-bold text-[#2d2d2d] leading-snug flex items-center gap-1.5">
             <MaterialIcon
               name="calculate"
               size={18}
-              className="text-[#f1d13d] shrink-0 hidden sm:inline-flex"
+              className="text-[#5B6570] shrink-0 hidden sm:inline-flex"
             />
             還不確定流量嗎？
           </p>
-          <p className="hidden sm:block text-xs text-white/85 mt-1 leading-relaxed">
+          <p className="hidden sm:block text-xs text-[#5B6570] mt-1 leading-relaxed">
             依每日使用習慣估算建議方案，一鍵套用或比較同地區 eSIM。
           </p>
         </div>
-        <span className="hidden sm:inline-flex shrink-0 items-center gap-1 text-sm font-bold text-[#f1d13d] group-hover:brightness-110">
+        <span className="hidden sm:inline-flex shrink-0 items-center gap-1 text-sm font-bold text-[#1E4AD1] group-hover:underline">
           開啟試算
           <MaterialIcon
             name="arrow_forward"
@@ -4183,46 +4184,28 @@ export default function ProductPage({
                     </p>
                   ) : null}
 
-                  {/* CTA：加入購物車（主）＋ 立即購買（次） */}
-                  <div data-product-buy-cta>
-                    <button
+                  {/* CTA：加入購物車（主）＋ 立即購買（次）— Jeko 膠囊款 */}
+                  <div data-product-buy-cta className="space-y-3 mb-4">
+                    <JekoPillButton
                       type="button"
+                      variant="primary"
                       onClick={handleAddToCartClick}
                       disabled={!canPurchase}
-                      className={`w-full h-[52px] font-bold rounded-full text-[15px] text-white transition-all inline-flex items-center justify-center gap-2 mb-3 ${
-                        canPurchase
-                          ? "hover:opacity-90 shadow-sm"
-                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      }`}
-                      style={
-                        canPurchase ? { background: PRODUCT_BLUE } : undefined
-                      }
                     >
-                      <MaterialIcon name="shopping_cart" size={20} />
                       {!isAllOptionsSelected
                         ? "請選規格"
                         : currentVariation?.price > 0
                           ? "加入購物車"
                           : "尚未定價"}
-                    </button>
-
-                    <button
+                    </JekoPillButton>
+                    <JekoPillButton
                       type="button"
+                      variant="secondary"
                       onClick={handleBuyNow}
                       disabled={!canPurchase}
-                      className={`w-full h-[52px] font-bold rounded-full text-[15px] transition-all inline-flex items-center justify-center gap-2 border-2 mb-4 ${
-                        canPurchase
-                          ? "bg-white hover:bg-sky-50"
-                          : "border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50"
-                      }`}
-                      style={
-                        canPurchase
-                          ? { borderColor: PRODUCT_BLUE, color: PRODUCT_BLUE }
-                          : undefined
-                      }
                     >
                       立即購買
-                    </button>
+                    </JekoPillButton>
                   </div>
 
                   <div className="flex items-center gap-3 mb-2">
@@ -4814,43 +4797,27 @@ export default function ProductPage({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3" data-product-buy-cta>
-                    <button
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-product-buy-cta>
+                    <JekoPillButton
                       type="button"
+                      variant="secondary"
                       onClick={handleAddToCartClick}
                       disabled={!canPurchase}
-                      className={`h-[52px] font-bold rounded-lg text-[15px] border-2 transition-all ${
-                        canPurchase
-                          ? "bg-white hover:bg-sky-50"
-                          : "border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50"
-                      }`}
-                      style={
-                        canPurchase
-                          ? { borderColor: ANKER_BLUE, color: ANKER_BLUE }
-                          : undefined
-                      }
                     >
                       {!isAllOptionsSelected
                         ? "請選規格"
                         : currentVariation?.price > 0
                           ? "加入購物車"
                           : "尚未定價"}
-                    </button>
-                    <button
+                    </JekoPillButton>
+                    <JekoPillButton
                       type="button"
+                      variant="primary"
                       onClick={handleBuyNow}
                       disabled={!canPurchase}
-                      className={`h-[52px] font-bold rounded-lg text-[15px] text-white transition-all ${
-                        canPurchase
-                          ? "hover:opacity-90 shadow-md"
-                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      }`}
-                      style={
-                        canPurchase ? { background: ANKER_BLUE } : undefined
-                      }
                     >
                       立即購買
-                    </button>
+                    </JekoPillButton>
                   </div>
 
                   <div className="mt-4">
@@ -4992,19 +4959,17 @@ export default function ProductPage({
                       : "請選規格"}
                 </p>
               </div>
-              <button
+              <JekoPillButton
                 type="button"
+                variant="primary"
+                size="sm"
+                fullWidth={false}
                 onClick={handleBuyNow}
                 disabled={!canPurchase}
-                className="h-11 shrink-0 rounded-full px-5 text-[13px] font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
-                style={
-                  canPurchase
-                    ? { background: isPartnerShell ? ANKER_BLUE : PRODUCT_BLUE }
-                    : undefined
-                }
+                className="shrink-0 min-w-[128px]"
               >
                 {canPurchase ? "立即購買" : "請選規格"}
-              </button>
+              </JekoPillButton>
             </div>
           </div>
         </div>

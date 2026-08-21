@@ -29,7 +29,7 @@ function RelatedReadCard({ post, href }) {
   return (
     <Link
       href={href}
-      className="group flex flex-col h-full min-w-0 bg-white border border-slate-200 overflow-hidden"
+      className="group flex flex-col h-full w-full min-w-0 bg-white border border-slate-200 overflow-hidden"
     >
       <div className="relative aspect-[4/3] bg-[#efeee9] overflow-hidden">
         {post.image ? (
@@ -97,11 +97,19 @@ export default function PartnerBlogArticleView({
     : `${SITE_URL}/p/${domain}/blog/${post?.slug}/`;
   const brand = store?.store_name || "JEKO";
   const authorName =
-    post?.authorName || store?.footer_company_name || store?.store_name || null;
+    store?.store_name ||
+    post?.authorName ||
+    store?.footer_company_name ||
+    null;
   const authorBio =
-    post?.authorBio ||
     store?.description ||
+    post?.authorBio ||
     `${brand} 精選出國旅遊與 eSIM 實用內容。`;
+  const bylinePost = {
+    ...post,
+    editorName: authorName || post?.editorName,
+    authorName: authorName || post?.authorName,
+  };
 
   const bodyHtml = post?.contentHtml || "";
   const [coverLightboxOpen, setCoverLightboxOpen] = useState(false);
@@ -337,7 +345,7 @@ export default function PartnerBlogArticleView({
                   </span>
                 ) : null}
               </p>
-              <PartnerBlogByline post={post} className="mb-3" />
+              <PartnerBlogByline post={bylinePost} className="mb-3" />
               <p className="text-[13px] text-slate-600 leading-relaxed whitespace-pre-line">
                 {authorBio}
               </p>
@@ -362,29 +370,8 @@ export default function PartnerBlogArticleView({
               title={post.title}
               slug={post.slug}
               shareUrl={shareUrl}
+              items="copy,native"
             />
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] uppercase bg-slate-900 text-white">
-                {post.categoryLabel}
-              </span>
-              {(post.tags || []).map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center px-2.5 py-1 text-[11px] text-slate-600 border border-slate-200"
-                >
-                  {tag}
-                </span>
-              ))}
-              {post.source === "wordpress" ? (
-                <span className="inline-flex items-center px-2.5 py-1 text-[10px] text-slate-400 border border-slate-100">
-                  主站同步
-                </span>
-              ) : (
-                <span className="inline-flex items-center px-2.5 py-1 text-[10px] text-[#0A6CD0] border border-sky-100">
-                  夥伴原創
-                </span>
-              )}
-            </div>
             {post.source !== "wordpress" ? (
               <PartnerContentDisclaimer variant="compact" className="pt-1" />
             ) : null}
@@ -412,7 +399,7 @@ export default function PartnerBlogArticleView({
           </div>
           <div className="max-w-[1120px] w-[96%] mx-auto px-3 sm:px-5 lg:px-8 pb-8">
             <MobileCardCarousel
-              slideClassName="min-w-0 flex flex-[0_0_78%] sm:flex-[0_0_48%] lg:flex-[0_0_calc((100%-32px)/3)]"
+              slideClassName="box-border shrink-0 flex-[0_0_78%] min-w-[78%] max-w-[78%] sm:flex-[0_0_48%] sm:min-w-[48%] sm:max-w-[48%] lg:flex-[0_0_calc((100%-32px)/3)] lg:min-w-[calc((100%-32px)/3)] lg:max-w-[calc((100%-32px)/3)]"
               gap={16}
               autoplay
               autoplayDelay={4500}

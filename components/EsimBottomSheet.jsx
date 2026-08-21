@@ -17,13 +17,15 @@ import { detectPushSupport, getBrowserContext } from "@/lib/pushSupport";
 import { usePWAInstall } from "./usePWAInstall";
 import AppInstallGuideModal from "./AppInstallGuideModal";
 import MaterialIcon from "@/components/MaterialIcon";
+import JekoPillButton from "@/components/ui/JekoPillButton";
 
 const COLLAPSED_H = 118;
 /** 產品頁預設縮小：只留可上拉的橫槓 */
 export const COLLAPSED_H_PRODUCT = 32;
 const EXPANDED_VH = 78;
 
-/** 導覽藍底液態過渡（維持品牌藍 #0A6CD0） */
+/** 導覽主色：與 JekoPillButton 一致（#1E4AD1） */
+const JEKO_NAV_BLUE = "#1E4AD1";
 const NAV_LIQUID_SPRING = {
   type: "spring",
   stiffness: 300,
@@ -134,12 +136,9 @@ function LoginGate() {
       <p className="text-[12px] text-gray-500 mt-1.5 leading-relaxed">
         登入後即可在此查看 QR Code、剩餘用量與方案資訊
       </p>
-      <Link
-        href={buildLoginUrl()}
-        className="mt-5 w-full max-w-xs bg-[#0A6CD0] text-white text-[14px] font-bold py-3 rounded-2xl text-center active:opacity-90"
-      >
+      <JekoPillButton href={buildLoginUrl()} size="sm" className="mt-5 max-w-xs mx-auto">
         登入／加入會員
-      </Link>
+      </JekoPillButton>
     </div>
   );
 }
@@ -343,14 +342,16 @@ function UsagePanel({
               placeholder="輸入 ICCID（19～20 碼）"
               className="flex-1 min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-[14px] text-gray-900 outline-none focus:border-[#0A6CD0]"
             />
-            <button
+            <JekoPillButton
               type="button"
+              size="sm"
+              fullWidth={false}
               onClick={submitIccid}
               disabled={guestLoading}
-              className="shrink-0 rounded-xl bg-[#0A6CD0] px-4 text-[13px] font-bold text-white disabled:opacity-60 active:opacity-90"
+              className="shrink-0 !w-auto px-4"
             >
               {guestLoading ? "查詢中" : "查流量"}
-            </button>
+            </JekoPillButton>
           </div>
           {guestError && (
             <p className="mt-2 text-[12px] text-red-500 font-medium">{guestError}</p>
@@ -390,12 +391,9 @@ function UsagePanel({
           )}
         </div>
 
-        <Link
-          href={buildLoginUrl()}
-          className="mt-3 block w-full text-center text-[13px] font-bold py-3 rounded-2xl bg-[#0A6CD0] text-white active:opacity-90"
-        >
+        <JekoPillButton href={buildLoginUrl()} size="sm" className="mt-3">
           登入／註冊會員
-        </Link>
+        </JekoPillButton>
       </div>
     );
   }
@@ -436,7 +434,7 @@ function UsagePanel({
               onClick={() => setActiveIdx(i)}
               className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold border transition-colors ${
                 i === activeIdx
-                  ? "bg-[#0A6CD0] text-white border-[#0A6CD0]"
+                  ? "bg-[#1E4AD1] text-white border-[#1E4AD1]"
                   : "bg-white text-gray-600 border-gray-200"
               }`}
             >
@@ -452,14 +450,15 @@ function UsagePanel({
         </p>
         <p className="text-[12px] text-gray-500 mt-1">{formatPrice(plan.price)}</p>
 
-        <button
+        <JekoPillButton
           type="button"
+          size="sm"
+          className="mt-4"
           onClick={() => onRefresh(plan)}
           disabled={usageLoading}
-          className="mt-4 w-full rounded-2xl bg-[#0A6CD0] py-3.5 text-[14px] font-bold text-white disabled:opacity-60 active:opacity-90"
         >
           {usageLoading ? "查詢中…" : "查詢剩餘流量"}
-        </button>
+        </JekoPillButton>
 
         <div className="mt-4 text-center">
           {usageLoading && !usage ? (
@@ -537,13 +536,9 @@ function MemberPanel({ userName, email, onAccount }) {
           </p>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onAccount}
-        className="mt-3 w-full text-[14px] font-bold py-3 rounded-2xl bg-[#0A6CD0] text-white active:opacity-90"
-      >
+      <JekoPillButton type="button" size="sm" className="mt-3" onClick={onAccount}>
         開啟會員中心
-      </button>
+      </JekoPillButton>
     </div>
   );
 }
@@ -564,13 +559,9 @@ function InstallPanel({ onInstall, isStandalone }) {
             : "加入主畫面，隨時查用量、收推播提醒"}
         </p>
         {!isStandalone && (
-          <button
-            type="button"
-            onClick={onInstall}
-            className="mt-4 w-full bg-[#0A6CD0] text-white text-[14px] font-bold py-3 rounded-2xl active:opacity-90"
-          >
+          <JekoPillButton type="button" size="sm" className="mt-4" onClick={onInstall}>
             安裝到主畫面
-          </button>
+          </JekoPillButton>
         )}
       </div>
     </div>
@@ -602,14 +593,14 @@ function PromoPanel({
           </div>
         </div>
         <LoginGate />
-        <Link
+        <JekoPillButton
           href="/promo"
+          variant="secondary"
+          size="sm"
           onClick={onClose}
-          className="flex items-center justify-center gap-1 w-full text-[14px] font-bold py-3 rounded-2xl border border-[#0A6CD0] text-[#0A6CD0] active:opacity-90"
         >
           前進優惠內容
-          <MaterialIcon name="chevron_right" size={18} />
-        </Link>
+        </JekoPillButton>
       </div>
     );
   }
@@ -664,14 +655,9 @@ function PromoPanel({
         </div>
       </div>
 
-      <Link
-        href="/promo"
-        onClick={onClose}
-        className="flex items-center justify-center gap-1 w-full text-[14px] font-bold py-3.5 rounded-2xl bg-[#0A6CD0] text-white active:opacity-90"
-      >
+      <JekoPillButton href="/promo" size="sm" onClick={onClose}>
         前進優惠內容
-        <MaterialIcon name="chevron_right" size={18} />
-      </Link>
+      </JekoPillButton>
     </div>
   );
 }
@@ -1166,7 +1152,7 @@ export default function EsimBottomSheet() {
             : "height 0.32s cubic-bezier(0.32, 0.72, 0, 1)",
         }}
       >
-        <div className="h-full bg-white rounded-t-[22px] border-t border-gray-300 flex flex-col overflow-hidden">
+        <div className="h-full bg-white rounded-t-[22px] border-t border-slate-200 shadow-none flex flex-col overflow-hidden">
           {/* 拉把 */}
           <div
             className={`shrink-0 touch-none select-none ${
@@ -1269,9 +1255,10 @@ export default function EsimBottomSheet() {
                         {isActive && (
                           <motion.span
                             layoutId="esim-sheet-nav-liquid"
-                            className="absolute inset-0 rounded-[14px] bg-[#0A6CD0]"
+                            className="absolute inset-0 rounded-[14px] shadow-none"
                             style={{
-                              boxShadow: "0 6px 16px rgba(10, 108, 208, 0.32)",
+                              backgroundColor: JEKO_NAV_BLUE,
+                              boxShadow: "none",
                             }}
                             transition={NAV_LIQUID_SPRING}
                             initial={false}
@@ -1280,7 +1267,7 @@ export default function EsimBottomSheet() {
                         <motion.span
                           className="relative z-10 flex items-center justify-center"
                           animate={{
-                            color: isActive ? "#ffffff" : "#4b5563",
+                            color: isActive ? "#ffffff" : "#6b7280",
                             scale: isActive ? 1 : 0.97,
                           }}
                           transition={{
@@ -1294,7 +1281,7 @@ export default function EsimBottomSheet() {
                       <motion.span
                         className="text-[10px] font-semibold leading-tight"
                         animate={{
-                          color: isActive ? "#0A6CD0" : "#374151",
+                          color: isActive ? JEKO_NAV_BLUE : "#6b7280",
                         }}
                         transition={{ duration: 0.2 }}
                       >
@@ -1360,25 +1347,29 @@ export default function EsimBottomSheet() {
 
               {(panel === "qr" || panel === "usage") && isLoggedIn && (
                 <div className="px-4 pb-8 pt-2 flex gap-2">
-                  <Link
+                  <JekoPillButton
                     href="/product"
-                    className="flex-1 text-center text-[13px] font-bold py-3 rounded-2xl bg-[#0A6CD0] text-white active:opacity-90"
+                    size="sm"
+                    className="flex-1 min-w-0"
                     onClick={() => setExpanded(false)}
                   >
                     購買 eSIM
-                  </Link>
-                  <button
+                  </JekoPillButton>
+                  <JekoPillButton
                     type="button"
+                    size="sm"
+                    variant="secondary"
+                    className={`flex-1 min-w-0 ${
+                      trafficOn
+                        ? "!border-[#0F8A52] !text-[#0F8A52] !bg-[#e8fbf2]"
+                        : ""
+                    }`}
                     disabled={trafficBusy}
                     onClick={enableTrafficAlert}
-                    className={`flex-1 text-center text-[13px] font-bold py-3 rounded-2xl active:opacity-90 disabled:opacity-60 ${
-                      trafficOn
-                        ? "bg-[#e8fbf2] text-[#0F8A52]"
-                        : "bg-[#e8f2fc] text-[#0A6CD0]"
-                    }`}
+                    showChevron={!trafficOn}
                   >
                     {trafficButtonLabel}
-                  </button>
+                  </JekoPillButton>
                 </div>
               )}
             </div>

@@ -8,6 +8,7 @@ import {
   formatNetworksZh,
   formatSetupNotesZh,
 } from "@/lib/esimDisplayZh";
+import JekoPillButton from "@/components/ui/JekoPillButton";
 
 interface ApnInfo {
   apn?: string;
@@ -167,20 +168,24 @@ function EsimProfileCard({
 
       <div className="mt-5 space-y-2.5">
         {profile.iosInstallUrl ? (
-          <a
+          <JekoPillButton
             href={profile.iosInstallUrl}
-            className="block w-full text-center bg-[#1a56db] hover:bg-[#1e40af] text-white font-bold text-sm py-3.5 rounded-xl transition"
+            external
+            variant="primary"
+            size="sm"
           >
             一鍵安裝（iOS 17.4+）
-          </a>
+          </JekoPillButton>
         ) : null}
         {profile.androidInstallUrl ? (
-          <a
+          <JekoPillButton
             href={profile.androidInstallUrl}
-            className="block w-full text-center bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm py-3.5 rounded-xl transition"
+            external
+            variant="secondary"
+            size="sm"
           >
             一鍵安裝（Android 10.0+）
-          </a>
+          </JekoPillButton>
         ) : null}
         {!profile.iosInstallUrl && !profile.androidInstallUrl && (
           <p className="text-xs text-slate-400">
@@ -532,19 +537,18 @@ export default function ThankYouPage() {
           {!loading && isPaid(orderInfo) && qrcodes.length === 0 && (
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-blue-800 text-sm">
               付款完成，正在產生 eSIM 與發票，請稍候…（系統會自動更新）
-              <div className="mt-3 flex gap-2">
-                <a
-                  href={pendingHref}
-                  className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-bold"
-                >
+              <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                <JekoPillButton href={pendingHref} variant="primary" size="sm">
                   前往訂單追蹤
-                </a>
-                <button
+                </JekoPillButton>
+                <JekoPillButton
+                  type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => location.reload()}
-                  className="px-3 py-1.5 rounded-lg border text-sm font-bold"
                 >
                   重新整理
-                </button>
+                </JekoPillButton>
               </div>
             </div>
           )}
@@ -590,12 +594,11 @@ export default function ThankYouPage() {
           )}
 
           {!loading && qrcodes.length === 0 && !isPaid(orderInfo) && (
-            <div className="text-slate-600 text-sm bg-white rounded-2xl border p-5">
-              目前尚未取得 eSIM。若您剛完成付款，請稍候片刻或
-              <a href={pendingHref} className="underline ml-1 text-blue-700">
+            <div className="text-slate-600 text-sm bg-white rounded-2xl border p-5 space-y-3">
+              <p>目前尚未取得 eSIM。若您剛完成付款，請稍候片刻後再查看。</p>
+              <JekoPillButton href={pendingHref} variant="primary" size="sm">
                 前往訂單追蹤
-              </a>
-              。
+              </JekoPillButton>
             </div>
           )}
         </div>
