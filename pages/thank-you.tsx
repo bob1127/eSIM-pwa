@@ -383,7 +383,8 @@ export default function ThankYouPage() {
 
   const triesRef = useRef(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const maxTries = 18;
+  // 發貨可能含 MicroeSIM 重試（最長約 3 分鐘），多輪詢一陣子
+  const maxTries = 40;
 
   const startPolling = useCallback(() => {
     if (timerRef.current || !orderNo) return;

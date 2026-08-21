@@ -221,6 +221,20 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
     );
   };
 
+  // 結帳身分「蓋章」：把登入身分帶進訂單 metadata，讓會員中心可依
+  // line_user_id / supabase_user_id 對回本人訂單（不必猜要用哪個帳號登入）。
+  // 目前只有 LINE 一個 NextAuth provider，故 session.user.id 即 LINE user id。
+  const buildCheckoutIdentity = () => {
+    const lineUserId = session?.user?.id || null;
+    const supabaseUserId = supabaseUser?.id || null;
+    const authProvider = supabaseUserId
+      ? "supabase"
+      : lineUserId
+        ? "line"
+        : "guest";
+    return { lineUserId, supabaseUserId, authProvider };
+  };
+
   const startHostedCheckout = async ({ methods = [], paymentLabel = "藍新金流" } = {}) => {
     if (!formData.email || !formData.name || !formData.phone) {
       setCheckoutBusy(false, "newebpay");
@@ -264,6 +278,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
           orderInfo: {
             ...formData,
             customerId: memberInfo?.id || supabaseUser?.id || null,
+            ...buildCheckoutIdentity(),
           },
         }),
       });
@@ -280,6 +295,14 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
           );
           window.location.reload();
           return;
+        }
+        if (
+          orderResult.code === "PLAN_DELISTED" ||
+          orderResult.code === "PLAN_SUBSTITUTED" ||
+          orderResult.code === "PLAN_UNAVAILABLE" ||
+          orderResult.code === "PLAN_MISSING"
+        ) {
+          throw new Error("商品已完售");
         }
         throw new Error(orderResult.message || "建立訂單失敗");
       }
@@ -310,6 +333,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
           amount,
           orderInfo: {
             ...formData,
+            ...buildCheckoutIdentity(),
             methods,
             payment_method: methods?.[0] || "CREDIT",
           },
@@ -376,6 +400,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
           orderInfo: {
             ...formData,
             customerId: memberInfo?.id || supabaseUser?.id || null,
+            ...buildCheckoutIdentity(),
             methods: ["LINEPAY"],
             payment_method: "LINEPAY",
           },
@@ -383,7 +408,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
       });
       const linepayData = await linepayRes.json();
       if (!linepayRes.ok || !linepayData?.success || !linepayData?.paymentUrl) {
-        if (linepayData?.code === "CART_COMPLETED") {
+      if (linepayData?.code === "CART_COMPLETED") {
           localStorage.removeItem("medusa_cart_id");
           alert(
             linepayData.message ||
@@ -391,6 +416,14 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
           );
           window.location.reload();
           return;
+        }
+        if (
+          linepayData?.code === "PLAN_DELISTED" ||
+          linepayData?.code === "PLAN_SUBSTITUTED" ||
+          linepayData?.code === "PLAN_UNAVAILABLE" ||
+          linepayData?.code === "PLAN_MISSING"
+        ) {
+          throw new Error("商品已完售");
         }
         throw new Error(linepayData?.message || "LINE Pay 建單失敗");
       }

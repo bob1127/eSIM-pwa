@@ -11,6 +11,10 @@ import {
   resolveActiveReferralPartner,
 } from "../../../lib/resolveReferralPartner";
 import { getVerifiedReferralCodeFromRequest } from "../../../lib/referralSignature";
+import {
+  cartItemsToPlanChecks,
+  validatePlansAvailability,
+} from "../../../lib/esim/planAvailability";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ success: false, message: "Method Not Allowed" });
@@ -51,12 +55,24 @@ export default async function handler(req, res) {
     console.log(`\n==========================================`);
     console.log(`[Next.js API] 🚀 開始處理結帳流程（地址/運費），Cart ID: ${cartId}`);
 
-    const cartCheck = await fetchMedusa("取得購物車", `${MEDUSA_URL}/store/carts/${cartId}`, { headers });
+    const cartCheck = await fetchMedusa("取得購物車", `${MEDUSA_URL}/store/carts/${cartId}?fields=*items,*items.metadata,*items.variant,*items.variant.sku,*items.variant.metadata,*items.product`, { headers });
     if (cartCheck.cart?.completed_at) {
       return res.status(400).json({
         success: false,
         code: "CART_COMPLETED",
         message: "此購物車已完成結帳，請重新整理頁面後再試（系統會自動建立新購物車）。",
+      });
+    }
+
+    const planCheck = await validatePlansAvailability(
+      cartItemsToPlanChecks(cartCheck.cart?.items || []),
+    );
+    if (!planCheck.ok) {
+      return res.status(409).json({
+        success: false,
+        code: planCheck.code || "PLAN_UNAVAILABLE",
+        message: planCheck.message,
+        invalid: planCheck.invalid,
       });
     }
 

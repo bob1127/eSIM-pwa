@@ -12968,6 +12968,7 @@ const PLAN_ID_MAP: Record<string, string> = {
   "Turkey-Daily1GB-30-A3": "66d99d30-3581-46c1-a01f-6136fdb20a13",
   "Turkey-Daily2GB-30-A2": "aa2f0a09-62f3-4029-872a-7ce4ebc0aeec",
   "Turkey-Daily3GB-30-A2": "6313457c-3a38-48fd-b58c-dce0347a2131",
+  "Taiwan(T+C)-unlimited-2-A0": "7441aecb-e9c3-43f5-b7f3-7fa8e68bb254",
 };
 
 export default PLAN_ID_MAP;

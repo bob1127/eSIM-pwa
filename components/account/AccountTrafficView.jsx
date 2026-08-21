@@ -73,9 +73,15 @@ function orderShortId(id) {
 function statusMeta(r) {
   if (!r) return { label: "未查詢", tone: "neutral" };
   const pct = usagePercent(r.remainingMb, r.totalMb);
-  if (pct != null && pct <= 15)
-    return { label: "流量偏低", tone: "critical" };
-  if (pct != null && pct <= 40) return { label: "用量正常", tone: "warning" };
+  if (pct == null) {
+    // 有回傳但沒用量數字：多半缺 topup、或僅 ICCID、或供應商尚未給流量資料
+    if (r.source === "iccid_only") {
+      return { label: "缺 topup 無法直查", tone: "warning" };
+    }
+    return { label: "尚無用量資料", tone: "neutral" };
+  }
+  if (pct <= 15) return { label: "流量偏低", tone: "critical" };
+  if (pct <= 40) return { label: "用量正常", tone: "warning" };
   return { label: "剩餘充足", tone: "success" };
 }
 
@@ -187,8 +193,14 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
 
   const handleOneClick = useCallback(
     (esim) => {
+      // 缺真實 topup 時不要把 `iccid:…` 假 key 當 topupId 送供應商
+      const realTopupId = esim.missingTopupId ? null : esim.topupId;
+      if (!realTopupId && !esim.iccid) {
+        setError("此 eSIM 缺少 topup 單號與 ICCID，無法查詢流量");
+        return;
+      }
       queryUsage({
-        topupId: esim.topupId,
+        topupId: realTopupId,
         iccid: esim.iccid,
         key: esim.topupId,
       });
@@ -198,16 +210,22 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
 
   const autoQueried = useRef(false);
   useEffect(() => {
-    if (esims.length > 0 && !autoQueried.current && !results[esims[0].topupId]) {
-      autoQueried.current = true;
-      handleOneClick(esims[0]);
-    }
+    if (autoQueried.current || esims.length === 0) return;
+    // 優先自動查「有真實 topup」的第一筆，避免假 topupId 觸發供應商錯誤
+    const firstQueryable =
+      esims.find((e) => !e.missingTopupId && e.topupId) ||
+      esims.find((e) => e.iccid);
+    if (!firstQueryable || results[firstQueryable.topupId]) return;
+    autoQueried.current = true;
+    handleOneClick(firstQueryable);
   }, [esims, results, handleOneClick]);
 
   const handleQueryAll = async () => {
     for (const esim of esims) {
+      const realTopupId = esim.missingTopupId ? null : esim.topupId;
+      if (!realTopupId && !esim.iccid) continue;
       await queryUsage({
-        topupId: esim.topupId,
+        topupId: realTopupId,
         iccid: esim.iccid,
         key: esim.topupId,
       });
@@ -438,7 +456,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                 className="mx-auto mb-3 opacity-30"
               />
               <p>尚無可查詢的 eSIM</p>
-              <p className="text-xs mt-2">需已完成付款且含 topup 單號</p>
+              <p className="text-xs mt-2">需已完成付款，且訂單含 QR／ICCID</p>
               <SecondaryBtn href="/" className="mt-4">
                 前往選購
               </SecondaryBtn>
@@ -508,15 +526,29 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                               className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
                               style={{ color: UI.soft }}
                             >
-                              Topup ID
+                              {esim.missingTopupId ? "ICCID" : "Topup ID"}
                             </p>
                             <p
                               className="font-mono text-[10px] truncate"
                               style={{ color: UI.soft }}
-                              title={esim.topupId}
+                              title={
+                                esim.missingTopupId
+                                  ? esim.iccid || esim.topupId
+                                  : esim.topupId
+                              }
                             >
-                              {esim.topupId}
+                              {esim.missingTopupId
+                                ? esim.iccid || "—"
+                                : esim.topupId}
                             </p>
+                            {esim.missingTopupId ? (
+                              <p
+                                className="text-[10px] mt-0.5"
+                                style={{ color: "#b98900" }}
+                              >
+                                缺 topup 單號，用量可能無法直查
+                              </p>
+                            ) : null}
                           </div>
                           <div className="min-w-0">
                             <p

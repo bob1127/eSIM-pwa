@@ -3,7 +3,6 @@
 // 受保護的內部 API：只給 esim-backend 的付款確認（LINE Pay / 藍新 notify）呼叫。
 import axios from "axios";
 import FormData from "form-data";
-import PLAN_ID_MAP from "../../../lib/esim/planMap";
 import { sendMail } from "../../../lib/mailTransporter";
 import { buildEsimProfileFromTopupDetail } from "../../../lib/esimProfile";
 import {
@@ -14,10 +13,78 @@ import { getPublicSiteUrl } from "../../../lib/siteUrl";
 import {
   ESIM_ACCOUNT as ACCOUNT,
   ESIM_BASE_URL as BASE_URL,
-  resolveChannelDataplanId,
+  ESIM_TEST_PLAN_ID,
   signMicroesimHeaders as signHeaders,
   shouldForceTestPlan,
 } from "../../../lib/esim/microesimClient";
+import {
+  planFamily,
+  skuNameCandidates,
+  validatePlanAvailability,
+} from "../../../lib/esim/planAvailability";
+
+/** MicroeSIM 發貨常超過 15s；與 catalog 其他呼叫對齊 */
+const SUBSCRIBE_TIMEOUT_MS = 60_000;
+const DETAIL_TIMEOUT_MS = 45_000;
+const LIST_TIMEOUT_MS = 30_000;
+const SUBSCRIBE_MAX_ATTEMPTS = 3;
+/** topupDetail 常先回 Processing，需輪詢到有 QR／LPA */
+const DETAIL_POLL_INTERVAL_MS = 2_500;
+const DETAIL_POLL_MAX_MS = 90_000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function detailHasProfile(detailResult) {
+  if (!detailResult || typeof detailResult !== "object") return false;
+  const rows = Array.isArray(detailResult)
+    ? detailResult
+    : Array.isArray(detailResult.list)
+      ? detailResult.list
+      : [detailResult];
+  return rows.some(
+    (row) =>
+      row &&
+      (row.qrcode ||
+        row.qr_code ||
+        row.lpa ||
+        row.LPA ||
+        row.iccid ||
+        row.ICCID ||
+        row.smdp_address ||
+        row.smdp),
+  );
+}
+
+function isDetailStillProcessing(detail) {
+  const msg = String(detail?.msg || "").toLowerCase();
+  const status = String(detail?.result?.status || "").toLowerCase();
+  if (msg.includes("processing") || status.includes("process")) return true;
+  if (detail?.code === 1 && detail?.result && !detailHasProfile(detail.result)) {
+    return true;
+  }
+  return false;
+}
+
+function isRetryableError(err) {
+  const code = err?.code || err?.cause?.code;
+  const msg = String(err?.message || "");
+  if (
+    code === "ECONNABORTED" ||
+    code === "ETIMEDOUT" ||
+    code === "ECONNRESET" ||
+    code === "ENOTFOUND" ||
+    code === "EAI_AGAIN"
+  ) {
+    return true;
+  }
+  if (/timeout/i.test(msg) || /network/i.test(msg) || /socket hang up/i.test(msg)) {
+    return true;
+  }
+  const status = err?.response?.status;
+  return status === 408 || status === 429 || (typeof status === "number" && status >= 500);
+}
 
 async function sendEsimEmail(to, orderNumber, profiles) {
   const site = getPublicSiteUrl().replace(/\/$/, "");
@@ -39,6 +106,48 @@ async function sendEsimEmail(to, orderNumber, profiles) {
       profiles,
     }),
   });
+}
+
+async function subscribeWithRetry({ finalPlanId, quantity, active_type, orderId }) {
+  let lastErr;
+  for (let attempt = 1; attempt <= SUBSCRIBE_MAX_ATTEMPTS; attempt++) {
+    const { timestamp, nonce, signature } = signHeaders();
+    const form = new FormData();
+    form.append("number", quantity.toString());
+    form.append("channel_dataplan_id", finalPlanId);
+
+    if (active_type === "ACTIVEDBYORDER") {
+      const now = new Date(Date.now() + 5 * 60 * 1000);
+      const activationDate = now.toISOString().replace("T", " ").substring(0, 16);
+      form.append("activation_date", activationDate);
+    }
+
+    const headers = {
+      ...form.getHeaders(),
+      "MICROESIM-ACCOUNT": ACCOUNT,
+      "MICROESIM-NONCE": nonce,
+      "MICROESIM-TIMESTAMP": timestamp,
+      "MICROESIM-SIGN": signature,
+    };
+
+    try {
+      const subscribeRes = await axios.post(`${BASE_URL}/allesim/v1/esimSubscribe`, form, {
+        headers,
+        timeout: SUBSCRIBE_TIMEOUT_MS,
+      });
+      return subscribeRes.data;
+    } catch (err) {
+      lastErr = err;
+      const retryable = isRetryableError(err);
+      console.warn(
+        `⚠️ [fulfill-order] esimSubscribe 失敗 attempt=${attempt}/${SUBSCRIBE_MAX_ATTEMPTS}` +
+          ` order=${orderId} retryable=${retryable}: ${err?.message || err}`,
+      );
+      if (!retryable || attempt >= SUBSCRIBE_MAX_ATTEMPTS) break;
+      await sleep(1000 * attempt);
+    }
+  }
+  throw lastErr;
 }
 
 export default async function handler(req, res) {
@@ -76,7 +185,7 @@ export default async function handler(req, res) {
           "MICROESIM-TIMESTAMP": listSig.timestamp,
           "MICROESIM-SIGN": listSig.signature,
         },
-        timeout: 10000,
+        timeout: LIST_TIMEOUT_MS,
       });
       planList = Array.isArray(listRes.data?.result) ? listRes.data.result : [];
     } catch (e) {
@@ -84,93 +193,144 @@ export default async function handler(req, res) {
     }
 
     for (const item of items) {
-      const rawPlanId = item.sku || item.planId;
-      const finalPlanId = resolveChannelDataplanId(rawPlanId, PLAN_ID_MAP);
+      const availability = await validatePlanAvailability({
+        sku: item.sku || "",
+        planId: item.planId || "",
+        name: item.name || "eSIM",
+      });
+      if (!availability.ok) {
+        throw new Error(
+          `[${availability.code || "PLAN_UNAVAILABLE"}] ${availability.message}`,
+        );
+      }
+
+      // 只准用目錄核可後的 UUID；FORCE_TEST 時改打測試方案（驗證已通過才改寫）
+      const finalPlanId = shouldForceTestPlan()
+        ? ESIM_TEST_PLAN_ID
+        : String(availability.channelDataplanId || "").trim();
       const quantity = item.quantity || 1;
 
       if (!finalPlanId) {
-        console.warn(`⚠️ 商品 ${item.name} 缺少 planId/sku`);
-        continue;
+        throw new Error(
+          `[PLAN_MISSING] 商品 ${item.name || item.sku} 通過檢查但缺少 channel_dataplan_id`,
+        );
       }
 
-      const planMeta = planList.find((p) => p.channel_dataplan_id === finalPlanId) || {};
-      let active_type = planMeta.active_type || "ACTIVEDBYDEVICE";
+      const planMeta =
+        planList.find((p) => p.channel_dataplan_id === finalPlanId) || {};
+      const active_type = planMeta.active_type || "ACTIVEDBYDEVICE";
+      const liveName =
+        availability.liveName ||
+        planMeta.channel_dataplan_name ||
+        planMeta.name ||
+        "";
+
+      // 雙重確認：發貨當下 live 名與 SKU 家族必須一致（防驗證快取與清單不同步）
+      if (!shouldForceTestPlan() && liveName && item.sku) {
+        const skuFam = planFamily(skuNameCandidates(item.sku)[0] || item.sku);
+        const liveFam = planFamily(liveName);
+        if (skuFam !== "other" && liveFam !== "other" && skuFam !== liveFam) {
+          throw new Error(
+            `[PLAN_SUBSTITUTED] 「${item.name || item.sku}」SKU 家族 ${skuFam}` +
+              ` 與供應商現名「${liveName}」(${liveFam}) 不符，拒絕發貨`,
+          );
+        }
+      }
 
       console.log(
         `📡 [fulfill-order] 使用帳號 ${ACCOUNT} 向供應商連線: ${BASE_URL}` +
           `（訂單 ${orderId}` +
-          (shouldForceTestPlan() ? `，測試方案 ${finalPlanId}` : `，plan ${finalPlanId}`) +
-          `）`,
+          (shouldForceTestPlan()
+            ? `，測試方案 ${finalPlanId}`
+            : `，sku=${item.sku || "-"} → live=${liveName || "-"} id=${finalPlanId}`) +
+          `，timeout ${SUBSCRIBE_TIMEOUT_MS}ms ×${SUBSCRIBE_MAX_ATTEMPTS}）`,
       );
 
-      const { timestamp, nonce, signature } = signHeaders();
-      const form = new FormData();
-      form.append("number", quantity.toString());
-      form.append("channel_dataplan_id", finalPlanId);
-
-      if (active_type === "ACTIVEDBYORDER") {
-        const now = new Date(Date.now() + 5 * 60 * 1000);
-        const activationDate = now.toISOString().replace("T", " ").substring(0, 16);
-        form.append("activation_date", activationDate);
-      }
-
-      const headers = {
-        ...form.getHeaders(),
-        "MICROESIM-ACCOUNT": ACCOUNT,
-        "MICROESIM-NONCE": nonce,
-        "MICROESIM-TIMESTAMP": timestamp,
-        "MICROESIM-SIGN": signature,
-      };
-
       try {
-        const subscribeRes = await axios.post(`${BASE_URL}/allesim/v1/esimSubscribe`, form, {
-          headers,
-          timeout: 15000,
+        const result = await subscribeWithRetry({
+          finalPlanId,
+          quantity,
+          active_type,
+          orderId,
         });
-        const result = subscribeRes.data;
 
         if (result.code === 1 && result.result?.topup_id) {
           const topup_id = result.result.topup_id;
-          const detailSig = signHeaders();
-          const detailForm = new FormData();
-          detailForm.append("topup_id", topup_id);
+          const pollStarted = Date.now();
+          let detail = null;
 
-          const detailRes = await axios.post(`${BASE_URL}/allesim/v1/topupDetail`, detailForm, {
-            headers: {
-              ...detailForm.getHeaders(),
-              "MICROESIM-ACCOUNT": ACCOUNT,
-              "MICROESIM-NONCE": detailSig.nonce,
-              "MICROESIM-TIMESTAMP": detailSig.timestamp,
-              "MICROESIM-SIGN": detailSig.signature,
-            },
-            timeout: 15000,
-          });
+          while (Date.now() - pollStarted < DETAIL_POLL_MAX_MS) {
+            const detailSig = signHeaders();
+            const detailForm = new FormData();
+            detailForm.append("topup_id", topup_id);
 
-          const detail = detailRes.data;
-          if (detail.code === 1 && detail.result) {
-            // 一次訂閱可能回多張（quantity>1）時，部分供應商把多筆放在 list
-            const detailRows = Array.isArray(detail.result)
-              ? detail.result
-              : Array.isArray(detail.result?.list)
-                ? detail.result.list
-                : [detail.result];
+            const detailRes = await axios.post(
+              `${BASE_URL}/allesim/v1/topupDetail`,
+              detailForm,
+              {
+                headers: {
+                  ...detailForm.getHeaders(),
+                  "MICROESIM-ACCOUNT": ACCOUNT,
+                  "MICROESIM-NONCE": detailSig.nonce,
+                  "MICROESIM-TIMESTAMP": detailSig.timestamp,
+                  "MICROESIM-SIGN": detailSig.signature,
+                },
+                timeout: DETAIL_TIMEOUT_MS,
+              },
+            );
 
-            for (const row of detailRows) {
-              if (!row?.qrcode && !row?.qr_code && !detail.result?.qrcode) continue;
-              const rowWithQr = row.qrcode || row.qr_code ? row : detail.result;
-              const profile = await buildEsimProfileFromTopupDetail({
-                productName: item.name || "eSIM",
-                detailResult: rowWithQr,
-                planMeta,
-                topupId: topup_id,
-              });
-              if (!profile.src && !profile.lpa) {
-                throw new Error(`獲取 QR／LPA 失敗: ${JSON.stringify(detail)}`);
-              }
-              qrcodes.push(profile);
+            detail = detailRes.data;
+            if (detail?.code === 1 && detailHasProfile(detail.result)) {
+              break;
             }
-          } else {
+            if (detail?.code === 1 && isDetailStillProcessing(detail)) {
+              console.log(
+                `⏳ [fulfill-order] topupDetail Processing topup=${topup_id}` +
+                  ` elapsed=${Date.now() - pollStarted}ms`,
+              );
+              await sleep(DETAIL_POLL_INTERVAL_MS);
+              continue;
+            }
+            // 非 processing 的失敗
             throw new Error(`獲取 QR Code 失敗: ${JSON.stringify(detail)}`);
+          }
+
+          if (!detail || !detailHasProfile(detail.result)) {
+            throw new Error(
+              `獲取 QR Code 逾時（topup ${topup_id} 仍 Processing）: ${JSON.stringify(detail)}`,
+            );
+          }
+
+          const detailRows = Array.isArray(detail.result)
+            ? detail.result
+            : Array.isArray(detail.result?.list)
+              ? detail.result.list
+              : [detail.result];
+
+          for (const row of detailRows) {
+            if (
+              !row?.qrcode &&
+              !row?.qr_code &&
+              !row?.lpa &&
+              !row?.iccid &&
+              !detail.result?.qrcode
+            ) {
+              continue;
+            }
+            const rowWithQr =
+              row.qrcode || row.qr_code || row.lpa || row.iccid
+                ? row
+                : detail.result;
+            const profile = await buildEsimProfileFromTopupDetail({
+              productName: item.name || "eSIM",
+              detailResult: rowWithQr,
+              planMeta,
+              topupId: topup_id,
+            });
+            if (!profile.src && !profile.lpa) {
+              throw new Error(`獲取 QR／LPA 失敗: ${JSON.stringify(detail)}`);
+            }
+            qrcodes.push(profile);
           }
         } else {
           throw new Error(`供應商拒絕訂單: ${result.msg}`);

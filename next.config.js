@@ -133,6 +133,37 @@ const nextConfig = {
       "my",
     ];
     return [
+      // 舊帳號路徑 → 夥伴後台
+      {
+        source: "/account/catalog",
+        destination: "/partner/catalog",
+        permanent: false,
+      },
+      {
+        source: "/account/catalog/",
+        destination: "/partner/catalog/",
+        permanent: false,
+      },
+      {
+        source: "/account/partner",
+        destination: "/partner/dashboard",
+        permanent: false,
+      },
+      {
+        source: "/account/partner/",
+        destination: "/partner/dashboard/",
+        permanent: false,
+      },
+      {
+        source: "/account/my-products",
+        destination: "/partner/products",
+        permanent: false,
+      },
+      {
+        source: "/account/my-products/",
+        destination: "/partner/products/",
+        permanent: false,
+      },
       // 歷史拼字 tailand → 正規 thailand
       {
         source: "/product/tailand",

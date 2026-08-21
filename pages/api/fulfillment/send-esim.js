@@ -1,7 +1,6 @@
 import { supabase } from "../../../lib/supabaseClient";
 import axios from "axios";
 import FormData from "form-data";
-import PLAN_ID_MAP from "../../../lib/esim/planMap";
 import { sendMail } from "../../../lib/mailTransporter";
 import { notifyOrderStatus } from "../../../lib/orderNotify";
 import { buildEsimProfileFromTopupDetail } from "../../../lib/esimProfile";
@@ -13,10 +12,15 @@ import { getPublicSiteUrl } from "../../../lib/siteUrl";
 import {
   ESIM_ACCOUNT as ACCOUNT,
   ESIM_BASE_URL as BASE_URL,
-  resolveChannelDataplanId,
+  ESIM_TEST_PLAN_ID,
   signMicroesimHeaders as signHeaders,
   shouldForceTestPlan,
 } from "../../../lib/esim/microesimClient";
+import {
+  planFamily,
+  skuNameCandidates,
+  validatePlanAvailability,
+} from "../../../lib/esim/planAvailability";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ message: "Method Not Allowed" });
@@ -39,19 +43,45 @@ export default async function handler(req, res) {
     let fulfilledCodes = []; 
 
     for (const item of purchasedItems) {
-      const rawPlanId = item.planId || item.sku;
-      const finalPlanId = resolveChannelDataplanId(rawPlanId, PLAN_ID_MAP);
+      const availability = await validatePlanAvailability({
+        sku: item.sku || "",
+        planId: item.planId || "",
+        name: item.name || "eSIM",
+      });
+      if (!availability.ok) {
+        throw new Error(
+          `[${availability.code || "PLAN_UNAVAILABLE"}] ${availability.message}`,
+        );
+      }
 
+      const finalPlanId = shouldForceTestPlan()
+        ? ESIM_TEST_PLAN_ID
+        : String(availability.channelDataplanId || "").trim();
       const quantity = item.quantity || 1;
 
       if (!finalPlanId) {
-        console.warn(`⚠️ 商品 ${item.name} 缺少 planId`);
-        continue;
+        throw new Error(
+          `[PLAN_MISSING] 商品 ${item.name || item.sku} 通過檢查但缺少 channel_dataplan_id`,
+        );
+      }
+
+      const liveName = availability.liveName || "";
+      if (!shouldForceTestPlan() && liveName && item.sku) {
+        const skuFam = planFamily(skuNameCandidates(item.sku)[0] || item.sku);
+        const liveFam = planFamily(liveName);
+        if (skuFam !== "other" && liveFam !== "other" && skuFam !== liveFam) {
+          throw new Error(
+            `[PLAN_SUBSTITUTED] 「${item.name || item.sku}」SKU 家族 ${skuFam}` +
+              ` 與供應商現名「${liveName}」(${liveFam}) 不符，拒絕發貨`,
+          );
+        }
       }
 
       console.log(
         `📡 使用帳號 ${ACCOUNT} 向供應商連線: ${BASE_URL}` +
-          (shouldForceTestPlan() ? `（測試方案 ${finalPlanId}）` : `（plan ${finalPlanId}）`),
+          (shouldForceTestPlan()
+            ? `（測試方案 ${finalPlanId}）`
+            : `（sku=${item.sku || "-"} → live=${liveName || "-"} id=${finalPlanId}）`),
       );
 
       let active_type = "ACTIVEDBYDEVICE";
@@ -94,7 +124,7 @@ export default async function handler(req, res) {
       };
 
       try {
-        const subscribeRes = await axios.post(`${BASE_URL}/allesim/v1/esimSubscribe`, form, { headers, timeout: 15000 });
+        const subscribeRes = await axios.post(`${BASE_URL}/allesim/v1/esimSubscribe`, form, { headers, timeout: 60000 });
         const result = subscribeRes.data;
 
         if (result.code === 1 && result.result?.topup_id) {
@@ -111,7 +141,7 @@ export default async function handler(req, res) {
               "MICROESIM-TIMESTAMP": detailSig.timestamp,
               "MICROESIM-SIGN": detailSig.signature,
             },
-            timeout: 15000,
+            timeout: 45000,
           });
 
           const detail = detailRes.data;

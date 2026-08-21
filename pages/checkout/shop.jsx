@@ -516,11 +516,21 @@ export default function ShopCheckoutPage() {
     try {
       saveCheckoutProfile(form);
 
+      // 結帳身分「蓋章」：帶進訂單 metadata，會員中心可依此對回本人訂單
+      const identity = {
+        supabaseUserId: user?.id || null,
+        lineUserId: nextAuthSession?.user?.id || null,
+        authProvider: user?.id ? "supabase" : nextAuthSession?.user ? "line" : "guest",
+      };
+
       // Step 1: 建立 Medusa 訂單
       const orderRes = await fetch("/api/orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cartId, orderInfo: form }),
+        body: JSON.stringify({
+          cartId,
+          orderInfo: { ...form, customerId: user?.id || null, ...identity },
+        }),
       });
       const orderResult = await orderRes.json();
 
@@ -536,7 +546,7 @@ export default function ShopCheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           totalPrice: amount || physicalTotal,
-          orderInfo: form,
+          orderInfo: { ...form, ...identity },
           customOrderId: orderId,
         }),
       });

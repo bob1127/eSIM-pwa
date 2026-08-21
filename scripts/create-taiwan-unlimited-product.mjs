@@ -85,6 +85,30 @@ function is10MbpsD0(p) {
   return /^Taiwan-unlimited-\d+-D0$/i.test(name) && !/5mbps/i.test(name);
 }
 
+/** D0 缺天數時補洞：Taiwan(T+C)-unlimited-*-A0 且規則為 10Mbps */
+function is10MbpsTcA0(p) {
+  const name = String(p.name || p.channel_dataplan_name || "");
+  if (!/^Taiwan\(T\+C\)-unlimited-\d+-A0$/i.test(name)) return false;
+  const rule = `${p.rule_desc || ""} ${p.speed_desc || ""} ${p.special_desc || ""}`.toLowerCase();
+  return /10\s*mbps/.test(rule);
+}
+
+/** 10Mbps：優先 Chunghwa D0；缺天數再用 T+C A0 補 */
+function pick10MbpsRows(raw) {
+  const primary = pickByDay(raw, is10MbpsD0);
+  const fill = pickByDay(raw, is10MbpsTcA0);
+  const map = new Map(primary.map((r) => [r.day, r]));
+  for (const r of fill) {
+    if (!map.has(r.day)) {
+      map.set(r.day, r);
+      console.log(
+        `  ℹ️ 10Mbps ${r.day}天無 D0，改用 ${r.sku}（T+C／台哥大）補洞`,
+      );
+    }
+  }
+  return [...map.values()].sort((a, b) => a.day - b.day);
+}
+
 async function fetchPlans() {
   const localCache = "/tmp/esim-full-plans.json";
   const urls = [
@@ -309,11 +333,11 @@ async function ensureCategory(token) {
 async function main() {
   console.log(`💱 HKD→TWD ${HKD_TO_TWD} · 利潤 ${PROFIT}%`);
   console.log(`  ${TW_TELECOM_5}  ← Taiwan-unlimited-*-5mbps-D0`);
-  console.log(`  ${TW_TELECOM_10} ← Taiwan-unlimited-*-D0`);
+  console.log(`  ${TW_TELECOM_10} ← Taiwan-unlimited-*-D0（缺天數補 Taiwan(T+C)-unlimited-*-A0）`);
 
   const raw = await fetchPlans();
   const rows5 = pickByDay(raw, is5MbpsD0);
-  const rows10 = pickByDay(raw, is10MbpsD0);
+  const rows10 = pick10MbpsRows(raw);
   if (!rows5.length) throw new Error("找不到 Taiwan-unlimited-*-5mbps-D0");
   if (!rows10.length) throw new Error("找不到 Taiwan-unlimited-*-D0");
 

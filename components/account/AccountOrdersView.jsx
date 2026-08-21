@@ -160,6 +160,7 @@ function getEsimQRCodes(order) {
         name: item.productName || item.name || "eSIM 方案",
         src: cleanSrc,
         topupId: item.topupId || item.topup_id || "—",
+        iccid: item.iccid || item.ICCID || null,
       };
     })
     .filter((item) => item.src);
@@ -178,11 +179,15 @@ function getEsimIccids(order) {
   if (data && typeof data === "object" && !Array.isArray(data)) data = [data];
   if (!Array.isArray(data)) return [];
   return data
-    .map((item) => ({
-      name: item.productName || item.name || "eSIM 方案",
-      iccid: item.iccid || item.ICCID || null,
-      topupId: item.topupId || item.topup_id || null,
-    }))
+    .map((item) => {
+      const src = String(item.qrcodeUrl || item.src || "");
+      const fromUrl = (src.match(/\/(\d{18,22})(?:\?|$)/) || [])[1] || null;
+      return {
+        name: item.productName || item.name || "eSIM 方案",
+        iccid: item.iccid || item.ICCID || fromUrl || null,
+        topupId: item.topupId || item.topup_id || null,
+      };
+    })
     .filter((item) => item.iccid || item.topupId);
 }
 

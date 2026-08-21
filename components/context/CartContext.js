@@ -8,6 +8,7 @@ import {
   useMemo,
   useCallback,
 } from "react";
+import { checkPlanAvailableClient } from "../../lib/esim/checkPlanClient";
 
 const CartContext = createContext();
 
@@ -250,39 +251,52 @@ export const CartProvider = ({ children }) => {
     [physicalItems],
   );
 
-  const addToCart = useCallback(
-    (product, options = {}) => {
-      const item = normalizeItem(product);
+  const addToCart = useCallback(async (product, options = {}) => {
+    const item = normalizeItem(product);
 
-      setCartItems((prev) => {
-        const idx = prev.findIndex(
-          (i) =>
-            i.variant_id === item.variant_id &&
-            i.type === item.type &&
-            String(i.store_id || "") === String(item.store_id || ""),
-        );
-        if (idx >= 0) {
-          return prev.map((i, n) =>
-            n === idx ? { ...i, quantity: i.quantity + item.quantity } : i,
-          );
-        }
-        return [...prev, item];
+    // 所有 eSIM：加入前一律對供應商目錄核對（幽靈／下架／家族錯位）
+    if (isEsimItem(item)) {
+      const check = await checkPlanAvailableClient({
+        sku: item.sku,
+        planId: item.planId,
+        name: item.name,
       });
+      if (!check.ok) {
+        if (typeof window !== "undefined") {
+          window.alert(check.message || "商品已完售");
+        }
+        return false;
+      }
+    }
 
-      if (options.open !== false) setIsCartOpen(true);
-
-      if (cartId) {
-        tryMedusaAddItem(
-          cartId,
-          item.variant_id,
-          item.quantity,
-          item.specLabel,
-          item.type,
+    setCartItems((prev) => {
+      const idx = prev.findIndex(
+        (i) =>
+          i.variant_id === item.variant_id &&
+          i.type === item.type &&
+          String(i.store_id || "") === String(item.store_id || ""),
+      );
+      if (idx >= 0) {
+        return prev.map((i, n) =>
+          n === idx ? { ...i, quantity: i.quantity + item.quantity } : i,
         );
       }
-    },
-    [cartId],
-  );
+      return [...prev, item];
+    });
+
+    if (options.open !== false) setIsCartOpen(true);
+
+    if (cartId) {
+      tryMedusaAddItem(
+        cartId,
+        item.variant_id,
+        item.quantity,
+        item.specLabel,
+        item.type,
+      );
+    }
+    return true;
+  }, [cartId]);
 
   const removeFromCart = useCallback(
     (idOrVariantId) => {

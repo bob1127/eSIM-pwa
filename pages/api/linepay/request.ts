@@ -8,6 +8,10 @@ import {
   resolveActiveReferralPartner,
 } from "../../../lib/resolveReferralPartner"
 import { getVerifiedReferralCodeFromRequest } from "../../../lib/referralSignature"
+import {
+  cartItemsToPlanChecks,
+  validatePlansAvailability,
+} from "../../../lib/esim/planAvailability"
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -66,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 1) 一次抓 cart：檢查是否已結帳 + 是否已有運費
     const cartCheck = await fetchMedusa(
       "取得購物車",
-      `${MEDUSA_URL}/store/carts/${cartId}`,
+      `${MEDUSA_URL}/store/carts/${cartId}?fields=*items,*items.metadata,*items.variant,*items.variant.sku,*items.variant.metadata,*items.product`,
       { headers },
     )
     if (cartCheck.cart?.completed_at) {
@@ -75,6 +79,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         code: "CART_COMPLETED",
         message:
           "此購物車已完成結帳，請重新整理頁面後再試（系統會自動建立新購物車）。",
+      })
+    }
+
+    // 供應商目錄核對：已下架／幽靈舊名會被 planMap 偷換成別的貨 → 禁止付款
+    const planCheck = await validatePlansAvailability(
+      cartItemsToPlanChecks(cartCheck.cart?.items || []),
+    )
+    if (!planCheck.ok) {
+      return res.status(409).json({
+        success: false,
+        code: planCheck.code || "PLAN_UNAVAILABLE",
+        message: planCheck.message,
+        invalid: planCheck.invalid,
       })
     }
 

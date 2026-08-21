@@ -12,6 +12,7 @@ import { buildLoginUrl, getCurrentReturnPath } from "@/lib/authRedirect";
 import AccountShell, { NavyPanel, MetricTile } from "@/components/account/AccountShell";
 import AccountDashboardView from "@/components/account/AccountDashboardView";
 import AccountOrdersView from "@/components/account/AccountOrdersView";
+import ClaimOrderEmail from "@/components/account/ClaimOrderEmail";
 import AccountTrafficView from "@/components/account/AccountTrafficView";
 import AccountSettingsView from "@/components/account/AccountSettingsView";
 import AccountSupportView from "@/components/account/AccountSupportView";
@@ -861,6 +862,10 @@ export default function AccountPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
           >
+            <ClaimOrderEmail
+              getAuthHeaders={getAuthHeaders}
+              onClaimed={() => user?.email && loadOrders(user.email)}
+            />
             <AccountOrdersView
               orders={orders}
               loading={ordersLoading}

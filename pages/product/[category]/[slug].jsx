@@ -40,6 +40,7 @@ import DataExhaustReminderModal, {
   isDataExhaustTerminateVariant,
 } from "../../../components/product/DataExhaustReminderModal";
 import MaterialIcon from "../../../components/MaterialIcon";
+import { checkPlanAvailableClient } from "../../../lib/esim/checkPlanClient";
 import MediaGalleryLightbox from "../../../components/MediaGalleryLightbox";
 import {
   resolveDetailedContent,
@@ -2516,6 +2517,11 @@ export default function ProductPage({
   const [auApnPromptOpen, setAuApnPromptOpen] = useState(false);
   const [softbankApnPromptOpen, setSoftbankApnPromptOpen] = useState(false);
   const [dataExhaustPromptOpen, setDataExhaustPromptOpen] = useState(false);
+  const [planGate, setPlanGate] = useState({
+    loading: false,
+    blocked: false,
+    message: "",
+  });
   const [liveComparablePlans, setLiveComparablePlans] =
     useState(comparablePlans);
   const isPartnerShell = shell === "shop" && store;
@@ -2709,6 +2715,36 @@ export default function ProductPage({
     }
   }, [selectedAttributes, variations]);
 
+  // 選到規格後即時核對供應商目錄（任何幽靈／下架／錯位方案都擋，不寫死 SKU）
+  useEffect(() => {
+    if (!currentVariation?.sku && !currentVariation?.plan_id) {
+      setPlanGate({ loading: false, blocked: false, message: "" });
+      return;
+    }
+    let cancelled = false;
+    setPlanGate((prev) => ({ ...prev, loading: true }));
+    checkPlanAvailableClient({
+      sku: currentVariation.sku,
+      planId: currentVariation.plan_id,
+      name: product?.name,
+    }).then((result) => {
+      if (cancelled) return;
+      setPlanGate({
+        loading: false,
+        blocked: !result.ok,
+        message: result.ok ? "" : "商品已完售",
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    currentVariation?.id,
+    currentVariation?.sku,
+    currentVariation?.plan_id,
+    product?.name,
+  ]);
+
   // 🌟 嚴格防呆：檢查三個規格是否「全部」都已選取
   const isAllOptionsSelected = !!(
     selectedAttributes.telecom &&
@@ -2716,7 +2752,11 @@ export default function ProductPage({
     selectedAttributes.data_amount
   );
   const canPurchase =
-    isAllOptionsSelected && currentVariation && currentVariation.price > 0;
+    isAllOptionsSelected &&
+    currentVariation &&
+    currentVariation.price > 0 &&
+    !planGate.blocked &&
+    !planGate.loading;
 
   const availableCarriers = useMemo(
     () => [
@@ -2838,8 +2878,8 @@ export default function ProductPage({
     }
   };
 
-  const handleAddToCart = ({ openSidebar = true } = {}) => {
-    if (!currentVariation) return;
+  const handleAddToCart = async ({ openSidebar = true } = {}) => {
+    if (!currentVariation) return false;
     const specLabel = [
       selectedAttributes.telecom,
       selectedAttributes.days ? `${selectedAttributes.days}天` : null,
@@ -2848,7 +2888,7 @@ export default function ProductPage({
       .filter(Boolean)
       .join(" · ");
 
-    addToCart(
+    const ok = await addToCart(
       {
         id: currentVariation.id,
         variant_id: currentVariation.id,
@@ -2876,14 +2916,17 @@ export default function ProductPage({
       },
       { open: openSidebar },
     );
+    if (!ok) return false;
     if (openSidebar) {
       window.dispatchEvent(new Event("open-cart-sidebar"));
     }
+    return true;
   };
 
-  const performBuyNow = () => {
+  const performBuyNow = async () => {
     // 立即購買：只導向購物車，不要開側邊欄
-    handleAddToCart({ openSidebar: false });
+    const ok = await handleAddToCart({ openSidebar: false });
+    if (!ok) return;
     if (isPartnerShell) {
       router.push(`/p/${store.domain}/cart/`);
     } else {
@@ -4124,12 +4167,21 @@ export default function ProductPage({
                   </div>
 
                   <p className="text-[11px] text-slate-400 mb-4">
-                    {canPurchase
-                      ? "現貨供應 — 下單後 Email 寄送 eSIM QR Code"
-                      : choiceSummary
-                        ? `已選：${choiceSummary}`
-                        : "請完整選擇電信商、天數與數據量"}
+                    {planGate.blocked
+                      ? "商品已完售"
+                      : planGate.loading
+                        ? "正在確認供貨…"
+                        : canPurchase
+                          ? "現貨供應 — 下單後 Email 寄送 eSIM QR Code"
+                          : choiceSummary
+                            ? `已選：${choiceSummary}`
+                            : "請完整選擇電信商、天數與數據量"}
                   </p>
+                  {planGate.blocked ? (
+                    <p className="mb-3 text-[13px] leading-snug text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                      商品已完售
+                    </p>
+                  ) : null}
 
                   {/* CTA：加入購物車（主）＋ 立即購買（次） */}
                   <div data-product-buy-cta>
@@ -4725,10 +4777,19 @@ export default function ProductPage({
                     </div>
                     <p className="text-[11px] font-normal text-slate-400 mt-4">
                       •{" "}
-                      {canPurchase
-                        ? "現貨供應 — 下單後 Email 寄送 eSIM QR Code"
-                        : "請先選擇完整規格以查看供貨狀態"}
+                      {planGate.blocked
+                        ? "商品已完售"
+                        : planGate.loading
+                          ? "正在確認供貨…"
+                          : canPurchase
+                            ? "現貨供應 — 下單後 Email 寄送 eSIM QR Code"
+                            : "請先選擇完整規格以查看供貨狀態"}
                     </p>
+                    {planGate.blocked ? (
+                      <p className="mt-2 text-[13px] leading-snug text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                        商品已完售
+                      </p>
+                    ) : null}
                   </div>
 
                   {/* 價格與雙 CTA（Anker Add to Cart + Buy Now） */}
