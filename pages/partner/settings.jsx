@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
 import PartnerAdminLayout from "@/components/partner/PartnerAdminLayout";
 import SmartStoreSetupWizard from "@/components/partner/SmartStoreSetupWizard";
 import { usePartnerSession, SITE_URL } from "@/lib/partnerAuth";
@@ -10,6 +11,18 @@ import {
   PhotoIcon,
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
+import {
+  SaveButtonContent,
+  SaveFeedbackAlert,
+  useSaveFeedback,
+} from "@/components/ui/save-feedback";
+import DeleteStoreSection from "@/components/partner/DeleteStoreSection";
+import PartnerStoreRecoveryPanel from "@/components/partner/PartnerStoreRecoveryPanel";
+import PartnerStoreDeletedEmpty from "@/components/partner/PartnerStoreDeletedEmpty";
+import {
+  isStorePublicLive,
+  isStoreSetupPending,
+} from "@/lib/partnerStoreLifecycle";
 
 const EMPTY_FOOTER = {
   footer_company_name: "",
@@ -25,16 +38,18 @@ const EMPTY_FOOTER = {
 };
 
 export default function PartnerSettingsPage() {
+  const router = useRouter();
   const { user, partner, store, setStore } = usePartnerSession();
   const [storeName, setStoreName] = useState("");
   const [description, setDescription] = useState("");
   const [markupRate, setMarkupRate] = useState(20);
   const [logoUrl, setLogoUrl] = useState("");
   const [footer, setFooter] = useState(EMPTY_FOOTER);
-  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const { saving, setSaving, feedback, showSuccess, showError, clearFeedback } =
+    useSaveFeedback();
   const [setupOpen, setSetupOpen] = useState(false);
+  const [showDeletedNotice, setShowDeletedNotice] = useState(false);
   const setupCheckedRef = useRef(false);
   const fileInputRef = useRef(null);
 
@@ -51,7 +66,12 @@ export default function PartnerSettingsPage() {
   // 僅「尚未上架任何商品」且未完成／未略過開立時，自動開一次智慧選品；
   // 開立完成後不會再出現（補上架請走選品管理）。
   useEffect(() => {
-    if (!store?.id || !smartStoreKey || setupCheckedRef.current) return;
+    if (!store?.id || !smartStoreKey) return;
+    if (isStoreSetupPending(store)) {
+      setSetupOpen(true);
+      return;
+    }
+    if (setupCheckedRef.current) return;
     setupCheckedRef.current = true;
 
     let cancelled = false;
@@ -77,10 +97,11 @@ export default function PartnerSettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [store?.id, smartStoreKey]);
+  }, [store?.id, store?.status, smartStoreKey]);
 
   const dismissSetupWizard = () => {
     setSetupOpen(false);
+    if (isStoreSetupPending(store)) return;
     if (!smartStoreKey) return;
     try {
       localStorage.setItem(
@@ -89,6 +110,36 @@ export default function PartnerSettingsPage() {
       );
     } catch {
       /* ignore */
+    }
+  };
+
+  const openSetupWizard = () => {
+    if (smartStoreKey) {
+      try {
+        localStorage.removeItem(smartStoreKey);
+      } catch {
+        /* ignore */
+      }
+    }
+    setupCheckedRef.current = true;
+    setSetupOpen(true);
+  };
+
+  useEffect(() => {
+    if (router.query.store_deleted === "1" && store?.status === "deleted") {
+      setShowDeletedNotice(true);
+    }
+  }, [router.query.store_deleted, store?.status]);
+
+  const handleStoreDeleted = (updatedStore) => {
+    setStore(updatedStore);
+    setShowDeletedNotice(true);
+  };
+
+  const dismissDeletedNotice = () => {
+    setShowDeletedNotice(false);
+    if (router.query.store_deleted) {
+      router.replace("/partner/settings/", undefined, { shallow: true });
     }
   };
 
@@ -161,17 +212,25 @@ export default function PartnerSettingsPage() {
     }
   };
 
+  const saveMinDelay = () =>
+    new Promise((resolve) => {
+      const ms = 1000 + Math.floor(Math.random() * 1000);
+      setTimeout(resolve, ms);
+    });
+
   const handleSave = async () => {
     if (!storeName.trim()) return alert("店鋪名稱不能為空");
     if (!store?.id) return alert("找不到店鋪資料，請重新登入");
     setSaving(true);
-    setSaved(false);
+    clearFeedback();
+    const minDelay = saveMinDelay();
 
-    // 財務欄位（markup_rate）獨立走伺服器驗證＋稽核紀錄的專用 API，
-    // 不與品牌/展示欄位一起直接寫表，避免分潤相關數值繞過邊界檢查。
-    const nextMarkupRate = parseInt(markupRate, 10);
-    if (Number.isFinite(nextMarkupRate) && nextMarkupRate !== Number(store.markup_rate)) {
-      try {
+    try {
+      const nextMarkupRate = parseInt(markupRate, 10);
+      if (
+        Number.isFinite(nextMarkupRate) &&
+        nextMarkupRate !== Number(store.markup_rate)
+      ) {
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -185,83 +244,127 @@ export default function PartnerSettingsPage() {
         });
         const markupResult = await res.json().catch(() => ({}));
         if (!res.ok) {
-          setSaving(false);
-          return alert("加價率儲存失敗：" + (markupResult.error || "未知錯誤"));
+          throw new Error(`加價率儲存失敗：${markupResult.error || "未知錯誤"}`);
         }
         if (markupResult.store) setStore(markupResult.store);
-      } catch (err) {
-        setSaving(false);
-        return alert("加價率儲存失敗：" + (err.message || "未知錯誤"));
       }
-    }
 
-    const footerPayload = Object.fromEntries(
-      Object.entries(footer).map(([k, v]) => [k, String(v || "").trim() || null]),
-    );
+      const footerPayload = Object.fromEntries(
+        Object.entries(footer).map(([k, v]) => [
+          k,
+          String(v || "").trim() || null,
+        ]),
+      );
 
-    const payload = {
-      store_name: storeName.trim(),
-      description: description.trim() || null,
-      logo_url: logoUrl.trim() || null,
-      ...footerPayload,
-    };
-
-    let { data, error } = await supabase
-      .from("stores")
-      .update(payload)
-      .eq("id", store.id)
-      .select()
-      .single();
-
-    // 舊 DB 尚未跑 migration 時自動降級
-    if (
-      error &&
-      /description|logo_url|footer_|social_|schema cache/i.test(error.message || "")
-    ) {
-      const legacy = {
-        store_name: payload.store_name,
+      const payload = {
+        store_name: storeName.trim(),
+        description: description.trim() || null,
+        logo_url: logoUrl.trim() || null,
+        ...footerPayload,
       };
-      ({ data, error } = await supabase
+
+      let { data, error } = await supabase
         .from("stores")
-        .update(legacy)
+        .update(payload)
         .eq("id", store.id)
         .select()
-        .single());
-      if (!error) {
-        setSaving(false);
-        setStore({
-          ...data,
-          description: payload.description,
-          logo_url: payload.logo_url,
-          ...footerPayload,
-        });
-        alert(
-          "基本資料已儲存。請至 Supabase 執行 migration「20260714_stores_description_logo.sql」與「20260714_stores_footer_social.sql」，才能永久保存描述、大頭貼與 Footer。",
-        );
-        return;
-      }
-    }
+        .single();
 
-    setSaving(false);
-    if (error) return alert("儲存失敗：" + error.message);
-    setStore(data);
-    // 同步舊文章的編輯者名稱 → 當前分店顯示名稱（前台也會即時用 store_name）
-    if (payload.store_name && store?.id) {
-      await supabase
-        .from("store_blog_posts")
-        .update({ author_name: payload.store_name })
-        .eq("store_id", store.id);
+      if (
+        error &&
+        /description|logo_url|footer_|social_|schema cache/i.test(
+          error.message || "",
+        )
+      ) {
+        const legacy = { store_name: payload.store_name };
+        ({ data, error } = await supabase
+          .from("stores")
+          .update(legacy)
+          .eq("id", store.id)
+          .select()
+          .single());
+        if (!error) {
+          setStore({
+            ...data,
+            description: payload.description,
+            logo_url: payload.logo_url,
+            ...footerPayload,
+          });
+          await minDelay;
+          alert(
+            "基本資料已儲存。請至 Supabase 執行 migration「20260714_stores_description_logo.sql」與「20260714_stores_footer_social.sql」，才能永久保存描述、大頭貼與 Footer。",
+          );
+          return;
+        }
+      }
+
+      if (error) throw new Error(error.message || "儲存失敗");
+
+      setStore(data);
+      if (payload.store_name && store?.id) {
+        await supabase
+          .from("store_blog_posts")
+          .update({ author_name: payload.store_name })
+          .eq("store_id", store.id);
+      }
+
+      await minDelay;
+      showSuccess(
+        "設定已儲存成功",
+        "賣場資訊已更新，變更會立即同步至前台頁面。",
+      );
+    } catch (err) {
+      await minDelay;
+      showError("儲存失敗", err?.message || "請稍後再試");
+    } finally {
+      setSaving(false);
     }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
   };
 
-  const relativeStoreUrl = store ? `/p/${store.domain}/` : null;
-  const storeUrl = store ? `${SITE_URL}/p/${store.domain}/` : null;
+  const isStoreLive = isStorePublicLive(store);
+  const storeSetupPending = isStoreSetupPending(store);
+  const relativeStoreUrl = isStoreLive ? `/p/${store.domain}/` : null;
+  const storeUrl = isStoreLive ? `${SITE_URL}/p/${store.domain}/` : null;
+
+  if (showDeletedNotice && store?.status === "deleted") {
+    return (
+      <PartnerAdminLayout title="商店設定">
+        <div className={PARTNER_UI.page}>
+          <PartnerStoreDeletedEmpty
+            store={store}
+            onAcknowledge={dismissDeletedNotice}
+          />
+        </div>
+      </PartnerAdminLayout>
+    );
+  }
 
   return (
     <PartnerAdminLayout title="商店設定">
       <div className={PARTNER_UI.page}>
+      {store?.status === "deleted" ? (
+        <div className="mb-5 sm:mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 sm:px-5">
+          <PartnerStoreRecoveryPanel
+            store={store}
+            onStoreChange={setStore}
+            onOpenWizard={openSetupWizard}
+          />
+        </div>
+      ) : storeSetupPending ? (
+        <div className="mb-5 sm:mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 sm:px-5">
+          <p className="text-sm font-bold text-[#1E4AD1]">商店建立尚未完成</p>
+          <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+            完成智慧選品並成功生成後，賣場才會正式上線、顯示對外連結。
+          </p>
+          <button
+            type="button"
+            onClick={openSetupWizard}
+            className="mt-3 inline-flex items-center justify-center rounded-lg bg-[#1E4AD1] px-4 py-2 text-xs font-bold text-white hover:bg-[#1639a8]"
+          >
+            繼續建立商店
+          </button>
+        </div>
+      ) : null}
       <div className="mb-5 sm:mb-6">
         <h1 className={PARTNER_UI.title}>商店設定</h1>
         <p className={PARTNER_UI.subtitle}>
@@ -532,18 +635,28 @@ export default function PartnerSettingsPage() {
             </div>
           </div>
 
-          <div className="pt-2 flex items-center gap-4">
+          <div className="pt-2 flex flex-col gap-3">
             <button
+              type="button"
               onClick={handleSave}
               disabled={saving}
-              className="bg-[#1E4AD1] text-white font-bold px-8 py-3 rounded-xl hover:bg-[#1344b5] disabled:opacity-50 transition shadow-sm"
+              aria-busy={saving}
+              className="inline-flex items-center justify-center gap-2 bg-[#1E4AD1] text-white font-bold px-8 py-3 rounded-xl hover:bg-[#1344b5] disabled:opacity-50 transition shadow-sm min-w-[9.5rem] w-fit"
             >
-              {saving ? "儲存中..." : "儲存設定"}
+              <SaveButtonContent saving={saving} savingLabel="儲存中…">
+                儲存設定
+              </SaveButtonContent>
             </button>
-            {saved && (
-              <span className="text-sm text-emerald-600 font-bold">✅ 已儲存，前台已同步！</span>
-            )}
+            {feedback ? (
+              <SaveFeedbackAlert
+                feedback={feedback}
+                onDismiss={clearFeedback}
+                className="max-w-md"
+              />
+            ) : null}
           </div>
+
+          <DeleteStoreSection store={store} onDeleted={handleStoreDeleted} />
         </div>
 
         {/* 右側：預覽卡片 */}
@@ -653,6 +766,8 @@ export default function PartnerSettingsPage() {
         onClose={dismissSetupWizard}
         store={store}
         storePath={relativeStoreUrl}
+        setupPending={storeSetupPending}
+        onComplete={setStore}
       />
       </div>
     </PartnerAdminLayout>

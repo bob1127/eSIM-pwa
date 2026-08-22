@@ -6,8 +6,14 @@ import { usePartnerSession } from "@/lib/partnerAuth";
 import { supabase } from "@/lib/supabaseClient";
 import MaterialIcon from "@/components/MaterialIcon";
 import { fmt } from "@/components/partner/DobermanWidgets";
-import { ShopifyDropdown } from "@/components/partner/ShopifyControls";
+import { ShopifyDropdown, ShopifyPagination } from "@/components/partner/ShopifyControls";
+import PartnerSelectMenu from "@/components/partner/PartnerSelectMenu";
 import { inferProductCountry } from "@/lib/partnerNavCountries";
+import { QuarterRing } from "@/components/ui/QuarterRing";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import PartnerButton from "@/components/partner/ui/PartnerButton";
+import PartnerDialog from "@/components/partner/ui/PartnerDialog";
+import PublishToggle from "@/components/partner/blog-builder/PublishToggle";
 
 const TABS = [
   { id: "pool", label: "商品池", icon: "inventory" },
@@ -46,6 +52,8 @@ const CATALOG_OPTS = [
   { value: "off", label: "主站已下架" },
 ];
 
+const POOL_PAGE_SIZE = 12;
+
 function resolveCountry(product) {
   return (
     inferProductCountry(product) || {
@@ -58,49 +66,54 @@ function resolveCountry(product) {
 const fmtCost = (n) => (Number(n) > 0 ? fmt(n) : "—");
 const fmtPlans = (n) => (Number(n) > 0 ? `${n} 個方案` : "方案待同步");
 
-function LoadingSpinner({ size = 14, className = "" }) {
-  return (
-    <span
-      className={`inline-block rounded-full border-2 border-white/35 border-t-white animate-spin shrink-0 ${className}`}
-      style={{ width: size, height: size }}
-      aria-hidden
-    />
-  );
+function formatListedDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const h = d.getHours();
+  const min = String(d.getMinutes()).padStart(2, "0");
+  const am = h < 12 ? "上午" : "下午";
+  const hh = h % 12 || 12;
+  return `${y}年 ${m}月 ${day}日 ${am} ${hh}:${min}`;
 }
 
-function AddToStoreButton({
-  busy,
-  anyBusy,
-  onClick,
-  size = "md",
-  className = "",
-}) {
-  const sm = size === "sm";
+function listingToggleLabel(isListed) {
+  return isListed ? "上架" : "下架";
+}
+
+function ListingPublishCell({ p, busyId, onToggle }) {
+  const busy = busyId === p.id;
+  const disabled =
+    busy ||
+    (!!busyId && !busy) ||
+    (p.catalogAvailable === false && !p.isListed);
+
   return (
-    <button
-      type="button"
-      disabled={anyBusy}
-      onClick={onClick}
-      aria-busy={busy}
-      className={
-        className ||
-        (sm
-          ? "inline-flex items-center justify-center gap-1.5 min-w-[7.5rem] text-xs font-bold bg-[#1E4AD1] text-white px-3 py-1.5 rounded-sm hover:bg-[#0071EB] disabled:opacity-60 disabled:cursor-wait transition"
-          : "flex-1 min-h-11 inline-flex items-center justify-center gap-1.5 text-sm font-bold bg-[#1E4AD1] text-white rounded-lg hover:bg-[#0071EB] disabled:opacity-60 disabled:cursor-wait transition")
-      }
-    >
-      {busy ? (
-        <>
-          <LoadingSpinner size={sm ? 12 : 14} />
-          上架中…
-        </>
-      ) : (
-        <>
-          <MaterialIcon name="add" size={sm ? 14 : 16} />
-          加入店鋪
-        </>
-      )}
-    </button>
+    <div className="inline-flex flex-col items-start">
+      <div className="flex items-center gap-2">
+        <PublishToggle
+          on={p.isListed}
+          disabled={disabled}
+          title={
+            p.catalogAvailable === false && !p.isListed
+              ? "主站已下架，無法上架"
+              : undefined
+          }
+          onChange={(next) => onToggle(p, next)}
+        />
+        <span className="text-[11px] font-bold text-slate-600">
+          {listingToggleLabel(p.isListed)}
+        </span>
+      </div>
+      {p.isListed ? (
+        <p className="text-[11px] text-slate-400 mt-1">
+          {formatListedDate(p.listedAt)}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -129,8 +142,7 @@ function FilterChip({ label, onClear }) {
 function PoolProductCard({
   p,
   busyId,
-  onAdd,
-  onRemove,
+  onToggle,
 }) {
   const busy = busyId === p.id;
   return (
@@ -148,15 +160,6 @@ function PoolProductCard({
             {p.description || "eSIM 漫遊方案"}
           </p>
         </div>
-        <span
-          className={`shrink-0 text-[11px] font-bold px-2 py-1 rounded-md ${
-            p.isListed
-              ? "bg-[#d1fae5] text-[#065f46]"
-              : "bg-slate-100 text-slate-500"
-          }`}
-        >
-          {p.isListed ? "已上架" : "未上架"}
-        </span>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
@@ -189,37 +192,49 @@ function PoolProductCard({
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2">
-        {!p.isListed ? (
-          <AddToStoreButton
-            busy={busyId === p.id}
-            anyBusy={!!busyId}
-            onClick={() => onAdd(p.id)}
-          />
-        ) : (
-          <>
-            <Link
-              href="/partner/products?tab=pricing"
-              className="flex-1 min-h-11 inline-flex items-center justify-center text-sm font-bold border border-slate-200 rounded-lg text-slate-700"
-            >
-              編輯定價
-            </Link>
-            <button
-              type="button"
-              disabled={!!busyId}
-              onClick={() => onRemove(p)}
-              className="min-h-11 px-3 inline-flex items-center justify-center text-sm font-bold text-red-500 border border-red-100 rounded-lg disabled:opacity-50"
-            >
-              移除
-            </button>
-          </>
-        )}
+      <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-3">
+        <div>
+          <p className="text-sm font-semibold text-slate-800">上架</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            {listingToggleLabel(p.isListed)}
+          </p>
+          {p.isListed ? (
+            <p className="text-[11px] text-slate-400 mt-1">
+              {formatListedDate(p.listedAt)}
+            </p>
+          ) : null}
+        </div>
+        <PublishToggle
+          on={p.isListed}
+          disabled={
+            busy ||
+            (!!busyId && !busy) ||
+            (p.catalogAvailable === false && !p.isListed)
+          }
+          title={
+            p.catalogAvailable === false && !p.isListed
+              ? "主站已下架，無法上架"
+              : undefined
+          }
+          onChange={(next) => onToggle(p, next)}
+        />
       </div>
+
+      {p.isListed ? (
+        <div className="mt-3">
+          <Link
+            href="/partner/products?tab=pricing"
+            className="w-full min-h-11 inline-flex items-center justify-center text-sm font-bold border border-slate-200 rounded-lg text-slate-700"
+          >
+            編輯定價
+          </Link>
+        </div>
+      ) : null}
     </article>
   );
 }
 
-function ListedProductCard({ p, onRemove }) {
+function ListedProductCard({ p, busyId, onToggle }) {
   return (
     <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
@@ -254,22 +269,31 @@ function ListedProductCard({ p, onRemove }) {
         </div>
       </div>
       <p className="mt-2 text-[11px] text-slate-400">
-        {fmtPlans(p.planCount)} · 上架 {p.listedAt ? new Date(p.listedAt).toLocaleDateString("zh-TW") : "—"}
+        {fmtPlans(p.planCount)}
       </p>
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-3">
+        <div>
+          <p className="text-sm font-semibold text-slate-800">上架</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            {listingToggleLabel(p.isListed)}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-1">
+            {formatListedDate(p.listedAt)}
+          </p>
+        </div>
+        <PublishToggle
+          on={p.isListed}
+          disabled={busyId === p.id || !!busyId}
+          onChange={(next) => onToggle(p, next)}
+        />
+      </div>
+      <div className="mt-3">
         <Link
           href="/partner/products?tab=pricing"
-          className="flex-1 min-h-11 inline-flex items-center justify-center text-sm font-bold border border-slate-200 rounded-lg text-slate-700"
+          className="w-full min-h-11 inline-flex items-center justify-center text-sm font-bold border border-slate-200 rounded-lg text-slate-700"
         >
           編輯定價
         </Link>
-        <button
-          type="button"
-          onClick={() => onRemove(p)}
-          className="min-h-11 px-3 inline-flex items-center justify-center text-sm font-bold text-red-500 border border-red-100 rounded-lg"
-        >
-          停用
-        </button>
       </div>
     </article>
   );
@@ -312,6 +336,7 @@ export default function PartnerCatalogPage() {
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
   const [pricingHint, setPricingHint] = useState("");
+  const [poolPage, setPoolPage] = useState(1);
 
   const markup = store?.markup_rate ?? 20;
 
@@ -489,6 +514,29 @@ export default function PartnerCatalogPage() {
     sortKey,
   ]);
 
+  const poolTotalPages = Math.max(1, Math.ceil(poolList.length / POOL_PAGE_SIZE));
+  const safePoolPage = Math.min(Math.max(1, poolPage), poolTotalPages);
+  const poolPageItems = poolList.slice(
+    (safePoolPage - 1) * POOL_PAGE_SIZE,
+    safePoolPage * POOL_PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setPoolPage(1);
+  }, [
+    search,
+    poolFilter,
+    countryFilter,
+    priceFilter,
+    planFilter,
+    catalogFilter,
+    sortKey,
+  ]);
+
+  useEffect(() => {
+    if (poolPage !== safePoolPage) setPoolPage(safePoolPage);
+  }, [poolPage, safePoolPage]);
+
   const advancedActiveCount = [
     poolFilter !== "all",
     priceFilter !== "all",
@@ -515,7 +563,6 @@ export default function PartnerCatalogPage() {
       {
         id: "all",
         label: "全部國家",
-        icon: "public",
         active: !countryFilter,
         onClick: () => setCountryFilter(""),
       },
@@ -523,7 +570,6 @@ export default function PartnerCatalogPage() {
       ...countryOptions.map((c) => ({
         id: c.key,
         label: `${c.label}（${c.count}）`,
-        icon: "flag",
         active: countryFilter === c.key,
         onClick: () => setCountryFilter(c.key),
       })),
@@ -532,30 +578,28 @@ export default function PartnerCatalogPage() {
   );
 
   const advancedMenuItems = useMemo(() => {
-    const section = (prefix, opts, value, setter, icon) =>
+    const section = (prefix, opts, value, setter) =>
       opts.map((o) => ({
         id: `${prefix}-${o.value}`,
         label: o.label,
-        icon,
         active: value === o.value,
         onClick: () => setter(o.value),
       }));
 
     return [
-      ...section("list", LIST_STATUS_OPTS, poolFilter, setPoolFilter, "storefront"),
+      ...section("list", LIST_STATUS_OPTS, poolFilter, setPoolFilter),
       { divider: true },
-      ...section("price", PRICE_OPTS, priceFilter, setPriceFilter, "payments"),
+      ...section("price", PRICE_OPTS, priceFilter, setPriceFilter),
       { divider: true },
-      ...section("plan", PLAN_OPTS, planFilter, setPlanFilter, "layers"),
+      ...section("plan", PLAN_OPTS, planFilter, setPlanFilter),
       { divider: true },
-      ...section("catalog", CATALOG_OPTS, catalogFilter, setCatalogFilter, "inventory_2"),
+      ...section("catalog", CATALOG_OPTS, catalogFilter, setCatalogFilter),
       ...(advancedActiveCount
         ? [
             { divider: true },
             {
               id: "clear-advanced",
               label: "清除進階篩選",
-              icon: "filter_alt_off",
               onClick: clearAdvancedFilters,
             },
           ]
@@ -568,7 +612,6 @@ export default function PartnerCatalogPage() {
       SORT_OPTS.map((o) => ({
         id: o.value,
         label: o.label,
-        icon: "swap_vert",
         active: sortKey === o.value,
         onClick: () => setSortKey(o.value),
       })),
@@ -660,14 +703,13 @@ export default function PartnerCatalogPage() {
     }
   };
 
-  const fmtDate = (d) =>
-    d
-      ? new Date(d).toLocaleDateString("zh-TW", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        })
-      : "—";
+  const handleListingToggle = (p, next) => {
+    if (next) {
+      handleAdd(p.id);
+      return;
+    }
+    setConfirmRemove(p);
+  };
 
   return (
     <PartnerAdminLayout title="選品管理">
@@ -736,16 +778,22 @@ export default function PartnerCatalogPage() {
                   <div>
                     <h2 className="text-base font-black text-slate-800">商品池</h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      依國家與條件篩選後加入店鋪 · 目前 {loading ? "…" : poolList.length} 項
+                      依國家與條件篩選後加入店鋪 · 共{" "}
+                      {loading ? "…" : poolList.length} 項
+                      {!loading && poolList.length > 0
+                        ? ` · 第 ${safePoolPage} / ${poolTotalPages} 頁`
+                        : ""}
                     </p>
                   </div>
-                  <Link
-                    href="/partner/products?tab=products"
-                    className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 min-h-10 bg-[#1E4AD1] hover:bg-[#0071EB] text-white text-sm font-bold px-4 py-2 rounded-lg transition"
-                  >
-                    <MaterialIcon name="price_change" size={18} />
-                    管理已上架商品
-                  </Link>
+                  <PartnerButton asChild size="default">
+                    <Link
+                      href="/partner/products?tab=products"
+                      className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5"
+                    >
+                      <MaterialIcon name="price_change" size={18} />
+                      管理已上架商品
+                    </Link>
+                  </PartnerButton>
                 </div>
 
                 <div className="relative">
@@ -770,7 +818,6 @@ export default function PartnerCatalogPage() {
                         ? `國家：${countryLabel}`
                         : "國家分類"
                     }
-                    icon="public"
                     align="left"
                     items={countryMenuItems}
                   />
@@ -780,13 +827,11 @@ export default function PartnerCatalogPage() {
                         ? `進階篩選（${advancedActiveCount}）`
                         : "進階篩選"
                     }
-                    icon="tune"
                     align="left"
                     items={advancedMenuItems}
                   />
                   <ShopifyDropdown
                     label={`排序：${sortLabel}`}
-                    icon="swap_vert"
                     align="left"
                     items={sortMenuItems}
                   />
@@ -853,19 +898,22 @@ export default function PartnerCatalogPage() {
               {/* 手機卡片 */}
               <div className="md:hidden p-3 space-y-3 bg-slate-50/40">
                 {loading ? (
-                  <p className="py-10 text-center text-slate-400 text-sm">載入商品池中...</p>
+                  <LoadingIndicator
+                    layout="center"
+                    label="載入商品池中..."
+                    className="py-10"
+                  />
                 ) : poolList.length === 0 ? (
                   <p className="py-10 text-center text-slate-400 text-sm">
                     目前沒有符合條件的商品
                   </p>
                 ) : (
-                  poolList.map((p) => (
+                  poolPageItems.map((p) => (
                     <PoolProductCard
                       key={p.id}
                       p={p}
                       busyId={busyId}
-                      onAdd={handleAdd}
-                      onRemove={setConfirmRemove}
+                      onToggle={handleListingToggle}
                     />
                   ))
                 )}
@@ -882,15 +930,18 @@ export default function PartnerCatalogPage() {
                       <th className="px-5 py-3 text-right font-bold">底價</th>
                       <th className="px-5 py-3 text-right font-bold">預估售價</th>
                       <th className="px-5 py-3 text-right font-bold">預估分潤</th>
-                      <th className="px-5 py-3 text-center font-bold">狀態</th>
-                      <th className="px-5 py-3 text-center font-bold">操作</th>
+                      <th className="px-5 py-3 text-center font-bold">上架</th>
+                      <th className="px-5 py-3 text-center font-bold">定價</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {loading ? (
                       <tr>
-                        <td colSpan={8} className="py-12 text-center text-slate-400">
-                          載入商品池中...
+                        <td colSpan={8} className="py-12 text-center">
+                          <LoadingIndicator
+                            layout="center"
+                            label="載入商品池中..."
+                          />
                         </td>
                       </tr>
                     ) : poolList.length === 0 ? (
@@ -900,7 +951,7 @@ export default function PartnerCatalogPage() {
                         </td>
                       </tr>
                     ) : (
-                      poolList.map((p) => (
+                      poolPageItems.map((p) => (
                         <tr
                           key={p.id}
                           className={`hover:bg-slate-50/60 ${
@@ -928,42 +979,23 @@ export default function PartnerCatalogPage() {
                           <td className="px-5 py-4 text-right font-black text-[#1E4AD1]">
                             +{fmt(p.profit)}
                           </td>
-                          <td className="px-5 py-4 text-center">
-                            <span
-                              className={`text-xs font-bold px-2.5 py-1 rounded-sm ${
-                                p.isListed
-                                  ? "bg-[#d1fae5] text-[#065f46]"
-                                  : "bg-slate-100 text-slate-500"
-                              }`}
-                            >
-                              {p.isListed ? "已上架" : "未上架"}
-                            </span>
+                          <td className="px-5 py-4 align-top">
+                            <ListingPublishCell
+                              p={p}
+                              busyId={busyId}
+                              onToggle={handleListingToggle}
+                            />
                           </td>
-                          <td className="px-5 py-4 text-center">
-                            {!p.isListed ? (
-                              <AddToStoreButton
-                                size="sm"
-                                busy={busyId === p.id}
-                                anyBusy={!!busyId}
-                                onClick={() => handleAdd(p.id)}
-                              />
+                          <td className="px-5 py-4 text-center align-top">
+                            {p.isListed ? (
+                              <Link
+                                href="/partner/products?tab=pricing"
+                                className="text-xs border border-slate-300 rounded-sm px-3 py-1 text-slate-600 hover:border-[#1E4AD1] hover:text-[#1E4AD1] transition font-bold"
+                              >
+                                編輯定價
+                              </Link>
                             ) : (
-                              <div className="inline-flex items-center justify-center gap-2 min-w-[7.5rem]">
-                                <Link
-                                  href="/partner/products?tab=pricing"
-                                  className="text-xs font-bold text-[#1E4AD1] hover:underline"
-                                >
-                                  定價
-                                </Link>
-                                <button
-                                  type="button"
-                                  disabled={!!busyId}
-                                  onClick={() => setConfirmRemove(p)}
-                                  className="text-xs font-bold text-red-500 hover:underline disabled:opacity-50"
-                                >
-                                  移除
-                                </button>
-                              </div>
+                              <span className="text-xs text-slate-300">—</span>
                             )}
                           </td>
                         </tr>
@@ -972,6 +1004,15 @@ export default function PartnerCatalogPage() {
                   </tbody>
                 </table>
               </div>
+
+              {!loading && poolList.length > 0 ? (
+                <ShopifyPagination
+                  page={safePoolPage}
+                  pageSize={POOL_PAGE_SIZE}
+                  total={poolList.length}
+                  onChange={setPoolPage}
+                />
+              ) : null}
             </div>
 
             <p className="text-xs text-slate-400 px-1 leading-relaxed">
@@ -1017,22 +1058,21 @@ export default function PartnerCatalogPage() {
                   className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:border-[#1E4AD1] outline-none"
                 />
               </div>
-              <select
+              <PartnerSelectMenu
                 value={sortKey}
-                onChange={(e) => setSortKey(e.target.value)}
-                className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2.5 focus:outline-none min-h-11"
-              >
-                {SORT_OPTS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    排序：{o.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setSortKey}
+                options={SORT_OPTS.map((o) => ({
+                  id: o.value,
+                  label: o.label,
+                }))}
+                prefix="排序："
+                className="w-full"
+              />
             </div>
 
             <div className="md:hidden p-3 space-y-3 bg-slate-50/40">
               {loading ? (
-                <p className="py-10 text-center text-slate-400 text-sm">載入中...</p>
+                <LoadingIndicator layout="center" label="載入中..." className="py-10" />
               ) : listedList.length === 0 ? (
                 <p className="py-10 text-center text-slate-400 text-sm px-4 leading-relaxed">
                   尚未上架任何商品，請至「商品池」選擇商品加入
@@ -1042,7 +1082,8 @@ export default function PartnerCatalogPage() {
                   <ListedProductCard
                     key={p.id}
                     p={p}
-                    onRemove={setConfirmRemove}
+                    busyId={busyId}
+                    onToggle={handleListingToggle}
                   />
                 ))
               )}
@@ -1067,16 +1108,16 @@ export default function PartnerCatalogPage() {
                     <th className="px-4 py-3 text-right font-bold">底價</th>
                     <th className="px-4 py-3 text-right font-bold">預設售價</th>
                     <th className="px-4 py-3 text-right font-bold">預估分潤</th>
-                    <th className="px-4 py-3 text-center font-bold">上架狀態</th>
-                    <th className="px-4 py-3 text-center font-bold">上架日期</th>
-                    <th className="px-4 py-3 text-right font-bold">操作</th>
+                    <th className="px-4 py-3 text-center font-bold">主站狀態</th>
+                    <th className="px-4 py-3 text-center font-bold">上架</th>
+                    <th className="px-4 py-3 text-center font-bold">定價</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td colSpan={8} className="py-12 text-center text-slate-400">
-                        載入中...
+                      <td colSpan={8} className="py-12 text-center">
+                        <LoadingIndicator layout="center" label="載入中..." />
                       </td>
                     </tr>
                   ) : listedList.length === 0 ? (
@@ -1121,26 +1162,20 @@ export default function PartnerCatalogPage() {
                               : "已開設"}
                           </span>
                         </td>
-                        <td className="px-4 py-4 align-top text-center text-xs text-slate-500 whitespace-nowrap">
-                          {fmtDate(p.listedAt)}
+                        <td className="px-4 py-4 align-top text-center">
+                          <ListingPublishCell
+                            p={p}
+                            busyId={busyId}
+                            onToggle={handleListingToggle}
+                          />
                         </td>
-                        <td className="px-4 py-4 align-top">
-                          <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
-                            <Link
-                              href="/partner/products?tab=pricing"
-                              className="text-xs border border-slate-300 rounded-sm px-2.5 py-1 text-slate-600 hover:border-[#1E4AD1] hover:text-[#1E4AD1] font-bold"
-                            >
-                              編輯定價
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={() => setConfirmRemove(p)}
-                              className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500"
-                              aria-label="移除商品"
-                            >
-                              <MaterialIcon name="delete" size={18} />
-                            </button>
-                          </div>
+                        <td className="px-4 py-4 align-top text-center">
+                          <Link
+                            href="/partner/products?tab=pricing"
+                            className="text-xs border border-slate-300 rounded-sm px-2.5 py-1 text-slate-600 hover:border-[#1E4AD1] hover:text-[#1E4AD1] font-bold"
+                          >
+                            編輯定價
+                          </Link>
                         </td>
                       </tr>
                     ))
@@ -1154,43 +1189,43 @@ export default function PartnerCatalogPage() {
 
       {/* 刪除確認 */}
       {confirmRemove && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-sm shadow-2xl w-full max-w-md p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <MaterialIcon name="warning" size={28} className="text-amber-500" />
-              <h3 className="font-black text-slate-800">確認移除商品</h3>
-            </div>
-            <p className="text-sm text-slate-600 mb-1">
-              移除後，「{confirmRemove.name}」將不再顯示於您的賣場，此操作無法復原。
-            </p>
-            <p className="text-sm font-bold text-slate-800 mb-5">確定要移除嗎？</p>
-            <div className="flex justify-end gap-3">
-              <button
+        <PartnerDialog
+          open={!!confirmRemove}
+          onClose={() => !busyId && setConfirmRemove(null)}
+          title="確認下架商品"
+          description={`下架後，「${confirmRemove.name}」將不再顯示於您的賣場。`}
+          icon="warning"
+          footer={
+            <>
+              <PartnerButton
                 type="button"
+                variant="secondary"
                 disabled={!!busyId}
                 onClick={() => setConfirmRemove(null)}
-                className="px-5 py-2 text-sm text-slate-600 border border-slate-300 rounded-sm hover:bg-slate-50 disabled:opacity-50"
               >
                 取消
-              </button>
-              <button
+              </PartnerButton>
+              <PartnerButton
                 type="button"
+                variant="destructive"
                 disabled={!!busyId}
                 onClick={() => handleRemove(confirmRemove.id)}
-                className="inline-flex items-center justify-center gap-1.5 min-w-[6.5rem] px-5 py-2 text-sm font-bold text-white bg-[#1E4AD1] rounded-sm hover:bg-[#0071EB] disabled:opacity-60 disabled:cursor-wait"
+                className="min-w-[6.5rem]"
               >
                 {busyId === confirmRemove.id ? (
                   <>
-                    <LoadingSpinner size={14} />
-                    移除中…
+                    <QuarterRing size="xs" className="text-white" />
+                    下架中…
                   </>
                 ) : (
-                  "確定移除"
+                  "確定下架"
                 )}
-              </button>
-            </div>
-          </div>
-        </div>
+              </PartnerButton>
+            </>
+          }
+        >
+          <p className="text-sm font-semibold text-slate-800">確定要下架嗎？此操作無法復原。</p>
+        </PartnerDialog>
       )}
     </PartnerAdminLayout>
   );

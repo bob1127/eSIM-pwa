@@ -12,6 +12,8 @@ import MaterialIcon from "./MaterialIcon";
 import { detectPushSupport } from "../lib/pushSupport";
 import { getPushEndpoint, ICCID_STORAGE_KEY } from "../lib/pushBind";
 import { useAuth } from "../hooks/useAuth";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 
 const REF_BLUE = "#3768C7";
 
@@ -323,13 +325,14 @@ export default function PushNotificationSection({
     memberEsims.length === 0;
 
   const ctaBlock = showBannerLoading ? (
-    <div
-      className={`px-6 py-3 rounded-full text-sm font-bold animate-pulse ${
-        isBanner ? "bg-white/25 text-white/80" : "bg-stone-200 text-stone-500"
+    <LoadingIndicator
+      layout="inline"
+      label="載入中…"
+      size="sm"
+      className={`px-6 py-3 rounded-full text-sm font-bold ${
+        isBanner ? "bg-white/25" : "bg-stone-200"
       }`}
-    >
-      載入中…
-    </div>
+    />
   ) : mode === "guide" ? (
     <IosPwaPushGuide className={isBanner ? "max-w-sm" : className} />
   ) : bindPhase === "bound" ? (
@@ -518,7 +521,7 @@ export default function PushNotificationSection({
 
           {autoBinding && (
             <p className="text-xs text-stone-500 flex items-center gap-2 px-1 mt-4">
-              <MaterialIcon name="sync" size={16} className="animate-spin" />
+              <QuarterRing size="sm" />
               正在從您的訂單自動綁定 eSIM…
             </p>
           )}
@@ -544,11 +547,12 @@ export default function PushNotificationSection({
   if (!authReady) {
     return (
       <>
-        <div
-          className={`px-6 py-3 rounded-full bg-stone-200 text-stone-500 text-sm font-bold animate-pulse ${className}`}
-        >
-          載入中…
-        </div>
+        <LoadingIndicator
+          layout="inline"
+          label="載入中…"
+          size="sm"
+          className={`px-6 py-3 rounded-full bg-stone-200 text-sm font-bold ${className}`}
+        />
         {noOrderModal}
       </>
     );
@@ -600,7 +604,7 @@ export default function PushNotificationSection({
 
             {autoBinding && (
               <p className="text-xs text-stone-500 flex items-center gap-2">
-                <MaterialIcon name="sync" size={16} className="animate-spin" />
+                <QuarterRing size="sm" />
                 正在從您的訂單自動綁定 eSIM…
               </p>
             )}

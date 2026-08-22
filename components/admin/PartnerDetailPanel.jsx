@@ -8,6 +8,7 @@ import {
 } from "@/lib/partnerDescriptionParse";
 import { bossFetch, bossFetchBlob } from "@/lib/bossAdminClient";
 import { WITHDRAWAL_STATUS_LABEL, getPayoutMethodLabel, formatPayoutAccountSummary } from "@/lib/partnerPayout";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 function defaultSettlementMonth() {
   const now = new Date();
@@ -454,7 +455,7 @@ function WithdrawalAdminBlock({ partner }) {
         </p>
       )}
       {loading ? (
-        <p className="text-xs text-slate-400">載入中…</p>
+        <LoadingIndicator label="載入中…" size="sm" />
       ) : !rows.length ? (
         <p className="text-xs text-slate-400">尚無提領申請</p>
       ) : (

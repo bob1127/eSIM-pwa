@@ -87,14 +87,24 @@ export function collectWpArticleImages(
 
 export function BlogArticleLightboxProvider({
   html,
+  images: imagesOverride,
   normalizeUrl = normalizeWpAssetUrl,
   children,
   title = "文章圖片",
 }) {
-  const images = useMemo(
-    () => collectWpArticleImages(html, normalizeUrl),
-    [html, normalizeUrl],
+  const imagesFromHtml = useMemo(
+    () =>
+      imagesOverride != null
+        ? []
+        : collectWpArticleImages(html, normalizeUrl),
+    [html, imagesOverride, normalizeUrl],
   );
+  const images = useMemo(() => {
+    if (imagesOverride != null) {
+      return imagesOverride;
+    }
+    return imagesFromHtml;
+  }, [imagesOverride, imagesFromHtml]);
   const [lightbox, setLightbox] = useState({ open: false, index: 0 });
 
   const openAt = useCallback((index) => {

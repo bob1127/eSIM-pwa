@@ -7,7 +7,6 @@ import {
   validatePartnerBlogMeta,
 } from "@/lib/partnerBlog";
 import MediaUploadField from "./MediaUploadField";
-import PartnerContentDisclaimer from "@/components/legal/PartnerContentDisclaimer";
 
 const inputCls =
   "w-full bg-[#2b2c31] border border-white/10 rounded px-2.5 py-2 text-[13px] text-white placeholder:text-white/30 focus:outline-none focus:border-[#e2498e]";
@@ -201,7 +200,6 @@ export default function PartnerBlogPostSettings({
             onChange={(e) => set("author_name", e.target.value)}
           />
         </Field>
-        <PartnerContentDisclaimer variant="dark" className="mt-2 mb-1" />
       </div>
     </div>
   );

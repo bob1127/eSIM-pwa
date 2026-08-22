@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 export default function HomePage() {
   const [products, setProducts] = useState([]);
@@ -87,7 +88,11 @@ export default function HomePage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-20">正在連線至全球網路...</div>
+          <LoadingIndicator
+            layout="center"
+            label="正在連線至全球網路..."
+            className="py-20"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {products.map((product) => (

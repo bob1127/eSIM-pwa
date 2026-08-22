@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { NavyPanel } from "./AccountShell";
 import CreatorFollowFeed from "@/components/creators/CreatorFollowFeed";
 import CreatorProfileView from "@/components/creators/CreatorProfileView";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 export default function AccountFollowsPanel() {
   const { token } = useAuth();
@@ -58,7 +59,7 @@ export default function AccountFollowsPanel() {
   return (
     <NavyPanel title="追蹤創作者" icon="notifications">
       {loading ? (
-        <p className="text-sm text-slate-400">載入中…</p>
+        <LoadingIndicator label="載入中…" />
       ) : (
         <CreatorFollowFeed
           follows={follows}

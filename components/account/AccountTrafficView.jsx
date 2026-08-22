@@ -12,6 +12,7 @@ import {
   isStandalonePWA,
 } from "@/lib/pushSupport";
 import PushNotificationSection from "@/components/PushNotificationSection";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import IosPwaPushGuide from "@/components/IosPwaPushGuide";
 import {
   AccountPageWrap,
@@ -37,11 +38,8 @@ const UI = {
 const TrafficUsageCharts = dynamic(() => import("./TrafficUsageCharts"), {
   ssr: false,
   loading: () => (
-    <div
-      className="h-48 flex items-center justify-center text-sm"
-      style={{ color: UI.soft }}
-    >
-      圖表載入中…
+    <div className="h-48 flex items-center justify-center">
+      <LoadingIndicator layout="center" label="圖表載入中…" />
     </div>
   ),
 });
@@ -439,12 +437,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
           </div>
 
           {ordersLoading ? (
-            <p
-              className="text-sm py-12 text-center"
-              style={{ color: UI.soft }}
-            >
-              載入訂單中…
-            </p>
+            <LoadingIndicator layout="center" label="載入訂單中…" className="py-12" />
           ) : esims.length === 0 ? (
             <div
               className="text-center py-12 text-sm px-4"

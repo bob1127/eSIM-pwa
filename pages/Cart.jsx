@@ -21,6 +21,7 @@ import { useLineBind } from "@/hooks/useLineBind";
 import { maybeMarkWelcomeGiftOnFirstClaim } from "@/lib/welcomeGiftPopup";
 import { buildLoginUrl } from "@/lib/authRedirect";
 import JekoPillButton from "@/components/ui/JekoPillButton";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const CART_STEP_KEY = "jeko_cart_active_step";
 
@@ -1140,12 +1141,17 @@ const CartPage = () => {
                 aria-live="assertive"
               >
                 <div className="bg-white rounded-xl shadow-xl px-6 py-5 max-w-sm w-full text-center">
-                  <div className="mx-auto mb-3 h-10 w-10 border-[3px] border-slate-200 border-t-[#2e5fff] rounded-full animate-spin" />
-                  <p className="text-base font-bold text-slate-900">
-                    {paymentBusy === "linepay"
-                      ? "正在連線 LINE Pay"
-                      : "正在連線藍新金流"}
-                  </p>
+                  <LoadingIndicator
+                    layout="center"
+                    size="lg"
+                    label={
+                      paymentBusy === "linepay"
+                        ? "正在連線 LINE Pay"
+                        : "正在連線藍新金流"
+                    }
+                    className="mb-3"
+                    labelClassName="text-base font-bold text-slate-900"
+                  />
                   <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
                     訂單處理中，請稍候，勿關閉或重新整理此頁面
                   </p>

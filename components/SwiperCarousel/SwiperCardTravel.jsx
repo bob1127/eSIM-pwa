@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardBody } from "@nextui-org/react";
 import Link from "next/link";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 // 抓 WooCommerce 所有商品分類，包含 description
 // 抓 WooCommerce 所有商品分類，包含 description
@@ -42,7 +43,11 @@ export default function ProductCarousel() {
     fetchData();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <LoadingIndicator layout="center" label="Loading..." className="py-10" />
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">

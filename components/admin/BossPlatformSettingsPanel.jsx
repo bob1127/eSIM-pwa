@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { bossFetch } from "@/lib/bossAdminClient";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 
 const SOURCE_LABEL = {
   db: "後台設定（DB）",
@@ -79,7 +80,7 @@ export default function BossPlatformSettingsPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="w-6 h-6 border-4 border-[#1a56db] border-t-transparent rounded-full animate-spin" />
+        <QuarterRing size="md" className="text-[#1a56db]" />
       </div>
     );
   }

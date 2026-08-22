@@ -7,6 +7,7 @@ import { SITE_URL } from "@/lib/seo.config";
 import { buildReferralShareUrl } from "@/lib/partnerReferral";
 import { parsePartnerType, parseCooperationModel } from "@/lib/partnerDescriptionParse";
 import PartnerDetailPanel from "@/components/admin/PartnerDetailPanel";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { MetricTile } from "./AccountShell";
 
 export default function AccountBossPartnersPanel() {
@@ -138,7 +139,18 @@ export default function AccountBossPartnersPanel() {
           disabled={loading}
           className="text-xs font-bold text-[#0071EB] border border-[#0071EB] px-3 py-1.5 rounded-sm hover:bg-blue-50 disabled:opacity-50"
         >
-          {loading ? "更新中…" : "重新整理"}
+          {loading ? (
+            <LoadingIndicator
+              layout="inline"
+              size="xs"
+              label="更新中…"
+              className="justify-center"
+              labelClassName="text-xs font-bold text-[#0071EB]"
+              spinnerClassName="text-[#0071EB]"
+            />
+          ) : (
+            "重新整理"
+          )}
         </button>
       </div>
 
@@ -181,7 +193,13 @@ export default function AccountBossPartnersPanel() {
 
       <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
         {loading && !partners.length ? (
-          <div className="py-16 text-center text-slate-400 text-sm">讀取申請資料中…</div>
+          <div className="py-16 flex justify-center">
+            <LoadingIndicator
+              layout="center"
+              label="讀取申請資料中…"
+              labelClassName="text-slate-400 text-sm"
+            />
+          </div>
         ) : !filtered.length ? (
           <div className="py-16 text-center text-slate-400 text-sm">尚無符合條件的申請</div>
         ) : (

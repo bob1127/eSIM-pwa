@@ -56,8 +56,13 @@ const FloatingInput = ({
 // 🔥 終極防連點鎖（放在元件外部，確保全域絕對唯一，攔截零點幾秒內的雙重觸發）
 let isSubmittingLock = false;
 
-// 🌟 新增 hideSubmitButton 屬性
-const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
+// 🌟 新增 hideSubmitButton 屬性；storeId 用於夥伴店統一結帳（帶入伺服器端定價覆寫）
+const CheckoutForm = ({
+  onBack,
+  onNext,
+  hideSubmitButton = false,
+  storeId = null,
+}) => {
   const router = useRouter();
   const { esimItems, cartId } = useCart();
   const cartItems = esimItems || [];
@@ -280,6 +285,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
             ...formData,
             customerId: memberInfo?.id || supabaseUser?.id || null,
             ...buildCheckoutIdentity(),
+            ...(storeId ? { store_id: storeId } : {}),
           },
         }),
       });
@@ -402,6 +408,7 @@ const CheckoutForm = ({ onBack, onNext, hideSubmitButton = false }) => {
             ...formData,
             customerId: memberInfo?.id || supabaseUser?.id || null,
             ...buildCheckoutIdentity(),
+            ...(storeId ? { store_id: storeId } : {}),
             methods: ["LINEPAY"],
             payment_method: "LINEPAY",
           },

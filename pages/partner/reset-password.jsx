@@ -5,6 +5,7 @@ import Head from "next/head";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { supabase } from "@/lib/supabaseClient";
 import { validatePassword, PASSWORD_HINT } from "@/lib/passwordPolicy";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 
 const INPUT_CLASS =
   "w-full bg-white/10 border border-white/30 rounded-xl px-4 py-3 pr-11 text-white placeholder:text-blue-300 text-sm outline-none focus:bg-white/20 focus:border-white/60 transition";
@@ -186,7 +187,7 @@ export default function PartnerResetPassword() {
 
           {!ready ? (
             <div className="flex justify-center py-8">
-              <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" />
+              <QuarterRing size="md" className="text-white" />
             </div>
           ) : !recoveryReady ? (
             <div className="bg-red-500/20 border border-red-400/30 rounded-xl px-4 py-4 text-sm text-red-100">

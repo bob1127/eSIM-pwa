@@ -8,7 +8,14 @@ import PartnerBlogByline from "@/components/Shop/PartnerBlogByline";
 import PartnerShareButtons from "@/components/Shop/PartnerShareButtons";
 import WpArticleBody from "@/components/Blog/WpArticleBody";
 import MediaGalleryLightbox from "@/components/MediaGalleryLightbox";
-import { collectWpArticleImages } from "@/components/Blog/BlogArticleLightbox";
+import {
+  BlogArticleLightboxProvider,
+  collectWpArticleImages,
+} from "@/components/Blog/BlogArticleLightbox";
+import {
+  collectPartnerBlogBlockImages,
+  mergeArticleGalleryLists,
+} from "@/lib/partnerBlogBlockImages";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
 import { SITE_URL } from "@/lib/seo.config";
 import PartnerBlogBlocksRender from "@/components/partner/blog-builder/PartnerBlogBlocksRender";
@@ -16,7 +23,6 @@ import PartnerBlogItineraryView, {
   ItineraryDaysNav,
 } from "@/components/Shop/PartnerBlogItineraryView";
 import { isItineraryBlocks } from "@/lib/partnerBlogItinerary";
-import PartnerContentDisclaimer from "@/components/legal/PartnerContentDisclaimer";
 import MobileCardCarousel from "@/components/MobileCardCarousel";
 import BlogCreatorEngageBar from "@/components/Blog/BlogCreatorEngageBar";
 
@@ -112,6 +118,8 @@ export default function PartnerBlogArticleView({
   };
 
   const bodyHtml = post?.contentHtml || "";
+  const hasBlocks = Array.isArray(post?.blocks) && post.blocks.length > 0;
+  const itinerary = isItineraryBlocks(post?.blocks);
   const [coverLightboxOpen, setCoverLightboxOpen] = useState(false);
   const related = relatedPosts.slice(0, 12);
   const sidebarPosts = useMemo(() => {
@@ -122,24 +130,24 @@ export default function PartnerBlogArticleView({
   }, [latestPosts, relatedPosts, post]);
 
   const articleGallery = useMemo(() => {
-    const list = [];
-    if (post?.image) {
-      const src = normalizeWpAssetUrl(post.image);
-      list.push({
-        src,
-        thumb: src,
-        alt: post.title || "",
-        type: "image",
-      });
+    const cover = post?.image
+      ? [
+          {
+            src: normalizeWpAssetUrl(post.image),
+            thumb: normalizeWpAssetUrl(post.image),
+            alt: post.title || "",
+            type: "image",
+          },
+        ]
+      : [];
+    if (hasBlocks && !itinerary) {
+      const { images: blockImages } = collectPartnerBlogBlockImages(
+        post.blocks,
+      );
+      return mergeArticleGalleryLists(cover, blockImages);
     }
-    list.push(...collectWpArticleImages(bodyHtml));
-    const seen = new Set();
-    return list.filter((item) => {
-      if (!item?.src || seen.has(item.src)) return false;
-      seen.add(item.src);
-      return true;
-    });
-  }, [post?.image, post?.title, bodyHtml]);
+    return mergeArticleGalleryLists(cover, collectWpArticleImages(bodyHtml));
+  }, [post?.image, post?.title, post?.blocks, bodyHtml, hasBlocks, itinerary]);
 
   const bodyClassName = `partner-blog-prose w-full
                 text-[15px] sm:text-[16px] leading-[2] text-slate-700`;
@@ -154,20 +162,18 @@ export default function PartnerBlogArticleView({
                 [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-500
                 [&_button]:cursor-zoom-in`;
 
-  const itinerary = isItineraryBlocks(post?.blocks);
-
   if (!post) return null;
 
+  const shellClass =
+    "max-w-[1480px] w-[96%] mx-auto px-3 sm:px-5 lg:px-8";
+  const mainColumnClass = "min-w-0 w-full lg:max-w-[calc(100%-330px)]";
+
   return (
-    <div className="bg-[#F0F1F3] min-h-screen">
-      <div
-        className={`${
-          itinerary ? "max-w-[1120px]" : "max-w-[1680px]"
-        } w-[96%] mx-auto px-3 sm:px-5 lg:px-8`}
-      >
+    <div className="bg-white min-h-screen">
+      <div className={shellClass}>
         <div className="flex flex-col lg:flex-row lg:items-start min-h-[70vh] gap-6 lg:gap-0 pb-8 lg:pb-12">
           {/* ── 主欄 ── */}
-          <div className="flex-1 min-w-0 lg:pr-10 py-8 lg:py-10">
+          <div className={`flex-1 ${mainColumnClass} lg:pr-10 py-8 lg:py-10`}>
             {/* Logo / brand */}
             <Link
               href={isMain ? "/blog/" : `/p/${domain}/`}
@@ -271,18 +277,23 @@ export default function PartnerBlogArticleView({
                 title={post.title}
                 tags={post.tags}
               />
-            ) : Array.isArray(post?.blocks) && post.blocks.length > 0 ? (
-              <div className={bodyClassName}>
-                <PartnerBlogBlocksRender
-                  blocks={post.blocks}
-                  shareContext={{
-                    store,
-                    title: post.title,
-                    slug: post.slug,
-                    shareUrl,
-                  }}
-                />
-              </div>
+            ) : hasBlocks ? (
+              <BlogArticleLightboxProvider
+                images={articleGallery}
+                title={post.title || "文章圖片"}
+              >
+                <div className={`${bodyClassName} [&_img]:cursor-zoom-in [&_button]:cursor-zoom-in`}>
+                  <PartnerBlogBlocksRender
+                    blocks={post.blocks}
+                    shareContext={{
+                      store,
+                      title: post.title,
+                      slug: post.slug,
+                      shareUrl,
+                    }}
+                  />
+                </div>
+              </BlogArticleLightboxProvider>
             ) : bodyHtml ? (
               <WpArticleBody
                 html={bodyHtml}
@@ -329,8 +340,9 @@ export default function PartnerBlogArticleView({
         </div>
       </div>
 
-      <section className="bg-white w-full">
-        <div className="max-w-[1120px] w-[96%] mx-auto px-3 sm:px-5 lg:px-8 py-8 sm:py-10">
+      <section className="border-t border-slate-100 w-full">
+        <div className={`${shellClass} py-8 sm:py-10`}>
+          <div className={mainColumnClass}>
           {authorName ? (
             <div>
               <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-slate-500 mb-2">
@@ -363,7 +375,7 @@ export default function PartnerBlogArticleView({
           <div
             className={`${
               authorName ? "mt-10 pt-8 border-t border-slate-200" : ""
-            } space-y-5`}
+            } hidden md:block`}
           >
             <PartnerShareButtons
               store={store}
@@ -371,17 +383,16 @@ export default function PartnerBlogArticleView({
               slug={post.slug}
               shareUrl={shareUrl}
               items="copy,native"
+              layout="split"
             />
-            {post.source !== "wordpress" ? (
-              <PartnerContentDisclaimer variant="compact" className="pt-1" />
-            ) : null}
+          </div>
           </div>
         </div>
       </section>
 
       {related.length ? (
-        <section className="bg-white w-full">
-          <div className="max-w-[1120px] w-[96%] mx-auto px-3 sm:px-5 lg:px-8 pt-10 pb-4 flex items-end justify-between gap-4">
+        <section className="border-t border-slate-100 w-full">
+          <div className={`${shellClass} pt-10 pb-4 flex items-end justify-between gap-4`}>
             <h2 className="text-[15px] font-black text-slate-900">推薦閱讀</h2>
             {prevPost ? (
               <Link
@@ -397,7 +408,7 @@ export default function PartnerBlogArticleView({
               </Link>
             ) : null}
           </div>
-          <div className="max-w-[1120px] w-[96%] mx-auto px-3 sm:px-5 lg:px-8 pb-8">
+          <div className={`${shellClass} pb-8`}>
             <MobileCardCarousel
               slideClassName="box-border shrink-0 flex-[0_0_78%] min-w-[78%] max-w-[78%] sm:flex-[0_0_48%] sm:min-w-[48%] sm:max-w-[48%] lg:flex-[0_0_calc((100%-32px)/3)] lg:min-w-[calc((100%-32px)/3)] lg:max-w-[calc((100%-32px)/3)]"
               gap={16}
@@ -405,6 +416,8 @@ export default function PartnerBlogArticleView({
               autoplayDelay={4500}
               loop={related.length > 2}
               showArrows={related.length > 1}
+              arrowsOutside
+              hideArrowsOnMobile
             >
               {related.map((r) => (
                 <RelatedReadCard
@@ -415,7 +428,7 @@ export default function PartnerBlogArticleView({
               ))}
             </MobileCardCarousel>
           </div>
-          <div className="max-w-[1120px] w-[96%] mx-auto px-3 sm:px-5 lg:px-8 pb-10">
+          <div className={`${shellClass} pb-10`}>
             <Link
               href={listHref}
               className="text-[15px] font-bold text-slate-800 border-b-2 border-slate-800 pb-1 hover:text-[#0A6CD0] hover:border-[#0A6CD0] transition-colors"
@@ -425,11 +438,7 @@ export default function PartnerBlogArticleView({
           </div>
         </section>
       ) : (
-        <div
-          className={`${
-            itinerary ? "max-w-[1120px]" : "max-w-[1680px]"
-          } w-[96%] mx-auto px-3 sm:px-5 lg:px-8 pb-10`}
-        >
+        <div className={`${shellClass} pb-10`}>
           <Link
             href={listHref}
             className="text-[15px] font-bold text-slate-800 border-b-2 border-slate-800 pb-1 hover:text-[#0A6CD0] hover:border-[#0A6CD0] transition-colors"

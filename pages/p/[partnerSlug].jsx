@@ -3,21 +3,25 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import PartnerShopLayout from "@/components/Shop/PartnerShopLayout";
-import PartnerHomepageEditor, {
-  usePartnerStoreOwner,
-} from "@/components/Shop/PartnerHomepageEditor";
+import { usePartnerStoreOwner } from "@/components/Shop/PartnerHomepageEditor";
 import PartnerHeroBanner from "@/components/Shop/PartnerHeroBanner";
+import PartnerHeroCarouselEditorDialog from "@/components/Shop/PartnerHeroCarouselEditorDialog";
+import PartnerHomepageBlockEditorDialog from "@/components/Shop/PartnerHomepageBlockEditorDialog";
+import PartnerSectionEditButton from "@/components/Shop/PartnerSectionEditButton";
 import {
   fetchActiveStoreByDomain,
   fetchStoreProductsForStorefront,
   partnerProductPath,
 } from "@/lib/partnerStorefront";
 import {
+  applyPartnerCountryNavOrder,
   buildPartnerCountryNavItems,
   filterProductsByCountry,
   PARTNER_COUNTRY_DEFS,
 } from "@/lib/partnerNavCountries";
 import { resolveHomepageDisplay } from "@/lib/partnerHomepageCms";
+import ButtonAnimatedGradient from "@/components/ui/button-animated-gradient";
+import PartnerStoreCategoryTabs from "@/components/Shop/PartnerStoreCategoryTabs";
 
 const CONTAINER = "max-w-[1680px] mx-auto px-6 lg:px-10";
 
@@ -28,44 +32,37 @@ function ProductCard({ product, domain }) {
   return (
     <Link
       href={href}
-      className="group flex flex-col h-full bg-white border border-slate-100 hover:border-slate-200 transition-colors"
+      className="group flex flex-col h-full overflow-hidden rounded-xl border border-slate-200/90 lg:hover:border-[#0071EB]/30 lg:hover:shadow-md transition-all"
     >
-      <div className="relative aspect-square bg-[#f5f5f5] overflow-hidden shrink-0">
+      <div className="relative w-full aspect-[4/3] overflow-hidden bg-white shrink-0">
         {product.image ? (
           <Image
             src={product.image}
             alt={product.name}
             fill
-            className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
-            sizes="(max-width:640px) 50vw, 25vw"
+            className="object-contain p-3 sm:p-4 lg:group-hover:scale-[1.03] lg:transition-transform lg:duration-500"
+            sizes="(max-width:640px) 50vw, 16vw"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-slate-300 text-sm">
+          <div className="absolute inset-0 flex items-center justify-center text-slate-300 text-xs">
             No Image
           </div>
         )}
       </div>
-      <div className="p-4 flex flex-col flex-1 min-h-0">
-        <h3 className="text-[14px] font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.5rem] group-hover:text-[#3B9EFF] transition-colors">
+      <div className="flex flex-col flex-1 px-3 pt-3 pb-4 sm:px-3.5 sm:pt-3.5 sm:pb-5 bg-[#F9FAFB]">
+        <h3 className="font-bold text-[12px] sm:text-[13px] text-slate-800 leading-snug line-clamp-2 min-h-[2.5em] group-hover:text-[#0071EB] transition-colors">
           {product.name}
         </h3>
-        <p className="mt-1.5 text-[12px] text-slate-500 line-clamp-2 min-h-[2.25rem]">
-          {product.description
-            ? product.description.replace(/<[^>]+>/g, "")
-            : "\u00A0"}
-        </p>
-        <p className="mt-auto pt-3 text-[15px] font-bold text-slate-900">
+        <div className="flex items-end gap-1.5 mt-auto pt-2.5">
           {price > 0 ? (
-            <>
+            <span className="text-[#0071EB] font-black text-[15px] sm:text-base tabular-nums leading-none">
               NT${price.toLocaleString()}
-              <span className="text-[11px] font-medium text-slate-400 ml-1">
-                起
-              </span>
-            </>
+              <span className="text-[10px] sm:text-[11px] font-bold ml-0.5">起</span>
+            </span>
           ) : (
-            <span className="text-slate-400 font-medium text-sm">即將推出</span>
+            <span className="text-slate-400 font-medium text-xs">即將推出</span>
           )}
-        </p>
+        </div>
       </div>
     </Link>
   );
@@ -115,16 +112,27 @@ function PromoCard({ card, editMode }) {
 /**
  * 夥伴賣場首頁 — 版面與 /shop 一致；店主登入可前台編輯 hero／促銷卡／Discover
  */
-export default function PartnerStorefront({ store, products, navCountries }) {
+export default function PartnerStorefront({ store, products }) {
   const router = useRouter();
   const currentStore = store || { store_name: "Jeko eSIM", domain: "default" };
   const domain = currentStore.domain;
   const { isOwner, token, checking } = usePartnerStoreOwner(currentStore);
   const [cms, setCms] = useState(() => currentStore.homepage_cms || null);
+  const [carouselEditorOpen, setCarouselEditorOpen] = useState(false);
+  const [blockEditor, setBlockEditor] = useState(null);
 
   const display = useMemo(
     () => resolveHomepageDisplay(currentStore, cms),
     [currentStore, cms],
+  );
+
+  const orderedNavCountries = useMemo(
+    () =>
+      applyPartnerCountryNavOrder(
+        buildPartnerCountryNavItems(products || [], domain),
+        display.plans?.category_order,
+      ),
+    [products, domain, display.plans?.category_order],
   );
 
   const countryKey =
@@ -132,6 +140,7 @@ export default function PartnerStorefront({ store, products, navCountries }) {
   const countryLabel =
     PARTNER_COUNTRY_DEFS.find((c) => c.key === countryKey)?.label || null;
   const list = filterProductsByCountry(products || [], countryKey);
+  const totalProductCount = (products || []).length;
 
   const hero = display.hero;
 
@@ -140,11 +149,11 @@ export default function PartnerStorefront({ store, products, navCountries }) {
       store={currentStore}
       title="首頁"
       description={currentStore.description}
-      navCountries={navCountries || []}
+      navCountries={orderedNavCountries}
     >
       {isOwner && !checking ? (
         <div className="bg-amber-50 border-b border-amber-200 text-amber-900 text-xs sm:text-sm font-bold px-4 py-2.5 text-center">
-          您正以本店夥伴主帳號瀏覽 — 可使用右下角「編輯首頁」修改圖片、文字與連結
+          您正以本店夥伴主帳號瀏覽 — 各區塊右上角可「編輯」
         </div>
       ) : null}
 
@@ -152,10 +161,20 @@ export default function PartnerStorefront({ store, products, navCountries }) {
         store={currentStore}
         hero={hero}
         domain={domain}
+        editable={isOwner && hero?.layout === "slider"}
+        onEditCarousel={() => setCarouselEditorOpen(true)}
       />
 
       {/* 雙欄促銷卡 */}
-      <section className={`${CONTAINER} py-10 sm:py-14`}>
+      <section className={`${CONTAINER} py-10 sm:py-14 relative`}>
+        {isOwner ? (
+          <div className="flex justify-end mb-3">
+            <PartnerSectionEditButton
+              label="編輯雙欄卡片"
+              onClick={() => setBlockEditor("promo")}
+            />
+          </div>
+        ) : null}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {display.promoCards.map((card, i) => (
             <PromoCard key={i} card={card} editMode={isOwner} />
@@ -166,36 +185,43 @@ export default function PartnerStorefront({ store, products, navCountries }) {
       {/* 商品網格 */}
       <section id="plans" className={`${CONTAINER} pb-16 sm:pb-24 scroll-mt-28`}>
         <div className="flex items-end justify-between gap-4 mb-6 flex-wrap">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
-              {countryLabel
-                ? `${countryLabel} eSIM 方案`
-                : "Must-Have eSIM Selections"}
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              {countryLabel
-                ? `本賣場 ${countryLabel} 方案 · 共 ${list.length} 款`
-                : `本賣場精選方案 · 共 ${list.length} 款`}
-              {countryKey ? (
-                <>
-                  {" · "}
-                  <Link
-                    href={`/p/${domain}/#plans`}
-                    className="text-[#3B9EFF] font-bold hover:underline"
-                  >
-                    查看全部
-                  </Link>
-                </>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+                  {countryLabel
+                    ? `${countryLabel} eSIM 方案`
+                    : display.plans?.title || "Must-Have eSIM Selections"}
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">
+                  {countryLabel
+                    ? `本賣場 ${countryLabel} 方案 · 共 ${list.length} 款`
+                    : `${display.plans?.subtitle || "本賣場精選方案"} · 共 ${list.length} 款`}
+                </p>
+              </div>
+              {isOwner ? (
+                <PartnerSectionEditButton
+                  label="編輯方案區"
+                  onClick={() => setBlockEditor("plans")}
+                  className="shrink-0"
+                />
               ) : null}
-            </p>
+            </div>
           </div>
-          <Link
-            href="/shop/"
-            className="text-sm font-bold text-[#3B9EFF] hover:underline"
+          <ButtonAnimatedGradient
+            href={display.plans?.shop_link_href || "/shop/"}
+            className="shrink-0"
           >
-            查看 Jeko Shop 全部商品 →
-          </Link>
+            {display.plans?.shop_link_label || "查看 Jeko Shop 全部商品 →"}
+          </ButtonAnimatedGradient>
         </div>
+
+        <PartnerStoreCategoryTabs
+          domain={domain}
+          categories={orderedNavCountries}
+          activeKey={countryKey}
+          totalCount={totalProductCount}
+        />
 
         {list.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-16 text-center">
@@ -204,14 +230,14 @@ export default function PartnerStorefront({ store, products, navCountries }) {
               夥伴尚未上架方案，請稍後再來，或先逛 Jeko Shop。
             </p>
             <Link
-              href="/shop/"
+              href={`/p/${domain}/#plans`}
               className="inline-block mt-6 bg-[#3B9EFF] text-white text-sm font-bold px-6 py-3 hover:bg-[#2B8EEF] transition"
             >
-              前往 Jeko Shop
+              查看本店方案
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-2.5 lg:gap-3">
             {list.map((p) => (
               <ProductCard key={String(p.id)} product={p} domain={domain} />
             ))}
@@ -221,9 +247,17 @@ export default function PartnerStorefront({ store, products, navCountries }) {
 
       {/* Discover banner */}
       <section className={`${CONTAINER} pb-16 sm:pb-20`}>
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">
-          {display.discover.section_title}
-        </h2>
+        <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+            {display.discover.section_title}
+          </h2>
+          {isOwner ? (
+            <PartnerSectionEditButton
+              label="編輯橫幅"
+              onClick={() => setBlockEditor("discover")}
+            />
+          ) : null}
+        </div>
         <Link
           href={display.discover.href || "/shop/"}
           className="group relative block w-full aspect-[21/9] min-h-[220px] overflow-hidden bg-slate-200"
@@ -244,20 +278,34 @@ export default function PartnerStorefront({ store, products, navCountries }) {
             <p className="text-white/90 text-sm sm:text-base">
               {display.discover.subtitle}
             </p>
-            <span className="mt-3 inline-block bg-white text-black text-[13px] font-bold px-6 py-2.5 hover:bg-slate-100 transition-colors">
+            <ButtonAnimatedGradient nested className="mt-3">
               {display.discover.button_label}
-            </span>
+            </ButtonAnimatedGradient>
           </div>
         </Link>
       </section>
 
       {isOwner && token ? (
-        <PartnerHomepageEditor
-          store={currentStore}
-          cms={cms}
-          onCmsChange={setCms}
-          token={token}
-        />
+        <>
+          <PartnerHeroCarouselEditorDialog
+            open={carouselEditorOpen}
+            onClose={() => setCarouselEditorOpen(false)}
+            store={currentStore}
+            cms={cms}
+            onCmsChange={setCms}
+            token={token}
+          />
+          <PartnerHomepageBlockEditorDialog
+            open={!!blockEditor}
+            onClose={() => setBlockEditor(null)}
+            block={blockEditor}
+            store={currentStore}
+            cms={cms}
+            onCmsChange={setCms}
+            token={token}
+            navCountries={orderedNavCountries}
+          />
+        </>
       ) : null}
     </PartnerShopLayout>
   );
@@ -274,10 +322,8 @@ export async function getServerSideProps(context) {
   }
 
   let products = [];
-  let navCountries = [];
   try {
     products = await fetchStoreProductsForStorefront(store);
-    navCountries = buildPartnerCountryNavItems(products, store.domain);
   } catch (err) {
     console.error("[p/[partnerSlug]] products SSR error:", err);
   }
@@ -288,7 +334,6 @@ export async function getServerSideProps(context) {
     props: {
       store: safe(store),
       products: safe(products) || [],
-      navCountries: safe(navCountries) || [],
     },
   };
 }

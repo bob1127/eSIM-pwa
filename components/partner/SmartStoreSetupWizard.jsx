@@ -5,15 +5,15 @@ import confetti from "canvas-confetti";
 import MaterialIcon from "@/components/MaterialIcon";
 import { PARTNER_UI } from "@/lib/partnerUi";
 import { supabase } from "@/lib/supabaseClient";
-
-const DESTINATIONS = [
-  { key: "japan", label: "日本", match: ["日本", "JP", "japan"] },
-  { key: "korea", label: "韓國", match: ["韓國", "KR", "korea"] },
-  { key: "thailand", label: "泰國", match: ["泰國", "TH", "thailand"] },
-  { key: "asia", label: "亞洲多國", match: ["亞洲", "多國", "asia"] },
-  { key: "europe", label: "歐洲", match: ["歐洲", "EU", "europe"] },
-  { key: "usa", label: "美國", match: ["美國", "US", "usa"] },
-];
+import { QuarterRing } from "@/components/ui/QuarterRing";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import {
+  buildCountryGroupsFromProducts,
+  filterCountryGroupsByRegion,
+  PARTNER_REGION_DEFS,
+  productMatchesCountryKeys,
+} from "@/lib/partnerNavCountries";
+import PartnerSelectMenu from "@/components/partner/PartnerSelectMenu";
 
 const STEPS = [
   { id: "intro", title: "智慧開立商店" },
@@ -22,17 +22,6 @@ const STEPS = [
   { id: "confirm", title: "確認清單" },
   { id: "generate", title: "生成商店" },
 ];
-
-function productMatchesDest(product, destKeys) {
-  if (!destKeys.length) return true;
-  const hay =
-    `${product.name || ""} ${product.description || ""}`.toLowerCase();
-  return destKeys.some((key) => {
-    const dest = DESTINATIONS.find((d) => d.key === key);
-    if (!dest) return false;
-    return dest.match.some((m) => hay.includes(m.toLowerCase()));
-  });
-}
 
 function fireRibbon() {
   const end = Date.now() + 1800;
@@ -72,9 +61,12 @@ export default function SmartStoreSetupWizard({
   onClose,
   store,
   storePath,
+  onComplete,
+  setupPending = false,
 }) {
   const [step, setStep] = useState(0);
-  const [destKeys, setDestKeys] = useState(["japan", "korea"]);
+  const [destKeys, setDestKeys] = useState([]);
+  const [regionFilter, setRegionFilter] = useState("all");
   const [pool, setPool] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [loadingPool, setLoadingPool] = useState(false);
@@ -86,6 +78,10 @@ export default function SmartStoreSetupWizard({
   useEffect(() => {
     if (!open) return;
     setStep(0);
+    setDestKeys([]);
+    setRegionFilter("all");
+    setPool([]);
+    setSelectedIds([]);
     setPhase("idle");
     setProgress(0);
     setError("");
@@ -93,12 +89,12 @@ export default function SmartStoreSetupWizard({
   }, [open]);
 
   useEffect(() => {
-    if (!open || step < 2) return;
+    if (!open) return;
     let cancelled = false;
     (async () => {
       setLoadingPool(true);
       try {
-        const res = await fetch("/api/partner/product-pool");
+        const res = await fetch("/api/partner/product-pool?refresh=1");
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "無法載入商品池");
         if (!cancelled) setPool(data.products || []);
@@ -111,14 +107,41 @@ export default function SmartStoreSetupWizard({
     return () => {
       cancelled = true;
     };
-  }, [open, step]);
+  }, [open]);
+
+  const poolCountries = useMemo(
+    () => buildCountryGroupsFromProducts(pool),
+    [pool],
+  );
+
+  const displayCountries = useMemo(
+    () => filterCountryGroupsByRegion(poolCountries, regionFilter),
+    [poolCountries, regionFilter],
+  );
+
+  useEffect(() => {
+    if (!open || !poolCountries.length || destKeys.length) return;
+    setDestKeys(poolCountries.map((c) => c.key));
+  }, [open, poolCountries, destKeys.length]);
 
   const filteredPool = useMemo(
-    () => pool.filter((p) => productMatchesDest(p, destKeys)),
+    () => pool.filter((p) => productMatchesCountryKeys(p, destKeys)),
     [pool, destKeys],
   );
 
   const productId = (p) => p.medusa_product_id || p.id;
+
+  const filteredIds = useMemo(
+    () => filteredPool.map(productId),
+    [filteredPool],
+  );
+
+  const allFilteredSelected = useMemo(
+    () =>
+      filteredIds.length > 0 &&
+      filteredIds.every((id) => selectedIds.includes(id)),
+    [filteredIds, selectedIds],
+  );
 
   useEffect(() => {
     if (step !== 2 || !filteredPool.length) return;
@@ -139,6 +162,19 @@ export default function SmartStoreSetupWizard({
     );
   };
 
+  const allDestSelected =
+    displayCountries.length > 0 &&
+    displayCountries.every((c) => destKeys.includes(c.key));
+
+  const toggleAllDest = () => {
+    const visibleKeys = displayCountries.map((c) => c.key);
+    if (allDestSelected) {
+      setDestKeys((prev) => prev.filter((k) => !visibleKeys.includes(k)));
+      return;
+    }
+    setDestKeys((prev) => [...new Set([...prev, ...visibleKeys])]);
+  };
+
   const toggleProduct = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
@@ -147,6 +183,14 @@ export default function SmartStoreSetupWizard({
 
   const selectSmart = () => {
     setSelectedIds(filteredPool.slice(0, 12).map(productId));
+  };
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !filteredIds.includes(id)));
+      return;
+    }
+    setSelectedIds((prev) => [...new Set([...prev, ...filteredIds])]);
   };
 
   const authHeader = async () => {
@@ -190,6 +234,20 @@ export default function SmartStoreSetupWizard({
       }
 
       setProgress(95);
+      setStatusText("正在啟用賣場…");
+
+      if (setupPending) {
+        const activateRes = await fetch("/api/partner/complete-store-setup", {
+          method: "POST",
+          headers,
+        });
+        const activateData = await activateRes.json().catch(() => ({}));
+        if (!activateRes.ok) {
+          throw new Error(activateData.error || "啟用賣場失敗");
+        }
+        onComplete?.(activateData.store);
+      }
+
       setStatusText("正在產生賣場頁面…");
       await new Promise((r) => setTimeout(r, 700));
 
@@ -221,11 +279,27 @@ export default function SmartStoreSetupWizard({
 
   if (!open) return null;
 
+  const goBack = () => {
+    if (step === 0) {
+      onClose();
+      return;
+    }
+    setError("");
+    if (step === 4 && phase === "error") {
+      setPhase("idle");
+      setProgress(0);
+    }
+    setStep((s) => s - 1);
+  };
+
   const canNext =
     step === 0 ||
-    (step === 1 && destKeys.length > 0) ||
+    (step === 1 && !loadingPool && destKeys.length > 0) ||
     (step === 2 && selectedIds.length > 0) ||
     step === 3;
+
+  const showFooter =
+    phase !== "loading" && phase !== "success" && (step < 4 || step === 4);
 
   return (
     <div className="fixed inset-0 z-[12000] flex items-center justify-center p-4 bg-black/50">
@@ -337,54 +411,142 @@ export default function SmartStoreSetupWizard({
 
           {step === 1 && (
             <div className="space-y-3">
-              <p className="text-sm text-slate-600 mb-2">
-                勾選你最常推廣的旅遊目的地（可複選）
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {DESTINATIONS.map((d) => {
-                  const on = destKeys.includes(d.key);
-                  return (
-                    <button
-                      key={d.key}
-                      type="button"
-                      onClick={() => toggleDest(d.key)}
-                      className={`rounded-xl border px-3 py-3 text-sm font-bold transition text-left ${
-                        on
-                          ? "border-[#1E4AD1] bg-[#1E4AD1] text-white"
-                          : "border-slate-200 bg-white text-slate-700 hover:border-[#0071EB]"
-                      }`}
-                    >
-                      {d.label}
-                    </button>
-                  );
-                })}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-sm text-slate-600">
+                  依主站商品池勾選目的地（可複選）
+                  {pool.length > 0 ? (
+                    <span className="text-slate-400">
+                      {" "}
+                      · 共 {pool.length} 款
+                    </span>
+                  ) : null}
+                </p>
+                {displayCountries.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={toggleAllDest}
+                    className="text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200 text-slate-700 hover:border-[#1E4AD1] hover:text-[#1E4AD1] transition"
+                  >
+                    {allDestSelected
+                      ? regionFilter === "all"
+                        ? "取消全選"
+                        : "取消此地區全選"
+                      : regionFilter === "all"
+                        ? "全選目的地"
+                        : "全選此地區"}
+                  </button>
+                ) : null}
               </div>
+              {poolCountries.length > 0 ? (
+                <PartnerSelectMenu
+                  value={regionFilter}
+                  onChange={setRegionFilter}
+                  options={PARTNER_REGION_DEFS}
+                  prefix="地區："
+                  className="w-full sm:w-auto"
+                />
+              ) : null}
+              {loadingPool ? (
+                <LoadingIndicator
+                  layout="center"
+                  label="載入主站商品目錄…"
+                  className="py-10"
+                />
+              ) : poolCountries.length === 0 ? (
+                <p className="text-sm text-slate-400 py-10 text-center">
+                  暫無可選商品，請稍後再試或至「選品管理」手動上架。
+                </p>
+              ) : displayCountries.length === 0 ? (
+                <p className="text-sm text-slate-400 py-10 text-center">
+                  此地區暫無可選目的地，請切換其他地區或選擇「全部地區」。
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[42vh] overflow-y-auto pr-1">
+                  {displayCountries.map((d) => {
+                    const on = destKeys.includes(d.key);
+                    return (
+                      <button
+                        key={d.key}
+                        type="button"
+                        onClick={() => toggleDest(d.key)}
+                        className={`rounded-xl border px-3 py-3 text-sm font-bold transition text-left ${
+                          on
+                            ? "border-[#1E4AD1] bg-[#1E4AD1] text-white"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-[#0071EB]"
+                        }`}
+                      >
+                        <span>{d.label}</span>
+                        <span
+                          className={`block text-[11px] mt-0.5 font-medium ${
+                            on ? "text-blue-100" : "text-slate-400"
+                          }`}
+                        >
+                          {d.count} 款
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between gap-2">
+              {pool.length > 0 && filteredPool.length < pool.length ? (
+                <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 leading-relaxed">
+                  主站商品池共 <strong>{pool.length}</strong> 款，依目的地篩選{" "}
+                  <strong>{filteredPool.length}</strong> 款。若缺少方案，請回上一步勾選更多目的地。
+                </p>
+              ) : null}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <p className="text-sm text-slate-600">
                   已選{" "}
                   <span className="font-black text-[#1E4AD1]">
                     {selectedIds.length}
                   </span>{" "}
                   款
+                  {filteredPool.length > 0 ? (
+                    <span className="text-slate-400">
+                      {" "}
+                      / 篩選 {filteredPool.length} 款
+                      {pool.length > filteredPool.length
+                        ? `（主站 ${pool.length} 款）`
+                        : ""}
+                    </span>
+                  ) : pool.length > 0 ? (
+                    <span className="text-slate-400">
+                      {" "}
+                      / 主站 {pool.length} 款
+                    </span>
+                  ) : null}
                 </p>
-                <button
-                  type="button"
-                  onClick={selectSmart}
-                  className="text-xs font-bold px-3 py-1.5 rounded-full text-[#111]"
-                  style={{ backgroundColor: PARTNER_UI.yellow }}
-                >
-                  一鍵智慧推薦
-                </button>
+                <div className="flex items-center gap-2">
+                  {filteredPool.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={toggleSelectAll}
+                      className="text-xs font-bold px-3 py-1.5 rounded-full border border-slate-200 text-slate-700 hover:border-[#1E4AD1] hover:text-[#1E4AD1] transition"
+                    >
+                      {allFilteredSelected ? "取消全選" : "全選"}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={selectSmart}
+                    className="text-xs font-bold px-3 py-1.5 rounded-full text-[#111]"
+                    style={{ backgroundColor: PARTNER_UI.yellow }}
+                  >
+                    一鍵智慧推薦
+                  </button>
+                </div>
               </div>
               {loadingPool ? (
-                <p className="text-sm text-slate-400 py-10 text-center">
-                  載入商品池中…
-                </p>
+                <LoadingIndicator
+                  layout="center"
+                  label="載入商品池中…"
+                  className="py-10"
+                />
               ) : filteredPool.length === 0 ? (
                 <p className="text-sm text-slate-400 py-10 text-center">
                   此目的地暫無匹配商品，請調整目的地或稍後至選品管理手動上架。
@@ -473,27 +635,18 @@ export default function SmartStoreSetupWizard({
                   <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
                     系統將把已選方案上架到你的專屬賣場，並產生可對外分享的商店頁面。
                   </p>
-                  <button
-                    type="button"
-                    onClick={runGenerate}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full text-sm font-black text-[#111] shadow-md hover:brightness-95"
-                    style={{ backgroundColor: PARTNER_UI.yellow }}
-                  >
-                    <MaterialIcon name="auto_awesome" size={18} />
-                    準備好了嗎？開始生成商店
-                  </button>
+                  <p className="text-xs text-slate-400">
+                    確認無誤後，請點下方「開始生成商店」。
+                  </p>
                 </>
               ) : null}
 
               {phase === "loading" && (
                 <>
                   <div className="relative w-20 h-20 mx-auto">
-                    <div
-                      className="absolute inset-0 rounded-full border-4 border-t-transparent animate-spin"
-                      style={{
-                        borderColor: PARTNER_UI.navy,
-                        borderTopColor: "transparent",
-                      }}
+                    <QuarterRing
+                      size="xl"
+                      className="absolute inset-0 h-20 w-20 text-[#1E4AD1]"
                     />
                     <div className="absolute inset-0 flex items-center justify-center text-sm font-black text-[#1E4AD1]">
                       {progress}%
@@ -539,26 +692,41 @@ export default function SmartStoreSetupWizard({
         </div>
 
         {/* Footer nav */}
-        {step < 4 && phase !== "loading" && phase !== "success" && (
-          <div className="shrink-0 border-t border-slate-100 px-5 py-4 flex justify-between gap-3">
+        {showFooter ? (
+          <div className="shrink-0 border-t border-slate-100 px-5 py-4 flex justify-between gap-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <button
               type="button"
-              onClick={() => (step === 0 ? onClose() : setStep((s) => s - 1))}
-              className="px-4 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800"
+              onClick={goBack}
+              className="px-4 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 min-h-[44px]"
             >
               {step === 0 ? "取消" : "上一步"}
             </button>
-            <button
-              type="button"
-              disabled={!canNext}
-              onClick={() => setStep((s) => Math.min(s + 1, STEPS.length - 1))}
-              className="px-5 py-2.5 rounded-full text-sm font-black text-white disabled:opacity-40"
-              style={{ backgroundColor: PARTNER_UI.navy }}
-            >
-              下一步
-            </button>
+            {step < 4 ? (
+              <button
+                type="button"
+                disabled={!canNext}
+                onClick={() =>
+                  setStep((s) => Math.min(s + 1, STEPS.length - 1))
+                }
+                className="px-5 py-2.5 rounded-full text-sm font-black text-white disabled:opacity-40 min-h-[44px]"
+                style={{ backgroundColor: PARTNER_UI.navy }}
+              >
+                下一步
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!selectedIds.length}
+                onClick={runGenerate}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-black text-[#111] disabled:opacity-40 min-h-[44px]"
+                style={{ backgroundColor: PARTNER_UI.yellow }}
+              >
+                <MaterialIcon name="auto_awesome" size={18} />
+                開始生成商店
+              </button>
+            )}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

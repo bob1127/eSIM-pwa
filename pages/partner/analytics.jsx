@@ -17,6 +17,7 @@ import {
   ordersInLastNDays,
   greetingByHour,
 } from "@/lib/partnerAnalytics";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { resolveMedusaImageUrl } from "@/lib/resolveMedusaImageUrl";
 
 /** 分潤分析頁面：深灰／淺灰／白 + 較大圓角；圖表與狀態徽章維持原色 */
@@ -33,8 +34,8 @@ const AUI = {
 };
 
 const chartLoading = () => (
-  <div className="h-28 flex items-center justify-center text-xs animate-pulse" style={{ color: AUI.soft }}>
-    載入圖表...
+  <div className="h-28 flex items-center justify-center">
+    <LoadingIndicator layout="center" label="載入圖表..." size="sm" />
   </div>
 );
 const RevenueSplitDonut = dynamic(
@@ -318,8 +319,8 @@ export default function PartnerAnalyticsPage() {
               分潤 vs 底價成本
             </p>
             {loading ? (
-              <div className="h-28 flex items-center justify-center text-xs" style={{ color: AUI.soft }}>
-                載入中…
+              <div className="h-28 flex items-center justify-center">
+                <LoadingIndicator layout="center" label="載入中…" size="sm" />
               </div>
             ) : (
               <RevenueSplitDonut profit={totals.profit} cost={totals.cost} />
@@ -328,8 +329,8 @@ export default function PartnerAnalyticsPage() {
 
           <Card className="p-4 flex items-center gap-4">
             {loading ? (
-              <div className="h-20 w-full flex items-center justify-center text-xs" style={{ color: AUI.soft }}>
-                載入中…
+              <div className="h-20 w-full flex items-center justify-center">
+                <LoadingIndicator layout="center" label="載入中…" size="sm" />
               </div>
             ) : (
               <>
@@ -352,8 +353,8 @@ export default function PartnerAnalyticsPage() {
             </p>
             <div className="h-28">
               {loading ? (
-                <div className="h-full flex items-center justify-center text-xs" style={{ color: AUI.soft }}>
-                  載入中…
+                <div className="h-full flex items-center justify-center">
+                  <LoadingIndicator layout="center" label="載入中…" size="sm" />
                 </div>
               ) : (
                 <MonthlyBarChart buckets={monthlyBuckets} />
@@ -398,9 +399,7 @@ export default function PartnerAnalyticsPage() {
           </div>
 
           {loading ? (
-            <div className="py-12 text-center text-sm" style={{ color: AUI.soft }}>
-              載入中…
-            </div>
+            <LoadingIndicator layout="center" label="載入中…" className="py-12" />
           ) : !sortedBreakdown.length ? (
             <div className="py-12 text-center text-sm" style={{ color: AUI.soft }}>
               此期間尚無資料

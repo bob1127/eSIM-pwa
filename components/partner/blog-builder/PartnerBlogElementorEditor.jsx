@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MaterialIcon from "@/components/MaterialIcon";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 import {
   WIDGET_GROUPS,
   createBlock,
@@ -388,6 +389,7 @@ export default function PartnerBlogElementorEditor({
   status,
   previewHref,
   store = null,
+  postId = "",
   meta = null,
   onChangeMeta,
   dirty = false,
@@ -397,6 +399,7 @@ export default function PartnerBlogElementorEditor({
   const [selectNonce, setSelectNonce] = useState(0);
   const [viewport, setViewport] = useState("desktop");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileDrawer, setMobileDrawer] = useState(null);
   const [livePreview, setLivePreview] = useState(false);
   const [authToken, setAuthToken] = useState("");
   const [leaveOpen, setLeaveOpen] = useState(false);
@@ -475,6 +478,7 @@ export default function PartnerBlogElementorEditor({
     setSelectNonce((n) => n + 1);
     setLivePreview(false);
     setSettingsOpen(false);
+    setMobileDrawer(null);
   }, []);
 
   const selected = useMemo(
@@ -490,6 +494,19 @@ export default function PartnerBlogElementorEditor({
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => {
+      if (mq.matches) {
+        setViewport((v) => (v === "desktop" ? "mobile" : v));
+      }
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, []);
 
   useEffect(() => {
@@ -607,9 +624,15 @@ export default function PartnerBlogElementorEditor({
   const changeColumnsCount = (count) => changeLayout({ count });
 
   return (
-    <BlogBuilderMediaProvider token={authToken} store={store}>
-    <div className="h-[100dvh] flex flex-col bg-[#1f2124] text-white">
-      <header className="h-12 shrink-0 flex items-center gap-2 px-2 border-b border-white/10">
+    <BlogBuilderMediaProvider
+      token={authToken}
+      store={store}
+      postId={postId}
+      blocks={blocks}
+      editingBlockId={selectedId || ""}
+    >
+    <div className="h-[100dvh] flex flex-col bg-[#1f2124] text-white overflow-hidden">
+      <header className="h-12 shrink-0 flex items-center gap-1 sm:gap-2 px-1 sm:px-2 border-b border-white/10 overflow-x-auto">
         <button
           type="button"
           onClick={requestBack}
@@ -624,6 +647,7 @@ export default function PartnerBlogElementorEditor({
           onClick={() => {
             setLivePreview(false);
             setSettingsOpen((v) => !v);
+            setMobileDrawer(null);
           }}
           className={`p-1.5 rounded ${
             settingsOpen ? "bg-[#93003c] text-white" : "text-white/70 hover:text-white hover:bg-white/10"
@@ -649,7 +673,7 @@ export default function PartnerBlogElementorEditor({
         >
           <MaterialIcon name="redo" size={18} />
         </button>
-        <p className="min-w-0 max-w-[180px] text-sm font-bold truncate">
+        <p className="min-w-0 max-w-[120px] sm:max-w-[180px] text-sm font-bold truncate">
           {meta?.title || title}
         </p>
         {dirty ? (
@@ -731,7 +755,7 @@ export default function PartnerBlogElementorEditor({
           type="button"
           disabled={saving || !dirty}
           onClick={() => onSave()}
-          className="px-3 py-1.5 text-xs font-bold rounded bg-white/10 hover:bg-white/15 disabled:opacity-50"
+          className="shrink-0 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded bg-white/10 hover:bg-white/15 disabled:opacity-50"
         >
           {saving ? "儲存中…" : "儲存草稿"}
         </button>
@@ -746,11 +770,11 @@ export default function PartnerBlogElementorEditor({
             }
             setPublishOpen(true);
           }}
-          className="px-3 py-1.5 text-xs font-black rounded bg-[#93003c] hover:bg-[#b0104c] disabled:opacity-50"
+          className="shrink-0 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-black rounded bg-[#93003c] hover:bg-[#b0104c] disabled:opacity-50"
         >
           {saving ? (
             <span className="inline-flex items-center gap-1">
-              <MaterialIcon name="progress_activity" size={16} className="animate-spin" />
+              <QuarterRing size="xs" className="text-white" />
               {status === "published" ? "更新中…" : "發布中…"}
             </span>
           ) : status === "published" ? (
@@ -761,19 +785,40 @@ export default function PartnerBlogElementorEditor({
         </button>
       </header>
 
-      <div className="flex flex-1 min-h-0 relative">
-        <aside className="w-[260px] shrink-0 flex flex-col border-r border-white/10 bg-[#1f2124]">
+      <div className="flex flex-1 min-h-0 min-w-0 relative">
+        {mobileDrawer === "widgets" ? (
+          <button
+            type="button"
+            className="lg:hidden fixed inset-0 z-30 bg-black/50"
+            aria-label="關閉元件庫"
+            onClick={() => setMobileDrawer(null)}
+          />
+        ) : null}
+
+        <aside
+          className={`${
+            mobileDrawer === "widgets"
+              ? "fixed inset-y-12 left-0 z-40 flex w-[min(280px,88vw)]"
+              : "hidden"
+          } lg:relative lg:inset-auto lg:flex lg:w-[260px] shrink-0 flex-col border-r border-white/10 bg-[#1f2124]`}
+        >
           <div className="flex text-[11px] font-black border-b border-white/10">
             <button
               type="button"
-              onClick={() => setSettingsOpen(false)}
+              onClick={() => {
+                setSettingsOpen(false);
+                setMobileDrawer("widgets");
+              }}
               className={`flex-1 py-2.5 ${!settingsOpen ? "bg-[#93003c]" : "bg-black/30 text-white/60"}`}
             >
               元件
             </button>
             <button
               type="button"
-              onClick={() => setSettingsOpen(true)}
+              onClick={() => {
+                setSettingsOpen(true);
+                setMobileDrawer(null);
+              }}
               className={`flex-1 py-2.5 ${settingsOpen ? "bg-[#93003c]" : "bg-black/30 text-white/60"}`}
             >
               文章設定
@@ -796,7 +841,10 @@ export default function PartnerBlogElementorEditor({
                         drag.current = null;
                         setDragOverKey(null);
                       }}
-                      onClick={() => addWidget(w.type)}
+                      onClick={() => {
+                        addWidget(w.type);
+                        setMobileDrawer(null);
+                      }}
                       className="flex flex-col items-center gap-1.5 py-3 rounded bg-[#2b2c31] hover:bg-[#34353b] text-white/90 cursor-grab active:cursor-grabbing"
                     >
                       <MaterialIcon name={w.icon} size={20} />
@@ -810,30 +858,38 @@ export default function PartnerBlogElementorEditor({
         </aside>
 
         {settingsOpen && meta && onChangeMeta ? (
-          <aside className="absolute left-[260px] top-0 bottom-0 z-30 w-[340px] max-w-[calc(100%-260px)] shadow-2xl border-r border-white/10">
-            <div className="absolute right-2 top-2 z-10">
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(false)}
-                className="p-1 rounded bg-black/40 text-white/80 hover:text-white"
-                title="關閉設定"
-              >
-                <MaterialIcon name="close" size={16} />
-              </button>
-            </div>
-            <PartnerBlogPostSettings
-              meta={meta}
-              onChange={applyMeta}
-              storeDomain={store?.domain}
-              categories={mergeBlogCms(store?.blog_cms).categories}
+          <>
+            <button
+              type="button"
+              className="lg:hidden fixed inset-0 z-30 bg-black/50"
+              aria-label="關閉設定"
+              onClick={() => setSettingsOpen(false)}
             />
-          </aside>
+            <aside className="fixed inset-y-12 inset-x-0 z-40 flex flex-col bg-[#1f2124] lg:absolute lg:left-[260px] lg:right-auto lg:bottom-0 lg:w-[340px] lg:max-w-[calc(100%-260px)] shadow-2xl border-r border-white/10">
+              <div className="absolute right-2 top-2 z-10">
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen(false)}
+                  className="p-1 rounded bg-black/40 text-white/80 hover:text-white"
+                  title="關閉設定"
+                >
+                  <MaterialIcon name="close" size={16} />
+                </button>
+              </div>
+              <PartnerBlogPostSettings
+                meta={meta}
+                onChange={applyMeta}
+                storeDomain={store?.domain}
+                categories={mergeBlogCms(store?.blog_cms).categories}
+              />
+            </aside>
+          </>
         ) : null}
 
         <main
           ref={canvasRef}
-          className={`flex-1 overflow-y-auto ${
-            viewport === "desktop" ? "bg-white" : "bg-[#cfd3da] p-4 sm:p-8"
+          className={`flex-1 min-w-0 overflow-y-auto overflow-x-hidden ${
+            viewport === "desktop" ? "bg-white" : "bg-[#cfd3da] p-2 sm:p-4 lg:p-8"
           }`}
           onClick={() => setSelectedId(null)}
           onDragEnd={() => {
@@ -842,12 +898,12 @@ export default function PartnerBlogElementorEditor({
           }}
         >
           <div
-            className={`bg-white min-h-full ${
+            className={`bg-white min-h-full w-full max-w-full ${
               viewport === "desktop"
-                ? "w-full"
+                ? ""
                 : viewport === "tablet"
                   ? "mx-auto min-h-[70vh] shadow-2xl rounded-xl overflow-hidden"
-                  : "mx-auto min-h-[70vh] shadow-2xl rounded-[28px] overflow-hidden ring-8 ring-black/10"
+                  : "mx-auto min-h-[70vh] shadow-2xl rounded-[28px] overflow-hidden ring-4 sm:ring-8 ring-black/10"
             }`}
             style={
               viewport === "desktop"
@@ -883,20 +939,28 @@ export default function PartnerBlogElementorEditor({
         </main>
 
         {selected && !livePreview ? (
-          <InlineEditPopover
-            block={selected}
-            onChangeProps={updateSelectedProps}
-            onChangeColumnsCount={changeColumnsCount}
-            onChangeLayout={changeLayout}
-            onMoveUp={() => applyBlocks(moveBlock(blocks, selectedId, -1))}
-            onMoveDown={() => applyBlocks(moveBlock(blocks, selectedId, 1))}
-            onDuplicate={() => applyBlocks(duplicateById(blocks, selectedId))}
-            onDelete={() => {
-              applyBlocks(removeBlock(blocks, selectedId));
-              setSelectedId(null);
-            }}
-            onClose={() => setSelectedId(null)}
-          />
+          <>
+            <button
+              type="button"
+              className="lg:hidden fixed inset-0 z-40 bg-black/40"
+              aria-label="關閉元件設定"
+              onClick={() => setSelectedId(null)}
+            />
+            <InlineEditPopover
+              block={selected}
+              onChangeProps={updateSelectedProps}
+              onChangeColumnsCount={changeColumnsCount}
+              onChangeLayout={changeLayout}
+              onMoveUp={() => applyBlocks(moveBlock(blocks, selectedId, -1))}
+              onMoveDown={() => applyBlocks(moveBlock(blocks, selectedId, 1))}
+              onDuplicate={() => applyBlocks(duplicateById(blocks, selectedId))}
+              onDelete={() => {
+                applyBlocks(removeBlock(blocks, selectedId));
+                setSelectedId(null);
+              }}
+              onClose={() => setSelectedId(null)}
+            />
+          </>
         ) : null}
 
         {livePreview ? (
@@ -913,6 +977,64 @@ export default function PartnerBlogElementorEditor({
           </LivePreviewOverlay>
         ) : null}
       </div>
+
+      <nav
+        className="lg:hidden shrink-0 flex items-stretch border-t border-white/10 bg-[#1a1c1f]"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setSettingsOpen(false);
+            setMobileDrawer((v) => (v === "widgets" ? null : "widgets"));
+          }}
+          className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-bold ${
+            mobileDrawer === "widgets" ? "text-white bg-[#93003c]/30" : "text-white/60"
+          }`}
+        >
+          <MaterialIcon name="widgets" size={20} />
+          元件
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedId(null);
+            setSettingsOpen(false);
+            setMobileDrawer(null);
+          }}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-bold text-white/60"
+        >
+          <MaterialIcon name="edit_note" size={20} />
+          畫布
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSettingsOpen(true);
+            setMobileDrawer(null);
+            setSelectedId(null);
+          }}
+          className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-bold ${
+            settingsOpen ? "text-white bg-[#93003c]/30" : "text-white/60"
+          }`}
+        >
+          <MaterialIcon name="settings" size={20} />
+          設定
+        </button>
+        {selected ? (
+          <button
+            type="button"
+            onClick={() => {
+              setSettingsOpen(false);
+              setMobileDrawer(null);
+            }}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-bold text-white bg-[#93003c]/40"
+          >
+            <MaterialIcon name="tune" size={20} />
+            編輯
+          </button>
+        ) : null}
+      </nav>
 
       {leaveOpen ? (
         <GuardModal
@@ -975,7 +1097,7 @@ export default function PartnerBlogElementorEditor({
           >
             {saving ? (
               <>
-                <MaterialIcon name="progress_activity" size={16} className="animate-spin" />
+                <QuarterRing size="xs" className="text-white" />
                 發布中…
               </>
             ) : (
@@ -1012,7 +1134,7 @@ function InlineEditPopover({
   };
 
   return (
-    <aside className="w-[360px] shrink-0 flex flex-col border-l border-white/10 bg-[#1f2124] text-white min-h-0">
+    <aside className="fixed inset-x-0 bottom-0 z-50 flex max-h-[min(78dvh,640px)] flex-col rounded-t-2xl border-t border-white/10 bg-[#1f2124] text-white shadow-2xl lg:static lg:inset-auto lg:z-auto lg:max-h-none lg:w-[360px] lg:shrink-0 lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-none min-h-0">
       <div
         className="shrink-0 px-3 py-2.5 select-none"
         style={{ background: chrome.accent }}

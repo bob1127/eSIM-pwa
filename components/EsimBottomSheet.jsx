@@ -18,6 +18,7 @@ import { usePWAInstall } from "./usePWAInstall";
 import AppInstallGuideModal from "./AppInstallGuideModal";
 import MaterialIcon from "@/components/MaterialIcon";
 import JekoPillButton from "@/components/ui/JekoPillButton";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const COLLAPSED_H = 118;
 /** 產品頁預設縮小：只留可上拉的橫槓 */
@@ -611,7 +612,7 @@ function PromoPanel({
         <div className="flex items-center justify-between py-1">
           <span className="text-[13px] text-gray-600">您的剩餘點數</span>
           {loading ? (
-            <span className="text-[13px] text-gray-400">載入中…</span>
+            <LoadingIndicator layout="inline" label="載入中…" size="xs" />
           ) : (
             <span className="text-[18px] font-black text-[#0A6CD0] tabular-nums">
               {Number(points || 0).toLocaleString("zh-TW")}
@@ -625,7 +626,7 @@ function PromoPanel({
             目前有的優惠券
           </p>
           {loading ? (
-            <p className="text-[12px] text-gray-400 py-2">載入中…</p>
+            <LoadingIndicator layout="inline" label="載入中…" size="xs" className="py-2" />
           ) : available.length === 0 ? (
             <p className="text-[12px] text-gray-500 leading-relaxed py-1">
               尚無可用優惠券。可至優惠頁拉霸抽獎或領取新會員禮。
@@ -1304,9 +1305,7 @@ export default function EsimBottomSheet() {
                 panel !== "usage" &&
                 panel !== "install" &&
                 panel !== "promo") ? (
-                <div className="py-10 text-center text-[13px] text-gray-400">
-                  載入中…
-                </div>
+                <LoadingIndicator layout="center" label="載入中…" className="py-10" />
               ) : panel === "promo" ? (
                 <PromoPanel
                   isGuest={isGuest}

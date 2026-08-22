@@ -6,6 +6,7 @@ import {
   initLiff,
   sanitizeLiffPath,
 } from "../lib/liffClient";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 /**
  * LINE LIFF 入口
@@ -76,8 +77,13 @@ export default function LiffEntryPage() {
         <meta name="robots" content="noindex,nofollow" />
       </Head>
       <main className="min-h-[100dvh] flex flex-col items-center justify-center bg-[#f5f7fa] px-6 text-center">
-        <div className="w-12 h-12 rounded-full border-2 border-[#06C755] border-t-transparent animate-spin mb-5" />
-        <p className="text-[17px] font-bold text-slate-800">{status}</p>
+        <LoadingIndicator
+          layout="center"
+          label={status}
+          size="xl"
+          className="mb-5"
+          labelClassName="text-[17px] font-bold text-slate-800"
+        />
         {detail ? (
           <p className="mt-2 text-[13px] text-slate-500 max-w-sm leading-relaxed">
             {detail}

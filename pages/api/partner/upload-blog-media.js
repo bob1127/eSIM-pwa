@@ -10,7 +10,9 @@ import {
   BLOG_IMAGE_MAX_BYTES,
   BLOG_IMAGE_TYPES,
   BLOG_VIDEO_MAX_BYTES,
+  BLOG_VIDEO_MAX_PER_POST,
   BLOG_VIDEO_TYPES,
+  countBlogUploadedVideos,
   formatUploadBytes,
 } from "../../../lib/partnerBlogMedia";
 
@@ -80,6 +82,32 @@ export default async function handler(req, res) {
     kindHint === "video" || BLOG_VIDEO_TYPES.includes(mime)
       ? "video"
       : "image";
+
+  if (kind === "video") {
+    const postId = String(fields.postId || fields.post_id || "").trim();
+    const excludeBlockId = String(fields.excludeBlockId || "").trim();
+    if (postId) {
+      const admin = getSupabaseAdmin();
+      const { data: row, error: postErr } = await admin
+        .from("store_blog_posts")
+        .select("content_blocks")
+        .eq("id", postId)
+        .eq("store_id", storeId)
+        .maybeSingle();
+      if (postErr) {
+        return res.status(500).json({ error: "無法驗證文章影片配額" });
+      }
+      if (!row) {
+        return res.status(404).json({ error: "找不到文章" });
+      }
+      const used = countBlogUploadedVideos(row.content_blocks, { excludeBlockId });
+      if (used >= BLOG_VIDEO_MAX_PER_POST) {
+        return res.status(400).json({
+          error: `每篇文章最多上傳 ${BLOG_VIDEO_MAX_PER_POST} 支本機影片（YouTube／Vimeo 嵌入不限）`,
+        });
+      }
+    }
+  }
 
   if (kind === "image" && !BLOG_IMAGE_TYPES.includes(mime)) {
     return res.status(400).json({ error: "圖片請用 JPG / PNG / WEBP / GIF" });

@@ -11,6 +11,7 @@ import {
 } from "@/lib/partnerAuth";
 import { logLineLoginStart, startLineLoginWithFormPost } from "@/lib/authDebug";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 
 const INPUT_CLASS =
   "w-full bg-white/10 border border-white/30 rounded-xl px-4 py-3 text-white placeholder:text-blue-300 text-sm outline-none focus:bg-white/20 focus:border-white/60 transition";
@@ -517,7 +518,7 @@ export default function PartnerLogin() {
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#1E4AD1]">
-        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" />
+        <QuarterRing size="md" className="text-white" />
       </div>
     );
   }

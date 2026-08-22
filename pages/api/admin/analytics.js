@@ -32,15 +32,16 @@ export default async function handler(req, res) {
     partner_id: partnerId,
     store_id: storeId,
     status = "all",
-    days = "30",
+    days = "9999",
   } = req.query;
 
   const { data: orders, error } = await supabaseAdmin
     .from("orders")
     .select(
       `
-      id, status, partner_id, store_id, customer_email,
+      id, status, partner_id, store_id, customer_email, customer_name,
       total_amount, b2b_cost, partner_profit, item_details, items,
+      payment_info, medusa_order_id,
       created_at, updated_at, refunded_at,
       partners ( id, name, slug, email, status, cooperation_model, referral_code, description ),
       stores ( id, store_name, domain, markup_rate )
@@ -69,7 +70,7 @@ export default async function handler(req, res) {
     partnerId: partnerId ? Number(partnerId) : null,
     storeId: storeId ? Number(storeId) : null,
     status,
-    days: Number(days) || 30,
+    days: Number(days) || 9999,
   });
 
   return res.status(200).json({
@@ -77,7 +78,7 @@ export default async function handler(req, res) {
       partnerId: partnerId ? Number(partnerId) : null,
       storeId: storeId ? Number(storeId) : null,
       status,
-      days: Number(days) || 30,
+      days: Number(days) || 9999,
     },
     partners: partners || [],
     stores: stores || [],

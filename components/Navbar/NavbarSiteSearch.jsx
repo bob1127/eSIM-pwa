@@ -8,6 +8,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { displaySourceLabel } from "@/lib/siteSearch";
 
 /**
@@ -207,7 +208,14 @@ export default function NavbarSiteSearch({
       )}
     >
       {loading && results.length === 0 && (
-        <p className="px-4 py-3 text-xs text-slate-500">搜尋中…</p>
+        <div className="px-4 py-3">
+          <LoadingIndicator
+            layout="inline"
+            size="sm"
+            label="搜尋中…"
+            labelClassName="text-xs text-slate-500"
+          />
+        </div>
       )}
       {error && (
         <p className="px-4 py-3 text-xs font-bold text-red-600">{error}</p>
@@ -288,7 +296,14 @@ export default function NavbarSiteSearch({
             )}
           >
             {loading && results.length === 0 && (
-              <p className="px-4 py-3 text-xs text-slate-500">搜尋中…</p>
+              <div className="px-4 py-3">
+                <LoadingIndicator
+                  layout="inline"
+                  size="sm"
+                  label="搜尋中…"
+                  labelClassName="text-xs text-slate-500"
+                />
+              </div>
             )}
             {error && (
               <p className="px-4 py-3 text-xs font-bold text-red-600">{error}</p>
@@ -345,7 +360,14 @@ export default function NavbarSiteSearch({
               className="absolute left-0 right-0 top-[calc(100%+6px)] z-[70] max-h-[min(60vh,360px)] overflow-y-auto rounded-lg border border-slate-200 bg-white"
             >
               {loading && results.length === 0 && (
-                <p className="px-3 py-2.5 text-xs text-slate-500">搜尋中…</p>
+                <div className="px-3 py-2.5">
+                  <LoadingIndicator
+                    layout="inline"
+                    size="sm"
+                    label="搜尋中…"
+                    labelClassName="text-xs text-slate-500"
+                  />
+                </div>
               )}
               {error && (
                 <p className="px-3 py-2.5 text-xs font-bold text-red-600">{error}</p>
@@ -411,7 +433,14 @@ export default function NavbarSiteSearch({
             <div className="relative mt-1">
               <div className="relative left-0 right-0 top-0 max-h-[min(60vh,360px)] overflow-y-auto rounded-lg border border-slate-100">
                 {loading && results.length === 0 && (
-                  <p className="px-3 py-2.5 text-xs text-slate-500">搜尋中…</p>
+                  <div className="px-3 py-2.5">
+                    <LoadingIndicator
+                      layout="inline"
+                      size="sm"
+                      label="搜尋中…"
+                      labelClassName="text-xs text-slate-500"
+                    />
+                  </div>
                 )}
                 {error && (
                   <p className="px-3 py-2.5 text-xs font-bold text-red-600">

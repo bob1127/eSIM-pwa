@@ -8,6 +8,7 @@ import {
   refundStatusLabel,
   orderItemSummary,
 } from "@/lib/refundPolicy";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 function getEsimQRCodes(order) {
   if (!order?.qrcode_data) return [];
@@ -227,7 +228,13 @@ export default function MemberOrdersPanel({
 }) {
   if (loading) {
     return (
-      <div className="py-16 text-center text-slate-400 font-medium">載入訂單中…</div>
+      <div className="py-16 flex justify-center">
+        <LoadingIndicator
+          layout="center"
+          label="載入訂單中…"
+          labelClassName="text-slate-400 font-medium"
+        />
+      </div>
     );
   }
 

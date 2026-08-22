@@ -18,6 +18,7 @@ import AccountSettingsView from "@/components/account/AccountSettingsView";
 import AccountSupportView from "@/components/account/AccountSupportView";
 import AccountFollowsPanel from "@/components/account/AccountFollowsPanel";
 import AccountAdminDashboardView from "@/components/account/AccountAdminDashboardView";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 /* ========== 輔助工具 ========== */
 const formatNTDNoDecimals = (val) => {
@@ -528,10 +529,7 @@ export default function AccountPage() {
     return (
       <Layout hideNavbar>
         <div className="min-h-screen flex items-center justify-center bg-[#e8ecf1] text-slate-500">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-4 border-[#1E4AD1] border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-medium">驗證身分中…</p>
-          </div>
+          <LoadingIndicator layout="center" label="驗證身分中…" size="md" />
         </div>
       </Layout>
     );
@@ -542,10 +540,7 @@ export default function AccountPage() {
     return (
       <Layout hideNavbar>
         <div className="min-h-screen flex items-center justify-center bg-[#f6f6f6] text-slate-500">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-4 border-[#1a1a1a] border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-medium">導向登入頁…</p>
-          </div>
+          <LoadingIndicator layout="center" label="導向登入頁…" size="md" />
         </div>
       </Layout>
     );
@@ -711,8 +706,8 @@ export default function AccountPage() {
                             <tbody>
                               {statsLoading ? (
                                 <tr>
-                                  <td colSpan={4} className="py-8 text-center text-[#6d7175]">
-                                    載入中…
+                                  <td colSpan={4} className="py-8 text-center">
+                                    <LoadingIndicator layout="center" label="載入中…" size="sm" />
                                   </td>
                                 </tr>
                               ) : partnerAllOrders.length === 0 ? (

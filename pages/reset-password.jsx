@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import { supabase } from "../lib/supabaseClient";
 import { validatePassword, PASSWORD_HINT } from "../lib/passwordPolicy";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -123,7 +124,7 @@ export default function ResetPasswordPage() {
 
         {!ready ? (
           <div className="flex justify-center py-8">
-            <div className="w-8 h-8 border-4 border-[#1757FF] border-t-transparent rounded-full animate-spin" />
+            <QuarterRing size="md" className="text-[#1757FF]" />
           </div>
         ) : !recoveryReady ? (
           <div className="text-sm text-gray-700">

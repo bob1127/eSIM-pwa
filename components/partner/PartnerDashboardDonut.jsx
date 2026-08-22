@@ -7,6 +7,7 @@ import {
 import { Doughnut } from "react-chartjs-2";
 import MaterialIcon from "@/components/MaterialIcon";
 import { fmt } from "@/components/partner/DobermanWidgets";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -15,8 +16,8 @@ const PALETTE = ["#1E4AD1", "#4ade80", "#fbbf24", "#f87171", "#a78bfa", "#94a3b8
 export default function PartnerDashboardDonut({ share = [], totalProfit = 0, loading }) {
   if (loading) {
     return (
-      <div className="h-36 flex items-center justify-center text-slate-400 text-xs">
-        載入中...
+      <div className="h-36 flex items-center justify-center">
+        <LoadingIndicator layout="center" label="載入中..." size="sm" />
       </div>
     );
   }

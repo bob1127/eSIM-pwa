@@ -2,7 +2,7 @@ import {
   fetchActiveStoreByDomain,
   fetchStoreProductsForStorefront,
 } from "@/lib/partnerStorefront";
-import { buildPartnerCountryNavItems } from "@/lib/partnerNavCountries";
+import { buildPartnerCountryNavForStore } from "@/lib/partnerNavCountries";
 
 /**
  * GET /api/partner/storefront-nav?domain=xxx
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "store not found", countries: [] });
     }
     const products = await fetchStoreProductsForStorefront(store);
-    const countries = buildPartnerCountryNavItems(products, store.domain);
+    const countries = buildPartnerCountryNavForStore(store, products);
     res.setHeader("Cache-Control", "no-store, max-age=0");
     return res.status(200).json({ countries });
   } catch (err) {

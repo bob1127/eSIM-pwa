@@ -65,17 +65,21 @@ export default function WpArticleBody({
   className,
   replaceExtras,
   lightboxTitle = "文章圖片",
+  nested = false,
 }) {
   const prepared = useMemo(() => prepareWpContentHtml(html), [html]);
 
+  const inner = (
+    <div className={className}>
+      <WpArticleBodyInner prepared={prepared} replaceExtras={replaceExtras} />
+    </div>
+  );
+
+  if (nested) return inner;
+
   return (
     <BlogArticleLightboxProvider html={prepared} title={lightboxTitle}>
-      <div className={className}>
-        <WpArticleBodyInner
-          prepared={prepared}
-          replaceExtras={replaceExtras}
-        />
-      </div>
+      {inner}
     </BlogArticleLightboxProvider>
   );
 }

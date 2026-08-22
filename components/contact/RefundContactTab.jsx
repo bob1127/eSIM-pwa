@@ -12,6 +12,7 @@ import {
   REFUND_REASONS_DISPUTE,
   orderItemSummary,
 } from "@/lib/refundPolicy";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const REFUND_CONTACT_TYPES = [
   { value: "full_refund", label: "未開通全額退款" },
@@ -224,9 +225,8 @@ export default function RefundContactTab() {
 
   if (status === "loading") {
     return (
-      <div className="p-12 text-center text-slate-400 text-sm">
-        <div className="w-8 h-8 border-4 border-[#2b579a] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        載入中…
+      <div className="p-12 text-center">
+        <LoadingIndicator layout="center" label="載入中…" size="md" />
       </div>
     );
   }
@@ -252,7 +252,7 @@ export default function RefundContactTab() {
           </div>
 
           {loading ? (
-            <p className="text-sm text-slate-400">載入訂單中…</p>
+            <LoadingIndicator layout="inline" label="載入訂單中…" size="sm" />
           ) : orders.length === 0 ? (
             <p className="text-sm text-slate-500 p-4 bg-slate-50 rounded-sm border border-slate-100">
               找不到可申請的已完成訂單。若剛完成付款，請稍候或改用下方表單聯繫客服。

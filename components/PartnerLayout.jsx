@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState, useEffect, useRef } from "react";
 import gsap from "gsap";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { SplitText } from "gsap/SplitText";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/components/context/CartContext";
@@ -122,8 +123,8 @@ export default function PartnerLayout({ store, children, title, description }) {
 
   if (!store)
     return (
-      <div className="min-h-screen flex items-center justify-center text-blue-600 font-bold">
-        載入中...
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingIndicator layout="center" label="載入中..." />
       </div>
     );
 

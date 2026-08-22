@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Layout from "./Layout.js";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 export default function ShopeeQRCodePage() {
   const [orderNo, setOrderNo] = useState("");
@@ -89,7 +90,17 @@ export default function ShopeeQRCodePage() {
                   loading ? "opacity-60 cursor-not-allowed" : ""
                 }`}
               >
-                {loading ? "處理中…" : "產生 QRCode 並寄送"}
+                {loading ? (
+                  <LoadingIndicator
+                    layout="inline"
+                    size="xs"
+                    label="處理中…"
+                    labelClassName="text-sm font-semibold text-[#1C82E0]"
+                    spinnerClassName="text-[#1C82E0]"
+                  />
+                ) : (
+                  "產生 QRCode 並寄送"
+                )}
               </button>
             </form>
 

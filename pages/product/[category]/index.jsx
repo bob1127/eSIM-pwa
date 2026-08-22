@@ -4,6 +4,7 @@ import SafeImage from "../../../components/SafeImage";
 import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import Layout from "../../Layout.js";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { buildCategorySeo } from "../../../lib/seo.config";
 import {
   resolveMedusaImageUrl,
@@ -276,8 +277,12 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
   if (router.isFallback)
     return (
       <Layout>
-        <div className="min-h-screen flex items-center justify-center font-bold text-gray-500">
-          載入中，請稍候...
+        <div className="min-h-screen flex items-center justify-center">
+          <LoadingIndicator
+            layout="center"
+            label="載入中，請稍候..."
+            labelClassName="font-bold text-gray-500"
+          />
         </div>
       </Layout>
     );
@@ -527,9 +532,8 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                       className="min-w-0 w-full"
                     >
                       <Link href={productLink} className="block h-full group">
-                        <div className="h-full flex flex-col overflow-hidden rounded-xl bg-white border border-slate-200/90 lg:hover:border-[#0071EB]/30 lg:hover:shadow-md transition-all">
-                          {/* 圖片區維持原設計 */}
-                          <div className="relative w-full aspect-[4/3] overflow-hidden bg-slate-50 rounded-t-xl">
+                        <div className="h-full flex flex-col overflow-hidden rounded-xl border border-slate-200/90 lg:hover:border-[#0071EB]/30 lg:hover:shadow-md transition-all">
+                          <div className="relative w-full aspect-[4/3] overflow-hidden bg-white">
                             <SafeImage
                               src={productImage}
                               alt={product.name}
@@ -541,7 +545,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                               className="object-contain p-5 sm:p-6 lg:group-hover:scale-[1.03] lg:transition-transform lg:duration-500"
                             />
                           </div>
-                          <div className="flex flex-col flex-1 p-2.5 sm:p-3.5">
+                          <div className="flex flex-col flex-1 px-3 pt-3 pb-5 sm:px-4 sm:pt-4 sm:pb-6 bg-[#F9FAFB]">
                             <h2 className="font-bold text-[12px] sm:text-[13px] text-slate-800 leading-snug line-clamp-2 min-h-[2.5em]">
                               {product.name}
                             </h2>

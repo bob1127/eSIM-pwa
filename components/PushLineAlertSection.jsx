@@ -5,6 +5,7 @@ import MaterialIcon from "./MaterialIcon";
 import { LineIconSvg, LineAppIconSvg } from "@/components/social/SocialBrandIcons";
 import { useAuth } from "../hooks/useAuth";
 import { getPushEndpoint } from "../lib/pushBind";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 /**
  * LINE 登入會員：開啟官方 LINE 低流量推播（不需 Web Push）
@@ -182,7 +183,11 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
             onClick={() => toggleLineAlert(false)}
             className="flex-1 border border-stone-300 text-stone-700 font-bold py-3 rounded-xl text-sm hover:bg-white disabled:opacity-50"
           >
-            {actionLoading ? "處理中…" : "關閉 LINE 提醒"}
+            {actionLoading ? (
+              <LoadingIndicator layout="inline" size="xs" label="處理中…" />
+            ) : (
+              "關閉 LINE 提醒"
+            )}
           </button>
         )}
         <a

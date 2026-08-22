@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { PARTNER_UI } from "@/lib/partnerUi";
 import { SHOPIFY_UI, SHOPIFY_BADGE } from "@/lib/shopifyUi";
 import { resolveMedusaImageUrl } from "@/lib/resolveMedusaImageUrl";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 /** Shopify Polaris 風格的膠囊徽章：色塊 + 圓點 + 文字 */
 function Badge({ tone = "neutral", children }) {
@@ -417,10 +418,10 @@ export default function PartnerRatesPage() {
           {/* 內容 */}
           {loading ? (
             <div
-              className="rounded-lg py-16 text-center text-sm"
-              style={{ backgroundColor: SHOPIFY_UI.cardBg, border: `1px solid ${SHOPIFY_UI.cardBorder}`, color: SHOPIFY_UI.textTertiary }}
+              className="rounded-lg py-16 flex items-center justify-center"
+              style={{ backgroundColor: SHOPIFY_UI.cardBg, border: `1px solid ${SHOPIFY_UI.cardBorder}` }}
             >
-              載入方案分潤中…
+              <LoadingIndicator layout="center" label="載入方案分潤中…" />
             </div>
           ) : error ? (
             <div

@@ -79,6 +79,8 @@ export default function PartnerShareButtons({
   size = "md",
   align = "left",
   disabled = false,
+  layout = "inline",
+  className = "",
 }) {
   const domain = store?.domain || "";
   const [toast, setToast] = useState(null);
@@ -201,6 +203,37 @@ export default function PartnerShareButtons({
     await handleCopy();
   };
 
+  const renderCopyButton = () => (
+    <button
+      key="copy"
+      type="button"
+      onClick={handleCopy}
+      aria-label="複製連結"
+      title="複製連結"
+      className={`${copyPad} ${round} border border-slate-200 bg-white text-slate-700 inline-flex items-center gap-1.5 font-bold hover:border-slate-400 hover:bg-slate-50 transition active:scale-95`}
+    >
+      {copied ? (
+        <Check className={`${ic} text-emerald-600`} strokeWidth={2.5} />
+      ) : (
+        <Copy className={ic} strokeWidth={2} />
+      )}
+      {copied ? "已複製" : "複製連結"}
+    </button>
+  );
+
+  const renderNativeButton = () => (
+    <button
+      key="native"
+      type="button"
+      onClick={shareNative}
+      aria-label="更多分享"
+      title="更多分享"
+      className={`${box} ${round} border border-slate-200 bg-white text-slate-700 inline-flex items-center justify-center hover:border-slate-400 hover:bg-slate-50 transition active:scale-95`}
+    >
+      <Share2 className={size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4"} strokeWidth={2} />
+    </button>
+  );
+
   const brandButtons = {
     facebook: {
       label: "Facebook 分享",
@@ -227,7 +260,42 @@ export default function PartnerShareButtons({
   };
 
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
+      {layout === "split" ? (
+        <div className="flex items-center justify-between gap-4 w-full">
+          <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+            {showLabel !== false && label ? (
+              <span className="text-[12px] font-bold text-slate-500 shrink-0">
+                {label}
+              </span>
+            ) : null}
+            {ids.includes("copy") ? renderCopyButton() : null}
+            {ids
+              .filter((id) => id !== "copy" && id !== "native")
+              .map((id) => {
+                const item = brandButtons[id];
+                if (!item) return null;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={item.onClick}
+                    aria-label={item.label}
+                    title={item.label}
+                    className={`${box} ${round} inline-flex items-center justify-center shadow-sm ring-1 ring-black/5 transition active:scale-95 ${
+                      outline ? item.outline : item.brand
+                    }`}
+                  >
+                    {item.icon}
+                  </button>
+                );
+              })}
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0">
+            {ids.includes("native") ? renderNativeButton() : null}
+          </div>
+        </div>
+      ) : (
       <div className={`flex flex-wrap items-center gap-2.5 ${justify}`}>
         {showLabel !== false && label ? (
           <span className="text-[12px] font-bold text-slate-500 mr-1">
@@ -237,37 +305,10 @@ export default function PartnerShareButtons({
 
         {ids.map((id) => {
           if (id === "copy") {
-            return (
-              <button
-                key="copy"
-                type="button"
-                onClick={handleCopy}
-                aria-label="複製連結"
-                title="複製連結"
-                className={`${copyPad} ${round} border border-slate-200 bg-white text-slate-700 inline-flex items-center gap-1.5 font-bold hover:border-slate-400 hover:bg-slate-50 transition active:scale-95`}
-              >
-                {copied ? (
-                  <Check className={`${ic} text-emerald-600`} strokeWidth={2.5} />
-                ) : (
-                  <Copy className={ic} strokeWidth={2} />
-                )}
-                {copied ? "已複製" : "複製連結"}
-              </button>
-            );
+            return renderCopyButton();
           }
           if (id === "native") {
-            return (
-              <button
-                key="native"
-                type="button"
-                onClick={shareNative}
-                aria-label="更多分享"
-                title="更多分享"
-                className={`${box} ${round} border border-slate-200 bg-white text-slate-700 inline-flex items-center justify-center hover:border-slate-400 hover:bg-slate-50 transition active:scale-95`}
-              >
-                <Share2 className={size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4"} strokeWidth={2} />
-              </button>
-            );
+            return renderNativeButton();
           }
           const item = brandButtons[id];
           if (!item) return null;
@@ -287,6 +328,7 @@ export default function PartnerShareButtons({
           );
         })}
       </div>
+      )}
 
       {toast ? (
         <p

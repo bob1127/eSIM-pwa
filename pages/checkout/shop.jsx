@@ -16,6 +16,7 @@ import {
 import { isLineSyntheticEmail } from "@/lib/lineAuth";
 import { ChevronRight, Tag, Shield, Truck, RotateCcw } from "lucide-react";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 
 // ── 步驟指示器 ──────────────────────────────────────────────────
 const STEPS = ["購物車", "資訊", "運送", "付款"];
@@ -137,7 +138,16 @@ function OrderSummary({
           disabled={isApplyingCoupon || (!appliedCode && !coupon.trim())}
           className="px-4 py-2.5 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isApplyingCoupon ? "處理中…" : appliedCode ? "移除" : "套用"}
+          {isApplyingCoupon ? (
+            <span className="inline-flex items-center gap-2">
+              <QuarterRing size="xs" className="text-white" />
+              處理中…
+            </span>
+          ) : appliedCode ? (
+            "移除"
+          ) : (
+            "套用"
+          )}
         </button>
       </div>
 
@@ -736,7 +746,7 @@ export default function ShopCheckoutPage() {
             >
               {isSubmitting ? (
                 <>
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <QuarterRing size="sm" className="text-white" />
                   處理中…
                 </>
               ) : (

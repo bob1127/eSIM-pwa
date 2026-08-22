@@ -10,10 +10,15 @@ import {
   newBlockId,
 } from "@/lib/partnerBlogBlocks";
 import { validatePartnerBlogMeta, pingPartnerBlogRevalidate } from "@/lib/partnerBlog";
+import {
+  BLOG_VIDEO_MAX_PER_POST,
+  countBlogUploadedVideos,
+} from "@/lib/partnerBlogMedia";
 import PartnerBlogElementorEditor from "@/components/partner/blog-builder/PartnerBlogElementorEditor";
 import PartnerBlogItineraryEditor from "@/components/partner/blog-builder/PartnerBlogItineraryEditor";
 import { isItineraryBlocks, ensureItineraryBlocks, firstItineraryImage, getItineraryProps } from "@/lib/partnerBlogItinerary";
 import { itineraryDestinationsMissing } from "@/lib/itineraryAffiliate";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const EMPTY_META = {
   title: "",
@@ -188,6 +193,13 @@ export default function PartnerBlogEditPage() {
       const clean = itinerary
         ? ensureItineraryBlocks(blocks)
         : sanitizeBlocks(blocks);
+      const uploadedVideoCount = countBlogUploadedVideos(clean);
+      if (uploadedVideoCount > BLOG_VIDEO_MAX_PER_POST) {
+        const msg = `每篇文章最多上傳 ${BLOG_VIDEO_MAX_PER_POST} 支本機影片（YouTube／Vimeo 嵌入不限）`;
+        if (!silent) alert(msg);
+        setSaveHint(msg);
+        return false;
+      }
       if (
         itinerary &&
         nextStatus === "published" &&
@@ -343,7 +355,11 @@ export default function PartnerBlogEditPage() {
   };
 
   if (sessionLoading) {
-    return <p className="p-8 text-sm text-slate-500">載入中…</p>;
+    return (
+      <div className="p-8">
+        <LoadingIndicator label="載入中…" />
+      </div>
+    );
   }
   if (!enabled) {
     return <p className="p-8 text-sm text-slate-500">尚未開通自訂文章</p>;
@@ -352,7 +368,11 @@ export default function PartnerBlogEditPage() {
     return <p className="p-8 text-sm text-red-500">{loadError}</p>;
   }
   if (!post) {
-    return <p className="p-8 text-sm text-slate-500">載入文章…</p>;
+    return (
+      <div className="p-8">
+        <LoadingIndicator label="載入文章…" />
+      </div>
+    );
   }
 
   return (
@@ -421,6 +441,7 @@ export default function PartnerBlogEditPage() {
         />
       ) : (
         <PartnerBlogElementorEditor
+          postId={post.id}
           title={meta.title || post.title}
           blocks={blocks}
           onChangeBlocks={setBlocks}

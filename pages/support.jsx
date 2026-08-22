@@ -9,39 +9,17 @@ import {
   SquaresPlusIcon,
   BoltIcon,
   PhoneIcon,
-  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 import { FaApple, FaGoogle, FaAndroid, FaWindows } from "react-icons/fa"; // 如果沒有安裝 react-icons，可以用 heroicons 替代，或需安裝 npm install react-icons
-
-// --- 0. 三星常見機身代碼 → 行銷名稱（Android UA 常回報代碼而非行銷名） ---
-const SAMSUNG_MODEL_MAP = [
-  { prefix: "SM-S928", label: "Galaxy S24 Ultra" },
-  { prefix: "SM-S926", label: "Galaxy S24+" },
-  { prefix: "SM-S921", label: "Galaxy S24" },
-  { prefix: "SM-S918", label: "Galaxy S23 Ultra" },
-  { prefix: "SM-S916", label: "Galaxy S23+" },
-  { prefix: "SM-S911", label: "Galaxy S23" },
-  { prefix: "SM-S711", label: "Galaxy S23 FE" },
-  { prefix: "SM-S908", label: "Galaxy S22 Ultra" },
-  { prefix: "SM-S906", label: "Galaxy S22+" },
-  { prefix: "SM-S901", label: "Galaxy S22" },
-  { prefix: "SM-G998", label: "Galaxy S21 Ultra" },
-  { prefix: "SM-G996", label: "Galaxy S21+" },
-  { prefix: "SM-G991", label: "Galaxy S21" },
-  { prefix: "SM-G988", label: "Galaxy S20 Ultra" },
-  { prefix: "SM-G986", label: "Galaxy S20+" },
-  { prefix: "SM-G981", label: "Galaxy S20" },
-  { prefix: "SM-F956", label: "Galaxy Z Fold6" },
-  { prefix: "SM-F741", label: "Galaxy Z Flip6" },
-  { prefix: "SM-F946", label: "Galaxy Z Fold5" },
-  { prefix: "SM-F731", label: "Galaxy Z Flip5" },
-  { prefix: "SM-F936", label: "Galaxy Z Fold4" },
-  { prefix: "SM-F721", label: "Galaxy Z Flip4" },
-  { prefix: "SM-F926", label: "Galaxy Z Fold3" },
-  { prefix: "SM-F711", label: "Galaxy Z Flip3" },
-  { prefix: "SM-N986", label: "Galaxy Note20 Ultra" },
-  { prefix: "SM-N981", label: "Galaxy Note20" },
-];
+import {
+  COMPATIBLE_DEVICE_BRANDS,
+  SAMSUNG_MODEL_MAP,
+  findCompatibleDeviceMatches,
+  formatCompatibilityLastUpdated,
+  getCompatibilityUpdateNotice,
+  ESIM_COMPATIBLE_DEVICES_UPDATE_INTERVAL,
+} from "@/lib/esimCompatibleDevices";
 
 function resolveFriendlyModelName(rawModel) {
   if (!rawModel) return "";
@@ -85,122 +63,43 @@ function detectDeviceInfo() {
 }
 
 function findDeviceMatches(term) {
-  if (!term) return [];
-  const t = term.toLowerCase();
-  const results = [];
-  DEVICE_DATA.forEach((brand) => {
-    const matches = brand.devices.filter(
-      (d) => !d.includes("注意") && d.toLowerCase().includes(t),
-    );
-    if (matches.length) {
-      results.push({ brandTitle: brand.title, matches });
-    }
-  });
-  return results;
+  return findCompatibleDeviceMatches(term).map(({ brandTitle, matches }) => ({
+    brandTitle,
+    matches,
+  }));
 }
 
-// --- 1. 資料庫：支援 eSIM 的裝置列表 ---
-const DEVICE_DATA = [
-  {
-    id: "apple",
-    title: "支援 eSIM 的蘋果 iPhone",
+const BRAND_UI = {
+  apple: {
     icon: <FaApple className="w-8 h-8" />,
     color: "bg-gray-900 text-white",
-    devices: [
-      "iPhone 16 / 16 Plus / 16 Pro / 16 Pro Max",
-      "iPhone 15 / 15 Plus / 15 Pro / 15 Pro Max",
-      "iPhone 14 / 14 Plus / 14 Pro / 14 Pro Max",
-      "iPhone 13 / 13 Mini / 13 Pro / 13 Pro Max",
-      "iPhone 12 / 12 Mini / 12 Pro / 12 Pro Max",
-      "iPhone 11 / 11 Pro / 11 Pro Max",
-      "iPhone XS / XS Max / XR",
-      "iPhone SE (2020 第2代 / 2022 第3代)",
-      "注意：中國大陸、香港、澳門版本的實體雙卡 iPhone 通常不支援 eSIM (部分 iPhone 13 mini, 12 mini, SE 2/3, XS 除外)",
-    ],
   },
-  {
-    id: "pixel",
-    title: "Google Pixel 支援 eSIM 的手機",
+  pixel: {
     icon: <FaGoogle className="w-8 h-8" />,
     color: "bg-blue-600 text-white",
-    devices: [
-      "Google Pixel 9 / 9 Pro / 9 Pro XL / 9 Pro Fold",
-      "Google Pixel 8 / 8 Pro / 8a",
-      "Google Pixel 7 / 7 Pro / 7a",
-      "Google Pixel 6 / 6 Pro / 6a",
-      "Google Pixel 5 / 5a",
-      "Google Pixel 4 / 4a / 4 XL",
-      "Google Pixel 3 / 3a / 3 XL / 3a XL",
-      "Google Pixel Fold",
-    ],
   },
-  {
-    id: "samsung",
-    title: "具備 eSIM 功能的三星手機",
-    icon: <FaAndroid className="w-8 h-8" />, // Samsung 通常用 Android icon 代表或專屬 logo
+  samsung: {
+    icon: <FaAndroid className="w-8 h-8" />,
     color: "bg-[#1428a0] text-white",
-    devices: [
-      "Galaxy S24 / S24+ / S24 Ultra",
-      "Galaxy S23 / S23+ / S23 Ultra / S23 FE",
-      "Galaxy S22 / S22+ / S22 Ultra",
-      "Galaxy S21 / S21+ / S21 Ultra",
-      "Galaxy S20 / S20+ / S20 Ultra",
-      "Galaxy Z Fold 6 / Flip 6",
-      "Galaxy Z Fold 5 / Flip 5",
-      "Galaxy Z Fold 4 / Flip 4",
-      "Galaxy Z Fold 3 / Flip 3",
-      "Galaxy Note 20 / Note 20 Ultra",
-      "注意：台灣版本的三星手機，S23 系列(含)以前的大多不支援 eSIM，請務必撥打 *#06# 確認是否有 EID",
-    ],
   },
-  {
-    id: "ipad",
-    title: "相容 eSIM 的 iPad (Wi-Fi + 行動網路)",
-    icon: <DevicePhoneMobileIcon className="w-8 h-8" />, // 使用平板 Icon
+  ipad: {
+    icon: <DevicePhoneMobileIcon className="w-8 h-8" />,
     color: "bg-gray-700 text-white",
-    devices: [
-      "iPad Pro 13吋 (M4)",
-      "iPad Pro 11吋 (M4)",
-      "iPad Pro 12.9吋 (第3代 ~ 第6代)",
-      "iPad Pro 11吋 (第1代 ~ 第4代)",
-      "iPad Air (第3代 ~ 第6代/M2)",
-      "iPad (第7代 ~ 第10代)",
-      "iPad mini (第5代 ~ 第6代)",
-      "注意：僅限 Wi-Fi + Cellular (行動網路) 版本支援，純 Wi-Fi 版不支援",
-    ],
   },
-  {
-    id: "windows",
-    title: "eSIM 支援的 Windows 10/11 筆記型電腦",
+  windows: {
     icon: <FaWindows className="w-8 h-8" />,
     color: "bg-[#0078D4] text-white",
-    devices: [
-      "Microsoft Surface Pro 9 (5G) / Pro 8 (LTE) / Pro X",
-      "Microsoft Surface Go 3 (LTE) / Go 2 (LTE)",
-      "Lenovo ThinkPad X1 Titanium Yoga 5G / X1 Carbon Gen 9",
-      "Dell Latitude 7440 / 7340",
-      "HP EliteBook 840 G8 / Spectre x360",
-      "Acer Swift 3 / 7",
-      "Asus Transformer Mini / NovaGo",
-      "需確認裝置是否內建 LTE/5G 模組且標示支援 eSIM",
-    ],
   },
-  {
-    id: "others",
-    title: "其他支援 eSIM 的手機裝置",
+  others: {
     icon: <SquaresPlusIcon className="w-8 h-8" />,
     color: "bg-teal-600 text-white",
-    devices: [
-      "Sony Xperia 1 V / 1 IV / 10 V / 10 IV / 5 V / 5 IV",
-      "Oppo Find N3 / N3 Flip / N2 Flip / Find X5 Pro / Find X3 Pro",
-      "Xiaomi 14 / 14 Pro / 13 / 13 Pro / 13T Pro / 12T Pro",
-      "Sharp Aquos R8 pro / R7 / sense7 / sense8",
-      "Motorola Razr 40 / 40 Ultra / Edge 40",
-      "Huawei P40 / P40 Pro / Mate 40 Pro",
-      "Nokia G60 5G / X30 5G",
-    ],
   },
-];
+};
+
+const DEVICE_DATA = COMPATIBLE_DEVICE_BRANDS.map((brand) => ({
+  ...brand,
+  ...(BRAND_UI[brand.id] || BRAND_UI.others),
+}));
 
 export default function CompatibilityPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -256,8 +155,15 @@ export default function CompatibilityPage() {
           <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-4">
             查詢您的裝置是否支援 eSIM
           </h1>
-          <p className="text-slate-500 text-lg mb-8">
+          <p className="text-slate-500 text-lg mb-4">
             輸入型號關鍵字，或點擊下方品牌分類查看完整列表
+          </p>
+          <p className="text-[13px] text-slate-400 max-w-xl mx-auto leading-relaxed mb-8">
+            {getCompatibilityUpdateNotice()}
+            <span className="block mt-1">
+              維護週期：{ESIM_COMPATIBLE_DEVICES_UPDATE_INTERVAL} · 資料截至{" "}
+              {formatCompatibilityLastUpdated()}
+            </span>
           </p>
 
           <div className="relative max-w-xl mx-auto">
@@ -330,7 +236,7 @@ export default function CompatibilityPage() {
               >
                 {detecting ? (
                   <>
-                    <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                    <QuarterRing size="sm" className="text-white" />
                     偵測中…
                   </>
                 ) : (

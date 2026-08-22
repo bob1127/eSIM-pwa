@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 export default function MyEsimPage() {
   const [orders, setOrders] = useState([]);
@@ -26,8 +27,12 @@ export default function MyEsimPage() {
 
   if (loading)
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50 text-gray-500">
-        系統載入中...
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <LoadingIndicator
+          layout="center"
+          label="系統載入中..."
+          labelClassName="text-gray-500"
+        />
       </div>
     );
 

@@ -4,6 +4,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { fetchWpPosts } from "../../lib/wordpress";
 import { stripHtml } from "@/lib/stripHtml";
 import Link from "next/link";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { gsap } from "gsap";
 import {
   NextButton,
@@ -157,7 +158,12 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
     });
   };
 
-  if (loading) return <div className="text-center py-20">載入中...</div>;
+  if (loading)
+    return (
+      <div className="py-20 flex justify-center">
+        <LoadingIndicator layout="center" label="載入中..." />
+      </div>
+    );
   if (error)
     return (
       <div className="text-center py-20 text-red-500">載入失敗: {error}</div>

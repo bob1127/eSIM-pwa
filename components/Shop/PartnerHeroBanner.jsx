@@ -6,6 +6,8 @@ import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import MaterialIcon from "@/components/MaterialIcon";
+import PartnerButton from "@/components/partner/ui/PartnerButton";
+import ButtonAnimatedGradient from "@/components/ui/button-animated-gradient";
 
 const CONTAINER = "max-w-[1680px] mx-auto px-6 lg:px-10";
 
@@ -125,7 +127,7 @@ function ClassicHero({ store, hero, domain }) {
   );
 }
 
-function SliderHero({ hero }) {
+function SliderHero({ hero, editable, onEditCarousel }) {
   const slides = useMemo(
     () => (hero.slides || []).filter((s) => s?.image),
     [hero.slides],
@@ -170,7 +172,22 @@ function SliderHero({ hero }) {
   if (slides.length === 0) return null;
 
   return (
-    <section className="relative w-full overflow-hidden bg-slate-200">
+    <section className="relative w-full overflow-hidden bg-slate-200 group/hero">
+      {editable ? (
+        <PartnerButton
+          type="button"
+          size="sm"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onEditCarousel?.();
+          }}
+          className="absolute top-4 right-4 z-20 shadow-lg gap-1.5"
+        >
+          <MaterialIcon name="edit" size={16} />
+          編輯輪播
+        </PartnerButton>
+      ) : null}
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex touch-pan-y">
           {slides.map((slide, i) => {
@@ -206,12 +223,9 @@ function SliderHero({ hero }) {
                         </p>
                       ) : null}
                       {slide.cta_label ? (
-                        <span
-                          className="mt-5 inline-flex items-center bg-white text-[#0a3a7a] text-sm font-bold px-6 py-3 shadow-sm"
-                          style={{ textShadow: "none" }}
-                        >
+                        <ButtonAnimatedGradient nested className="mt-5 shadow-sm">
                           {slide.cta_label}
-                        </span>
+                        </ButtonAnimatedGradient>
                       ) : null}
                     </div>
                   </div>
@@ -294,9 +308,21 @@ function SliderHero({ hero }) {
 /**
  * 夥伴首頁 Hero：classic 文字主視覺 或 slider 全幅 Banner
  */
-export default function PartnerHeroBanner({ store, hero, domain }) {
+export default function PartnerHeroBanner({
+  store,
+  hero,
+  domain,
+  editable = false,
+  onEditCarousel,
+}) {
   if (hero?.layout === "slider") {
-    return <SliderHero hero={hero} />;
+    return (
+      <SliderHero
+        hero={hero}
+        editable={editable}
+        onEditCarousel={onEditCarousel}
+      />
+    );
   }
   return <ClassicHero store={store} hero={hero} domain={domain} />;
 }

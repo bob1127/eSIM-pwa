@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
+import { partnerPagePaths } from "@/lib/partnerStorePages";
 
 function CategoryRow({ label, count, selected, onSelect, href }) {
   const cls = `w-full flex items-center justify-between gap-2 px-2.5 py-2 text-left text-[12px] transition-colors ${
@@ -63,26 +64,25 @@ export default function PartnerBlogSidebar({
   fillHeight = false,
 }) {
   const domain = store?.domain;
-  const base = `/p/${domain}`;
-  const blogList = listHref || `${base}/blog/`;
+  const paths = partnerPagePaths(domain);
+  const blogList = listHref || paths.blog;
   const postHref = (slug) =>
     typeof articleHref === "function"
       ? articleHref(slug)
-      : `${base}/blog/${slug}/`;
+      : `${paths.blog}${slug}/`;
+
+  const nav = [
+    { key: "home", label: "首頁", href: paths.home },
+    { key: "about", label: "關於我們", href: paths.about },
+    { key: "article", label: "旅遊文章", href: paths.blog },
+    { key: "shop", label: "選購方案", href: paths.plans },
+    { key: "terms", label: "服務條款", href: paths.terms },
+    { key: "contact", label: "聯絡我們", href: paths.contact },
+  ];
+
   const [q, setQ] = useState("");
   const [recentPage, setRecentPage] = useState(1);
   const RECENT_PER_PAGE = 4;
-
-  const nav = [
-    { key: "home", label: "首頁", href: `${base}/` },
-    { key: "about", label: "關於我們", href: `${base}/#about` },
-    { key: "article", label: "旅遊文章", href: `${base}/blog/` },
-    {
-      key: "shop",
-      label: "選購方案",
-      href: `${base}/#plans`,
-    },
-  ];
 
   const recentAll = useMemo(() => {
     const seen = new Set();
@@ -131,15 +131,15 @@ export default function PartnerBlogSidebar({
         }
       >
         {/* 2x2 導覽 */}
-        <nav className={`border border-slate-200 ${fillHeight ? "shrink-0" : ""}`}>
+        <nav className={`border border-slate-200 relative z-10 ${fillHeight ? "shrink-0" : ""}`}>
           <div className="grid grid-cols-2">
             {nav.map((item, idx) => (
               <Link
                 key={item.key}
                 href={item.href}
-                className={`text-center text-[12px] font-bold tracking-wide py-4 hover:bg-slate-50 transition-colors ${
+                className={`block text-center text-[12px] font-bold tracking-wide py-4 hover:bg-slate-50 transition-colors ${
                   idx % 2 === 0 ? "border-r border-slate-200" : ""
-                } ${idx < 2 ? "border-b border-slate-200" : ""} ${
+                } ${idx < nav.length - 2 ? "border-b border-slate-200" : ""} ${
                   active === item.key ? "bg-slate-50 text-slate-900" : "text-slate-600"
                 }`}
               >

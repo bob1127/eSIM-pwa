@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 export default function TestFulfillmentPage() {
   const [orderId, setOrderId] = useState("");
@@ -73,7 +74,15 @@ export default function TestFulfillmentPage() {
                 : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
             }`}
           >
-            {loading ? "連線供應商並寄信中，請稍候..." : "⚡ 立即執行發貨程式"}
+            {loading ? (
+              <LoadingIndicator
+                layout="inline"
+                size="sm"
+                label="連線供應商並寄信中，請稍候..."
+              />
+            ) : (
+              "⚡ 立即執行發貨程式"
+            )}
           </button>
         </div>
 

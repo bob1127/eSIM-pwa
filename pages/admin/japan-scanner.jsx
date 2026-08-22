@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import Head from "next/head";
 import { DEFAULT_PLATFORM_FX } from "@/lib/esim/platformFx";
 import { useProductAdmin } from "@/hooks/useProductAdmin";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 // import Layout from "../Layout"; // 如果您有 Layout 請自行取消註解
 
 // --- 匯率設定：與夥伴底價同一套平台匯率 ---
@@ -259,7 +260,9 @@ export default function GlobalPlanScanner() {
         <Head>
           <meta name="robots" content="noindex, nofollow, noarchive" />
         </Head>
-        <div className="p-10 text-center font-bold">載入中...</div>
+        <div className="p-10 flex justify-center">
+          <LoadingIndicator layout="center" label="載入中..." />
+        </div>
       </>
     );
   if (errorMsg)

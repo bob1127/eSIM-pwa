@@ -164,6 +164,9 @@ const nextConfig = {
         destination: "/partner/products/",
         permanent: false,
       },
+      // 常見誤打：boss 後台在 /admin-boss，不是夥伴店 /p/boss
+      { source: "/boss", destination: "/admin-boss/", permanent: false },
+      { source: "/boss/", destination: "/admin-boss/", permanent: false },
       // 歷史拼字 tailand → 正規 thailand
       {
         source: "/product/tailand",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 const Navbar = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +49,7 @@ const Navbar = () => {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <LoadingIndicator layout="center" label="Loading..." className="py-10" />;
   }
 
   return (

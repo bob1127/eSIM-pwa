@@ -13,6 +13,7 @@ import {
   ShopifyDropdown,
 } from "./AccountShell";
 import AccountIcon from "@/components/account/AccountIcon";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { useUser } from "@/components/context/UserContext";
 import { orderItemSummary, refundStatusLabel } from "@/lib/refundPolicy";
 import { ACCOUNT_THEME, ACCOUNT_UI, SHOPIFY_BADGE } from "@/lib/accountUi";
@@ -562,9 +563,7 @@ export default function AccountDashboardView({
                 </div>
               )}
               {couponsLoading ? (
-                <p className="text-sm py-3" style={{ color: ACCOUNT_THEME.soft }}>
-                  載入中…
-                </p>
+                <LoadingIndicator label="載入中…" className="py-3" />
               ) : availableCoupons.length === 0 ? (
                 <p className="text-sm py-3" style={{ color: ACCOUNT_THEME.mid }}>
                   尚無可用優惠券。到「最新優惠」拉霸抽獎，中獎會自動存入此處。

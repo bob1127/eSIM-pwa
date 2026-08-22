@@ -22,6 +22,8 @@ export default function MobileCardCarousel({
   align = "center",
   className = "",
   label = "卡片輪播",
+  arrowsOutside = false,
+  hideArrowsOnMobile = false,
 }) {
   const slides = Children.toArray(children);
   const [reduceMotion, setReduceMotion] = useState(true);
@@ -106,6 +108,16 @@ export default function MobileCardCarousel({
     scrollTo(index);
   };
 
+  const arrowBaseClass =
+    "absolute top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md border border-gray-100 text-stone-900 active:scale-95 transition-transform";
+  const arrowVisibilityClass = hideArrowsOnMobile ? "hidden md:flex" : "flex";
+  const arrowLeftClass = arrowsOutside
+    ? "left-0 md:-left-5"
+    : "left-[8%]";
+  const arrowRightClass = arrowsOutside
+    ? "right-0 md:-right-5"
+    : "right-[8%]";
+
   return (
     <div
       className={className}
@@ -113,14 +125,14 @@ export default function MobileCardCarousel({
       aria-roledescription="carousel"
       aria-label={label}
     >
-      <div className="relative">
+      <div className={`relative ${arrowsOutside ? "md:px-8" : ""}`}>
         {showArrows && slides.length > 1 && (
           <>
             <button
               type="button"
               onClick={scrollPrev}
               aria-label="上一張"
-              className="absolute left-[8%] top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-md border border-gray-100 text-stone-900 active:scale-95"
+              className={`${arrowBaseClass} ${arrowVisibilityClass} ${arrowLeftClass}`}
             >
               <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -128,7 +140,7 @@ export default function MobileCardCarousel({
               type="button"
               onClick={scrollNext}
               aria-label="下一張"
-              className="absolute right-[8%] top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-md border border-gray-100 text-stone-900 active:scale-95"
+              className={`${arrowBaseClass} ${arrowVisibilityClass} ${arrowRightClass}`}
             >
               <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
             </button>

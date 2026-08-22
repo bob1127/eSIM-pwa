@@ -13,7 +13,6 @@ import {
   Send,
   Bot,
   Sparkles,
-  Loader2,
   ImagePlus,
   Film,
   UserRound,
@@ -28,6 +27,7 @@ import {
 
 import { getPublicSiteUrl } from "../lib/siteUrl";
 import { buildLoginUrl } from "../lib/authRedirect";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 import {
   isSupportBusinessHours,
   SUPPORT_HOURS_LABEL,
@@ -1163,8 +1163,6 @@ export default function AiChatWidget() {
   const [handoffToast, setHandoffToast] = useState(null); // { kind: 'line'|'wa'|'copy', hasMedia?: bool }
   /** 桌機轉專人：顯示 QR，避免被導到 line.me 官網 */
   const [lineQrOpen, setLineQrOpen] = useState(false);
-  const [lineQrText, setLineQrText] = useState("");
-  const [lineQrCopied, setLineQrCopied] = useState(false);
   const [lineQrPageUrl, setLineQrPageUrl] = useState("");
   const [lineQrError, setLineQrError] = useState("");
 
@@ -1228,8 +1226,6 @@ export default function AiChatWidget() {
 
       // 桌機：短 QR → 手機中繼頁 → LINE 預填（剪貼簿無法跨裝置）
       const qrText = buildCustomerLineMessageForQr(messages, { userLabel });
-      setLineQrText(qrText);
-      setLineQrCopied(false);
       setLineQrError("");
       setLineQrPageUrl("");
       setLineQrOpen(true);
@@ -1254,29 +1250,6 @@ export default function AiChatWidget() {
     },
     [messages, userDisplayName],
   );
-
-  const copyLineQrText = useCallback(async () => {
-    const text = lineQrText || "";
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.setAttribute("readonly", "");
-        ta.style.position = "fixed";
-        ta.style.left = "-9999px";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-      }
-      setLineQrCopied(true);
-      setTimeout(() => setLineQrCopied(false), 2500);
-    } catch {
-      /* ignore */
-    }
-  }, [lineQrText]);
 
   const copyHandoffSummary = useCallback(async () => {
     const text = handoffSummary || "";
@@ -1783,21 +1756,21 @@ export default function AiChatWidget() {
 
             {/* 桌機轉專人：掃 QR 加官方 LINE（避免被導到 line.me 官網） */}
             {lineQrOpen && (
-              <div className="mx-3 mt-2 rounded-2xl border border-[#06C755]/40 bg-white shadow-md overflow-hidden">
-                <div className="flex items-center justify-between px-3 py-2.5 bg-[#06C755]/10 border-b border-[#06C755]/20">
+              <div className="mx-3 mt-2 rounded-2xl border border-[#d4d4d4] bg-[#fafafa] shadow-md overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2.5 bg-[#2d2d2d] border-b border-[#3d3d3d]">
                   <div className="min-w-0">
-                    <p className="text-[13px] font-bold text-slate-800 inline-flex items-center gap-1.5">
-                      <LineIconSvg className="w-4 h-4 text-[#06C755]" />
+                    <p className="text-[13px] font-bold text-white inline-flex items-center gap-1.5">
+                      <LineIconSvg className="w-4 h-4 text-white/80" />
                       用手機掃碼轉專人客服
                     </p>
-                    <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
-                      掃碼後手機會開啟轉介頁，再自動把提問帶進官方 LINE（電腦複製無法同步到手機）
+                    <p className="text-[10px] text-white/65 mt-0.5 leading-snug">
+                      掃碼後手機會開啟轉介頁，再自動把提問帶進官方 LINE
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setLineQrOpen(false)}
-                    className="p-1 rounded-full hover:bg-white text-slate-500 shrink-0"
+                    className="p-1 rounded-full hover:bg-white/10 text-white/70 shrink-0"
                     aria-label="關閉"
                   >
                     <X className="w-4 h-4" />
@@ -1805,12 +1778,12 @@ export default function AiChatWidget() {
                 </div>
                 <div className="p-3 space-y-3">
                   {lineQrError && (
-                    <p className="text-[12px] text-red-600 leading-relaxed">
+                    <p className="text-[12px] text-[#8a3a3a] leading-relaxed">
                       {lineQrError}
                     </p>
                   )}
                   {!lineQrPageUrl && !lineQrError && (
-                    <p className="text-[12px] text-slate-500">正在產生掃碼…</p>
+                    <p className="text-[12px] text-[#5c5c5c]">正在產生掃碼…</p>
                   )}
                   {lineQrPageUrl && (
                     <div className="flex flex-col sm:flex-row gap-3 items-center sm:items-start">
@@ -1820,10 +1793,10 @@ export default function AiChatWidget() {
                         alt="轉專人客服 QR Code"
                         width={200}
                         height={200}
-                        className="w-[160px] h-[160px] sm:w-[180px] sm:h-[180px] rounded-xl border border-slate-100 bg-white shrink-0"
+                        className="w-[160px] h-[160px] sm:w-[180px] sm:h-[180px] rounded-xl border border-[#e0e0e0] bg-white shrink-0"
                       />
                       <div className="flex-1 min-w-0 space-y-2 text-left w-full">
-                        <ol className="text-[11px] text-slate-600 space-y-1 list-decimal list-inside leading-relaxed">
+                        <ol className="text-[11px] text-[#5c5c5c] space-y-1 list-decimal list-inside leading-relaxed">
                           <li>用手機相機或 LINE 掃描左側 QR</li>
                           <li>手機會開啟轉介頁，再自動帶入提問到官方 LINE</li>
                           <li>確認預填內容後按送出即可</li>
@@ -1832,54 +1805,13 @@ export default function AiChatWidget() {
                           href={lineQrPageUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex text-[11px] font-semibold text-[#06C755] underline underline-offset-2 break-all"
+                          className="inline-flex text-[11px] font-semibold text-[#2d2d2d] underline underline-offset-2 break-all hover:text-[#1a1a1a]"
                         >
                           或用手機開啟此轉介連結
                         </a>
-                        {/localhost|127\.0\.0\.1/.test(lineQrPageUrl) && (
-                          <p className="text-[10px] text-amber-700 leading-relaxed">
-                            本機網址手機通常掃不到。請用區網 IP 開站（例如
-                            http://192.168.x.x:3000），或部署後再測。
-                          </p>
-                        )}
                       </div>
                     </div>
                   )}
-                  <div>
-                    <p className="text-[10px] font-semibold text-slate-500 mb-1">
-                      將帶入手機 LINE 的提問
-                    </p>
-                    <textarea
-                      readOnly
-                      value={lineQrText}
-                      rows={4}
-                      className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-700"
-                    />
-                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={copyLineQrText}
-                        className="inline-flex items-center justify-center rounded-xl bg-slate-800 text-white text-[12px] font-semibold py-2.5 hover:bg-slate-700"
-                      >
-                        {lineQrCopied ? "已複製 ✓" : "複製訊息（備援）"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          openOfficialLine(buildLineOaMessageUrl(lineQrText));
-                          setHandoffToast({ kind: "line-desktop-try" });
-                          setTimeout(() => setHandoffToast(null), 4000);
-                        }}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#06C755] text-[#06C755] text-[12px] font-semibold py-2.5 hover:bg-[#06C755]/5"
-                      >
-                        <LineIconSvg className="w-3.5 h-3.5" />
-                        已裝電腦版？嘗試開啟
-                      </button>
-                    </div>
-                    <p className="mt-2 text-[10px] text-slate-400 leading-relaxed">
-                      電腦複製無法貼到手機 LINE；請一定用手機掃 QR／開轉介連結。
-                    </p>
-                  </div>
                 </div>
               </div>
             )}
@@ -2223,7 +2155,7 @@ export default function AiChatWidget() {
                   className="bg-blue-600 text-white p-2.5 rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
                   {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <QuarterRing size="sm" className="text-white" />
                   ) : (
                     <Send className="w-4 h-4" />
                   )}

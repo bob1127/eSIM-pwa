@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useGSAP } from "@gsap/react";
@@ -14,6 +14,7 @@ import { buildInstallHintText } from "@/lib/deviceDetect";
 import { usePWAInstall } from "./usePWAInstall";
 import AppInstallGuideModal from "./AppInstallGuideModal";
 import HeroCountryPlanPicker from "./HeroCountryPlanPicker";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 
 const LINE_OA_URL =
   process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn";
@@ -58,8 +59,15 @@ function HeroCardAction({
   const inner = (
     <>
       <MaterialIcon name={icon} size={22} className="shrink-0 text-[#1d5cc5]" />
-      <span className="flex-1 min-w-0 text-sm font-bold leading-tight">
-        {loading ? "處理中…" : children}
+      <span className="flex-1 min-w-0 text-sm font-bold leading-tight inline-flex items-center gap-2 text-black">
+        {loading ? (
+          <>
+            <QuarterRing size="xs" />
+            處理中…
+          </>
+        ) : (
+          children
+        )}
       </span>
       <MaterialIcon
         name="chevron_right"
@@ -197,10 +205,7 @@ export default function Slider() {
     setInstallHint(buildInstallHintText({ isStandalone }));
   }, [isStandalone]);
 
-  const installHintText = useMemo(
-    () => installHint ?? buildInstallHintText({ isStandalone }),
-    [installHint, isStandalone],
-  );
+  const installHintText = installHint;
 
   const needsAppleInstall =
     !isStandalone && (deviceType === "ios" || deviceType === "mac");
@@ -385,7 +390,7 @@ export default function Slider() {
 
   return (
     <>
-      <style>{`
+      <style jsx global>{`
         .hero-wrap { position: relative; width: 100%; z-index: 30; isolation: isolate; background: #fff; }
         .hero-container { position: relative; width: 100%; height: 95vh; height: 95svh; min-height: 480px; overflow: hidden; background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #fff; z-index: 0; }
         .images-wrapper { position: absolute; inset: 0; z-index: 0; overflow: hidden; }

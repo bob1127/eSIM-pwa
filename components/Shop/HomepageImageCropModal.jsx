@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import { PARTNER_OVERLAY_Z } from "@/lib/partnerOverlayZ";
 
 /** 原始檔上限（進入裁切前） */
 export const HOMEPAGE_IMAGE_SOURCE_MAX_BYTES = 8 * 1024 * 1024;
@@ -249,7 +251,10 @@ export default function HomepageImageCropModal({
   const top = layout.h ? (layout.h - layout.dispH) / 2 + offset.y : 0;
 
   return (
-    <div className="fixed inset-0 z-[9800] flex items-center justify-center px-3">
+    <div
+      className="fixed inset-0 flex items-center justify-center px-3"
+      style={{ zIndex: PARTNER_OVERLAY_Z.crop }}
+    >
       <div
         className="absolute inset-0 bg-black/55"
         onClick={busy ? undefined : onCancel}
@@ -342,7 +347,17 @@ export default function HomepageImageCropModal({
               onClick={handleConfirm}
               className="flex-1 py-2.5 rounded-xl bg-[#0f172a] text-white text-sm font-bold hover:bg-slate-800 disabled:opacity-50"
             >
-              {busy ? "處理中…" : "套用並上傳"}
+              {busy ? (
+                <LoadingIndicator
+                  layout="inline"
+                  size="xs"
+                  label="處理中…"
+                  labelClassName="text-sm font-bold text-white"
+                  spinnerClassName="text-white"
+                />
+              ) : (
+                "套用並上傳"
+              )}
             </button>
           </div>
         </div>

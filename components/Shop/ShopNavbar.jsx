@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ShoppingCart,
@@ -12,11 +13,21 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  LayoutDashboard,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/components/context/CartContext";
 import NavbarSiteSearch from "@/components/Navbar/NavbarSiteSearch";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const CONTAINER = "max-w-[1280px] mx-auto px-6 lg:px-10";
 
@@ -92,6 +103,79 @@ function MemberAvatarIcon({ size = 18, isLoggedIn, userImage, userName }) {
       style={{ width: size, height: size }}
       strokeWidth={1.75}
     />
+  );
+}
+
+function MemberNavControl({
+  isLoggedIn,
+  isPartnerNav,
+  loginHref,
+  partnerAdminHref = "/partner/dashboard",
+  memberBtnClass,
+  memberAria,
+  userName,
+  memberIcon,
+}) {
+  const router = useRouter();
+
+  if (!isLoggedIn) {
+    return (
+      <Link
+        href={loginHref}
+        className={memberBtnClass}
+        aria-label={memberAria}
+        title="會員登入"
+      >
+        {memberIcon}
+      </Link>
+    );
+  }
+
+  if (!isPartnerNav) {
+    return (
+      <Link
+        href={loginHref}
+        className={memberBtnClass}
+        aria-label={memberAria}
+        title={userName}
+      >
+        {memberIcon}
+      </Link>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={memberBtnClass}
+        aria-label={memberAria}
+        title={userName}
+        render={<button type="button" />}
+      >
+        {memberIcon}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={8} className="min-w-[11rem]">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="font-normal">
+            <span className="block text-xs text-slate-400">已登入</span>
+            <span className="block truncate font-semibold text-slate-800">
+              {userName}
+            </span>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem onClick={() => router.push(loginHref)}>
+            <User className="size-4" />
+            會員後台
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push(partnerAdminHref)}>
+            <LayoutDashboard className="size-4" />
+            商店後台
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -718,6 +802,8 @@ export default function ShopNavbar({
   searchDomain = "",
   /** 'physical' = /shop 實體車；'esim' = 夥伴賣場 eSIM 車 */
   cartMode = "physical",
+  /** 夥伴商店後台連結（會員下拉選單） */
+  partnerAdminHref = "/partner/dashboard",
   /** 編輯器預覽：依畫布寬度強制 RWD（不受瀏覽器視窗 media query 影響） */
   forceViewport = null,
 }) {
@@ -970,14 +1056,16 @@ export default function ShopNavbar({
                     </span>
                   )}
                 </button>
-                <Link
-                  href={loginHref}
-                  className={memberBtnClass}
-                  aria-label={memberAria}
-                  title={isLoggedIn ? userName : "會員登入"}
-                >
-                  {memberIcon}
-                </Link>
+                <MemberNavControl
+                  isLoggedIn={isLoggedIn}
+                  isPartnerNav={isPartnerNav}
+                  loginHref={loginHref}
+                  partnerAdminHref={partnerAdminHref}
+                  memberBtnClass={memberBtnClass}
+                  memberAria={memberAria}
+                  userName={userName}
+                  memberIcon={memberIcon}
+                />
                 <button
                   type="button"
                   onClick={() => setMobileOpen(true)}
@@ -1031,14 +1119,16 @@ export default function ShopNavbar({
                       </span>
                     )}
                   </button>
-                  <Link
-                    href={loginHref}
-                    className={memberBtnClass}
-                    aria-label={memberAria}
-                    title={isLoggedIn ? userName : "會員登入"}
-                  >
-                    {memberIcon}
-                  </Link>
+                  <MemberNavControl
+                    isLoggedIn={isLoggedIn}
+                    isPartnerNav={isPartnerNav}
+                    loginHref={loginHref}
+                    partnerAdminHref={partnerAdminHref}
+                    memberBtnClass={memberBtnClass}
+                    memberAria={memberAria}
+                    userName={userName}
+                    memberIcon={memberIcon}
+                  />
                   <button
                     type="button"
                     onClick={() => setMobileOpen(true)}
@@ -1270,20 +1360,46 @@ export default function ShopNavbar({
                   ))}
                 </div>
               </nav>
-              <div className="shrink-0 px-4 py-4 border-t border-slate-100">
-                <Link
-                  href={loginHref}
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2.5 w-full px-4 py-2.5 bg-black text-white text-sm font-bold justify-center"
-                >
-                  <MemberAvatarIcon
-                    size={20}
-                    isLoggedIn={isLoggedIn}
-                    userImage={userImage}
-                    userName={userName}
-                  />
-                  {isLoggedIn ? "會員中心" : "登入 / 註冊"}
-                </Link>
+              <div className="shrink-0 px-4 py-4 border-t border-slate-100 space-y-2">
+                {isLoggedIn && isPartnerNav ? (
+                  <>
+                    <Link
+                      href={loginHref}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 bg-black text-white text-sm font-bold justify-center"
+                    >
+                      <MemberAvatarIcon
+                        size={20}
+                        isLoggedIn={isLoggedIn}
+                        userImage={userImage}
+                        userName={userName}
+                      />
+                      會員後台
+                    </Link>
+                    <Link
+                      href={partnerAdminHref}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 border border-slate-200 text-slate-800 text-sm font-bold justify-center hover:bg-slate-50"
+                    >
+                      <LayoutDashboard className="size-5" />
+                      商店後台
+                    </Link>
+                  </>
+                ) : (
+                  <Link
+                    href={loginHref}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2.5 w-full px-4 py-2.5 bg-black text-white text-sm font-bold justify-center"
+                  >
+                    <MemberAvatarIcon
+                      size={20}
+                      isLoggedIn={isLoggedIn}
+                      userImage={userImage}
+                      userName={userName}
+                    />
+                    {isLoggedIn ? "會員中心" : "登入 / 註冊"}
+                  </Link>
+                )}
               </div>
             </motion.aside>
           </>

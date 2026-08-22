@@ -9,6 +9,7 @@ import {
   formatSetupNotesZh,
 } from "@/lib/esimDisplayZh";
 import JekoPillButton from "@/components/ui/JekoPillButton";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 interface ApnInfo {
   apn?: string;
@@ -529,9 +530,7 @@ export default function ThankYouPage() {
 
         <div className="space-y-5">
           {loading && (
-            <p className="text-center text-slate-500 text-sm">
-              正在載入 eSIM…
-            </p>
+            <LoadingIndicator layout="center" label="正在載入 eSIM…" />
           )}
 
           {!loading && isPaid(orderInfo) && qrcodes.length === 0 && (

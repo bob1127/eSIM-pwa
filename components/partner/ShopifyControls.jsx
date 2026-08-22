@@ -1,9 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+"use client";
+
+import { useState } from "react";
 import MaterialIcon from "@/components/MaterialIcon";
-import { SHOPIFY_UI } from "@/lib/shopifyUi";
+import PartnerButton from "@/components/partner/ui/PartnerButton";
+import { partnerDropdownTriggerClass } from "@/components/partner/partnerDropdownStyles";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { ChevronDownIcon } from "lucide-react";
 
 /**
- * Shopify Polaris 風格按鈕（次要／主要）
+ * 夥伴後台按鈕（UIAble / shadcn 風格）
  */
 export function ShopifyButton({
   children,
@@ -15,35 +29,84 @@ export function ShopifyButton({
   ...props
 }) {
   return (
-    <button
+    <PartnerButton
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center gap-1.5 h-8 px-3 text-[13px] font-semibold transition disabled:opacity-40 ${className}`}
-      style={
-        primary
-          ? {
-              backgroundColor: SHOPIFY_UI.primaryBtnBg,
-              color: SHOPIFY_UI.primaryBtnText,
-              borderRadius: "0.5rem",
-            }
-          : {
-              backgroundColor: "#fafafa",
-              color: "#303030",
-              border: "1px solid #8a8a8a",
-              borderRadius: "0.5rem",
-            }
-      }
+      variant={primary ? "default" : "secondary"}
+      size="sm"
+      className={className}
       {...props}
     >
       {children}
-    </button>
+    </PartnerButton>
+  );
+}
+
+function groupMenuItems(items = []) {
+  const groups = [];
+  let current = [];
+  for (const item of items) {
+    if (item.divider) {
+      if (current.length) groups.push(current);
+      current = [];
+      continue;
+    }
+    current.push(item);
+  }
+  if (current.length) groups.push(current);
+  return groups;
+}
+
+function isRadioMenu(items = []) {
+  return items.some((item) => !item.divider && item.active != null);
+}
+
+function itemVariant(item) {
+  if (item.variant === "destructive" || item.destructive) return "destructive";
+  return "default";
+}
+
+function MenuItemIcon({ icon, destructive = false, show = false }) {
+  if (!show || !icon) return null;
+  return (
+    <MaterialIcon
+      name={icon}
+      size={16}
+      className={cn("shrink-0", destructive ? "text-red-500" : "text-slate-500")}
+    />
+  );
+}
+
+function FilterMenuItem({ item, active, onPick, showItemIcons = false }) {
+  return (
+    <DropdownMenuItem
+      closeOnClick
+      disabled={item.disabled}
+      onClick={() => onPick(item)}
+      className={cn(
+        "cursor-pointer rounded-lg px-3 py-2.5 text-sm font-semibold transition-all active:scale-[0.98]",
+        active
+          ? "bg-[#1E4AD1] text-white data-highlighted:bg-[#1639a8] data-highlighted:text-white"
+          : "text-slate-700 data-highlighted:bg-slate-100",
+        showItemIcons && "gap-2",
+      )}
+    >
+      <MenuItemIcon icon={item.icon} show={showItemIcons} />
+      <span className="flex-1 truncate text-left">{item.label}</span>
+      {active ? (
+        <span className="ml-2 shrink-0 text-[10px] font-bold uppercase tracking-wide opacity-90">
+          已選
+        </span>
+      ) : null}
+    </DropdownMenuItem>
   );
 }
 
 /**
- * Shopify Polaris 風格下拉（比照圖二 Print ▾ ActionList）
- * items: [{ id, label, icon?, onClick, disabled?, divider? }]
+ * 夥伴後台下拉（Base UI Menu）
+ * - 含 `active` 的項目 → 單選篩選（按鈕式項目）
+ * - 其餘 → Action 選單（支援 destructive 項目）
  */
 export function ShopifyDropdown({
   label,
@@ -52,148 +115,128 @@ export function ShopifyDropdown({
   disabled = false,
   align = "right",
   primary = false,
+  menuLabel,
+  showItemIcons = false,
 }) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
+  const radioMode = isRadioMenu(items);
+  const groups = groupMenuItems(items);
+  const contentAlign = align === "left" ? "start" : "end";
 
-  useEffect(() => {
-    if (!open) return undefined;
-    const onDoc = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    const onKey = (e) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  /** Polaris secondary / primary 觸發鈕 */
-  const triggerStyle = primary
-    ? {
-        backgroundColor: open ? "#000" : SHOPIFY_UI.primaryBtnBg,
-        color: SHOPIFY_UI.primaryBtnText,
-        border: "1px solid transparent",
-        borderRadius: "0.5rem",
-      }
-    : {
-        backgroundColor: open ? "#f1f1f1" : "#ffffff",
-        color: "#303030",
-        border: "1px solid #8a8a8a",
-        borderRadius: "0.5rem",
-      };
+  const runItem = (item) => {
+    if (!item || item.disabled) return;
+    item.onClick?.();
+    setOpen(false);
+  };
 
   return (
-    <div className="relative inline-block" ref={rootRef}>
-      <button
-        type="button"
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger
         disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        className="inline-flex items-center gap-1 h-8 px-3 text-[13px] font-semibold transition disabled:opacity-40 hover:bg-[#f1f1f1]"
-        style={triggerStyle}
+        className={partnerDropdownTriggerClass({ primary })}
       >
-        {icon ? <MaterialIcon name={icon} size={16} /> : null}
+        {icon ? <MaterialIcon name={icon} size={16} className="text-slate-500" /> : null}
         <span>{label}</span>
-        <MaterialIcon
-          name="keyboard_arrow_down"
-          size={18}
-          className={`transition-transform duration-150 ${open ? "rotate-180" : ""}`}
-        />
-      </button>
+        <ChevronDownIcon className="size-4 opacity-60" />
+      </DropdownMenuTrigger>
 
-      {open ? (
-        <div
-          role="menu"
-          className={`absolute z-50 mt-1.5 min-w-[200px] py-2 overflow-hidden ${
-            align === "left" ? "left-0" : "right-0"
-          }`}
-          style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #e3e3e3",
-            borderRadius: "0.75rem",
-            boxShadow:
-              "0 0 0 1px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.08)",
-          }}
-        >
-          {items.map((item, idx) => {
-            if (item.divider) {
-              return (
-                <div
-                  key={`div-${idx}`}
-                  className="my-1.5 mx-0 h-px"
-                  style={{ backgroundColor: "#e3e3e3" }}
-                />
-              );
-            }
-            return (
-              <button
-                key={item.id || item.label}
-                type="button"
-                role="menuitem"
-                disabled={item.disabled}
-                onClick={() => {
-                  if (item.disabled) return;
-                  setOpen(false);
-                  item.onClick?.();
-                }}
-                className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-[13px] font-medium transition disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{
-                  color: "#303030",
-                  backgroundColor: item.active ? "#f1f1f1" : "transparent",
-                }}
-                onMouseEnter={(e) => {
-                  if (!item.disabled) e.currentTarget.style.backgroundColor = "#f6f6f7";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = item.active
-                    ? "#f1f1f1"
-                    : "transparent";
-                }}
-              >
-                {item.icon ? (
-                  <MaterialIcon
-                    name={item.icon}
-                    size={18}
-                    style={{ color: "#5c5f62", flexShrink: 0 }}
-                  />
-                ) : (
-                  <span className="w-[18px] shrink-0" />
-                )}
-                <span className="flex-1 truncate leading-snug">{item.label}</span>
-                {item.active ? (
-                  <MaterialIcon
-                    name="check"
-                    size={18}
-                    style={{ color: "#008060", flexShrink: 0 }}
-                  />
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
+      <DropdownMenuContent
+        align={contentAlign}
+        className={cn(
+          "min-w-[240px] p-2",
+          radioMode && "max-h-[min(420px,70vh)] overflow-y-auto",
+        )}
+      >
+        {menuLabel ? (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>{menuLabel}</DropdownMenuLabel>
+          </DropdownMenuGroup>
+        ) : null}
+
+        {groups.map((group, groupIdx) => {
+          const normal = group.filter(
+            (item) => itemVariant(item) !== "destructive",
+          );
+          const destructive = group.filter(
+            (item) => itemVariant(item) === "destructive",
+          );
+
+          return (
+            <div key={group[0]?.id || `group-${groupIdx}`}>
+              {groupIdx > 0 ? <DropdownMenuSeparator /> : null}
+
+              {normal.length ? (
+                <DropdownMenuGroup className={radioMode ? "space-y-1" : undefined}>
+                  {radioMode
+                    ? normal.map((item) => (
+                        <FilterMenuItem
+                          key={item.id || item.label}
+                          item={item}
+                          active={Boolean(item.active)}
+                          onPick={runItem}
+                          showItemIcons={showItemIcons}
+                        />
+                      ))
+                    : normal.map((item) => (
+                        <DropdownMenuItem
+                          key={item.id || item.label}
+                          closeOnClick
+                          disabled={item.disabled}
+                          onClick={() => runItem(item)}
+                          className={cn(
+                            "cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium transition-all active:scale-[0.98] data-highlighted:bg-slate-100",
+                            showItemIcons && "gap-2",
+                          )}
+                        >
+                          <MenuItemIcon icon={item.icon} show={showItemIcons} />
+                          <span className="flex-1 truncate">{item.label}</span>
+                        </DropdownMenuItem>
+                      ))}
+                </DropdownMenuGroup>
+              ) : null}
+
+              {destructive.length ? (
+                <>
+                  {normal.length ? <DropdownMenuSeparator /> : null}
+                  <DropdownMenuGroup>
+                    {destructive.map((item) => (
+                      <DropdownMenuItem
+                        key={item.id || item.label}
+                        closeOnClick
+                        variant="destructive"
+                        disabled={item.disabled}
+                        onClick={() => runItem(item)}
+                        className={cn(
+                          "cursor-pointer rounded-lg px-3 py-2.5 text-sm font-semibold transition-all active:scale-[0.98]",
+                          showItemIcons && "gap-2",
+                        )}
+                      >
+                        <MenuItemIcon
+                          icon={item.icon}
+                          destructive
+                          show={showItemIcons}
+                        />
+                        <span className="flex-1 truncate">{item.label}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </>
+              ) : null}
+            </div>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
 /**
  * Shopify 風格頁內 Tabs（全部／已付款／尚未付款…）
- * tabs: [{ id, label, count?, amount? }]
- * amount 可為字串（如 "NT$1,234"）顯示於筆數旁
  */
 export function ShopifyTabs({ tabs = [], value, onChange }) {
   return (
     <div
-      className="flex items-center gap-0.5 overflow-x-auto"
-      style={{ borderBottom: `1px solid ${SHOPIFY_UI.cardBorder}` }}
+      className="flex items-center gap-1 overflow-x-auto border-b border-slate-200"
       role="tablist"
     >
       {tabs.map((tab) => {
@@ -205,35 +248,33 @@ export function ShopifyTabs({ tabs = [], value, onChange }) {
             role="tab"
             aria-selected={active}
             onClick={() => onChange?.(tab.id)}
-            className="relative px-3.5 py-2.5 text-sm whitespace-nowrap transition shrink-0"
-            style={{
-              color: active ? SHOPIFY_UI.textPrimary : SHOPIFY_UI.textTertiary,
-              fontWeight: active ? 700 : 500,
-            }}
+            className={cn(
+              "relative shrink-0 whitespace-nowrap px-3.5 py-2.5 text-sm transition",
+              active
+                ? "font-bold text-slate-900"
+                : "font-medium text-slate-500 hover:text-slate-700",
+            )}
           >
-            <span className="inline-flex items-center gap-1.5 flex-wrap justify-center">
+            <span className="inline-flex flex-wrap items-center justify-center gap-1.5">
               {tab.label}
               {tab.count != null ? (
                 <span
-                  className="tabular-nums text-[11px] font-bold px-1.5 py-0.5 rounded-full"
-                  style={{
-                    backgroundColor: active ? "#e3e3e3" : SHOPIFY_UI.canvasBg,
-                    color: active
-                      ? SHOPIFY_UI.textPrimary
-                      : SHOPIFY_UI.textTertiary,
-                  }}
+                  className={cn(
+                    "rounded-md border px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+                    active
+                      ? "border-[#1E4AD1]/20 bg-[#1E4AD1]/10 text-[#1E4AD1]"
+                      : "border-slate-200 bg-slate-50 text-slate-500",
+                  )}
                 >
                   {tab.count}
                 </span>
               ) : null}
               {tab.amount != null && tab.amount !== "" ? (
                 <span
-                  className="tabular-nums text-[11px] font-bold"
-                  style={{
-                    color: active
-                      ? SHOPIFY_UI.textPrimary
-                      : SHOPIFY_UI.textTertiary,
-                  }}
+                  className={cn(
+                    "text-[11px] font-semibold tabular-nums",
+                    active ? "text-slate-800" : "text-slate-500",
+                  )}
                 >
                   {tab.amount}
                 </span>
@@ -241,8 +282,8 @@ export function ShopifyTabs({ tabs = [], value, onChange }) {
             </span>
             {active ? (
               <span
-                className="absolute left-2 right-2 -bottom-px h-[2.5px] rounded-full"
-                style={{ backgroundColor: SHOPIFY_UI.textPrimary }}
+                className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-[#1E4AD1]"
+                aria-hidden
               />
             ) : null}
           </button>
@@ -253,8 +294,7 @@ export function ShopifyTabs({ tabs = [], value, onChange }) {
 }
 
 /**
- * Shopify 風格分頁（小圓角）
- * page 從 1 開始；顯示「第 x–y 筆，共 z 筆」+ 上一頁／頁碼／下一頁
+ * 分頁（UIAble 風格）
  */
 export function ShopifyPagination({
   page = 1,
@@ -272,7 +312,6 @@ export function ShopifyPagination({
     if (next !== safePage) onChange?.(next);
   };
 
-  /** 產生頁碼陣列，過長時插入省略號 */
   const pageItems = (() => {
     if (totalPages <= 7) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -289,85 +328,59 @@ export function ShopifyPagination({
 
   if (total === 0) return null;
 
-  const btnBase =
-    "inline-flex items-center justify-center min-w-8 h-8 px-2 rounded-md text-xs font-bold transition disabled:opacity-35";
-
   return (
-    <div
-      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3"
-      style={{
-        borderTop: `1px solid ${SHOPIFY_UI.cardBorder}`,
-        backgroundColor: SHOPIFY_UI.cardBg,
-      }}
-    >
-      <p className="text-xs" style={{ color: SHOPIFY_UI.textTertiary }}>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3">
+      <p className="text-xs text-slate-500">
         顯示第{" "}
-        <span className="font-bold" style={{ color: SHOPIFY_UI.textPrimary }}>
+        <span className="font-semibold text-slate-900">
           {from}–{to}
         </span>{" "}
         筆，共 {total} 筆
       </p>
       <div className="flex items-center gap-1">
-        <button
+        <PartnerButton
           type="button"
+          variant="outline"
+          size="icon"
           disabled={safePage <= 1}
           onClick={() => go(safePage - 1)}
-          className={btnBase}
-          style={{
-            border: `1px solid ${SHOPIFY_UI.secondaryBorder}`,
-            color: SHOPIFY_UI.textPrimary,
-            backgroundColor: "#f1f1f1",
-          }}
           aria-label="上一頁"
+          className="h-8 w-8"
         >
           <MaterialIcon name="chevron_left" size={18} />
-        </button>
+        </PartnerButton>
         {pageItems.map((item, idx) =>
           item === "…" ? (
             <span
               key={`e-${idx}`}
-              className="w-8 text-center text-xs"
-              style={{ color: SHOPIFY_UI.textTertiary }}
+              className="w-8 text-center text-xs text-slate-400"
             >
               …
             </span>
           ) : (
-            <button
+            <PartnerButton
               key={item}
               type="button"
+              variant={item === safePage ? "default" : "outline"}
+              size="sm"
               onClick={() => go(item)}
-              className={btnBase}
-              style={
-                item === safePage
-                  ? {
-                      backgroundColor: SHOPIFY_UI.primaryBtnBg,
-                      color: "#fff",
-                    }
-                  : {
-                      border: `1px solid ${SHOPIFY_UI.secondaryBorder}`,
-                      color: SHOPIFY_UI.textPrimary,
-                      backgroundColor: "#fff",
-                    }
-              }
+              className="min-w-8 px-2"
             >
               {item}
-            </button>
+            </PartnerButton>
           ),
         )}
-        <button
+        <PartnerButton
           type="button"
+          variant="outline"
+          size="icon"
           disabled={safePage >= totalPages}
           onClick={() => go(safePage + 1)}
-          className={btnBase}
-          style={{
-            border: `1px solid ${SHOPIFY_UI.secondaryBorder}`,
-            color: SHOPIFY_UI.textPrimary,
-            backgroundColor: "#f1f1f1",
-          }}
           aria-label="下一頁"
+          className="h-8 w-8"
         >
           <MaterialIcon name="chevron_right" size={18} />
-        </button>
+        </PartnerButton>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import "aos/dist/aos.css";
 import Image from "next/image";
 import EasyProduct from "../components/easyProduct.jsx";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import {
   Modal,
   ModalContent,
@@ -49,7 +50,7 @@ export default function ProductGrid() {
   }, []);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <LoadingIndicator layout="center" label="Loading..." className="py-10" />;
   }
 
   if (products.length === 0) {

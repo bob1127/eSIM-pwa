@@ -13,6 +13,7 @@ import {
   ShopifyPagination,
 } from "@/components/partner/ShopifyControls";
 import MaterialIcon from "@/components/MaterialIcon";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { usePartnerSession, fetchPartnerStats } from "@/lib/partnerAuth";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
 import {
@@ -26,6 +27,8 @@ import PartnerInfoTimeline from "@/components/partner/PartnerInfoTimeline";
 import InfoCircleIcon from "@/components/icons/info-circle-icon";
 import WalletIcon from "@/components/icons/wallet-icon";
 import ClockIcon from "@/components/icons/clock-icon";
+import PartnerOrdersDateRange from "@/components/partner/PartnerOrdersDateRange";
+import { orderWithinDateRange } from "@/lib/partnerOrderFilters";
 
 const PAGE_SIZE = 10;
 
@@ -133,6 +136,7 @@ export default function PartnerOrdersPage() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [dateRange, setDateRange] = useState(undefined);
   const [selected, setSelected] = useState(() => new Set());
   const [printOpen, setPrintOpen] = useState(false);
   const [page, setPage] = useState(1);
@@ -149,9 +153,14 @@ export default function PartnerOrdersPage() {
   useEffect(() => {
     setSelected(new Set());
     setPage(1);
-  }, [filter]);
+  }, [filter, dateRange]);
 
   const orders = stats?.orders || [];
+
+  const ordersInRange = useMemo(
+    () => orders.filter((o) => orderWithinDateRange(o.created_at, dateRange)),
+    [orders, dateRange],
+  );
 
   const statusCounts = useMemo(() => {
     let paid = 0;
@@ -160,7 +169,7 @@ export default function PartnerOrdersPage() {
     let unpaidProfit = 0;
     let paidRevenue = 0;
     let unpaidRevenue = 0;
-    for (const o of orders) {
+    for (const o of ordersInRange) {
       const profit = Math.round(Number(o.partner_profit) || 0);
       const revenue = Math.round(Number(o.total_amount) || 0);
       if (o.status === "completed") {
@@ -177,7 +186,7 @@ export default function PartnerOrdersPage() {
       paid,
       unpaid,
       valid: paid + unpaid,
-      all: orders.length,
+      all: ordersInRange.length,
       paidProfit,
       unpaidProfit,
       validProfit: paidProfit + unpaidProfit,
@@ -185,15 +194,15 @@ export default function PartnerOrdersPage() {
       unpaidRevenue,
       validRevenue: paidRevenue + unpaidRevenue,
     };
-  }, [orders]);
+  }, [ordersInRange]);
 
   const filtered = useMemo(
     () =>
-      orders.filter((o) => {
+      ordersInRange.filter((o) => {
         if (filter === "all") return isSettledOrderStatus(o.status);
         return o.status === filter;
       }),
-    [orders, filter],
+    [ordersInRange, filter],
   );
 
   const filteredTotals = useMemo(() => {
@@ -454,7 +463,7 @@ export default function PartnerOrdersPage() {
           />
 
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between gap-3 px-3 sm:px-4 pt-1">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 px-3 sm:px-4 pt-1 relative z-20">
               <div className="min-w-0 flex-1">
                 <ShopifyTabs
                   tabs={filterTabs}
@@ -462,18 +471,24 @@ export default function PartnerOrdersPage() {
                   onChange={setFilter}
                 />
               </div>
-              {selected.size > 0 ? (
-                <span
-                  className="hidden sm:inline-flex text-xs font-bold shrink-0 px-2.5 py-1"
-                  style={{
-                    backgroundColor: UI.light,
-                    color: UI.dark,
-                    borderRadius: UI.radiusSm,
-                  }}
-                >
-                  已選取 {selected.size}
-                </span>
-              ) : null}
+              <div className="flex items-center gap-2 shrink-0 pb-2 sm:pb-2.5">
+                <PartnerOrdersDateRange
+                  value={dateRange}
+                  onChange={setDateRange}
+                />
+                {selected.size > 0 ? (
+                  <span
+                    className="hidden sm:inline-flex text-xs font-bold shrink-0 px-2.5 py-1"
+                    style={{
+                      backgroundColor: UI.light,
+                      color: UI.dark,
+                      borderRadius: UI.radiusSm,
+                    }}
+                  >
+                    已選取 {selected.size}
+                  </span>
+                ) : null}
+              </div>
             </div>
 
             {/* 手機卡片 */}
@@ -482,12 +497,11 @@ export default function PartnerOrdersPage() {
               style={{ borderTop: `1px solid ${UI.border}` }}
             >
               {loading ? (
-                <div
-                  className="py-10 text-center text-sm"
-                  style={{ color: UI.soft }}
-                >
-                  載入中...
-                </div>
+                <LoadingIndicator
+                  layout="center"
+                  label="載入中..."
+                  className="py-10"
+                />
               ) : paged.length === 0 ? (
                 <div
                   className="py-12 text-center text-sm"
@@ -631,12 +645,8 @@ export default function PartnerOrdersPage() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td
-                        colSpan={9}
-                        className="text-center py-10 text-sm"
-                        style={{ color: UI.soft }}
-                      >
-                        載入中...
+                      <td colSpan={9} className="text-center py-10">
+                        <LoadingIndicator layout="center" label="載入中..." size="sm" />
                       </td>
                     </tr>
                   ) : paged.length === 0 ? (
@@ -761,6 +771,11 @@ export default function PartnerOrdersPage() {
                   <span className="font-bold" style={{ color: UI.dark }}>
                     {filteredTotals.count} 筆
                   </span>
+                  {dateRange?.from ? (
+                    <span className="text-[11px] font-normal ml-1">
+                      （已套用日期篩選）
+                    </span>
+                  ) : null}
                 </p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 font-bold tabular-nums">
                   <span style={{ color: UI.mid }}>

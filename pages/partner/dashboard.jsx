@@ -27,6 +27,12 @@ import {
   growthPercent,
 } from "@/lib/partnerAnalytics";
 import { PARTNER_UI } from "@/lib/partnerUi";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import OrderDetailModal from "@/components/partner/OrderDetailModal";
+import {
+  isStorePublicLive,
+  isStoreSetupPending,
+} from "@/lib/partnerStoreLifecycle";
 
 /** 儀表板：小圓角 + 深灰／淺灰／白；狀態／成長徽章維持特殊色 */
 const UI = {
@@ -46,11 +52,8 @@ const DashboardDonut = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div
-        className="h-36 flex items-center justify-center text-xs animate-pulse"
-        style={{ color: UI.soft }}
-      >
-        載入圖表...
+      <div className="h-36 flex items-center justify-center">
+        <LoadingIndicator layout="center" label="載入圖表..." size="sm" />
       </div>
     ),
   },
@@ -181,6 +184,7 @@ export default function PartnerDashboard() {
   const { partner, store } = usePartnerSession();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [detailOrder, setDetailOrder] = useState(null);
   const [rangeStart, setRangeStart] = useState(() => thisMonthRange().start);
   const [rangeEnd, setRangeEnd] = useState(() => thisMonthRange().end);
 
@@ -234,7 +238,9 @@ export default function PartnerDashboard() {
     [valid],
   );
 
-  const storeUrl = store ? `${SITE_URL}/p/${store.domain}` : null;
+  const storeUrl = isStorePublicLive(store)
+    ? `${SITE_URL}/p/${store.domain}`
+    : null;
   const isReferral = partner?.cooperation_model === "referral";
   const referralUrl =
     isReferral && (partner.referral_code || partner.slug)
@@ -284,7 +290,11 @@ export default function PartnerDashboard() {
           ? `推薦連結：${referralUrl}`
           : storeUrl
             ? `賣場連結：${storeUrl} — 系統運作正常。`
-            : undefined
+            : store?.status === "deleted"
+              ? "賣場已關閉 — 請至商店設定重新開啟。"
+              : isStoreSetupPending(store)
+                ? "商店建立中 — 完成智慧開店後才會上線。"
+                : undefined
       }
     >
       <div
@@ -521,12 +531,8 @@ export default function PartnerDashboard() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="text-center py-8 text-sm"
-                        style={{ color: UI.soft }}
-                      >
-                        載入中...
+                      <td colSpan={6} className="text-center py-8">
+                        <LoadingIndicator layout="center" label="載入中..." size="sm" />
                       </td>
                     </tr>
                   ) : (stats?.orders || []).slice(0, 5).length === 0 ? (
@@ -545,7 +551,18 @@ export default function PartnerDashboard() {
                     (stats?.orders || []).slice(0, 5).map((order) => (
                       <tr
                         key={order.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setDetailOrder(order)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setDetailOrder(order);
+                          }
+                        }}
+                        className="cursor-pointer transition-colors hover:bg-[#fafafa] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#2c6ecb]"
                         style={{ borderTop: `1px solid ${UI.border}` }}
+                        aria-label={`查看訂單 ${String(order.id).substring(0, 8).toUpperCase()} 詳情`}
                       >
                         <td className="px-4 py-3">
                           <p
@@ -647,20 +664,55 @@ export default function PartnerDashboard() {
                     ctaLabel="前往選品"
                     href="/partner/catalog"
                   />
-                  <ActionCard
-                    icon="link"
-                    iconBg="#008060"
-                    title="分享您的專屬賣場"
-                    desc={storeUrl || "尚未設定賣場網址"}
-                    ctaLabel="複製連結"
-                    onClick={copyStoreUrl}
-                  />
+                  {storeUrl ? (
+                    <ActionCard
+                      icon="link"
+                      iconBg="#008060"
+                      title="分享您的專屬賣場"
+                      desc={storeUrl}
+                      ctaLabel="複製連結"
+                      onClick={copyStoreUrl}
+                    />
+                  ) : isStoreSetupPending(store) ? (
+                    <ActionCard
+                      icon="store"
+                      iconBg="#1E4AD1"
+                      title="商店建立中"
+                      desc="完成智慧選品後才會正式上線"
+                      ctaLabel="繼續建立"
+                      href="/partner/settings"
+                    />
+                  ) : store?.status === "deleted" ? (
+                    <ActionCard
+                      icon="store"
+                      iconBg="#b45309"
+                      title="賣場已關閉"
+                      desc="前台已下線，可至商店設定重新開啟"
+                      ctaLabel="商店設定"
+                      href="/partner/settings"
+                    />
+                  ) : (
+                    <ActionCard
+                      icon="link"
+                      iconBg="#008060"
+                      title="分享您的專屬賣場"
+                      desc="尚未設定賣場網址"
+                      ctaLabel="複製連結"
+                      onClick={copyStoreUrl}
+                    />
+                  )}
                 </>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      <OrderDetailModal
+        open={!!detailOrder}
+        order={detailOrder}
+        onClose={() => setDetailOrder(null)}
+      />
     </PartnerAdminLayout>
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const API_URL =
   "https://starislandbaby.com/test/wp-json/wc/v3/products/categories?consumer_key=ck_ec41b174efc5977249ffb5ef854f6c1fdba1844b&consumer_secret=cs_d6c8d7ba3031b522ca93e6ee7fb56397b8781d1f&per_page=100";
@@ -50,7 +51,13 @@ const SmallChildrenProducts = () => {
   }, []);
 
   if (loading) {
-    return <div className="text-center">Loading products...</div>;
+    return (
+      <LoadingIndicator
+        layout="center"
+        label="Loading products..."
+        className="py-10"
+      />
+    );
   }
 
   if (products.length === 0) {

@@ -13,6 +13,7 @@ import {
   fetchWpPostsFromApi,
 } from "../../lib/wordpress";
 import { stripHtml } from "@/lib/stripHtml";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import BlogCardMeta, { BlogDotTags } from "@/components/Blog/BlogCardMeta";
 
 const GENERIC_TAGS = new Set([
@@ -503,10 +504,12 @@ export default function InfoPage() {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
-          <div className="w-10 h-10 border-4 border-blue-200 border-t-[#1f57b8] rounded-full animate-spin"></div>
-          <span className="ml-3 text-gray-500 font-bold tracking-widest">
-            抓取最新文章中...
-          </span>
+          <LoadingIndicator
+            layout="inline"
+            label="抓取最新文章中..."
+            size="lg"
+            labelClassName="font-bold tracking-widest text-gray-500"
+          />
         </div>
       </Layout>
     );

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 function resolveLineOaId() {
   const raw = (process.env.NEXT_PUBLIC_LINE_OA_ID || "").trim();
@@ -95,7 +96,11 @@ export default function LineHandoffPage() {
           </div>
 
           {loading && (
-            <p className="mt-4 text-sm text-slate-500">正在帶入你的提問…</p>
+            <LoadingIndicator
+              label="正在帶入你的提問…"
+              className="mt-4"
+              labelClassName="text-sm text-slate-500"
+            />
           )}
 
           {error && (

@@ -48,6 +48,14 @@ const RESERVED_PRODUCT_CATEGORY_SLUGS = new Set([
   "global",
 ]);
 
+/** 非夥伴店的一字路徑：避免被誤導向 /p/{slug} */
+const RESERVED_APP_ROUTE_REDIRECTS = {
+  boss: "/admin-boss/",
+  "admin-boss": "/admin-boss/",
+  partner: "/partner/dashboard/",
+  admin: "/admin-boss/",
+};
+
 export default function PartnerLandingPage({ partner, products }) {
   const [buying, setBuying] = useState(false);
 
@@ -166,6 +174,16 @@ export async function getServerSideProps(context) {
     return {
       redirect: {
         destination: `/product/${partnerSlug}/`,
+        permanent: false,
+      },
+    };
+  }
+
+  const appRedirect = RESERVED_APP_ROUTE_REDIRECTS[partnerSlug];
+  if (appRedirect) {
+    return {
+      redirect: {
+        destination: appRedirect,
         permanent: false,
       },
     };

@@ -6,12 +6,15 @@ import {
   mergeHomepageCms,
   HOMEPAGE_HERO_MAX_SLIDES,
 } from "@/lib/partnerHomepageCms";
-import HomepageImageCropModal, {
-  HOMEPAGE_IMAGE_ASPECT,
-  HOMEPAGE_IMAGE_SOURCE_MAX_BYTES,
-  HOMEPAGE_IMAGE_UPLOAD_MAX_BYTES,
-  formatBytes,
-} from "@/components/Shop/HomepageImageCropModal";
+import {
+  EditorField as Field,
+  EditorImageField as ImageField,
+} from "@/components/Shop/partnerHomepageEditorFields";
+import {
+  SaveButtonContent,
+  SaveFeedbackAlert,
+  useSaveFeedback,
+} from "@/components/ui/save-feedback";
 
 async function getBearer() {
   const { data } = await supabase.auth.getSession();
@@ -68,149 +71,6 @@ export function usePartnerStoreOwner(store) {
   return state;
 }
 
-function Field({ label, value, onChange, placeholder, multiline }) {
-  const cls =
-    "w-full border border-slate-200 rounded-lg px-2.5 py-2 text-xs text-slate-800 bg-white focus:outline-none focus:border-[#3B9EFF]";
-  return (
-    <label className="block space-y-1">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-        {label}
-      </span>
-      {multiline ? (
-        <textarea
-          rows={2}
-          value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className={`${cls} resize-none`}
-        />
-      ) : (
-        <input
-          type="text"
-          value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className={cls}
-        />
-      )}
-    </label>
-  );
-}
-
-function ImageField({
-  label,
-  value,
-  onChange,
-  storeId,
-  token,
-  busy,
-  setBusy,
-  cropKind = "hero",
-}) {
-  const [cropFile, setCropFile] = useState(null);
-  const aspect = HOMEPAGE_IMAGE_ASPECT[cropKind] || HOMEPAGE_IMAGE_ASPECT.hero;
-  const aspectHint =
-    cropKind === "promo" ? "16:9" : cropKind === "discover" ? "21:9" : "21:9";
-
-  const uploadFile = async (file) => {
-    if (!file || !token) return;
-    if (file.size > HOMEPAGE_IMAGE_UPLOAD_MAX_BYTES) {
-      throw new Error(
-        `圖片請小於 ${formatBytes(HOMEPAGE_IMAGE_UPLOAD_MAX_BYTES)}（目前 ${formatBytes(file.size)}）`,
-      );
-    }
-    setBusy(true);
-    try {
-      const fd = new FormData();
-      fd.append("storeId", String(storeId));
-      fd.append("file", file);
-      const res = await fetch("/api/partner/upload-homepage-image", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "上傳失敗");
-      onChange(data.url);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const onPick = (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !token) return;
-    if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
-      window.alert("請上傳 JPG / PNG / WEBP / GIF");
-      return;
-    }
-    if (file.size > HOMEPAGE_IMAGE_SOURCE_MAX_BYTES) {
-      window.alert(
-        `原圖請小於 ${formatBytes(HOMEPAGE_IMAGE_SOURCE_MAX_BYTES)}（目前 ${formatBytes(file.size)}）`,
-      );
-      return;
-    }
-    setCropFile(file);
-  };
-
-  return (
-    <div className="space-y-1">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-        {label}
-      </span>
-      <p className="text-[10px] text-slate-400 leading-snug">
-        上傳後可裁切為 {aspectHint}；檔案上限{" "}
-        {formatBytes(HOMEPAGE_IMAGE_UPLOAD_MAX_BYTES)}
-      </p>
-      <div className="flex flex-wrap gap-2 items-center">
-        <input
-          type="text"
-          value={value || ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="圖片 URL 或上傳"
-          className="flex-1 min-w-[140px] border border-slate-200 rounded-lg px-2.5 py-2 text-xs"
-        />
-        <label className="shrink-0 text-[11px] font-bold px-3 py-2 rounded-lg bg-slate-800 text-white cursor-pointer hover:bg-slate-700 disabled:opacity-50">
-          {busy ? "上傳中…" : "上傳裁切"}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className="hidden"
-            disabled={busy}
-            onChange={onPick}
-          />
-        </label>
-      </div>
-      {value ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={value}
-          alt=""
-          className="mt-1 h-14 w-auto max-w-full object-cover rounded border border-slate-100"
-        />
-      ) : null}
-
-      {cropFile ? (
-        <HomepageImageCropModal
-          file={cropFile}
-          aspect={aspect}
-          aspectHint={aspectHint}
-          onCancel={() => setCropFile(null)}
-          onConfirm={async (cropped) => {
-            try {
-              await uploadFile(cropped);
-              setCropFile(null);
-            } catch (err) {
-              window.alert(err.message || "上傳失敗");
-            }
-          }}
-        />
-      ) : null}
-    </div>
-  );
-}
-
 /**
  * 浮動編輯面板：區塊選擇 → 欄位 → 儲存
  */
@@ -223,9 +83,9 @@ export default function PartnerHomepageEditor({
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState("hero");
   const [draft, setDraft] = useState(() => mergeHomepageCms(store, cms));
-  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState("");
+  const { saving, setSaving, feedback, showSuccess, showError, clearFeedback } =
+    useSaveFeedback();
   const [syncBrand, setSyncBrand] = useState(false);
 
   useEffect(() => {
@@ -285,13 +145,15 @@ export default function PartnerHomepageEditor({
     });
   const patchDiscover = (key, val) =>
     setDraft((d) => ({ ...d, discover: { ...d.discover, [key]: val } }));
+  const patchPlans = (key, val) =>
+    setDraft((d) => ({ ...d, plans: { ...d.plans, [key]: val } }));
 
   const isSlider = draft.hero?.layout === "slider";
 
   const save = useCallback(async () => {
     if (!token) return;
     setSaving(true);
-    setMessage("");
+    clearFeedback();
     try {
       const res = await fetch("/api/partner/homepage-cms", {
         method: "PATCH",
@@ -310,13 +172,23 @@ export default function PartnerHomepageEditor({
       const next = data.homepage_cms || draft;
       onCmsChange?.(next);
       setDraft(next);
-      setMessage("已儲存，訪客重新整理後即可看到");
+      showSuccess("儲存成功", "訪客重新整理後即可看到變更");
     } catch (err) {
-      setMessage(err.message || "儲存失敗");
+      showError("儲存失敗", err.message || "請稍後再試");
     } finally {
       setSaving(false);
     }
-  }, [token, store?.id, draft, syncBrand, onCmsChange]);
+  }, [
+    token,
+    store?.id,
+    draft,
+    syncBrand,
+    onCmsChange,
+    setSaving,
+    showSuccess,
+    showError,
+    clearFeedback,
+  ]);
 
   return (
     <>
@@ -340,6 +212,7 @@ export default function PartnerHomepageEditor({
               {[
                 ["hero", "主視覺"],
                 ["promo", "雙欄卡片"],
+                ["plans", "方案標題"],
                 ["discover", "Discover"],
               ].map(([id, label]) => (
                 <button
@@ -587,6 +460,31 @@ export default function PartnerHomepageEditor({
               </div>
             ) : null}
 
+            {section === "plans" ? (
+              <div className="space-y-2.5">
+                <Field
+                  label="區塊主標題"
+                  value={draft.plans?.title}
+                  onChange={(v) => patchPlans("title", v)}
+                />
+                <Field
+                  label="副標（商品數量自動顯示）"
+                  value={draft.plans?.subtitle}
+                  onChange={(v) => patchPlans("subtitle", v)}
+                />
+                <Field
+                  label="右側連結文字"
+                  value={draft.plans?.shop_link_label}
+                  onChange={(v) => patchPlans("shop_link_label", v)}
+                />
+                <Field
+                  label="右側連結網址"
+                  value={draft.plans?.shop_link_href}
+                  onChange={(v) => patchPlans("shop_link_href", v)}
+                />
+              </div>
+            ) : null}
+
             {section === "discover" ? (
               <div className="space-y-2.5">
                 <Field
@@ -628,16 +526,23 @@ export default function PartnerHomepageEditor({
               </div>
             ) : null}
 
-            {message ? (
-              <p className="text-[11px] font-bold text-slate-600">{message}</p>
+            {feedback ? (
+              <SaveFeedbackAlert
+                feedback={feedback}
+                onDismiss={clearFeedback}
+                className="text-left"
+              />
             ) : null}
             <button
               type="button"
               disabled={saving}
+              aria-busy={saving}
               onClick={save}
               className="w-full py-2.5 rounded-xl bg-[#0f172a] text-white text-sm font-bold hover:bg-slate-800 disabled:opacity-50"
             >
-              {saving ? "儲存中…" : "儲存變更"}
+              <SaveButtonContent saving={saving} savingLabel="儲存中…">
+                儲存變更
+              </SaveButtonContent>
             </button>
           </div>
         ) : null}

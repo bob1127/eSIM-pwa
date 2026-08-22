@@ -3,6 +3,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { getClientPlatformFxRates } from "@/lib/esim/platformFx";
 import { useProductAdmin } from "@/hooks/useProductAdmin";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const PLATFORM_FX = getClientPlatformFxRates();
 
@@ -1942,7 +1943,13 @@ export default function GlobalPlanScanner() {
     return (
       <>
         {noIndex}
-        <div className="p-10 text-center font-bold text-gray-500">掃描中...</div>
+        <div className="p-10">
+          <LoadingIndicator
+            layout="center"
+            label="掃描中..."
+            labelClassName="font-bold text-gray-500"
+          />
+        </div>
       </>
     );
   if (errorMsg)

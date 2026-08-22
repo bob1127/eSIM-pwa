@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { formatMb } from "@/lib/esimUsageFormat";
 
 /**
@@ -15,8 +16,12 @@ const YELLOW = "#F5D142";
 const LineTrafficUsageCard = dynamic(() => import("./LineTrafficUsageCard"), {
   ssr: false,
   loading: () => (
-    <section className="mb-3 rounded-[16px] bg-white p-4 text-center text-[13px] text-[#888888] shadow-sm">
-      圖表載入中…
+    <section className="mb-3 rounded-[16px] bg-white p-4 shadow-sm">
+      <LoadingIndicator
+        layout="center"
+        label="圖表載入中…"
+        labelClassName="text-[13px] text-[#888888]"
+      />
     </section>
   ),
 });
@@ -302,7 +307,18 @@ export default function LineIccidScreen({
             disabled={lineBindStatus === "loading" || !authReady}
             className="w-full rounded-full bg-[#06C755] py-3.5 text-sm font-black text-white hover:bg-[#05b34c] disabled:opacity-60"
           >
-            {lineBindStatus === "loading" ? "綁定中…" : "一鍵綁定官網會員 →"}
+            {lineBindStatus === "loading" ? (
+              <LoadingIndicator
+                layout="inline"
+                size="sm"
+                label="綁定中…"
+                className="justify-center w-full"
+                labelClassName="text-sm font-black text-white"
+                spinnerClassName="text-white"
+              />
+            ) : (
+              "一鍵綁定官網會員 →"
+            )}
           </button>
           {lineBindStatus === "error" && lineBindMessage ? (
             <p className="text-[12px] text-red-600">{lineBindMessage}</p>
@@ -314,11 +330,20 @@ export default function LineIccidScreen({
             className="w-full rounded-full py-3.5 text-sm font-black text-white disabled:opacity-50"
             style={{ backgroundColor: BLUE }}
           >
-            {bindLoading
-              ? "設定中…"
-              : esims.length > 1
-                ? "開啟所選 eSIM 的提醒 →"
-                : "已有本站訂單？開啟提醒 →"}
+            {bindLoading ? (
+              <LoadingIndicator
+                layout="inline"
+                size="sm"
+                label="設定中…"
+                className="justify-center w-full"
+                labelClassName="text-sm font-black text-white"
+                spinnerClassName="text-white"
+              />
+            ) : esims.length > 1 ? (
+              "開啟所選 eSIM 的提醒 →"
+            ) : (
+              "已有本站訂單？開啟提醒 →"
+            )}
           </button>
           {orderError ? (
             <p className="text-[12px] leading-relaxed text-red-600">
@@ -372,7 +397,18 @@ export default function LineIccidScreen({
             className="mt-4 w-full rounded-full py-3.5 text-sm font-black text-white disabled:opacity-60"
             style={{ backgroundColor: BLUE }}
           >
-            {loading ? "查詢中…" : "查詢並開啟 LINE 提醒 →"}
+            {loading ? (
+              <LoadingIndicator
+                layout="inline"
+                size="sm"
+                label="查詢中…"
+                className="justify-center w-full"
+                labelClassName="text-sm font-black text-white"
+                spinnerClassName="text-white"
+              />
+            ) : (
+              "查詢並開啟 LINE 提醒 →"
+            )}
           </button>
         </form>
       </section>

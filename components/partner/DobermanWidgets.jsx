@@ -1,7 +1,10 @@
 import { useState } from "react";
 import MaterialIcon from "@/components/MaterialIcon";
 import { PARTNER_UI } from "@/lib/partnerUi";
+import PartnerDialog from "@/components/partner/ui/PartnerDialog";
+import PartnerButton from "@/components/partner/ui/PartnerButton";
 import { SHOPIFY_UI } from "@/lib/shopifyUi";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 
 export const fmt = (n) => `NT$${Math.round(Number(n) || 0).toLocaleString()}`;
 
@@ -117,83 +120,41 @@ export const METRIC_HELP = {
   },
 };
 
-/** 說明 Popup — 直角、無圓角 */
+/** 說明 Popup — UIAble Dialog 風格 */
 export function MetricHelpPopup({ open, onClose, title, body, bullets = [] }) {
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
-      onClick={onClose}
-      role="presentation"
+    <PartnerDialog
+      open={open}
+      onClose={onClose}
+      title={title}
+      icon="info"
+      footer={
+        <PartnerButton type="button" onClick={onClose}>
+          我知道了
+        </PartnerButton>
+      }
     >
-      <div
-        className="bg-white border-2 border-slate-800 shadow-xl w-full max-w-md"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="metric-help-title"
-      >
-        <div className="flex items-center justify-between px-5 py-3 border-b-2 border-slate-200 bg-[#f8fafc]">
-          <div className="flex items-center gap-2 min-w-0">
-            <MaterialIcon
-              name="info"
-              size={22}
-              className="text-[#1E4AD1] shrink-0"
-            />
-            <h2
-              id="metric-help-title"
-              className="text-sm font-black text-slate-800 truncate"
+      {body ? (
+        <p className="text-sm text-slate-700 leading-relaxed">{body}</p>
+      ) : null}
+      {bullets.length > 0 ? (
+        <ul className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+          {bullets.map((item) => (
+            <li
+              key={item}
+              className="flex items-start gap-2 text-xs text-slate-600 leading-relaxed"
             >
-              {title}
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition shrink-0"
-            aria-label="關閉"
-          >
-            <MaterialIcon name="close" size={22} />
-          </button>
-        </div>
-        <div className="px-5 py-4 space-y-3">
-          {body && (
-            <p className="text-sm text-slate-700 leading-relaxed">{body}</p>
-          )}
-          {bullets.length > 0 && (
-            <ul className="space-y-2 border-t border-slate-200 pt-3">
-              {bullets.map((item) => (
-                <li
-                  key={item}
-                  className="flex items-start gap-2 text-xs text-slate-600 leading-relaxed"
-                >
-                  <MaterialIcon
-                    name="arrow_right"
-                    size={14}
-                    className="text-[#1E4AD1] shrink-0 mt-0.5"
-                  />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="px-5 py-3 border-t-2 border-slate-200 bg-slate-50 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 text-sm font-bold text-white hover:brightness-110 border transition"
-            style={{
-              backgroundColor: PARTNER_UI.navy,
-              borderColor: PARTNER_UI.navy,
-            }}
-          >
-            我知道了
-          </button>
-        </div>
-      </div>
-    </div>
+              <MaterialIcon
+                name="arrow_right"
+                size={14}
+                className="text-[#1E4AD1] shrink-0 mt-0.5"
+              />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </PartnerDialog>
   );
 }
 
@@ -516,7 +477,14 @@ export function DobermanStatusBanner({ title, message, loading }) {
       </div>
       <div className="min-w-0">
         <p className="text-lg sm:text-2xl font-black text-white tracking-wide leading-snug">
-          {loading ? "載入中..." : title}
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <QuarterRing size="sm" className="text-white" />
+              <span className="text-white">載入中...</span>
+            </span>
+          ) : (
+            title
+          )}
         </p>
         <p className="text-xs sm:text-sm text-blue-100 mt-1 leading-relaxed">
           {message}

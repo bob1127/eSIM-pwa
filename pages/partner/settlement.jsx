@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabaseClient";
 import StatusIconBadge from "@/components/partner/StatusIconBadge";
 import PartnerInfoTimeline from "@/components/partner/PartnerInfoTimeline";
 import WalletIcon from "@/components/icons/wallet-icon";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import ClockIcon from "@/components/icons/clock-icon";
 import CreditCardIcon from "@/components/icons/credit-card-icon";
 import {
@@ -1027,12 +1028,11 @@ export default function PartnerSettlementPage() {
           </div>
 
           {loading ? (
-            <p
-              className="px-4 py-10 text-center text-sm"
-              style={{ color: UI.soft }}
-            >
-              載入中…
-            </p>
+            <LoadingIndicator
+              layout="center"
+              label="載入中…"
+              className="px-4 py-10"
+            />
           ) : !paged.length ? (
             <p
               className="px-4 py-10 text-center text-sm"

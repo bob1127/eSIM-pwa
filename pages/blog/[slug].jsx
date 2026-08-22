@@ -1,9 +1,10 @@
 import { useRouter } from "next/router";
+import { useRef, useState } from "react";
 import Layout from "../Layout";
 import { buildBlogPostSeo } from "../../lib/seo.config";
 import Link from "next/link";
 import ParallaxImage from "../../components/ParallaxImage/page";
-import { useRef, useState } from "react";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import {
   fetchRelatedWpPosts,
   fetchRelatedWpPostsForArticle,
@@ -250,7 +251,7 @@ export default function PostPage({
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-white">
-          <div className="text-xl text-gray-500 font-medium">Loading...</div>
+          <LoadingIndicator layout="center" label="Loading..." size="md" />
         </div>
       </Layout>
     );
@@ -533,7 +534,16 @@ export default function PostPage({
                       讀者評論與推薦
                     </h3>
                     <span className="text-[13px] text-[#666] tracking-widest">
-                      {reviewsLoading ? "載入中…" : `${reviews.length} 則留言`}
+                      {reviewsLoading ? (
+                        <LoadingIndicator
+                          layout="inline"
+                          size="xs"
+                          label="載入中…"
+                          labelClassName="text-[13px] text-black tracking-widest"
+                        />
+                      ) : (
+                        `${reviews.length} 則留言`
+                      )}
                     </span>
                   </div>
 
@@ -722,10 +732,13 @@ export default function PostPage({
 
                   {/* ── 評論列表 ── */}
                   {reviewsLoading ? (
-                    <div className="flex items-center gap-3 py-10 text-[#999] text-[14px]">
-                      <div className="w-5 h-5 border-2 border-[#ccc] border-t-[#1f57b8] rounded-full animate-spin" />
-                      載入評論中…
-                    </div>
+                    <LoadingIndicator
+                      layout="inline"
+                      label="載入評論中…"
+                      size="sm"
+                      className="py-10 text-[14px]"
+                      labelClassName="text-[#999]"
+                    />
                   ) : reviewsError ? (
                     <p className="text-[13px] text-red-400 py-6">
                       {reviewsError}

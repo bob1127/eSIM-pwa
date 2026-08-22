@@ -8,6 +8,7 @@ import {
   getBossEmail,
 } from "@/lib/bossAdminClient";
 import BossInlineLogin from "./BossInlineLogin";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 /** 包裹需 Medusa Token 的總部功能 */
 export default function AccountBossGate({ children, onAuthChange }) {
@@ -66,8 +67,7 @@ export default function AccountBossGate({ children, onAuthChange }) {
   if (checking) {
     return (
       <div className="py-16 flex flex-col items-center gap-3 text-slate-400">
-        <div className="w-8 h-8 border-4 border-[#1E4AD1] border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm">驗證總部權限…</p>
+        <LoadingIndicator layout="center" label="驗證總部權限…" size="md" />
       </div>
     );
   }

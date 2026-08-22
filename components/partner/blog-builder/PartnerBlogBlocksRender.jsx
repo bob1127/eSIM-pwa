@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import MaterialIcon from "@/components/MaterialIcon";
 import {
   galleryUrls,
@@ -11,8 +11,57 @@ import {
 import { designControlStyle, designShellStyle, designHeightPx, gapCss, designCardStyle, photoWallFrameStyle } from "@/lib/partnerBlogDesign";
 import PartnerShareButtons from "@/components/Shop/PartnerShareButtons";
 import WpPhotoWall from "@/components/Blog/WpPhotoWall";
+import WpArticleBody from "@/components/Blog/WpArticleBody";
+import { useBlogLightbox } from "@/components/Blog/BlogArticleLightbox";
+import { normalizeWpAssetUrl } from "@/lib/wordpress";
 import CanvasEditable from "./CanvasEditable";
 import ItsHoverIcon from "@/components/icons/ItsHoverIcon";
+
+function useBlockImageLightbox() {
+  const ctx = useBlogLightbox();
+  const openImage = useCallback(
+    (src) => {
+      if (!ctx?.openAt || !ctx?.images?.length || !src) return;
+      const key = normalizeWpAssetUrl(src);
+      if (!key) return;
+      const idx = ctx.images.findIndex(
+        (item) => item.src === key || item.thumb === key,
+      );
+      if (idx >= 0) ctx.openAt(idx);
+    },
+    [ctx],
+  );
+  return { openImage, enabled: Boolean(ctx?.openAt) };
+}
+
+function LightboxImage({
+  src,
+  alt = "",
+  className = "",
+  style,
+  openImage,
+  enabled,
+  buttonClassName = "block w-full p-0 border-0 bg-transparent cursor-zoom-in text-left",
+}) {
+  if (!src) return null;
+  if (!enabled) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={src} alt={alt} className={className} style={style} />
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={buttonClassName}
+      onClick={() => openImage?.(src)}
+      aria-label={alt || "查看大圖"}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} className={className} style={style} />
+    </button>
+  );
+}
 
 /** 文字／HTML 元件：Enter 成段時不要空一整行 */
 const RICH_TEXT_PROSE =
@@ -44,6 +93,7 @@ function CarouselPublic({
   autoplay = true,
   interval = 4,
   height = 320,
+  onImageClick,
 }) {
   const [i, setI] = useState(0);
   const n = urls.length;
@@ -75,6 +125,8 @@ function CarouselPublic({
   const prev = () => setI((x) => (x - 1 + n) % n);
   const next = () => setI((x) => (x + 1) % n);
 
+  const zoomClass = onImageClick ? "cursor-zoom-in" : "";
+
   if (mode === "marquee") {
     const loop = [...urls, ...urls];
     const dur = Math.max(12, n * 4);
@@ -91,8 +143,14 @@ function CarouselPublic({
               className="shrink-0 pr-2"
               style={{ width: cardW }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" className="w-full object-cover rounded-lg" style={{ height: h }} />
+              <LightboxImage
+                src={src}
+                alt=""
+                className={`w-full object-cover rounded-lg ${zoomClass}`}
+                style={{ height: h }}
+                openImage={onImageClick}
+                enabled={Boolean(onImageClick)}
+              />
             </div>
           ))}
         </div>
@@ -124,8 +182,14 @@ function CarouselPublic({
               zIndex: idx === i ? 1 : 0,
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt="" className="w-full h-full object-cover" />
+            <LightboxImage
+              src={src}
+              alt=""
+              className={`w-full h-full object-cover ${zoomClass}`}
+              buttonClassName="block w-full h-full p-0 border-0 bg-transparent cursor-zoom-in text-left"
+              openImage={onImageClick}
+              enabled={Boolean(onImageClick)}
+            />
           </div>
         ))}
         <CarouselNav n={n} i={i} prev={prev} next={next} setI={setI} />
@@ -157,11 +221,13 @@ function CarouselPublic({
                 pointerEvents: abs === 0 ? "auto" : "none",
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <LightboxImage
                 src={src}
                 alt=""
-                className="w-full h-full object-cover rounded-xl shadow-lg"
+                className={`w-full h-full object-cover rounded-xl shadow-lg ${zoomClass}`}
+                buttonClassName="block w-full h-full p-0 border-0 bg-transparent cursor-zoom-in text-left"
+                openImage={onImageClick}
+                enabled={Boolean(onImageClick)}
               />
             </div>
           );
@@ -188,13 +254,18 @@ function CarouselPublic({
                 className="shrink-0 px-1.5"
                 style={{ width: `${100 / shown}%` }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <LightboxImage
                   src={src}
                   alt=""
-                  onClick={() => setI(idx)}
-                  className="w-full object-cover rounded-lg cursor-pointer transition-opacity duration-700"
+                  className={`w-full object-cover rounded-lg transition-opacity duration-700 ${zoomClass}`}
                   style={{ height: h, opacity: on ? 1 : 0.4 }}
+                  openImage={
+                    onImageClick ||
+                    ((url) => {
+                      setI(idx);
+                    })
+                  }
+                  enabled
                 />
               </div>
             );
@@ -221,12 +292,13 @@ function CarouselPublic({
             className="shrink-0 px-1"
             style={{ width: `${pct}%` }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <LightboxImage
               src={src}
               alt=""
-              className="w-full object-cover rounded-lg"
+              className={`w-full object-cover rounded-lg ${zoomClass}`}
               style={{ height: h }}
+              openImage={onImageClick}
+              enabled={Boolean(onImageClick)}
             />
           </div>
         ))}
@@ -1062,6 +1134,8 @@ function PartnerBlogBlockBody({
 }) {
   const p = block.props || {};
   const patch = (partial) => onChangeProps?.({ ...p, ...partial });
+  const { openImage, enabled: lightboxEnabled } = useBlockImageLightbox();
+  const onImageClick = lightboxEnabled && !editable ? openImage : undefined;
   switch (block.type) {
     case "heading": {
       const Tag = p.tag || "h2";
@@ -1086,6 +1160,11 @@ function PartnerBlogBlockBody({
       );
     }
     case "text":
+      if (!editable) {
+        return (
+          <WpArticleBody html={p.html || ""} className={RICH_TEXT_PROSE} nested />
+        );
+      }
       return (
         <CanvasEditable
           enabled={editable}
@@ -1107,11 +1186,12 @@ function PartnerBlogBlockBody({
       }
       return (
         <figure className="w-full m-0 min-w-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <LightboxImage
             src={p.src}
             alt={p.alt || ""}
             className="block w-auto max-w-full h-auto max-h-[100dvh] object-contain bg-[#faf9f6]"
+            openImage={onImageClick}
+            enabled={Boolean(onImageClick)}
           />
           {p.caption || editable ? (
             <CanvasEditable
@@ -1191,6 +1271,11 @@ function PartnerBlogBlockBody({
     case "spacer":
       return <div style={{ height: Number(p.height) || 32 }} />;
     case "html":
+      if (!editable) {
+        return (
+          <WpArticleBody html={p.html || ""} className={RICH_TEXT_PROSE} nested />
+        );
+      }
       return (
         <CanvasEditable
           enabled={editable}
@@ -1295,12 +1380,13 @@ function PartnerBlogBlockBody({
           }}
         >
           {urls.map((src) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <LightboxImage
               key={src}
               src={src}
               alt=""
               className="block w-full h-40 sm:h-48 object-cover rounded"
+              openImage={onImageClick}
+              enabled={Boolean(onImageClick)}
             />
           ))}
         </div>
@@ -1702,6 +1788,7 @@ function PartnerBlogBlockBody({
           autoplay={p.autoplay !== false}
           interval={p.interval}
           height={p.height}
+          onImageClick={onImageClick}
         />
       );
     case "products":

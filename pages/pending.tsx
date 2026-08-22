@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 type QrcodeInfo = { name: string; src: string };
 
@@ -158,7 +159,7 @@ export default function PendingPage() {
           </div>
         )}
 
-        {loading && <div style={{ margin: "18px 0" }}>載入中…</div>}
+        {loading && <LoadingIndicator label="載入中…" className="my-[18px]" />}
         {errorText && (
           <div
             style={{

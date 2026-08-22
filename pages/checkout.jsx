@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useCart } from "../components/context/CartContext";
 import { motion } from "framer-motion";
 import Layout from "./Layout.js"; // 注意路徑是否正確
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const CheckoutPage = () => {
   const { esimItems, esimTotal } = useCart();
@@ -181,7 +182,17 @@ const CheckoutPage = () => {
                   : "bg-slate-900 text-white hover:bg-slate-800 shadow-slate-200"
               }`}
             >
-              {isSubmitting ? "處理中..." : "確認並前往付款"}
+              {isSubmitting ? (
+                <LoadingIndicator
+                  layout="inline"
+                  size="sm"
+                  label="處理中..."
+                  labelClassName="text-slate-400"
+                  spinnerClassName="text-slate-400"
+                />
+              ) : (
+                "確認並前往付款"
+              )}
             </button>
           </div>
         </div>

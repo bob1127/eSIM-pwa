@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import MaterialIcon from "./MaterialIcon";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 import { useUser } from "./context/UserContext";
 import {
   getPushEndpoint,
@@ -203,13 +204,18 @@ export default function GuestPushBindForm({
           className="w-full bg-[#1d5cc5] hover:bg-[#174da8] disabled:opacity-60 text-white font-bold py-3.5 rounded-full transition-colors flex items-center justify-center gap-2 shadow-sm"
         >
           <MaterialIcon name="notifications_active" size={18} />
-          {loading
-            ? stepLabel
-              ? `${stepLabel}…`
-              : "處理中…"
-            : isMember
-              ? "開啟推播並綁定 ICCID"
-              : "留下 ICCID 並啟用流量提醒"}
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <QuarterRing size="xs" className="text-white" />
+              <span className="text-white">
+                {stepLabel ? `${stepLabel}…` : "處理中…"}
+              </span>
+            </span>
+          ) : isMember ? (
+            "開啟推播並綁定 ICCID"
+          ) : (
+            "留下 ICCID 並啟用流量提醒"
+          )}
           {!loading && <MaterialIcon name="arrow_forward" size={18} />}
         </button>
       </form>

@@ -12,6 +12,8 @@ import {
   cartItemsToPlanChecks,
   validatePlansAvailability,
 } from "../../../lib/esim/planAvailability"
+import { applyPartnerCheckoutPricing } from "../../../lib/applyPartnerCheckoutPricing"
+import { PricingError } from "../../../lib/partnerOrderPricing"
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -156,6 +158,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           body: JSON.stringify({ option_id: optionId }),
         },
       )
+    }
+
+    // 夥伴店統一結帳：帶 store_id 時，於伺服器端用權威定價把夥伴售價覆寫到
+    // Medusa 購物車（is_custom_price），並把分潤歸屬寫進 cart.metadata。
+    const storeId = orderInfo?.store_id || orderInfo?.storeId || null
+    if (storeId) {
+      try {
+        await applyPartnerCheckoutPricing({ cartId, storeId })
+      } catch (pricingErr: any) {
+        if (pricingErr instanceof PricingError) {
+          return res.status(pricingErr.status || 400).json({
+            success: false,
+            code: pricingErr.code || "PARTNER_PRICING_ERROR",
+            message: pricingErr.message,
+          })
+        }
+        throw pricingErr
+      }
     }
 
     // 2) 同一支 API 內呼叫 Medusa LINE Pay（不再回瀏覽器再打一次）

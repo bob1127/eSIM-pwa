@@ -15,6 +15,8 @@ import AccountBossPartnersPanel from "@/components/account/AccountBossPartnersPa
 import BossSalesAnalyticsPanel from "@/components/admin/BossSalesAnalyticsPanel";
 import AdminMissionsPanel from "@/components/admin/AdminMissionsPanel";
 import BossPlatformSettingsPanel from "@/components/admin/BossPlatformSettingsPanel";
+import BossInlineLogin from "@/components/account/BossInlineLogin";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 
 function BossLoginPage({ onLoginSuccess, embed }) {
   return (
@@ -129,12 +131,9 @@ export default function AdminBossDashboard() {
           embed ? "bg-white" : "bg-[#1a56db]"
         }`}
       >
-        <div
-          className={`w-8 h-8 border-4 rounded-full animate-spin ${
-            embed
-              ? "border-[#1a56db] border-t-transparent"
-              : "border-white border-t-transparent"
-          }`}
+        <QuarterRing
+          size="md"
+          className={embed ? "text-[#1a56db]" : "text-white"}
         />
       </div>
     );

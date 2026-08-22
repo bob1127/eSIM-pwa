@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { bossFetch } from "@/lib/bossAdminClient";
 import { APPLY_STATE_COPY } from "@/lib/missionWall";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const STATUS_LABEL = {
   pending: "待審核",
@@ -187,7 +188,7 @@ export default function AdminMissionsPanel() {
         </div>
 
         {loading ? (
-          <p className="px-5 py-10 text-sm text-slate-400 text-center">載入中…</p>
+          <LoadingIndicator layout="center" label="載入中…" className="px-5 py-10" />
         ) : applications.length === 0 ? (
           <p className="px-5 py-10 text-sm text-slate-400 text-center">
             這個篩選目前沒有申請。

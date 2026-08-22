@@ -8,6 +8,7 @@ import {
   REFUND_REASONS_DISPUTE,
   orderItemSummary,
 } from "@/lib/refundPolicy";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const ALL_REASONS = [...REFUND_REASONS_FULL, ...REFUND_REASONS_DISPUTE];
 
@@ -107,7 +108,7 @@ export default function AdminRefundsPanel() {
 
       <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
         {loading ? (
-          <p className="p-8 text-center text-slate-400">載入中…</p>
+          <LoadingIndicator layout="center" label="載入中…" className="p-8" />
         ) : !requests.length ? (
           <p className="p-8 text-center text-slate-400">目前沒有退款申請</p>
         ) : (

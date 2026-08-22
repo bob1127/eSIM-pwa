@@ -6,6 +6,8 @@ import { validatePassword, PASSWORD_HINT } from "@/lib/passwordPolicy";
 import { useSession, signIn, signOut } from "next-auth/react";
 import PartnerShopLayout from "@/components/Shop/PartnerShopLayout";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 
 const RESEND_WAIT_SECONDS = 60;
 
@@ -442,7 +444,7 @@ export default function PartnerLoginRegisterPage({ store }) {
   if (!store)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        載入中...
+        <LoadingIndicator layout="center" label="載入中..." />
       </div>
     );
 
@@ -633,7 +635,7 @@ export default function PartnerLoginRegisterPage({ store }) {
                 </p>
               </div>
               <div className="flex justify-center pt-2">
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <QuarterRing size="sm" className="text-white" />
               </div>
               <button
                 onClick={() => router.push(`/p/${store.domain}/account`)}

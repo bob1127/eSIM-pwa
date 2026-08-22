@@ -13,6 +13,7 @@ import AccountOrdersView from "@/components/account/AccountOrdersView";
 import AccountTrafficView from "@/components/account/AccountTrafficView";
 import AccountSettingsView from "@/components/account/AccountSettingsView";
 import AccountFollowsPanel from "@/components/account/AccountFollowsPanel";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 /**
  * 夥伴商店會員中心：共用主站旅客 views，強制 customer 角色。
@@ -229,10 +230,7 @@ export default function PartnerStoreMemberAccount({ store }) {
   if (navStatus === "loading" || !isSupabaseChecked || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f6f6f6] text-slate-500">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-[#1a56db] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium">驗證身分中…</p>
-        </div>
+        <LoadingIndicator layout="center" label="驗證身分中…" size="md" />
       </div>
     );
   }

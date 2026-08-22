@@ -7,7 +7,6 @@ import { useRouter } from "next/router";
 import PartnerBlogSidebar from "@/components/Shop/PartnerBlogSidebar";
 import PartnerBlogByline from "@/components/Shop/PartnerBlogByline";
 import PartnerSocialIcons from "@/components/Shop/PartnerSocialIcons";
-import PartnerContentDisclaimer from "@/components/legal/PartnerContentDisclaimer";
 
 const PAGE_SIZE = 6;
 
@@ -179,7 +178,7 @@ export default function PartnerBlogListView({
 
             <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 min-h-[180px]">
               <Link
-                href={`/p/${domain}/`}
+                href={`/p/${domain}/about/`}
                 className="relative overflow-hidden min-h-[180px] group"
               >
                 <Image
@@ -206,7 +205,6 @@ export default function PartnerBlogListView({
                 <PartnerSocialIcons store={store} size="lg" showLabels emptyHint />
               </div>
             </div>
-            <PartnerContentDisclaimer className="mt-10" />
           </div>
 
           <div className="lg:w-[300px] shrink-0 w-full lg:sticky lg:top-[148px] lg:h-[calc(100dvh-188px)] lg:max-h-[calc(100dvh-188px)] lg:self-start lg:overflow-hidden">

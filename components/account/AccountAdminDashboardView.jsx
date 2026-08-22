@@ -9,9 +9,12 @@ import { ACCENT, InnerTabs, AccountPageWrap } from "./AccountShell";
 import AccountBossGate from "./AccountBossGate";
 import AccountBossPartnersPanel from "./AccountBossPartnersPanel";
 import AdminRefundsPanel from "@/components/admin/AdminRefundsPanel";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const chartLoading = (
-  <div className="h-56 flex items-center justify-center text-slate-400 text-sm">載入圖表…</div>
+  <div className="h-56 flex items-center justify-center">
+    <LoadingIndicator layout="center" label="載入圖表…" />
+  </div>
 );
 
 const RevenueLineChart = dynamic(
@@ -161,8 +164,8 @@ export default function AccountAdminDashboardView({
               <span className="text-[10px] text-slate-400">近 {days} 日</span>
             </div>
             {statsLoading ? (
-              <div className="h-56 flex items-center justify-center text-slate-400 text-sm">
-                載入中…
+              <div className="h-56 flex items-center justify-center">
+                <LoadingIndicator layout="center" label="載入中…" />
               </div>
             ) : (
               <RevenueLineChart

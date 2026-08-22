@@ -10,6 +10,7 @@ import {
 } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
 import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 ChartJS.register(ArcElement, Tooltip, CategoryScale, LinearScale, BarElement);
 
@@ -93,7 +94,18 @@ export default function LineTrafficUsageCard({
             className="rounded-full px-3 py-1.5 text-[11px] font-black text-white disabled:opacity-50"
             style={{ backgroundColor: BLUE }}
           >
-            {loading ? "查詢中" : "更新"}
+            {loading ? (
+              <LoadingIndicator
+                layout="inline"
+                size="xs"
+                label="查詢中"
+                className="justify-center"
+                labelClassName="text-[11px] font-black text-white"
+                spinnerClassName="text-white"
+              />
+            ) : (
+              "更新"
+            )}
           </button>
         ) : null}
       </div>
@@ -143,7 +155,12 @@ export default function LineTrafficUsageCard({
       ) : null}
 
       {loading && !hasDonut ? (
-        <p className="py-8 text-center text-[13px] text-[#888888]">查詢用量中…</p>
+        <LoadingIndicator
+          layout="center"
+          label="查詢用量中…"
+          className="py-8"
+          labelClassName="text-[13px] text-[#888888]"
+        />
       ) : hasDonut ? (
         <>
           <div className="flex items-center gap-4">

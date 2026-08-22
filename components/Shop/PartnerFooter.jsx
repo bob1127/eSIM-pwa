@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import PartnerSocialIcons from "@/components/Shop/PartnerSocialIcons";
+import { partnerPagePaths } from "@/lib/partnerStorePages";
 
 const PAYMENT_ICONS = [
   { src: "/images/payment/visa.svg", alt: "Visa", w: 36, h: 24 },
@@ -18,6 +19,7 @@ const PAYMENT_ICONS = [
  */
 export default function PartnerFooter({ store = {}, forceViewport = null } = {}) {
   const homeHref = store?.domain ? `/p/${store.domain}/` : "/";
+  const pageLinks = store?.domain ? partnerPagePaths(store.domain) : null;
   const companyName =
     store?.footer_company_name?.trim() || store?.store_name || "Jeko eSIM";
   const address = store?.footer_address?.trim() || "";
@@ -172,6 +174,22 @@ export default function PartnerFooter({ store = {}, forceViewport = null } = {})
               </svg>
             </button>
             <PartnerSocialIcons store={store} size="sm" emptyHint={false} />
+            {pageLinks ? (
+              <nav
+                className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-[11px] font-semibold text-gray-500"
+                aria-label="賣場頁面"
+              >
+                <Link href={pageLinks.about} className={linkClass}>
+                  關於我們
+                </Link>
+                <Link href={pageLinks.terms} className={linkClass}>
+                  服務條款
+                </Link>
+                <Link href={pageLinks.contact} className={linkClass}>
+                  聯絡我們
+                </Link>
+              </nav>
+            ) : null}
             <p className="text-[11px] text-gray-400">{copyright}</p>
           </div>
         </div>

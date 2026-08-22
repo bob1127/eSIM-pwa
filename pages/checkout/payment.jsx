@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "../Layout";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const STORAGE_KEY = "newebpay_checkout_payload";
 
@@ -92,10 +93,13 @@ export default function CheckoutPaymentPage() {
         <div className="max-w-md w-full bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
           {status === "loading" && (
             <>
-              <div className="w-10 h-10 border-2 border-blue-200 border-t-[#1e40af] rounded-full animate-spin mx-auto mb-4" />
-              <h1 className="text-lg font-bold text-gray-900 mb-2">
-                正在前往藍新金流…
-              </h1>
+              <LoadingIndicator
+                layout="center"
+                label="正在前往藍新金流…"
+                size="lg"
+                className="mb-4"
+                labelClassName="text-lg font-bold text-gray-900"
+              />
               <p className="text-sm text-gray-500">請稍候，即將跳轉至安全付款頁面</p>
             </>
           )}

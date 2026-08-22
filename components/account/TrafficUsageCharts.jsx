@@ -11,6 +11,7 @@ import {
 } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
 import AccountIcon from "@/components/account/AccountIcon";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { formatMb } from "@/lib/esimUsageFormat";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
@@ -71,8 +72,12 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
 
   if (loading) {
     return (
-      <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
-        查詢中…
+      <div className="h-48 flex items-center justify-center">
+        <LoadingIndicator
+          layout="center"
+          label="查詢中…"
+          labelClassName="text-slate-400 text-sm"
+        />
       </div>
     );
   }

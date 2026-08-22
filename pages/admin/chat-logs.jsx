@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Layout from "../Layout";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 const SECRET = process.env.NEXT_PUBLIC_CHAT_LOGS_SECRET || "jeko-push-secret-2026";
 
@@ -185,7 +186,7 @@ export default function AdminChatLogsPage() {
 
         {/* 資料表 */}
         {loading ? (
-          <div className="text-center py-16 text-slate-400">載入中…</div>
+          <LoadingIndicator layout="center" label="載入中…" className="py-16" />
         ) : logs.length === 0 ? (
           <div className="text-center py-16 text-slate-400">
             {q ? "找不到相關紀錄" : "尚無對話紀錄"}

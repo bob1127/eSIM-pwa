@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { buildLoginUrl } from "@/lib/authRedirect";
 
 // 🌟 引入 NextAuth 勾子
@@ -627,9 +628,7 @@ export default function Navbar({ className }: NavbarProps) {
                       </div>
                       {loadingCats ? (
                         <div className="flex justify-center items-center py-12">
-                          <span className="text-gray-600 font-bold animate-pulse">
-                            載入中...
-                          </span>
+                          <LoadingIndicator layout="center" label="載入中..." />
                         </div>
                       ) : visibleCountries.length > 0 ? (
                         <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">

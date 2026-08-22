@@ -23,14 +23,24 @@ import {
 } from "@/lib/partnerCsvExport";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
 import StatusIconBadge from "@/components/partner/StatusIconBadge";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import PublishToggle from "@/components/partner/blog-builder/PublishToggle";
+import PartnerSelectMenu from "@/components/partner/PartnerSelectMenu";
+
+const PRODUCT_SORT_OPTS = [
+  { id: "profit_desc", label: "分潤（高到低）", icon: "trending_down" },
+  { id: "sales_desc", label: "銷量（高到低）", icon: "shopping_cart" },
+  { id: "price_asc", label: "售價（低到高）", icon: "payments" },
+  { id: "name_asc", label: "名稱 A→Z", icon: "sort_by_alpha" },
+];
 
 const PartnerProductAnalytics = dynamic(
   () => import("@/components/partner/PartnerProductAnalytics"),
   {
     ssr: false,
     loading: () => (
-      <div className="py-16 text-center text-slate-400 text-sm animate-pulse">
-        載入圖表中...
+      <div className="py-16 flex items-center justify-center">
+        <LoadingIndicator layout="center" label="載入圖表中..." />
       </div>
     ),
   },
@@ -45,6 +55,33 @@ const fmtDate = (d) =>
         day: "2-digit",
       })
     : "—";
+
+function formatProductDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const h = d.getHours();
+  const min = String(d.getMinutes()).padStart(2, "0");
+  const am = h < 12 ? "上午" : "下午";
+  const hh = h % 12 || 12;
+  return `${y}年 ${m}月 ${day}日 ${am} ${hh}:${min}`;
+}
+
+function productStatusLabel(status) {
+  return status === "active" ? "顯示" : "隱藏";
+}
+
+function parseLocalStatusEntry(entry) {
+  if (!entry) return { status: null, updatedAt: null };
+  if (typeof entry === "string") return { status: entry, updatedAt: null };
+  return {
+    status: entry.status || null,
+    updatedAt: entry.updatedAt || null,
+  };
+}
 
 const TABS = [
   { id: "analytics", label: "收益分析", icon: "bar_chart" },
@@ -240,19 +277,13 @@ function ProductsTab({
               className="w-full pl-8 pr-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:border-[#1E4AD1] outline-none"
             />
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <MaterialIcon name="swap_vert" size={14} />
-            <select
-              value={sortKey}
-              onChange={(e) => setSortKey(e.target.value)}
-              className="flex-1 sm:flex-none text-sm border border-slate-300 rounded-lg px-2.5 py-2.5 focus:outline-none focus:border-[#1E4AD1] min-h-10"
-            >
-              <option value="profit_desc">分潤（高到低）</option>
-              <option value="sales_desc">銷量（高到低）</option>
-              <option value="price_asc">售價（低到高）</option>
-              <option value="name_asc">名稱 A→Z</option>
-            </select>
-          </div>
+          <PartnerSelectMenu
+            value={sortKey}
+            onChange={setSortKey}
+            options={PRODUCT_SORT_OPTS}
+            icon="swap_vert"
+            className="flex-1 sm:flex-none min-w-[148px]"
+          />
         </div>
       </div>
 
@@ -260,7 +291,7 @@ function ProductsTab({
         {/* 手機卡片 */}
         <div className="md:hidden p-3 space-y-3 bg-slate-50/40">
           {loading && (
-            <p className="py-10 text-center text-slate-400 text-sm">載入商品中...</p>
+            <LoadingIndicator layout="center" label="載入商品中..." className="py-10" />
           )}
           {!loading && pageItems.length === 0 && (
             <div className="py-10 text-center text-slate-400 text-sm">
@@ -325,31 +356,39 @@ function ProductsTab({
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onGoPricing(p)}
-                    className="flex-1 min-h-11 text-sm font-bold rounded-lg border border-slate-200 text-slate-700"
-                  >
-                    編輯定價
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!p.catalogAvailable && p.status !== "active"}
+                <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">前台發布</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {productStatusLabel(p.status)}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {formatProductDate(p.statusUpdatedAt)}
+                    </p>
+                  </div>
+                  <PublishToggle
+                    on={p.status === "active"}
+                    disabled={
+                      busyId === p.id ||
+                      (!p.catalogAvailable && p.status !== "active")
+                    }
                     title={
-                      !p.catalogAvailable
+                      !p.catalogAvailable && p.status !== "active"
                         ? "主站已下架，無法啟用"
                         : undefined
                     }
-                    onClick={() =>
-                      onStatusChange(
-                        p,
-                        p.status === "active" ? "paused" : "active",
-                      )
+                    onChange={(next) =>
+                      toggleStatus(p, next ? "active" : "paused")
                     }
-                    className="min-h-11 px-3 text-sm font-bold rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40"
+                  />
+                </div>
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => onGoPricing(p)}
+                    className="w-full min-h-11 text-sm font-bold rounded-lg border border-slate-200 text-slate-700"
                   >
-                    {p.status === "active" ? "停用" : "啟用"}
+                    編輯定價
                   </button>
                 </div>
               </article>
@@ -369,7 +408,7 @@ function ProductsTab({
                 <br />
                 狀態
               </th>
-              <th className="px-5 py-3 text-center font-bold">啟用/停用</th>
+              <th className="px-5 py-3 text-center font-bold">前台發布</th>
               <th className="px-5 py-3 text-center font-bold">
                 定價
                 <br />
@@ -381,8 +420,8 @@ function ProductsTab({
           <tbody className="divide-y divide-slate-100">
             {loading && (
               <tr>
-                <td colSpan={9} className="py-16 text-center text-slate-400 text-sm">
-                  載入商品中...
+                <td colSpan={9} className="py-16 text-center">
+                  <LoadingIndicator layout="center" label="載入商品中..." />
                 </td>
               </tr>
             )}
@@ -444,38 +483,30 @@ function ProductsTab({
                             : "已停用"}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-center">
-                      <div className="inline-flex rounded-sm overflow-hidden border border-slate-200 text-xs font-bold">
-                        <button
-                          type="button"
-                          disabled={busy || !p.catalogAvailable}
+                    <td className="px-5 py-4 text-center align-top">
+                      <div className="inline-flex items-center gap-2">
+                        <PublishToggle
+                          on={p.status === "active"}
+                          disabled={
+                            busy ||
+                            (!p.catalogAvailable && p.status !== "active")
+                          }
                           title={
-                            !p.catalogAvailable
+                            !p.catalogAvailable && p.status !== "active"
                               ? "主站已下架，無法啟用"
                               : undefined
                           }
-                          onClick={() => toggleStatus(p, "active")}
-                          className={`px-3 py-1 transition disabled:opacity-40 ${
-                            p.status === "active"
-                              ? "bg-[#1E4AD1] text-white"
-                              : "bg-white text-slate-500 hover:bg-slate-50"
-                          }`}
-                        >
-                          啟用
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => toggleStatus(p, "paused")}
-                          className={`px-3 py-1 border-l border-slate-200 transition ${
-                            p.status === "paused"
-                              ? "bg-slate-600 text-white"
-                              : "bg-white text-slate-500 hover:bg-slate-50"
-                          }`}
-                        >
-                          停用
-                        </button>
+                          onChange={(next) =>
+                            toggleStatus(p, next ? "active" : "paused")
+                          }
+                        />
+                        <span className="text-[11px] font-bold text-slate-600">
+                          {productStatusLabel(p.status)}
+                        </span>
                       </div>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        {formatProductDate(p.statusUpdatedAt)}
+                      </p>
                     </td>
                     <td className="px-5 py-4 text-center">
                       <button
@@ -517,7 +548,7 @@ function ProductsTab({
                               }
                               className="w-full text-left px-4 py-2 hover:bg-slate-50 text-slate-700 font-bold"
                             >
-                              {p.status === "active" ? "暫停上架" : "重新啟用"}
+                              {p.status === "active" ? "改為隱藏" : "改為顯示"}
                             </button>
                             <Link
                               href="/partner/catalog?tab=listed"
@@ -1613,7 +1644,7 @@ function PricingTab({
         {/* 手機卡片 */}
         <div className="md:hidden flex-1 min-h-0 overflow-auto divide-y divide-slate-100">
           {loading && (
-            <p className="py-14 text-center text-slate-400 text-sm">載入中...</p>
+            <LoadingIndicator layout="center" label="載入中..." className="py-14" />
           )}
           {!loading && pageItems.length === 0 && (
             <p className="py-14 text-center text-slate-400 text-sm px-4">
@@ -1740,8 +1771,8 @@ function PricingTab({
             <tbody className="divide-y divide-slate-100">
               {loading && (
                 <tr>
-                  <td colSpan={8} className="py-14 text-center text-slate-400">
-                    載入中...
+                  <td colSpan={8} className="py-14 text-center">
+                    <LoadingIndicator layout="center" label="載入中..." />
                   </td>
                 </tr>
               )}
@@ -2442,8 +2473,11 @@ export default function PartnerProductsPage() {
           row.status === "paused" || row.status === "active"
             ? row.status
             : null;
+        const localEntry = parseLocalStatusEntry(localStatus[id]);
         const status =
-          statusFromDb || localStatus[id] || "active";
+          statusFromDb || localEntry.status || "active";
+        const statusUpdatedAt =
+          localEntry.updatedAt || row.created_at || null;
         const catalogAvailable = row.catalog_available !== false;
         const catalogStatus = row.catalog_status || "active";
 
@@ -2467,6 +2501,7 @@ export default function PartnerProductsPage() {
           status,
           catalogAvailable,
           catalogStatus,
+          statusUpdatedAt,
           updated: row.created_at || null,
         });
       }
@@ -2517,14 +2552,19 @@ export default function PartnerProductsPage() {
       }),
     });
     const data = await res.json().catch(() => ({}));
+    const statusUpdatedAt = new Date().toISOString();
     // 即使 DB 無 status 欄，也以 localStorage 維護啟用／停用
     if (store?.id) {
       const map = loadLocalStatusMap(store.id);
-      map[product.id] = nextStatus;
+      map[product.id] = { status: nextStatus, updatedAt: statusUpdatedAt };
       saveLocalStatusMap(store.id, map);
     }
     setProducts((prev) =>
-      prev.map((p) => (p.id === product.id ? { ...p, status: nextStatus } : p)),
+      prev.map((p) =>
+        p.id === product.id
+          ? { ...p, status: nextStatus, statusUpdatedAt }
+          : p,
+      ),
     );
     if (!res.ok && !data.statusLocalOnly) {
       // 非 status 錯誤才提示

@@ -568,12 +568,13 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
           <MediaUploadField
             kind="video"
             value={p.fileUrl}
+            blockId={block.id}
             onUploaded={(url) => set("fileUrl", url)}
           />
           {p.fileUrl ? (
             <p className="text-[10px] text-emerald-300 mb-2 truncate">已上傳本機影片</p>
           ) : null}
-          <Field label="或 YouTube / Vimeo 網址">
+          <Field label="或 YouTube / Vimeo 網址（不占用本機影片配額）">
             <input className={inputCls} value={p.url || ""} onChange={(e) => set("url", e.target.value)} placeholder="https://youtu.be/…" />
           </Field>
         </>

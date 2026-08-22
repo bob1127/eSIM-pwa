@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import MaterialIcon from "@/components/MaterialIcon";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import {
   buildHeroCountries,
   MOCK_COUNTRIES,
@@ -230,9 +231,7 @@ export default function HeroCountryPlanPicker() {
 
       <div className="mt-3 bg-white rounded-lg overflow-hidden">
         {loading ? (
-          <div className="px-4 py-8 text-center text-sm text-slate-600 font-medium animate-pulse">
-            方案載入中…
-          </div>
+          <LoadingIndicator layout="center" label="方案載入中…" className="px-4 py-8" />
         ) : plans.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-slate-500">
             {query.trim() ? "沒有符合的方案" : "此國家暫無方案"}

@@ -10,11 +10,14 @@ import { PARTNER_UI } from "@/lib/partnerUi";
 import { emptyItineraryBlock, isItineraryBlocks } from "@/lib/partnerBlogItinerary";
 import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
 import MaterialIcon from "@/components/MaterialIcon";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import MediaUploadField, {
   BlogBuilderMediaProvider,
 } from "@/components/partner/blog-builder/MediaUploadField";
 import PublishToggle from "@/components/partner/blog-builder/PublishToggle";
-import PartnerContentDisclaimer from "@/components/legal/PartnerContentDisclaimer";
+import PartnerButton from "@/components/partner/ui/PartnerButton";
+import PartnerDialog from "@/components/partner/ui/PartnerDialog";
+import { ShopifyPagination, ShopifyTabs } from "@/components/partner/ShopifyControls";
 
 const EMPTY_FORM = {
   title: "",
@@ -62,6 +65,21 @@ function tagList(tags) {
   return [];
 }
 
+function postEditorHint(p) {
+  const hasBuilder =
+    (Array.isArray(p.content_blocks) && p.content_blocks.length > 0) ||
+    String(p.content_html || "").length > 0;
+  if (isItineraryBlocks(p.content_blocks)) return "— 行程規劃";
+  if (hasBuilder) return "— 視覺編輯器";
+  return "— 尚未編輯內容";
+}
+
+function postStatusLabel(status) {
+  if (status === "published") return "顯示";
+  if (status === "archived") return "封存";
+  return "隱藏";
+}
+
 /**
  * 夥伴自訂文章後台 — WordPress 式外層列表
  */
@@ -88,6 +106,7 @@ export default function PartnerBlogAdminPage() {
   const [newCat, setNewCat] = useState("");
   const [savingCat, setSavingCat] = useState(false);
   const [assigningId, setAssigningId] = useState(null);
+  const [mobileActionPost, setMobileActionPost] = useState(null);
 
   const lineOaId = process.env.NEXT_PUBLIC_LINE_OA_ID || "@391huuts";
   const applyMessage = [
@@ -166,6 +185,10 @@ export default function PartnerBlogAdminPage() {
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageSafe = Math.min(page, pages);
   const rows = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+  const mobileActionPostResolved = useMemo(() => {
+    if (!mobileActionPost) return null;
+    return posts.find((p) => p.id === mobileActionPost.id) || mobileActionPost;
+  }, [mobileActionPost, posts]);
 
   useEffect(() => {
     setPage(1);
@@ -444,7 +467,6 @@ export default function PartnerBlogAdminPage() {
                 目前 Blog 會自動同步主站內容。開通後可自行撰寫原創文章。請透過官方
                 LINE 提出申請。
               </p>
-              <PartnerContentDisclaimer variant="notice" className="mb-4" />
               <a
                 href={lineApplyUrl}
                 target="_blank"
@@ -465,28 +487,24 @@ export default function PartnerBlogAdminPage() {
                 <p className={PARTNER_UI.subtitle}>
                   管理標題、分類與發布。點標題進入視覺編輯器。
                 </p>
-                <PartnerContentDisclaimer variant="notice" className="mt-3 max-w-3xl" />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {publicBlog ? (
-                  <a
-                    href={publicBlog}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-bold text-[#1E4AD1] hover:underline"
-                  >
-                    查看前台
-                  </a>
+                  <PartnerButton variant="link" size="sm" asChild>
+                    <a href={publicBlog} target="_blank" rel="noreferrer">
+                      查看前台
+                    </a>
+                  </PartnerButton>
                 ) : null}
-                <button
+                <PartnerButton
                   type="button"
+                  variant="secondary"
                   onClick={() => setCatModal(true)}
-                  className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm font-black hover:bg-slate-50"
                 >
                   <MaterialIcon name="category" size={18} />
                   建立分類
-                </button>
-                <button
+                </PartnerButton>
+                <PartnerButton
                   type="button"
                   onClick={() => {
                     setForm((prev) => ({
@@ -496,32 +514,15 @@ export default function PartnerBlogAdminPage() {
                     setEditorKind("article");
                     setCreateOpen(true);
                   }}
-                  className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-[#1E4AD1] text-white text-sm font-black hover:bg-[#1344b5]"
                 >
                   <MaterialIcon name="add" size={18} />
                   新增文章
-                </button>
+                </PartnerButton>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] mb-3">
-              {tabs.map((t, i) => (
-                <span key={t.id} className="inline-flex items-center gap-3">
-                  {i > 0 ? <span className="text-slate-300">|</span> : null}
-                  <button
-                    type="button"
-                    onClick={() => setTab(t.id)}
-                    className={`${
-                      tab === t.id
-                        ? "text-slate-900 font-black"
-                        : "text-[#1E4AD1] hover:underline"
-                    }`}
-                  >
-                    {t.label}{" "}
-                    <span className="text-slate-400 font-normal">({t.count})</span>
-                  </button>
-                </span>
-              ))}
+            <div className="mb-3 bg-white border border-slate-200 rounded-lg overflow-hidden">
+              <ShopifyTabs tabs={tabs} value={tab} onChange={setTab} />
             </div>
 
             <div className="flex flex-col lg:flex-row lg:items-center gap-2 mb-3">
@@ -537,13 +538,9 @@ export default function PartnerBlogAdminPage() {
                     <option value="delete">永久刪除</option>
                   ) : null}
                 </select>
-                <button
-                  type="button"
-                  onClick={runBulk}
-                  className="px-3 py-1.5 text-sm border border-slate-300 rounded bg-white hover:bg-slate-50"
-                >
+                <PartnerButton type="button" variant="secondary" size="sm" onClick={runBulk}>
                   套用
-                </button>
+                </PartnerButton>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
@@ -569,18 +566,86 @@ export default function PartnerBlogAdminPage() {
                   placeholder="搜尋文章"
                   className="border border-slate-300 rounded px-3 py-1.5 text-sm w-52 bg-white"
                 />
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 text-sm border border-slate-300 rounded bg-white hover:bg-slate-50"
-                >
+                <PartnerButton type="submit" variant="secondary" size="sm">
                   搜尋文章
-                </button>
+                </PartnerButton>
               </form>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-[13px] min-w-[860px]">
+              {/* 手機：卡片列表，點擊開 popup 管理（不橫向滑動） */}
+              <div className="md:hidden">
+                {loading ? (
+                  <div className="px-3 py-10">
+                    <LoadingIndicator layout="center" label="載入中…" />
+                  </div>
+                ) : rows.length === 0 ? (
+                  <div className="px-3 py-10 text-center text-slate-400 text-sm">
+                    沒有文章。{" "}
+                    <PartnerButton
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 font-bold"
+                      onClick={() => setCreateOpen(true)}
+                    >
+                      新增一篇
+                    </PartnerButton>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {rows.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-start gap-3 px-3 py-3 hover:bg-slate-50/80"
+                      >
+                        <input
+                          type="checkbox"
+                          className="mt-1 shrink-0"
+                          checked={selected.has(p.id)}
+                          onChange={() => toggleOne(p.id)}
+                        />
+                        <button
+                          type="button"
+                          className="flex min-w-0 flex-1 items-start gap-2 text-left"
+                          onClick={() => setMobileActionPost(p)}
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className="block font-semibold text-slate-900 truncate">
+                              {p.title || "(無標題)"}
+                            </span>
+                            <span className="block text-[11px] text-slate-400 mt-0.5">
+                              {postEditorHint(p)}
+                            </span>
+                            <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500">
+                              <span>{p.author_name || partner?.name || "—"}</span>
+                              <span className="text-slate-300">·</span>
+                              <span className="font-semibold text-slate-600">
+                                {postStatusLabel(p.status)}
+                              </span>
+                              {p.category_label ? (
+                                <>
+                                  <span className="text-slate-300">·</span>
+                                  <span>{p.category_label}</span>
+                                </>
+                              ) : null}
+                            </span>
+                          </span>
+                          <MaterialIcon
+                            name="chevron_right"
+                            size={20}
+                            className="shrink-0 text-slate-300 mt-0.5"
+                          />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 桌面：維持表格 */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-[13px]">
                   <thead className="bg-[#f0f0f1] text-slate-600 border-b border-slate-200">
                     <tr>
                       <th className="w-10 px-3 py-2">
@@ -600,29 +665,28 @@ export default function PartnerBlogAdminPage() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={6} className="px-3 py-10 text-center text-slate-400">
-                          載入中…
+                        <td colSpan={6} className="px-3 py-10 text-center">
+                          <LoadingIndicator layout="center" label="載入中…" />
                         </td>
                       </tr>
                     ) : rows.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="px-3 py-10 text-center text-slate-400">
                           沒有文章。{" "}
-                          <button
+                          <PartnerButton
                             type="button"
-                            className="text-[#1E4AD1] font-bold hover:underline"
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0 font-bold"
                             onClick={() => setCreateOpen(true)}
                           >
                             新增一篇
-                          </button>
+                          </PartnerButton>
                         </td>
                       </tr>
                     ) : (
                       rows.map((p) => {
                         const tags = tagList(p.tags);
-                        const hasBuilder =
-                          (Array.isArray(p.content_blocks) && p.content_blocks.length > 0) ||
-                          String(p.content_html || "").length > 0;
                         const rowCats = uniqueLabels([
                           ...categories,
                           p.category_label,
@@ -647,13 +711,9 @@ export default function PartnerBlogAdminPage() {
                                 {p.title || "(無標題)"}
                               </Link>
                               <p className="text-[11px] text-slate-400 mt-0.5">
-                                {isItineraryBlocks(p.content_blocks)
-                                  ? "— 行程規劃"
-                                  : hasBuilder
-                                    ? "— 視覺編輯器"
-                                    : "— 尚未編輯內容"}
+                                {postEditorHint(p)}
                               </p>
-                              <div className="flex gap-2 mt-1 text-[12px] md:opacity-0 md:group-hover:opacity-100">
+                              <div className="flex gap-2 mt-1 text-[12px] opacity-0 group-hover:opacity-100">
                                 <Link
                                   href={`/partner/blog/edit/${p.id}`}
                                   className="text-[#1E4AD1] hover:underline"
@@ -717,11 +777,7 @@ export default function PartnerBlogAdminPage() {
                                   onChange={(next) => toggleFrontPublish(p, next)}
                                 />
                                 <span className="text-[11px] font-bold text-slate-600">
-                                  {p.status === "published"
-                                    ? "顯示"
-                                    : p.status === "archived"
-                                      ? "封存"
-                                      : "隱藏"}
+                                  {postStatusLabel(p.status)}
                                 </span>
                               </div>
                               <p className="text-[11px] text-slate-400 mt-1">
@@ -735,51 +791,183 @@ export default function PartnerBlogAdminPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="flex items-center justify-between px-3 py-2 bg-[#f0f0f1] text-[12px] text-slate-600 border-t border-slate-200">
-                <span>
-                  {filtered.length} 個項目
-                  {selected.size ? ` · 已選 ${selected.size}` : ""}
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={pageSafe <= 1}
-                    onClick={() => setPage((n) => Math.max(1, n - 1))}
-                    className="px-2 py-0.5 border border-slate-300 rounded bg-white disabled:opacity-40"
-                  >
-                    ‹
-                  </button>
-                  <span>
-                    {pageSafe} / {pages}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={pageSafe >= pages}
-                    onClick={() => setPage((n) => Math.min(pages, n + 1))}
-                    className="px-2 py-0.5 border border-slate-300 rounded bg-white disabled:opacity-40"
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
+
+              {!loading && filtered.length > 0 ? (
+                <>
+                  <div className="flex items-center justify-between px-3 py-2 bg-[#f0f0f1] text-[12px] text-slate-600 border-t border-slate-200 md:border-b-0">
+                    <span>
+                      {filtered.length} 個項目
+                      {selected.size ? ` · 已選 ${selected.size}` : ""}
+                    </span>
+                  </div>
+                  <ShopifyPagination
+                    page={pageSafe}
+                    pageSize={PAGE_SIZE}
+                    total={filtered.length}
+                    onChange={setPage}
+                  />
+                </>
+              ) : null}
             </div>
           </>
         )}
       </div>
 
+      {mobileActionPostResolved ? (
+        <PartnerDialog
+          open={!!mobileActionPostResolved}
+          onClose={() => setMobileActionPost(null)}
+          title={mobileActionPostResolved.title || "(無標題)"}
+          description={postEditorHint(mobileActionPostResolved)}
+          maxWidth="max-w-md"
+          icon="article"
+          footer={
+            <>
+              <PartnerButton
+                type="button"
+                variant="secondary"
+                onClick={() => setMobileActionPost(null)}
+              >
+                關閉
+              </PartnerButton>
+              {mobileActionPostResolved.status === "published" && store?.domain ? (
+                <PartnerButton variant="outline" asChild>
+                  <Link
+                    href={`/p/${store.domain}/blog/${mobileActionPostResolved.slug}/`}
+                    target="_blank"
+                  >
+                    檢視
+                  </Link>
+                </PartnerButton>
+              ) : null}
+              {mobileActionPostResolved.status === "archived" ? (
+                <PartnerButton
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    handleDelete([mobileActionPostResolved.id]);
+                    setMobileActionPost(null);
+                  }}
+                >
+                  永久刪除
+                </PartnerButton>
+              ) : (
+                <PartnerButton
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    setStatus([mobileActionPostResolved.id], "archived");
+                    setMobileActionPost(null);
+                  }}
+                >
+                  封存
+                </PartnerButton>
+              )}
+              <PartnerButton asChild>
+                <Link href={`/partner/blog/edit/${mobileActionPostResolved.id}`}>
+                  編輯
+                </Link>
+              </PartnerButton>
+            </>
+          }
+        >
+          {(() => {
+            const p = mobileActionPostResolved;
+            const tags = tagList(p.tags);
+            const rowCats = uniqueLabels([...categories, p.category_label]);
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                      作者
+                    </p>
+                    <p className="mt-1 text-slate-700">
+                      {p.author_name || partner?.name || "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                      更新時間
+                    </p>
+                    <p className="mt-1 text-slate-700">
+                      {formatWpDate(p.published_at || p.updated_at)}
+                    </p>
+                  </div>
+                </div>
+
+                <label className="block">
+                  <span className="text-xs font-bold text-slate-600">分類</span>
+                  <select
+                    value={p.category_label || ""}
+                    disabled={assigningId === p.id}
+                    onChange={(e) => setPostCategory(p, e.target.value)}
+                    className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+                  >
+                    <option value="">未分類</option>
+                    {rowCats.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div>
+                  <p className="text-xs font-bold text-slate-600 mb-1">標籤</p>
+                  <p className="text-sm text-slate-600">
+                    {tags.length ? tags.join("、") : "—"}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">前台發布</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {postStatusLabel(p.status)}
+                    </p>
+                  </div>
+                  <PublishToggle
+                    on={p.status === "published"}
+                    disabled={busyId === p.id}
+                    onChange={(next) => toggleFrontPublish(p, next)}
+                  />
+                </div>
+              </div>
+            );
+          })()}
+        </PartnerDialog>
+      ) : null}
+
+      <BlogBuilderMediaProvider token={uploadToken} store={store}>
       {createOpen ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
-          <BlogBuilderMediaProvider token={uploadToken} store={store}>
-          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl border border-slate-200 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-black text-slate-800">新增文章</h2>
-              <button type="button" onClick={() => setCreateOpen(false)} className="text-slate-400 hover:text-slate-700">
-                <MaterialIcon name="close" size={20} />
-              </button>
-            </div>
-            <p className="text-[12px] text-slate-500 mb-3">
-              先選編輯方式，再填標題、網址與精選圖。
-            </p>
+        <PartnerDialog
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          title="新增文章"
+          description="先選編輯方式，再填標題、網址與精選圖。"
+          maxWidth="max-w-lg"
+          shellClassName="z-[80]"
+          bodyClassName="py-4"
+          footer={
+            <>
+              <PartnerButton
+                type="button"
+                variant="secondary"
+                onClick={() => setCreateOpen(false)}
+              >
+                取消
+              </PartnerButton>
+              <PartnerButton
+                type="button"
+                disabled={saving || !createCheck.ok}
+                onClick={handleCreate}
+              >
+                {saving ? "建立中…" : "建立並進入編輯器"}
+              </PartnerButton>
+            </>
+          }
+        >
             <div className="grid grid-cols-2 gap-2 mb-4">
               <button
                 type="button"
@@ -810,7 +998,6 @@ export default function PartnerBlogAdminPage() {
                 </p>
               </button>
             </div>
-            <PartnerContentDisclaimer variant="notice" className="mb-4" />
             <label className="block mb-3">
               <span className="text-xs font-bold text-slate-600">標題 *</span>
               <input
@@ -920,85 +1107,58 @@ export default function PartnerBlogAdminPage() {
                 className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm"
               />
             </label>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setCreateOpen(false)}
-                className="px-3 py-2 text-sm rounded-lg border border-slate-200"
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                disabled={saving || !createCheck.ok}
-                onClick={handleCreate}
-                className="px-4 py-2 text-sm font-black rounded-lg bg-[#1E4AD1] text-white disabled:opacity-50"
-              >
-                {saving ? "建立中…" : "建立並進入編輯器"}
-              </button>
-            </div>
-          </div>
-          </BlogBuilderMediaProvider>
-        </div>
+        </PartnerDialog>
       ) : null}
+      </BlogBuilderMediaProvider>
 
-      {catModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="w-full max-w-md rounded-xl bg-white shadow-2xl border border-slate-200 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-black text-slate-800">建立分類</h2>
-              <button
-                type="button"
-                onClick={() => setCatModal(false)}
-                className="text-slate-400 hover:text-slate-700"
-              >
-                <MaterialIcon name="close" size={20} />
-              </button>
-            </div>
-            <p className="text-[12px] text-slate-500 mb-3">
-              建立後可在文章列表用下拉選單指定分類。
-            </p>
-            <div className="flex gap-2 mb-4">
-              <input
-                autoFocus
-                value={newCat}
-                maxLength={40}
-                onChange={(e) => setNewCat(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleCreateCategory();
-                  }
-                }}
-                placeholder="例如：泰國、攻略、eSIM"
-                className="flex-1 border border-slate-200 rounded-lg px-3 py-2.5 text-sm"
-              />
-              <button
-                type="button"
-                disabled={savingCat || !newCat.trim()}
-                onClick={handleCreateCategory}
-                className="px-4 py-2 text-sm font-black rounded-lg bg-[#1E4AD1] text-white disabled:opacity-50"
-              >
-                {savingCat ? "新增中…" : "新增"}
-              </button>
-            </div>
-            {categories.length ? (
-              <ul className="flex flex-wrap gap-1.5">
-                {categories.map((c) => (
-                  <li
-                    key={c}
-                    className="px-2.5 py-1 rounded-full bg-slate-100 text-[12px] font-bold text-slate-700"
-                  >
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-[12px] text-slate-400">尚無分類</p>
-            )}
-          </div>
+      <PartnerDialog
+        open={catModal}
+        onClose={() => setCatModal(false)}
+        title="建立分類"
+        description="建立後可在文章列表用下拉選單指定分類。"
+        maxWidth="max-w-md"
+        icon="category"
+        footer={
+          <PartnerButton
+            type="button"
+            disabled={savingCat || !newCat.trim()}
+            onClick={handleCreateCategory}
+          >
+            {savingCat ? "新增中…" : "新增分類"}
+          </PartnerButton>
+        }
+      >
+        <div className="flex gap-2 mb-4">
+          <input
+            autoFocus
+            value={newCat}
+            maxLength={40}
+            onChange={(e) => setNewCat(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleCreateCategory();
+              }
+            }}
+            placeholder="例如：泰國、攻略、eSIM"
+            className="flex-1 border border-slate-200 rounded-lg px-3 py-2.5 text-sm"
+          />
         </div>
-      ) : null}
+        {categories.length ? (
+          <ul className="flex flex-wrap gap-1.5">
+            {categories.map((c) => (
+              <li
+                key={c}
+                className="px-2.5 py-1 rounded-full bg-slate-100 text-[12px] font-bold text-slate-700"
+              >
+                {c}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[12px] text-slate-400">尚無分類</p>
+        )}
+      </PartnerDialog>
     </PartnerAdminLayout>
   );
 }

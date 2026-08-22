@@ -61,9 +61,10 @@ export default function PartnerShopLayout({
 
   const secondaryNav = domain
     ? [
+        { label: "關於我們", href: `/p/${domain}/about/` },
         { label: "旅遊文章", href: `/p/${domain}/blog/` },
         { label: "安裝教學", href: `/p/${domain}/tutorial/` },
-        { label: "會員中心", href: accountHref },
+        { label: "聯絡我們", href: `/p/${domain}/contact/` },
       ]
     : [];
 
@@ -125,9 +126,10 @@ export default function PartnerShopLayout({
           domain
             ? [
                 { label: "賣場首頁", href: homeHref },
+                { label: "關於我們", href: `/p/${domain}/about/` },
                 { label: "選購方案", href: `${homeHref}#plans` },
                 { label: "旅遊文章", href: `/p/${domain}/blog/` },
-                { label: "安裝教學", href: `/p/${domain}/tutorial/` },
+                { label: "聯絡我們", href: `/p/${domain}/contact/` },
               ]
             : undefined
         }

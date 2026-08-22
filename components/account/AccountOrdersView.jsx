@@ -11,6 +11,7 @@ import {
   ACCOUNT_THEME,
   SHOPIFY_BADGE,
 } from "@/lib/accountUi";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import {
   ShopifyTabs,
   ShopifyDropdown,
@@ -1639,12 +1640,11 @@ export default function AccountOrdersView({
           style={{ borderTop: `1px solid ${UI.border}` }}
         >
           {loading ? (
-            <div
-              className="py-12 text-center text-sm"
-              style={{ color: UI.soft }}
-            >
-              載入訂單中…
-            </div>
+            <LoadingIndicator
+              layout="center"
+              label="載入訂單中…"
+              className="py-12"
+            />
           ) : paged.length === 0 ? (
             <div
               className="py-12 text-center text-sm"
@@ -1781,12 +1781,8 @@ export default function AccountOrdersView({
             <tbody>
               {loading ? (
                 <tr>
-                  <td
-                    colSpan={9}
-                    className="text-center py-14 text-sm"
-                    style={{ color: UI.soft }}
-                  >
-                    載入訂單中…
+                  <td colSpan={9} className="py-14">
+                    <LoadingIndicator layout="center" label="載入訂單中…" />
                   </td>
                 </tr>
               ) : paged.length === 0 ? (

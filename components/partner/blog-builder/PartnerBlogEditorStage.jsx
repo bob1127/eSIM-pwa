@@ -48,7 +48,7 @@ export default function PartnerBlogEditorStage({
               {meta?.title || title || "未命名文章"}
             </h1>
           )}
-          <div className="partner-blog-prose w-full text-[15px] sm:text-[16px] leading-[2] text-slate-700">
+          <div className="partner-blog-prose w-full max-w-full overflow-x-hidden text-[15px] sm:text-[16px] leading-[2] text-slate-700">
             {children}
           </div>
         </div>

@@ -12,13 +12,13 @@ import {
   creatorProfileHref,
   postKeyFromPost,
 } from "@/lib/blogCreator";
-import HeartIcon from "@/components/icons/heart-icon";
 import EyeIcon from "@/components/icons/eye-icon";
 import UserPlusIcon from "@/components/icons/user-plus-icon";
 import UserCheckIcon from "@/components/icons/user-check-icon";
 import FacebookIcon from "@/components/icons/facebook-icon";
 import InstagramIcon from "@/components/icons/instagram-icon";
 import FilledBellIcon from "@/components/icons/filled-bell-icon";
+import BlogLikeAnimatedToggle from "@/components/Blog/BlogLikeAnimatedToggle";
 import { useEngageToast } from "@/components/creators/EngageToast";
 
 function formatCount(n) {
@@ -130,13 +130,13 @@ export default function BlogCreatorEngageBar({
   const toggleLike = async () => {
     if (!authReady) return;
     if (!isLoggedIn) {
-      goLogin("請先登入後再按讚");
+      goLogin("請先登入後再收藏");
       return;
     }
     const next = !liked;
     setLiked(next);
     setLikeCount((n) => Math.max(0, n + (next ? 1 : -1)));
-    showToast(next ? "已按讚" : "已取消按讚");
+    showToast(next ? "已收藏" : "已取消收藏");
     const res = await fetch("/api/blog/engage", {
       method: "POST",
       credentials: "include",
@@ -151,7 +151,7 @@ export default function BlogCreatorEngageBar({
     if (res.status === 401) {
       setLiked(!next);
       setLikeCount((n) => Math.max(0, n + (next ? -1 : 1)));
-      goLogin("請先登入後再按讚");
+      goLogin("請先登入後再收藏");
       return;
     }
     if (typeof data.likeCount === "number") setLikeCount(data.likeCount);
@@ -236,15 +236,14 @@ export default function BlogCreatorEngageBar({
             )}
             {following ? "追蹤中" : "追蹤"}
           </button>
-          <button type="button" onClick={toggleLike} className={pill} aria-pressed={liked}>
-            <HeartIcon
-              size={16}
-              color="#fff"
-              fill={liked ? "#fff" : "none"}
-              className="cursor-pointer"
-            />
-            按讚 {formatCount(likeCount)}
-          </button>
+          <BlogLikeAnimatedToggle
+            pressed={liked}
+            onPressedChange={() => toggleLike()}
+            count={likeCount}
+            disabled={!authReady}
+            tone="overlay"
+            label="收藏"
+          />
           <Link href={creatorProfileHref(creatorKey)} className={pill}>
             內頁
           </Link>
@@ -367,22 +366,13 @@ export default function BlogCreatorEngageBar({
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={toggleLike}
-          className={`flex items-center gap-1 text-[12px] ${
-            liked ? "text-[#e11d48]" : "text-[#888] hover:text-[#e11d48]"
-          }`}
-          aria-pressed={liked}
-        >
-          <HeartIcon
-            size={16}
-            strokeWidth={1.8}
-            fill={liked ? "currentColor" : "none"}
-          />
-          <span>按讚</span>
-          <span className="font-semibold tabular-nums">{formatCount(likeCount)}</span>
-        </button>
+        <BlogLikeAnimatedToggle
+          pressed={liked}
+          onPressedChange={() => toggleLike()}
+          count={likeCount}
+          disabled={!authReady}
+          label="收藏"
+        />
 
         <button
           type="button"

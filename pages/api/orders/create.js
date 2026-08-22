@@ -15,6 +15,8 @@ import {
   cartItemsToPlanChecks,
   validatePlansAvailability,
 } from "../../../lib/esim/planAvailability";
+import { applyPartnerCheckoutPricing } from "../../../lib/applyPartnerCheckoutPricing";
+import { PricingError } from "../../../lib/partnerOrderPricing";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ success: false, message: "Method Not Allowed" });
@@ -123,6 +125,26 @@ export default async function handler(req, res) {
       );
     }
     await fetchMedusa("套用運費", `${MEDUSA_URL}/store/carts/${cartId}/shipping-methods`, { method: "POST", headers, body: JSON.stringify({ option_id: shipOptionsData.shipping_options[0].id }) });
+
+    // 夥伴店統一結帳：帶 store_id 時，於伺服器端用權威定價把夥伴售價覆寫到
+    // Medusa 購物車（is_custom_price），並把分潤歸屬寫進 cart.metadata。
+    // 全程不信任前端傳來的任何金額。
+    const storeId = orderInfo?.store_id || orderInfo?.storeId || null;
+    if (storeId) {
+      try {
+        console.log(`[Next.js API] 🏪 夥伴店定價覆寫（store_id=${storeId}）...`);
+        await applyPartnerCheckoutPricing({ cartId, storeId });
+      } catch (pricingErr) {
+        if (pricingErr instanceof PricingError) {
+          return res.status(pricingErr.status || 400).json({
+            success: false,
+            code: pricingErr.code || "PARTNER_PRICING_ERROR",
+            message: pricingErr.message,
+          });
+        }
+        throw pricingErr;
+      }
+    }
 
     console.log(`[Next.js API] 💰 步驟 3: 取得最終金額...`);
     const cartData = await fetchMedusa("取得購物車", `${MEDUSA_URL}/store/carts/${cartId}`, { headers });

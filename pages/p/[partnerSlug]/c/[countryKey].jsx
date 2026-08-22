@@ -5,7 +5,7 @@ import {
   fetchStoreProductsForStorefront,
 } from "@/lib/partnerStorefront";
 import {
-  buildPartnerCountryNavItems,
+  buildPartnerCountryNavForStore,
   filterProductsByCountry,
   PARTNER_COUNTRY_DEFS,
 } from "@/lib/partnerNavCountries";
@@ -60,7 +60,7 @@ export async function getServerSideProps(context) {
     if (!store) return { notFound: true };
 
     const allProducts = await fetchStoreProductsForStorefront(store);
-    const navCountries = buildPartnerCountryNavItems(allProducts, store.domain);
+    const navCountries = buildPartnerCountryNavForStore(store, allProducts);
 
     // 側欄僅顯示夥伴有上架的國家
     const countries = navCountries.map((c) => ({

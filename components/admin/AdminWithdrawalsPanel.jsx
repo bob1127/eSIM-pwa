@@ -8,6 +8,7 @@ import {
   getPayoutMethodLabel,
   formatPayoutAccountSummary,
 } from "@/lib/partnerPayout";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { getPartnerCooperationLabel } from "@/lib/adminAnalytics";
 
 function formatNTD(val) {
@@ -188,7 +189,7 @@ export default function AdminWithdrawalsPanel() {
 
       <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
         {loading ? (
-          <p className="p-8 text-center text-slate-400">載入中…</p>
+          <LoadingIndicator layout="center" label="載入中…" className="p-8" />
         ) : missingTable ? (
           <p className="p-8 text-center text-slate-400">
             尚未建立提領資料表，請先完成 migration

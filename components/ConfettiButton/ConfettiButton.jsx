@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { fireCelebrationConfettiFromElement } from "@/lib/fireCelebrationConfetti";
 import { cn } from "@/lib/utils";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 import styles from "./ConfettiButton.module.css";
 
 /**
@@ -102,7 +103,9 @@ export default function ConfettiButton({
       )}
       {...rest}
     >
-      {phase === "loading" && <span className={styles.spinner} aria-hidden />}
+      {phase === "loading" && (
+        <QuarterRing size="sm" className="text-black" aria-hidden />
+      )}
       {phase === "success" && (
         <svg
           className={styles.check}

@@ -42,6 +42,7 @@ import DataExhaustReminderModal, {
 import MaterialIcon from "../../../components/MaterialIcon";
 import { checkPlanAvailableClient } from "../../../lib/esim/checkPlanClient";
 import JekoPillButton from "../../../components/ui/JekoPillButton";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import MediaGalleryLightbox from "../../../components/MediaGalleryLightbox";
 import {
   resolveDetailedContent,
@@ -126,6 +127,7 @@ import DataEstimatorModal, {
   getEstimatorDestinationLabel,
   compareDataAmountsAsc,
 } from "@/components/DataEstimatorModal";
+import EsimCompatibilityModal from "@/components/EsimCompatibilityModal";
 import {
   is5MbpsDataAmount,
   formatDataAmountMain,
@@ -220,66 +222,6 @@ function DataEstimatorCta({ onClick, className = "" }) {
 // ==========================================
 // 1. 靜態資料設定
 // ==========================================
-const COMPATIBLE_DEVICES = [
-  {
-    category: "支援 eSIM 的蘋果 iPhone",
-    items: [
-      "iPhone 16 / 16 Plus / 16 Pro / 16 Pro Max",
-      "iPhone 15 / 15 Plus / 15 Pro / 15 Pro Max",
-      "iPhone 14 / 14 Plus / 14 Pro / 14 Pro Max",
-      "iPhone 13 / 13 Mini / 13 Pro / 13 Pro Max",
-      "iPhone 12 / 12 Mini / 12 Pro / 12 Pro Max",
-      "iPhone 11 / 11 Pro / 11 Pro Max",
-      "iPhone XS / XS Max / XR",
-      "iPhone SE (2020 / 2022)",
-    ],
-  },
-  {
-    category: "相容 eSIM 的 iPad (Wi-Fi + 行動網路)",
-    items: [
-      "iPad Pro 13 吋 (M4)",
-      "iPad Pro 11 吋 (第一代至第四代)",
-      "iPad Pro 12.9 吋 (第三代至第六代)",
-      "iPad Air (第三代至第六代)",
-      "iPad Mini (第五代、第六代)",
-      "iPad (第七代至第十代)",
-    ],
-  },
-  {
-    category: "Google Pixel 支援 eSIM 的手機",
-    items: [
-      "Pixel 9 / 9 Pro / 9 Pro XL / 9 Pro Fold",
-      "Pixel 8 / 8 Pro / 8a",
-      "Pixel 7 / 7 Pro / 7a",
-      "Pixel 6 / 6 Pro / 6a",
-      "Pixel 5 / 5a",
-      "Pixel 4 / 4a / 4 XL",
-    ],
-  },
-  {
-    category: "具備 eSIM 功能的三星手機",
-    items: [
-      "Galaxy S24 / S24+ / S24 Ultra",
-      "Galaxy S23 / S23+ / S23 Ultra",
-      "Galaxy S22 / S22+ / S22 Ultra",
-      "Galaxy S21 / S21+ / S21 Ultra",
-      "Galaxy S20 / S20+ / S20 Ultra",
-      "Galaxy Z Flip (全系列)",
-      "Galaxy Z Fold (全系列)",
-    ],
-  },
-  {
-    category: "其他支援 eSIM 的手機裝置",
-    items: [
-      "Sony Xperia 1 IV / 5 IV / 10 IV",
-      "Sony Xperia 1 V / 5 V / 10 V",
-      "Sharp Aquos Sense 4 lite / Sense 6",
-      "Oppo Find X3 Pro / X5 / X5 Pro",
-      "Xiaomi 12T Pro / 13 / 13 Pro",
-    ],
-  },
-];
-
 const CARRIER_INFO_MAP = {
   SoftBank: {
     badges: [
@@ -1426,60 +1368,6 @@ const Modal = ({
         </>
       )}
     </AnimatePresence>
-  );
-};
-
-const CompatibilityModal = ({ isOpen, onClose }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const filteredDevices = useMemo(() => {
-    if (!searchTerm) return COMPATIBLE_DEVICES;
-    return COMPATIBLE_DEVICES.map((cat) => ({
-      ...cat,
-      items: cat.items.filter((item) =>
-        item.toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
-    })).filter((cat) => cat.items.length > 0);
-  }, [searchTerm]);
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="我的手機支援日本 eSIM 嗎？"
-      maxWidth="max-w-3xl"
-    >
-      <div className="text-slate-700 space-y-6">
-        <div className="bg-slate-50 p-4 rounded-xl text-sm leading-relaxed border border-gray-100">
-          <p className="font-bold mb-2">
-            若要使用 FeGo eSIM，請確保您的裝置：支援 eSIM 且未鎖定電信商。
-          </p>
-        </div>
-        <input
-          type="text"
-          className="block w-full px-3 py-3 border border-gray-200 rounded-lg bg-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          placeholder="輸入設備型號 (例如：iPhone 14)"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <div className="space-y-3">
-          {filteredDevices.map((category, idx) => (
-            <div
-              key={idx}
-              className="border border-gray-200 rounded-xl overflow-hidden p-4 bg-white"
-            >
-              <span className="font-bold text-slate-800 block mb-2">
-                {category.category}
-              </span>
-              <ul className="space-y-1 text-sm text-slate-600">
-                {category.items.map((item, i) => (
-                  <li key={i}>• {item}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Modal>
   );
 };
 
@@ -3235,10 +3123,13 @@ export default function ProductPage({
 
   const variantBtnClass = (selected) =>
     selected
-      ? isPartnerShell
-        ? "border-2 border-[#0A6CD0] bg-white text-slate-900 font-semibold shadow-[0_0_0_1px_rgba(10,108,208,0.12)]"
-        : "border-2 border-[#00befa] bg-white text-slate-900 font-semibold"
-      : "border border-gray-200 bg-white text-slate-700 hover:border-gray-300";
+      ? "bg-[#1E4AD1] text-white font-semibold border border-[#1E4AD1] focus:outline-none focus-visible:outline-none"
+      : "border border-gray-200 bg-white text-slate-700 hover:border-gray-300 focus:outline-none focus-visible:outline-none";
+
+  const variantSelectClass = (selected) =>
+    selected
+      ? "bg-[#1E4AD1] text-white border border-[#1E4AD1] focus:outline-none"
+      : "bg-white text-slate-500 border border-gray-200 focus:outline-none";
 
   const PRODUCT_BLUE = "#0A6CD0";
 
@@ -3376,16 +3267,34 @@ export default function ProductPage({
     : { seo: pageSeo };
 
   if (router.isFallback || !product) {
-    return <PageShell {...shellProps}>載入中...</PageShell>;
+    return (
+      <PageShell {...shellProps}>
+        <LoadingIndicator layout="center" label="載入中..." className="py-20" />
+      </PageShell>
+    );
   }
 
   return (
     <SpeedScenarioProvider>
     <>
       <PageShell {...shellProps}>
-        <CompatibilityModal
+        <EsimCompatibilityModal
           isOpen={isCompatOpen}
           onClose={() => setIsCompatOpen(false)}
+          title={
+            ["japan", "jp"].includes(
+              String(router.query?.category || product?.category_slug || "").toLowerCase(),
+            )
+              ? "我的手機支援日本 eSIM 嗎？"
+              : "我的手機支援 eSIM 嗎？"
+          }
+          regionHint={
+            ["japan", "jp"].includes(
+              String(router.query?.category || product?.category_slug || "").toLowerCase(),
+            )
+              ? "日本方案同樣需確認手機已解鎖且支援 eSIM。"
+              : ""
+          }
         />
         <DataEstimatorModal
           isOpen={isEstimatorOpen}
@@ -3465,13 +3374,7 @@ export default function ProductPage({
         />
 
         <div className="bg-white">
-          <div
-            className={`${
-              isPartnerShell
-                ? "max-w-[1100px] mx-auto"
-                : "max-w-[1280px] mx-auto"
-            } px-4 sm:px-6 pt-3 sm:pt-4 pb-16 lg:pb-20`}
-          >
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-16 lg:pb-20">
             {isPartnerShell ? (
               <nav className="text-xs text-slate-400 mb-3 tracking-wide flex items-center gap-1.5 flex-wrap">
                 <a
@@ -3512,11 +3415,7 @@ export default function ProductPage({
 
             <section
               id="purchase-section"
-              className={
-                isPartnerShell
-                  ? "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 mb-14 lg:mb-16"
-                  : "grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-8 lg:gap-12 mb-16 lg:mb-20"
-              }
+              className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-8 lg:gap-12 mb-16 lg:mb-20"
             >
               {/* ========== 左：媒體畫廊 ========== */}
               <div className="w-full lg:sticky lg:top-24 lg:self-start">
@@ -3915,11 +3814,7 @@ export default function ProductPage({
                           onChange={(e) =>
                             handleAttributeSelect("days", e.target.value)
                           }
-                          className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
-                            selectedAttributes["days"]
-                              ? "bg-white text-slate-900 border-2 border-[#0A6CD0]"
-                              : "bg-white text-slate-500 border border-gray-200"
-                          }`}
+                          className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${variantSelectClass(!!selectedAttributes["days"])}`}
                         >
                           <option value="" disabled>
                             請選擇天數
@@ -3971,11 +3866,7 @@ export default function ProductPage({
                                 e.target.value,
                               )
                             }
-                            className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
-                              selectedAttributes["data_amount"]
-                                ? "bg-white text-slate-900 border-2 border-[#0A6CD0]"
-                                : "bg-white text-slate-500 border border-gray-200"
-                            }`}
+                            className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${variantSelectClass(!!selectedAttributes["data_amount"])}`}
                           >
                             <option value="" disabled>
                               請選擇數據量
@@ -4497,11 +4388,7 @@ export default function ProductPage({
                           onChange={(e) =>
                             handleAttributeSelect("days", e.target.value)
                           }
-                          className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium tracking-[-0.01em] rounded-[14px] appearance-none cursor-pointer transition-all duration-200 ease-out active:scale-[0.985] focus:outline-none ${
-                            selectedAttributes["days"]
-                              ? "bg-white text-slate-900 border border-[#007aff]/30 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_0_0_3px_rgba(0,122,255,0.12)]"
-                              : "bg-[#f2f2f7] text-slate-500 border border-black/[0.06] shadow-[inset_0_0.5px_0_rgba(0,0,0,0.06)] focus:bg-white focus:border-[#007aff]/40 focus:shadow-[0_0_0_3px_rgba(0,122,255,0.18)]"
-                          }`}
+                          className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium tracking-[-0.01em] rounded-[14px] appearance-none cursor-pointer transition-all duration-200 ease-out active:scale-[0.985] focus:outline-none ${variantSelectClass(!!selectedAttributes["days"])}`}
                           style={{ WebkitTapHighlightColor: "transparent" }}
                         >
                           <option value="" disabled>
@@ -4558,11 +4445,7 @@ export default function ProductPage({
                                 e.target.value,
                               )
                             }
-                            className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${
-                              selectedAttributes["data_amount"]
-                                ? "bg-white text-slate-900 border-2 border-[#00befa]"
-                                : "bg-white text-slate-500 border border-gray-200"
-                            }`}
+                            className={`w-full h-[50px] pl-4 pr-12 text-[17px] font-medium rounded-xl appearance-none cursor-pointer focus:outline-none ${variantSelectClass(!!selectedAttributes["data_amount"])}`}
                           >
                             <option value="" disabled>
                               請選擇數據量

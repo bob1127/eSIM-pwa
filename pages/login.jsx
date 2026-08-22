@@ -7,6 +7,7 @@ import RegisterForm from "../components/RegisterForm";
 import ForgotPasswordForm from "../components/ForgotPasswordForm";
 import { supabase } from "../lib/supabaseClient";
 import { useUser } from "../components/context/UserContext";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 import { useSession } from "next-auth/react";
 import {
@@ -389,7 +390,17 @@ const LoginRegisterPage = () => {
                             : "bg-white/95 text-[#1C82E0] hover:bg-white"
                         }`}
                       >
-                        {loggingIn ? "處理中..." : "登入"}
+                        {loggingIn ? (
+                          <LoadingIndicator
+                            layout="inline"
+                            size="xs"
+                            label="處理中..."
+                            labelClassName="text-sm font-semibold text-[#1C82E0]"
+                            spinnerClassName="text-[#1C82E0]"
+                          />
+                        ) : (
+                          "登入"
+                        )}
                       </button>
                     </form>
 

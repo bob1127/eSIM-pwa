@@ -7,6 +7,7 @@ import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 // 抓取 WooCommerce 分類資料
 async function fetchProductCategories() {
@@ -43,7 +44,15 @@ export default function ProductCarousel() {
     fetchData();
   }, []);
 
-  if (loading) return <div className="text-center py-20">Loading...</div>;
+  if (loading) {
+    return (
+      <LoadingIndicator
+        layout="center"
+        label="Loading..."
+        className="py-20"
+      />
+    );
+  }
 
   return (
     <div className="w-full px-0 sm:px-4 py-10">
