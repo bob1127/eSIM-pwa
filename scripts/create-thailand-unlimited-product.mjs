@@ -2,7 +2,7 @@
  * 建立「泰國 eSIM 吃到飽」原生卡 — 兩個電信變體
  *   1) Truemove H 當地號碼 ← Unlimited High Speed（目前 8／15 天）
  *      真．不限速｜利潤 80%｜給夥伴 30%｜95 折
- *   2) TRRE 電信 ← unlimited 10mbps（1／3／4／5／6／7／10／15／20／30 天等）
+ *   2) True 電信 ← unlimited 10mbps（1／3／4／5／6／7／10／15／20／30 天等）
  *      FUP 10Mbps 無限流量｜利潤 60%｜給夥伴 50%｜9 折
  *
  * 用法：
@@ -54,7 +54,9 @@ const PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "ScriptImport2026!";
 const HANDLE = "thailand-unlimited-esim";
 const DATA_AMOUNT = "無限流量";
 const TELECOM_TRUEMOVE = "Truemove H 當地號碼";
-const TELECOM_TRRE = "TRRE 電信";
+const TELECOM_TRUE = "True 電信";
+/** @deprecated 舊常數名 */
+const TELECOM_TRRE = TELECOM_TRUE;
 const FUP_TRRE =
   "公平使用政策 (FUP): 10 Mbps的無限流量，實際速度可能有所變動。";
 const FUP_TRUEMOVE =
@@ -68,7 +70,7 @@ const SPECIAL_TRUEMOVE =
 /** 官網售價利潤％ */
 const PROFIT_BY_TELECOM = {
   [TELECOM_TRUEMOVE]: 80,
-  [TELECOM_TRRE]: 60,
+  [TELECOM_TRUE]: 60,
 };
 
 /**
@@ -77,16 +79,16 @@ const PROFIT_BY_TELECOM = {
  */
 const PARTNER_RATE_BY_TELECOM = {
   [TELECOM_TRUEMOVE]: 30,
-  [TELECOM_TRRE]: 50,
+  [TELECOM_TRUE]: 50,
 };
 const REFERRAL_DISCOUNT_BY_TELECOM = {
   [TELECOM_TRUEMOVE]: 5, // 95 折
-  [TELECOM_TRRE]: 10, // 9 折
+  [TELECOM_TRUE]: 10, // 9 折
 };
 
 const SKU_SUFFIX = {
   [TELECOM_TRUEMOVE]: "TMH",
-  [TELECOM_TRRE]: "TRRE",
+  [TELECOM_TRUE]: "TRRE",
 };
 
 const HKD_TO_TWD_ENV = process.env.HKD_TO_TWD
@@ -130,14 +132,14 @@ async function resolveHkdToTwd() {
 
 function telecomRank(telecom) {
   if (telecom === TELECOM_TRUEMOVE) return 0;
-  if (telecom === TELECOM_TRRE) return 1;
+  if (telecom === TELECOM_TRUE) return 1;
   return 9;
 }
 
 function expandTelecomPlans(list, telecom, hkdToTwd) {
   const profit = PROFIT_BY_TELECOM[telecom];
   const suffix = SKU_SUFFIX[telecom];
-  const isTrre = telecom === TELECOM_TRRE;
+  const isTrue = telecom === TELECOM_TRUE;
   return (list || []).map((p) => {
     const hkd = Number(p.price_hkd) || 0;
     const cost = Math.ceil(hkd * hkdToTwd);
@@ -153,7 +155,7 @@ function expandTelecomPlans(list, telecom, hkdToTwd) {
       referral_discount_percent: REFERRAL_DISCOUNT_BY_TELECOM[telecom],
       telecom,
       daysLabel: `${p.day}天`,
-      speed_rule: isTrre ? FUP_TRRE : p.speed_rule || SPEED_TRUEMOVE,
+      speed_rule: isTrue ? FUP_TRRE : p.speed_rule || SPEED_TRUEMOVE,
     };
   });
 }
@@ -172,13 +174,13 @@ function loadPlans(hkdToTwd) {
         TELECOM_TRUEMOVE,
         hkdToTwd,
       ),
-      ...expandTelecomPlans(raw.trre_10mbps, TELECOM_TRRE, hkdToTwd),
+      ...expandTelecomPlans(raw.trre_10mbps, TELECOM_TRUE, hkdToTwd),
     ];
   } else {
     const base = raw.plans || [];
     rows = [
       ...expandTelecomPlans(base, TELECOM_TRUEMOVE, hkdToTwd),
-      ...expandTelecomPlans(base, TELECOM_TRRE, hkdToTwd),
+      ...expandTelecomPlans(base, TELECOM_TRUE, hkdToTwd),
     ];
   }
 
@@ -234,8 +236,8 @@ function chunk(arr, size) {
 
 function toVariant(row) {
   const profit = row.profit_percent;
-  const isTrre = row.telecom === TELECOM_TRRE;
-  const speedRule = isTrre
+  const isTrue = row.telecom === TELECOM_TRUE;
+  const speedRule = isTrue
     ? FUP_TRRE
     : row.speed_rule || SPEED_TRUEMOVE;
 
@@ -268,7 +270,7 @@ function toVariant(row) {
       supplier_sku: row.supplier_sku,
       apn: row.apn || "internet",
       networks: row.networks || "",
-      rule_desc: isTrre ? "unlimited 10mbps (FUP)" : row.rule_desc || "",
+      rule_desc: isTrue ? "unlimited 10mbps (FUP)" : row.rule_desc || "",
       speed_desc: row.speed_desc || "",
       ip: row.ip || "TH",
       attributes: {
@@ -276,7 +278,7 @@ function toVariant(row) {
         data: DATA_AMOUNT,
         data_amount: DATA_AMOUNT,
         telecom: row.telecom,
-        network: isTrre ? "TRUE / TRRE 4G/5G" : "TRUE / Truemove H 4G/5G",
+        network: isTrue ? "TRUE 4G/5G" : "TRUE / Truemove H 4G/5G",
         ip_type: "泰國 IP",
         route_type: "原生eSIM",
         hotspot: true,
@@ -284,8 +286,8 @@ function toVariant(row) {
         tiktok: true,
         gemini: true,
         speed_rule: speedRule,
-        network_speed: isTrre ? "5G/4G · FUP 10Mbps" : "5G 極速",
-        fup: isTrre ? FUP_TRRE : "",
+        network_speed: isTrue ? "5G/4G · FUP 10Mbps" : "5G 極速",
+        fup: isTrue ? FUP_TRRE : "",
       },
     },
   };
@@ -301,7 +303,7 @@ async function main() {
   const dayValues = [...new Set(rows.map((r) => r.daysLabel))].sort(
     (a, b) => parseInt(a, 10) - parseInt(b, 10),
   );
-  const telecomValues = [TELECOM_TRUEMOVE, TELECOM_TRRE];
+  const telecomValues = [TELECOM_TRUEMOVE, TELECOM_TRUE];
 
   for (const telecom of telecomValues) {
     const sample =
@@ -330,30 +332,30 @@ async function main() {
     is_native: true,
     native_esim: true,
     plan_kind: "unlimited",
-    hot_sale_telecoms: [TELECOM_TRUEMOVE],
+    hot_sale_telecoms: [TELECOM_TRUEMOVE, TELECOM_TRUE],
     carrier_profit_by_carrier: {
       [TELECOM_TRUEMOVE]: PROFIT_BY_TELECOM[TELECOM_TRUEMOVE],
-      [TELECOM_TRRE]: PROFIT_BY_TELECOM[TELECOM_TRRE],
+      [TELECOM_TRUE]: PROFIT_BY_TELECOM[TELECOM_TRUE],
     },
     carrier_partner_rate_by_carrier: {
       [TELECOM_TRUEMOVE]: PARTNER_RATE_BY_TELECOM[TELECOM_TRUEMOVE],
-      [TELECOM_TRRE]: PARTNER_RATE_BY_TELECOM[TELECOM_TRRE],
+      [TELECOM_TRUE]: PARTNER_RATE_BY_TELECOM[TELECOM_TRUE],
     },
     carrier_referral_discount_by_carrier: {
       [TELECOM_TRUEMOVE]: REFERRAL_DISCOUNT_BY_TELECOM[TELECOM_TRUEMOVE],
-      [TELECOM_TRRE]: REFERRAL_DISCOUNT_BY_TELECOM[TELECOM_TRRE],
+      [TELECOM_TRUE]: REFERRAL_DISCOUNT_BY_TELECOM[TELECOM_TRUE],
     },
     seo_title:
-      "泰國 eSIM 吃到飽 原生卡｜Truemove H 當地號碼 / TRRE 電信｜泰國當地 IP｜Jeko eSIM",
+      "泰國 eSIM 吃到飽 原生卡｜Truemove H 當地號碼 / True 電信｜泰國當地 IP｜Jeko eSIM",
     seo_description:
-      "泰國原生 eSIM 吃到飽：Truemove H 當地號碼（真．不限速）、TRRE 電信（FUP 10Mbps）兩種電信變體，泰國當地 IP、支援熱點，依天數選購。Jeko eSIM 免換卡、QR Code 即開即用。",
+      "泰國原生 eSIM 吃到飽：Truemove H 當地號碼（真．不限速）、True 電信（FUP 10Mbps）兩種電信變體，泰國當地 IP、支援熱點，依天數選購。Jeko eSIM 免換卡、QR Code 即開即用。",
     seo_keywords:
-      "泰國eSIM,泰國吃到飽,原生eSIM,泰國IP,Truemove H,TRRE電信,TRUE,當地號碼,無限流量,10Mbps,旅遊eSIM,出國上網,Jeko eSIM",
+      "泰國eSIM,泰國吃到飽,原生eSIM,泰國IP,Truemove H,True電信,TRUE,當地號碼,無限流量,10Mbps,旅遊eSIM,出國上網,Jeko eSIM",
     subtitle_by_carrier: {
       [TELECOM_TRUEMOVE]:
         "原生eSIM｜Truemove H 當地號碼｜泰國當地 IP｜真．不限速吃到飽",
-      [TELECOM_TRRE]:
-        "原生eSIM｜TRRE 電信｜泰國當地 IP｜FUP 10Mbps 無限流量",
+      [TELECOM_TRUE]:
+        "原生eSIM｜True 電信｜泰國當地 IP｜FUP 10Mbps 無限流量",
     },
     carrier_specs_by_carrier: {
       [TELECOM_TRUEMOVE]: {
@@ -364,10 +366,10 @@ async function main() {
         apps: "熱點分享,ChatGPT,TikTok,Gemini",
         apn: "internet",
       },
-      [TELECOM_TRRE]: {
+      [TELECOM_TRUE]: {
         ip_type: "泰國 IP",
         route_type: "原生eSIM",
-        network: "TRUE / TRRE 4G/5G",
+        network: "TRUE 4G/5G",
         speed_rule: FUP_TRRE,
         apps: "熱點分享,ChatGPT,TikTok,Gemini",
         apn: "internet",
@@ -375,7 +377,7 @@ async function main() {
     },
     key_features_by_carrier: {
       [TELECOM_TRUEMOVE]: truemoveHKeyFeatures(),
-      [TELECOM_TRRE]: trueDtacKeyFeatures(),
+      [TELECOM_TRUE]: trueDtacKeyFeatures(),
     },
     overview_notices_by_carrier: {
       [TELECOM_TRUEMOVE]: {
@@ -383,7 +385,7 @@ async function main() {
         activation_notice: ACTIVATION_TRUEMOVE,
         special_notice: SPECIAL_TRUEMOVE,
       },
-      [TELECOM_TRRE]: {
+      [TELECOM_TRUE]: {
         fup_notice: FUP_TRRE,
         activation_notice: "建議抵達泰國後再安裝／啟用 eSIM",
       },
@@ -393,10 +395,10 @@ async function main() {
   const payloadBase = {
     title: "泰國 eSIM 吃到飽  原生卡 原生eSIM 泰國當地IP",
     subtitle:
-      "Truemove H 當地號碼 真．不限速／TRRE 電信 FUP 10Mbps｜泰國當地 IP｜原生eSIM",
+      "Truemove H 當地號碼 真．不限速／True 電信 FUP 10Mbps｜泰國當地 IP｜原生eSIM",
     handle: HANDLE,
     description:
-      "泰國 eSIM 吃到飽原生卡，提供 Truemove H 當地號碼（真．不限速）與 TRRE 電信（公平使用政策 FUP：10 Mbps 無限流量，實際速度可能有所變動）兩個電信變體。走 TRUE 當地網路、泰國當地 IP，支援熱點與主流 App，依天數選購，抵達後安裝即可使用。",
+      "泰國 eSIM 吃到飽原生卡，提供 Truemove H 當地號碼（真．不限速）與 True 電信（公平使用政策 FUP：10 Mbps 無限流量，實際速度可能有所變動）兩個電信變體。走 TRUE 當地網路、泰國當地 IP，支援熱點與主流 App，依天數選購，抵達後安裝即可使用。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,
@@ -413,9 +415,9 @@ async function main() {
 
   const variants = rows.map(toVariant);
   const nTmh = rows.filter((r) => r.telecom === TELECOM_TRUEMOVE).length;
-  const nTrre = rows.filter((r) => r.telecom === TELECOM_TRRE).length;
+  const nTrue = rows.filter((r) => r.telecom === TELECOM_TRUE).length;
   console.log(
-    `📦 方案 ${rows.length} 筆（${TELECOM_TRUEMOVE} ${nTmh} + ${TELECOM_TRRE} ${nTrre}）・利潤 80%／60%`,
+    `📦 方案 ${rows.length} 筆（${TELECOM_TRUEMOVE} ${nTmh} + ${TELECOM_TRUE} ${nTrue}）・利潤 80%／60%・HOT SALE=兩者`,
   );
   console.log(`天數選項: ${dayValues.join(" | ")}`);
 
@@ -495,8 +497,8 @@ async function main() {
     rows.find((r) => r.telecom === TELECOM_TRUEMOVE && r.day === 8),
   );
   console.log(
-    `範例: ${TELECOM_TRRE} 15天 →`,
-    rows.find((r) => r.telecom === TELECOM_TRRE && r.day === 15),
+    `範例: ${TELECOM_TRUE} 15天 →`,
+    rows.find((r) => r.telecom === TELECOM_TRUE && r.day === 15),
   );
 }
 

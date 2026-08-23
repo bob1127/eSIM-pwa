@@ -8,6 +8,7 @@ import { buildEsimProfileFromTopupDetail } from "../../../lib/esimProfile";
 import {
   buildEsimFulfillmentEmailHtml,
   buildEsimFulfillmentEmailText,
+  getEsimFulfillmentInlineAttachments,
 } from "../../../lib/esimFulfillmentEmail";
 import { getPublicSiteUrl } from "../../../lib/siteUrl";
 import {
@@ -86,7 +87,7 @@ function isRetryableError(err) {
   return status === 408 || status === 429 || (typeof status === "number" && status >= 500);
 }
 
-async function sendEsimEmail(to, orderNumber, profiles) {
+async function sendEsimEmail(to, orderNumber, profiles, orderMeta = {}) {
   const site = getPublicSiteUrl().replace(/\/$/, "");
   const merchantNo = String(orderNumber || "").replace(/^order_/, "");
   const webOrderUrl = `${site}/thank-you?status=success&orderNo=${encodeURIComponent(merchantNo)}`;
@@ -100,11 +101,17 @@ async function sendEsimEmail(to, orderNumber, profiles) {
       profiles,
       webOrderUrl,
       siteName: "Jeko eSIM",
+      useInlineCid: true,
+      orderMeta: {
+        merchantOrderNo: merchantNo,
+        ...orderMeta,
+      },
     }),
     text: buildEsimFulfillmentEmailText({
       orderNumber: merchantNo,
       profiles,
     }),
+    attachments: getEsimFulfillmentInlineAttachments(),
   });
 }
 

@@ -171,15 +171,20 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
-    async jwt({ token, account, user }) {
+    async jwt({ token, account, user, isNewUser }) {
       if (account) {
         log("callback.jwt 收到 account", {
           provider: account.provider,
           type: account.type,
           hasAccessToken: !!account.access_token,
+          isNewUser: !!isNewUser,
         });
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
+        // 新戶旗標僅短時有效，避免之後每次進 /login 都被當成新註冊
+        if (isNewUser) {
+          token.newUserUntil = Date.now() + 2 * 60 * 1000;
+        }
       }
       if (user) {
         log("callback.jwt 寫入 user", { id: user.id, email: user.email });
@@ -193,9 +198,13 @@ export const authOptions: NextAuthOptions = {
           session.user.email = `${token.sub}@line-login.com`;
         }
       }
+      const until =
+        typeof token?.newUserUntil === "number" ? token.newUserUntil : 0;
+      session.isNewUser = until > Date.now();
       log("callback.session", {
         email: session?.user?.email,
         tokenSub: token?.sub,
+        isNewUser: !!session.isNewUser,
       });
       return session;
     },

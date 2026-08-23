@@ -72,10 +72,12 @@ export function iijDocomoUnlimitedKeyFeatures() {
 }
 
 export function japanUnlimitedKeyFeaturesByCarrier() {
+  const hs = auKddiHighSpeedKeyFeatures();
   return {
-    "AU(KDDI) 高速數據": auKddiHighSpeedKeyFeatures(),
+    "AU(KDDI) 真。吃到飽不降速": hs,
+    "AU(KDDI) 高速數據": hs,
     // 舊鍵相容（選項改名前列）
-    "AU(KDDI)": auKddiHighSpeedKeyFeatures(),
+    "AU(KDDI)": hs,
     "AU(KDDI) 10Mbps": auKddi10MbpsKeyFeatures(),
     "AU KDDI 10Mbps": auKddi10MbpsKeyFeatures(),
     "SoftBank / KDDI 10Mbps": softbankKddi10MbpsKeyFeatures(),

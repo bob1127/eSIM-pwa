@@ -13,7 +13,7 @@ const NATIVE_IP_SLIDES = new Set([
 
 const JAPAN_HREF = "/product/japan";
 const KYUSHU_HREF =
-  "/product/japan/japan-unlimited-esim?telecom=au-kddi&days=5";
+  "/product/japan/japan-unlimited-esim-nolimit?telecom=au-kddi&days=5";
 const KOREA_HREF =
   "/product/korea/korea-unlimited-esim?telecom=sk-native&days=5";
 const THAILAND_HREF =

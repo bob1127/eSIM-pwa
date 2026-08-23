@@ -1,11 +1,8 @@
 /**
- * 建立「日本吃到飽 eSIM｜吃到飽不降速eSIM」(japan-unlimited-esim)
- *   1) AU(KDDI) 10Mbps ← Japan-Local-unlimited-*-D1（限速 10Mbps）— 利潤 65%
- *   2) AU(KDDI) 高速數據 ← Japan-Local-unlimited-*-D0（真・不限速）— 利潤 65%・HOT SALE
+ * 建立「日本吃到飽 eSIM」(japan-unlimited-esim)
+ *   AU(KDDI) 10Mbps ← Japan-Local-unlimited-*-D1（限速 10Mbps）— 利潤 65%
  *
- * 前台既有功能會自動接上：
- *   - AuKddiApnReminderModal：高速數據 + 天數 ≥ 10 → 購買前 APN popup
- *   - key_features 實際體驗維持福岡市區 600Mbps 文案
+ * 真・不限速請用：scripts/create-japan-unlimited-nolimit-product.mjs
  *
  * 用法：
  *   HKD_TO_TWD=4.5 node scripts/create-japan-unlimited-product.mjs
@@ -16,6 +13,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { japanUnlimitedKeyFeaturesByCarrier } from "../content/product-detailed/japan-unlimited-key-features.js";
 import { internalCatalogHeaders } from "./lib/internal-catalog-headers.mjs";
+import {
+  JAPAN_PRODUCT_THUMB,
+  japanProductImages,
+} from "./lib/japanProductGallery.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -52,9 +53,8 @@ const EMAIL = process.env.MEDUSA_ADMIN_EMAIL || "script@esim.local";
 const PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "ScriptImport2026!";
 
 const HANDLE = "japan-unlimited-esim";
-const TITLE = "日本吃到飽 eSIM｜吃到飽不降速eSIM";
+const TITLE = "日本吃到飽 eSIM";
 const TELECOM_10 = "AU(KDDI) 10Mbps";
-const TELECOM_HS = "AU(KDDI) 高速數據";
 const DATA = "無限流量";
 const PROFIT = 65;
 const HKD_TO_TWD = Number(process.env.HKD_TO_TWD || 4.5);
@@ -63,9 +63,8 @@ const REBUILD = process.argv.includes("--rebuild");
 
 const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const CATEGORY_IDS = ["pcat_01KZJNBV5DAJTWWG22KSHC7FTN"]; // japan
-const THUMB =
-  process.env.JAPAN_PRODUCT_THUMB ||
-  "https://www.jeko-esim.com.tw/images/japan-esim-banner.jpg";
+const THUMB = JAPAN_PRODUCT_THUMB;
+const PRODUCT_IMAGES = japanProductImages();
 
 function retailFromCost(costTwd, profitPercent = PROFIT) {
   return Math.ceil((costTwd * (1 + profitPercent / 100)) / 10) * 10 - 1;
@@ -189,6 +188,37 @@ function pickByDay(raw, pred, scoreFn) {
     .sort((a, b) => a.day - b.day);
 }
 
+/** SoftBank / KDDI 吃到飽天數（與 split-japan-softbank-telecoms 對齊） */
+function softbankDayLabels(raw) {
+  const days = new Set();
+  for (const p of raw) {
+    const name = String(p.name || p.channel_dataplan_name || "");
+    if (!/^Japan(?:\(T\+C\))?-unlimited-/i.test(name)) continue;
+    const day = Number(p.day) || 0;
+    if (day > 0) days.add(`${day}天`);
+  }
+  return [...days].sort(
+    (a, b) => parseInt(a, 10) - parseInt(b, 10),
+  );
+}
+
+/** IIJ Docomo 吃到飽天數（JapanIIJ-unlimited-*） */
+function iijDayLabels(raw) {
+  const map = new Map();
+  for (const p of raw) {
+    const name = String(p.name || p.channel_dataplan_name || "");
+    if (!/^JapanIIJ-unlimited-\d+-[AB]\d$/i.test(name)) continue;
+    const day = Number(p.day) || 0;
+    if (!day) continue;
+    const hkd = Number(p.price) || 0;
+    const prev = map.get(day);
+    if (!prev || hkd < prev) map.set(day, hkd);
+  }
+  return [...map.keys()]
+    .sort((a, b) => a - b)
+    .map((d) => `${d}天`);
+}
+
 function toVariant(r, telecom, kind) {
   const manual = /username|password|chap/i.test(r.apn);
   const needsApnPopup = kind === "hs" && r.day >= 10;
@@ -309,33 +339,45 @@ function chunk(arr, size) {
   return out;
 }
 
+/** rebuild 只移除 AU(KDDI) 吃到飽變體，保留 SoftBank / KDDI 等其他電信 */
+function isAuKddiUnlimitedVariant(v) {
+  const title = String(v?.title || "");
+  const sku = String(v?.sku || "");
+  const carrier = String(v?.metadata?.carrier || "");
+  if (/^AU\(KDDI\)/i.test(title) || /AU\(KDDI\)/i.test(carrier)) return true;
+  if (/Japan-Local-unlimited/i.test(sku)) return true;
+  if (/-AU(?:10|HS)$/i.test(sku)) return true;
+  return false;
+}
+
 async function main() {
   console.log(`💱 HKD→TWD ${HKD_TO_TWD} · 利潤 ${PROFIT}%`);
   console.log(`  ${TELECOM_10}`);
-  console.log(`  ${TELECOM_HS}（HOT SALE）`);
 
   const raw = await fetchPlans();
   const rows10 = pickByDay(raw, is10Mbps);
-  const rowsHs = pickByDay(raw, isHighSpeed, highSpeedScore);
   if (!rows10.length) throw new Error("找不到 Japan-Local-unlimited 10Mbps");
-  if (!rowsHs.length) throw new Error("找不到 Japan-Local-unlimited 高速數據");
 
   for (const r of [rows10.find((x) => x.day === 4), rows10.find((x) => x.day === 5)].filter(Boolean)) {
     console.log(
       `  [10Mbps] ${r.day}天 ${r.sku} HKD ${r.price_hkd} → cost NT$${r.cost_twd} → 售價 NT$${r.retail_twd}`,
     );
   }
-  for (const r of [rowsHs.find((x) => x.day === 4), rowsHs.find((x) => x.day === 5)].filter(Boolean)) {
-    console.log(
-      `  [高速] ${r.day}天 ${r.sku} HKD ${r.price_hkd} → cost NT$${r.cost_twd} → 售價 NT$${r.retail_twd}`,
-    );
-  }
-  console.log(`共 10Mbps ${rows10.length} + 高速 ${rowsHs.length}`);
+  console.log(`共 10Mbps ${rows10.length} 款`);
 
   const dayValues = [
-    ...new Set([...rows10, ...rowsHs].map((r) => `${r.day}天`)),
+    ...new Set([
+      ...rows10.map((r) => `${r.day}天`),
+      ...softbankDayLabels(raw),
+      ...iijDayLabels(raw),
+    ]),
   ].sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
-  const telecomValues = [TELECOM_10, TELECOM_HS];
+  const telecomValues = [
+    TELECOM_10,
+    "SoftBank / KDDI",
+    "SoftBank / KDDI 10Mbps",
+    "IIJ Docomo",
+  ];
 
   const keyFeatures = japanUnlimitedKeyFeaturesByCarrier();
   const productMeta = {
@@ -343,19 +385,15 @@ async function main() {
     country: "JP",
     is_native: true,
     plan_kind: "unlimited",
-    hot_sale_telecoms: [TELECOM_HS],
     carrier_profit_by_carrier: {
       [TELECOM_10]: PROFIT,
-      [TELECOM_HS]: PROFIT,
     },
     subtitle_by_carrier: {
       [TELECOM_10]: "原生eSIM｜AU(KDDI)｜日本 IP｜約 10Mbps 吃到飽",
-      [TELECOM_HS]: "原生eSIM｜AU(KDDI)｜日本 IP｜真・不限速｜≥10天可能需手動 APN",
     },
     key_features_by_carrier: {
       [TELECOM_10]: keyFeatures[TELECOM_10],
-      [TELECOM_HS]: keyFeatures[TELECOM_HS],
-      "AU(KDDI)": keyFeatures[TELECOM_HS],
+      "IIJ Docomo": keyFeatures["IIJ Docomo"],
     },
     overview_notices_by_carrier: {
       [TELECOM_10]: {
@@ -363,24 +401,19 @@ async function main() {
           "限速約 10 Mbps 吃到飽，實際速度依位置與網路環境變動。日本原生 IP（AU/KDDI）。",
         activation_notice: "建議抵達日本後再安裝／啟用 eSIM",
       },
-      [TELECOM_HS]: {
-        fup_notice:
-          "高速數據吃到飽（真・不限速）。天數 10 天（含）以上若無法上網，請依購買提醒手動設定 APN。",
-        activation_notice: "建議抵達日本後再安裝／啟用 eSIM；≥10 天請留意 APN 提醒",
-      },
     },
   };
 
   const payloadBase = {
     title: TITLE,
-    subtitle: "AU(KDDI) 原生｜10Mbps 吃到飽／真・不限速高速數據｜日本 IP",
+    subtitle: "AU(KDDI) 原生｜約 10Mbps 吃到飽｜日本 IP",
     handle: HANDLE,
     description:
-      "日本吃到飽 eSIM｜吃到飽不降速eSIM。兩種 AU(KDDI) 原生方案：約 10Mbps 吃到飽，以及真・不限速高速數據（HOT SALE）。日本原生 IP，支援熱點與常用 App。高速數據天數 ≥10 天可能需手動設定 APN（購買前會提示）。",
+      "日本吃到飽 eSIM。AU(KDDI) 原生約 10Mbps 吃到飽，日本本地 IP，支援熱點與常用 App。適合需要整天有網、但不需極限速的旅客。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,
-    images: [{ url: THUMB }],
+    images: PRODUCT_IMAGES,
     metadata: productMeta,
     options: [
       { title: "使用天數", values: dayValues },
@@ -391,10 +424,7 @@ async function main() {
     categories: CATEGORY_IDS.map((id) => ({ id })),
   };
 
-  const variants = [
-    ...rows10.map((r) => toVariant(r, TELECOM_10, "10")),
-    ...rowsHs.map((r) => toVariant(r, TELECOM_HS, "hs")),
-  ];
+  const variants = rows10.map((r) => toVariant(r, TELECOM_10, "10"));
 
   console.log("🔐 登入…", EMAIL, "@", MEDUSA_URL);
   const token = await login();
@@ -455,10 +485,12 @@ async function main() {
     for (;;) {
       const page = await admin(
         token,
-        `/admin/products/${product.id}/variants?limit=${BATCH_SIZE}&offset=${offset}&fields=id`,
+        `/admin/products/${product.id}/variants?limit=${BATCH_SIZE}&offset=${offset}&fields=id,title,sku,metadata`,
       );
       const pageRows = page.variants || [];
-      oldIds.push(...pageRows.map((v) => v.id).filter(Boolean));
+      for (const v of pageRows) {
+        if (v?.id && isAuKddiUnlimitedVariant(v)) oldIds.push(v.id);
+      }
       if (pageRows.length < BATCH_SIZE) break;
       offset += BATCH_SIZE;
     }
@@ -469,7 +501,7 @@ async function main() {
           body: JSON.stringify({ delete: batch }),
         });
       }
-      console.log(`🗑 已刪 ${oldIds.length} 舊變體`);
+      console.log(`🗑 已刪 ${oldIds.length} 個 AU(KDDI) 變體（保留其他電信）`);
     }
     for (const [i, batch] of chunk(variants, BATCH_SIZE).entries()) {
       await admin(token, `/admin/products/${product.id}/variants/batch`, {
@@ -496,9 +528,6 @@ async function main() {
     "電信商選項:",
     (telecomOpt?.values || []).map((v) => v.value).join(" | "),
   );
-  console.log("HOT SALE:", TELECOM_HS);
-  console.log("實際體驗：維持福岡市區 600Mbps 文案");
-  console.log("APN popup：高速數據 ≥10 天（前台 AuKddiApnReminderModal）");
 }
 
 main().catch((e) => {

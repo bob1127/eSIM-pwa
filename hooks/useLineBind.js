@@ -32,10 +32,11 @@ function bindSuccessMessage(result) {
   if (result?.isFriend === false) {
     return "已連結 LINE。請再加入官方帳號，才能收到流量提醒與使用折扣。";
   }
+  // 綁定 ≠ 全開通知；提醒需再選 eSIM 開啟（一次一張）
   if (result?.trafficAlert?.ok) {
-    return "已綁定 LINE，並開啟流量偏低提醒。剩餘偏低時會在官方 LINE 通知您。";
+    return "已連結會員。若已自動開提醒，之後可改選其他 eSIM 再開（一次只監控一張）。";
   }
-  return "已成功綁定 LINE。若本站尚無 eSIM 訂單，請到官方 LINE 貼上 ICCID 開啟提醒。";
+  return "已連結官網會員與 LINE。請選一張 eSIM 再開啟流量提醒（一次一張）；無訂單可用 ICCID。";
 }
 
 function stripBindQuery(router) {

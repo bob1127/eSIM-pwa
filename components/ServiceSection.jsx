@@ -158,7 +158,7 @@ export default function PickUpJobsSection() {
           title: "日本原生卡",
           desc: "採用 Docomo／KDDI／IIJ 等當地電信線路，日本本地 IP、低延遲，適合訂餐廳、電子支付與多數日本限定服務。",
           tags: ["日本IP", "低延遲", "原生線路"],
-          link: "/product/japan/japan-unlimited-esim?telecom=au-kddi&days=5&data_amount=unlimited",
+          link: "/product/japan/japan-unlimited-esim-nolimit?telecom=au-kddi&days=5&data_amount=unlimited",
         },
         {
           hotSale: true,
@@ -178,7 +178,7 @@ export default function PickUpJobsSection() {
             { text: "泰國本地IP", color: "#17806A" },
           ],
           title: "泰國原生卡",
-          desc: "對應 Truemove H 當地號碼／TRRE 電信本地線路，泰國本地 IP，曼谷、清邁、普吉等熱門旅遊地訊號覆蓋更穩定。",
+          desc: "對應 Truemove H 當地號碼／True 電信本地線路，泰國本地 IP，曼谷、清邁、普吉等熱門旅遊地訊號覆蓋更穩定。",
           tags: ["泰國IP", "本地電信", "原生線路"],
           link: "/product/thailand/thailand-unlimited-esim?telecom=truemove&days=8&data_amount=unlimited",
         },
@@ -204,7 +204,7 @@ export default function PickUpJobsSection() {
           title: "日本 AU(KDDI)",
           desc: "走日本三大電信 AU（KDDI）當地網路與日本本地 IP，高速數據吃到飽、真．不限速，適合整天導航、視訊與熱點分享。",
           tags: ["日本IP", "真．不限速", "5G"],
-          link: "/product/japan/japan-unlimited-esim?telecom=au-kddi",
+          link: "/product/japan/japan-unlimited-esim-nolimit?telecom=au-kddi",
         },
         {
           hotSale: true,
@@ -238,7 +238,7 @@ export default function PickUpJobsSection() {
           title: "日本 AU(KDDI) 原生卡",
           desc: "走日本三大電信之一 AU（KDDI）當地網路與日本本地 IP，東京、大阪、京都與各大旅遊城市覆蓋穩定，適合導航、電子支付與熱點分享。",
           tags: ["電信業者：AU(KDDI)", "日本ＩＰ", "熱點功能", "4G / LTE / 5G"],
-          link: "/product/japan/japan-unlimited-esim?telecom=au-kddi&days=5",
+          link: "/product/japan/japan-unlimited-esim?telecom=au-kddi-10m&days=5",
         },
         {
           pills: [
@@ -344,7 +344,7 @@ export default function PickUpJobsSection() {
           title: "印尼 eSIM",
           desc: "雅加達、峇里島、日惹等熱門行程適用，海島與市區移動都有網。",
           tags: ["印尼", "峇里島", "熱點分享"],
-          link: "/product/indonesia",
+          link: "/product/indonesia/indonesia-unlimited-esim",
         },
         {
           hotSale: true,

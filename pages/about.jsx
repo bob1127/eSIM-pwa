@@ -73,16 +73,16 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 圖片區域：優化長寬比 */}
-        {/* 手機使用 4:3 或 16:9 避免太扁，桌機維持 16:7 */}
-        <div className="swuper-full-img overflow-hidden aspect-[16/10] md:aspect-[16/9] lg:aspect-[16/7] relative w-full">
+        {/* 圖片區域：全寬顯示原圖比例，不裁切 */}
+        <div className="swuper-full-img w-full">
           <Image
-            src="/images/06.png" // 請確保路徑正確
+            src="/images/07.png"
             alt="Jeko eSIM 全球旅遊"
-            placeholder="empty" // 如果有 blurDataURL 改用 blur
+            width={2220}
+            height={1004}
             loading="lazy"
-            fill
-            className="object-cover"
+            unoptimized
+            className="w-full h-auto block"
           />
         </div>
       </section>

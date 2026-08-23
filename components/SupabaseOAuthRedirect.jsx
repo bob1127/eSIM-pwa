@@ -4,18 +4,16 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
 import {
-  sanitizeRedirect,
   consumeAuthRedirect,
   peekAuthRedirect,
+  consumeJustRegistered,
+  resolvePostAuthDestination,
 } from "@/lib/authRedirect";
-import {
-  markWelcomeGiftPopup,
-  WELCOME_GIFT_TRIGGER_ON_LOGIN,
-} from "@/lib/welcomeGiftPopup";
+import { markWelcomeGiftPopup } from "@/lib/welcomeGiftPopup";
 
 /**
  * Supabase OAuth 回傳時 URL hash 帶 access_token。
- * 確保 session 寫入、清除 hash，並導回原頁（勿強制首頁／會員中心）。
+ * 確保 session 寫入、清除 hash，並導回原頁；首次註冊則進會員中心。
  */
 export default function SupabaseOAuthRedirect() {
   const router = useRouter();
@@ -39,18 +37,19 @@ export default function SupabaseOAuthRedirect() {
       window.history.replaceState(null, "", `${path}${search}`);
 
       if (session && (path === "/" || path === "/login" || path === "/login/")) {
-        // TEMP：登入核對歡迎禮 popup → 回首頁
-        if (WELCOME_GIFT_TRIGGER_ON_LOGIN) {
-          markWelcomeGiftPopup();
-        }
         const params = new URLSearchParams(search);
         const fromQuery = params.get("redirect") || params.get("callbackUrl");
-        const dest = WELCOME_GIFT_TRIGGER_ON_LOGIN
-          ? "/"
-          : sanitizeRedirect(
-              fromQuery || peekAuthRedirect("/account"),
-              "/account",
-            );
+        const justRegistered = consumeJustRegistered();
+        const dest = resolvePostAuthDestination(
+          fromQuery || peekAuthRedirect("/account"),
+          {
+            justRegistered,
+            supabaseUser: session.user,
+          },
+        );
+        if (justRegistered || dest === "/account") {
+          if (justRegistered) markWelcomeGiftPopup();
+        }
         consumeAuthRedirect(dest);
         if (dest !== path + search) {
           router.replace(dest);

@@ -6,11 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Layout from "../../Layout.js";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { buildCategorySeo } from "../../../lib/seo.config";
-import {
-  resolveMedusaImageUrl,
-  shouldBypassImageOptimization,
-} from "../../../lib/resolveMedusaImageUrl";
-import { withUsEsimDefaultImage } from "../../../lib/usEsimDefaultImage";
+import { resolveProductListingImage } from "../../../lib/resolveProductListingImage";
+import { shouldBypassImageOptimization } from "../../../lib/resolveMedusaImageUrl";
 import { sortCategoriesByRank } from "../../../lib/sortCategoriesByRank";
 import {
   canonicalCategoryHandle,
@@ -197,9 +194,10 @@ export async function getStaticProps({ params }) {
           slug: p.handle,
           price,
           original_price: originalPrice,
-          image_url: withUsEsimDefaultImage(resolveMedusaImageUrl(p.thumbnail), {
+          image_url: resolveProductListingImage(p.thumbnail, {
             categorySlug,
             handle: p.handle,
+            categories: p.categories,
           }),
           tags: filterTags,
           displayTags: buildDisplayTagsFromProduct(p, filterTags),
@@ -533,7 +531,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                     >
                       <Link href={productLink} className="block h-full group">
                         <div className="h-full flex flex-col overflow-hidden rounded-xl border border-slate-200/90 lg:hover:border-[#0071EB]/30 lg:hover:shadow-md transition-all">
-                          <div className="relative w-full aspect-[4/3] overflow-hidden bg-white">
+                          <div className="relative w-full aspect-[4/3] overflow-hidden bg-[#F9FAFB]">
                             <SafeImage
                               src={productImage}
                               alt={product.name}
@@ -545,7 +543,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                               className="object-contain p-5 sm:p-6 lg:group-hover:scale-[1.03] lg:transition-transform lg:duration-500"
                             />
                           </div>
-                          <div className="flex flex-col flex-1 px-3 pt-3 pb-5 sm:px-4 sm:pt-4 sm:pb-6 bg-[#F9FAFB]">
+                          <div className="flex flex-col flex-1 px-3 pt-3 pb-5 sm:px-4 sm:pt-4 sm:pb-6 bg-white">
                             <h2 className="font-bold text-[12px] sm:text-[13px] text-slate-800 leading-snug line-clamp-2 min-h-[2.5em]">
                               {product.name}
                             </h2>

@@ -158,9 +158,9 @@ export default function AuKddiApnReminderModal({
                       className="shrink-0 text-[#0A6CD0] mt-0.5"
                     />
                     <span>
-                      請在手機「行動數據／蜂巢式」→ APN
+                      請在手機「行動數據」→ APN
                       設定中新增或修改；名稱可自訂，其餘欄位依上表填入，驗證類型選
-                      CHAP。
+                      CHAP；也可到 Email 信中查看。
                     </span>
                   </li>
                   <li className="flex gap-2">

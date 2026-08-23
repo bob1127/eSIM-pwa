@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { toSameOriginImagePath } from "@/lib/resolveMedusaImageUrl";
+import { getCountryProductImagePath } from "@/lib/countryProductImages";
+import { getFeaturedCountryCode } from "@/lib/featuredCountryCode";
 
 /** Medusa 分類 metadata 圖常連到外部 Storage；失效時改用本地圖 */
 export const CATEGORY_IMAGE_FALLBACKS: Record<string, string> = {
@@ -42,6 +44,8 @@ export function resolveCategoryImageSrc(
   slug: string,
   remoteSrc?: string | null,
 ) {
+  const productImg = getCountryProductImagePath(slug);
+  if (productImg) return productImg;
   const mapped = CATEGORY_IMAGE_FALLBACKS[slug];
   const local = "/images/jeko-esim.png";
   // Supabase Storage 目前常回 402，略過；站內圖改相對路徑並套用舊路徑 rewrite
@@ -94,6 +98,7 @@ export default function FeaturedCountryCard({
       ? `共 ${country.productCount} 款方案可選`
       : "即將上架更多方案");
   const cardHref = country.href || `/product/${country.slug}`;
+  const countryCode = getFeaturedCountryCode(country.slug);
 
   return (
     <Link
@@ -120,6 +125,18 @@ export default function FeaturedCountryCard({
             if (imgSrc !== fallbackSrc) setImgSrc(fallbackSrc);
           }}
         />
+        {countryCode ? (
+          <span
+            className={[
+              "absolute left-1/2 top-[22%] z-10 -translate-x-1/2",
+              "flex min-h-[1.75rem] min-w-[1.75rem] items-center justify-center rounded-full",
+              "bg-[#1E4AD1] px-1 text-[10px] font-black leading-none text-white shadow-md",
+              countryCode.length > 2 ? "text-[8px] tracking-tight" : "",
+            ].join(" ")}
+          >
+            {countryCode}
+          </span>
+        ) : null}
       </div>
 
       {/* 內容區 */}

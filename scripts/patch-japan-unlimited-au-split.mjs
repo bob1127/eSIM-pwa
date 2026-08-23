@@ -1,7 +1,7 @@
 /**
  * japan-unlimited-esim 調整：
- *   SoftBank / KDDI → AU(KDDI) 10Mbps（Japan-Local-unlimited* 限速 10Mbps）@95%
- *   AU(KDDI) → AU(KDDI) 高速數據（真不限速 / High Speed）@65%
+ *   AU(KDDI) 10Mbps → japan-unlimited-esim（日本吃到飽 eSIM）
+ *   AU(KDDI) 真。吃到飽不降速 → japan-unlimited-esim-nolimit
  * SoftBank / KDDI 10Mbps（T+C）、IIJ Docomo 保留
  *
  *   HKD_TO_TWD=4.5 node scripts/patch-japan-unlimited-au-split.mjs

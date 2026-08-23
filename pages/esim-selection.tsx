@@ -257,6 +257,15 @@ const COUNTRIES: Record<string, CountryConfig> = {
     keywords: [],
     exclude: ["ASIA", "GLOBAL"],
   },
+  IN: {
+    emoji: "🇮🇳",
+    name: "印度 (純度)",
+    pure: true,
+    codes: ["IN", "IND", "INDIA"],
+    namePrefixes: ["India-", "India ", "India("],
+    keywords: [],
+    exclude: ["ASIA", "GLOBAL"],
+  },
   JP_KR: {
     emoji: "🇯🇵🇰🇷",
     name: "日韓通用",
@@ -1282,6 +1291,8 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
       if (g === "TH") return "🇹🇭 泰國";
       if (g === "VN") return "🇻🇳 越南";
       if (g === "MY") return "🇲🇾 馬來西亞";
+      if (g === "ID") return "🇮🇩 印尼";
+      if (g === "IN") return "🇮🇳 印度";
       return g;
     });
 

@@ -22,17 +22,16 @@ import {
   sanitizeRedirect,
   peekAuthRedirect,
   rememberAuthRedirect,
+  consumeJustRegistered,
+  resolvePostAuthDestination,
 } from "../lib/authRedirect";
-import {
-  markWelcomeGiftPopup,
-  WELCOME_GIFT_TRIGGER_ON_LOGIN,
-} from "../lib/welcomeGiftPopup";
+import { markWelcomeGiftPopup } from "../lib/welcomeGiftPopup";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
 const LoginRegisterPage = () => {
   const router = useRouter();
   const { user: supaUser, isHydrated } = useUser();
-  const { status: nextAuthStatus } = useSession();
+  const { data: nextAuthSession, status: nextAuthStatus } = useSession();
 
   const redirectTo = useMemo(() => {
     const fromQuery = router.query.redirect || router.query.callbackUrl || null;
@@ -134,18 +133,21 @@ const LoginRegisterPage = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 登入成功後導頁；TEMP：導首頁並彈出新會員 50 禮（核對設計用）
+  // 登入成功：維持原頁；僅第一次註冊 → /account
   useEffect(() => {
     if (!isLoggedIn) return;
 
-    if (WELCOME_GIFT_TRIGGER_ON_LOGIN) {
+    const justRegistered = consumeJustRegistered();
+    const isNewUser = nextAuthSession?.isNewUser === true;
+    const dest = resolvePostAuthDestination(redirectTo, {
+      justRegistered,
+      isNewUser,
+      supabaseUser: supaUser,
+    });
+
+    if (justRegistered || isNewUser) {
       markWelcomeGiftPopup();
     }
-
-    // TEMP：核對 popup 設計 → 固定回首頁；之後改回 sanitizeRedirect(redirectTo, "/account")
-    const dest = WELCOME_GIFT_TRIGGER_ON_LOGIN
-      ? "/"
-      : sanitizeRedirect(redirectTo, "/account");
 
     try {
       sessionStorage.removeItem("jeko_auth_redirect");
@@ -157,7 +159,7 @@ const LoginRegisterPage = () => {
       router.replace(dest);
     }, 800);
     return () => clearTimeout(timer);
-  }, [isLoggedIn, redirectTo, router]);
+  }, [isLoggedIn, redirectTo, router, supaUser, nextAuthSession?.isNewUser]);
 
   // 一般 Email 登入：透過 /api/auth/login 代理（伺服器端限流，防暴力破解）
   const handleLogin = async (e) => {
@@ -208,9 +210,7 @@ const LoginRegisterPage = () => {
   const handleOAuthLogin = async (provider) => {
     try {
       addLog(`準備請求 ${provider} 授權...`);
-      const redirectUrl = getOAuthRedirectUrl(
-        WELCOME_GIFT_TRIGGER_ON_LOGIN ? "/" : redirectTo,
-      );
+      const redirectUrl = getOAuthRedirectUrl(redirectTo);
       addLog(`redirectTo: ${redirectUrl}`);
 
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -260,7 +260,7 @@ const LoginRegisterPage = () => {
 
       const { callbackUrl, serverConfig } = await logLineLoginStart(
         window.location.origin,
-        WELCOME_GIFT_TRIGGER_ON_LOGIN ? "/" : redirectTo,
+        redirectTo,
       );
       addLog(`callbackUrl: ${callbackUrl}`);
       if (serverConfig?.expectedLineCallback) {
@@ -446,7 +446,6 @@ const LoginRegisterPage = () => {
                 )
               ) : (
                 <RegisterForm
-                  redirectTo={redirectTo}
                   onSuccess={(msg) => {
                     setSelected("login");
                     setSuccessMessage(
@@ -460,9 +459,7 @@ const LoginRegisterPage = () => {
           ) : (
             <div className="text-center">
               <h2 className="text-xl font-bold">登入成功！</h2>
-              <p className="mt-2 text-sm text-emerald-300">
-                正在導向會員中心...
-              </p>
+              <p className="mt-2 text-sm text-emerald-300">正在返回頁面…</p>
             </div>
           )}
         </div>

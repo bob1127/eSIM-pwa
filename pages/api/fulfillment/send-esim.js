@@ -7,6 +7,7 @@ import { buildEsimProfileFromTopupDetail } from "../../../lib/esimProfile";
 import {
   buildEsimFulfillmentEmailHtml,
   buildEsimFulfillmentEmailText,
+  getEsimFulfillmentInlineAttachments,
 } from "../../../lib/esimFulfillmentEmail";
 import { getPublicSiteUrl } from "../../../lib/siteUrl";
 import {
@@ -191,11 +192,20 @@ export default async function handler(req, res) {
         profiles: fulfilledCodes,
         webOrderUrl,
         siteName: "Jeko eSIM",
+        useInlineCid: true,
+        orderMeta: {
+          status: order.status || "SUCCESS",
+          paymentType: order.payment_type || order.payment_method || "—",
+          payTime: order.paid_at || order.created_at || "",
+          tradeNo: order.trade_no || order.newebpay_trade_no || "",
+          merchantOrderNo: order.merchant_order_no || orderId,
+        },
       }),
       text: buildEsimFulfillmentEmailText({
         orderNumber: String(orderId),
         profiles: fulfilledCodes,
       }),
+      attachments: getEsimFulfillmentInlineAttachments(),
     });
 
     return res.status(200).json({ success: true, message: "發貨完成", codes: fulfilledCodes });

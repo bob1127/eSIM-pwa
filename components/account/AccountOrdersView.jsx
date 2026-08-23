@@ -1640,11 +1640,12 @@ export default function AccountOrdersView({
           style={{ borderTop: `1px solid ${UI.border}` }}
         >
           {loading ? (
-            <LoadingIndicator
-              layout="center"
-              label="載入訂單中…"
-              className="py-12"
-            />
+            <div
+              className="py-12 text-center text-sm"
+              style={{ color: UI.soft }}
+            >
+              載入訂單中…
+            </div>
           ) : paged.length === 0 ? (
             <div
               className="py-12 text-center text-sm"
@@ -1704,7 +1705,7 @@ export default function AccountOrdersView({
                       ) : null}
                       {hasQr ? (
                         <SecondaryBtn onClick={() => setQrOrder(order)}>
-                          <AccountIcon name="qr_code_2" size={16} />
+                          <MaterialIcon name="qr_code_2" size={16} />
                         </SecondaryBtn>
                       ) : null}
                       <PrimaryBtn onClick={() => setDetailOrder(order)}>
@@ -1718,32 +1719,18 @@ export default function AccountOrdersView({
           )}
         </div>
 
-        {/* 桌面表格 — 固定欄寬垂直置中對齊 */}
+        {/* 桌面表格 */}
         <div className="hidden md:block overflow-x-auto">
-          <table
-            className="w-full text-sm table-fixed"
-            style={{ minWidth: 920 }}
-          >
-            <colgroup>
-              <col style={{ width: 44 }} />
-              <col style={{ width: "28%" }} />
-              <col style={{ width: 96 }} />
-              <col style={{ width: 112 }} />
-              <col style={{ width: 72 }} />
-              <col style={{ width: 88 }} />
-              <col style={{ width: "16%" }} />
-              <col style={{ width: 128 }} />
-              <col style={{ width: 88 }} />
-            </colgroup>
+          <table className="w-full text-sm min-w-[860px]">
             <thead>
               <tr
                 className="text-[10px] uppercase tracking-wider"
                 style={{ backgroundColor: UI.light, color: UI.soft }}
               >
-                <th className="pl-4 pr-1 py-3 text-left align-middle">
+                <th className="pl-5 pr-2 py-3 w-8">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded accent-black cursor-pointer block"
+                    className="w-4 h-4 rounded accent-black cursor-pointer"
                     checked={allChecked}
                     ref={(el) => {
                       if (el) el.indeterminate = someChecked;
@@ -1752,43 +1739,29 @@ export default function AccountOrdersView({
                     aria-label="全選本頁"
                   />
                 </th>
-                <th className="px-3 py-3 text-left font-bold align-middle">
-                  訂單 / 方案
-                </th>
-                <th className="px-3 py-3 text-left font-bold align-middle">
-                  狀態
-                </th>
-                <th className="px-3 py-3 text-right font-bold align-middle">
-                  金額
-                </th>
-                <th className="px-2 py-3 text-center font-bold align-middle">
-                  QR
-                </th>
-                <th className="px-2 py-3 text-center font-bold align-middle">
-                  退款
-                </th>
-                <th className="px-3 py-3 text-left font-bold align-middle">
-                  備註
-                </th>
-                <th className="px-3 py-3 text-left font-bold align-middle">
-                  購買日
-                </th>
-                <th className="px-3 py-3 text-center font-bold align-middle">
-                  操作
-                </th>
+                <th className="px-3 py-3 text-left font-bold">訂單 / 方案</th>
+                <th className="px-4 py-3 text-left font-bold">金額</th>
+                <th className="px-4 py-3 text-left font-bold">QR / 退款</th>
+                <th className="px-4 py-3 text-left font-bold">備註</th>
+                <th className="px-4 py-3 text-left font-bold">購買日</th>
+                <th className="px-4 py-3 text-center font-bold w-28">操作</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="py-14">
-                    <LoadingIndicator layout="center" label="載入訂單中…" />
+                  <td
+                    colSpan={7}
+                    className="text-center py-14 text-sm"
+                    style={{ color: UI.soft }}
+                  >
+                    載入訂單中…
                   </td>
                 </tr>
               ) : paged.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={7}
                     className="text-center py-14 text-sm"
                     style={{ color: UI.soft }}
                   >
@@ -1806,6 +1779,7 @@ export default function AccountOrdersView({
                 paged.map((order) => {
                   const meta = statusMeta(order.status);
                   const hasQr = getEsimQRCodes(order).length > 0;
+                  const eligibility = getRefundEligibility(order);
                   const refundUi = getRefundUiState(order);
                   const payInfo = parsePaymentInfo(order);
                   const isPending =
@@ -1820,41 +1794,37 @@ export default function AccountOrdersView({
                         backgroundColor: checked ? UI.light : undefined,
                       }}
                     >
-                      <td className="pl-4 pr-1 py-3.5 align-middle">
+                      <td className="pl-5 pr-2 py-4">
                         <input
                           type="checkbox"
-                          className="w-4 h-4 rounded accent-black cursor-pointer block"
+                          className="w-4 h-4 rounded accent-black cursor-pointer"
                           checked={checked}
                           onChange={() => toggleSelect(order.id)}
                           aria-label={`選取訂單 ${order.id}`}
                         />
                       </td>
-                      <td className="px-3 py-3.5 align-middle">
+                      <td className="px-3 py-4 min-w-[180px]">
                         <p
-                          className="font-mono text-[11px] font-bold leading-none"
-                          style={{ color: UI.soft }}
+                          className="font-mono text-xs font-bold"
+                          style={{ color: UI.dark }}
                         >
                           #{orderShortId(order.id)}
                         </p>
                         <button
                           type="button"
                           onClick={() => setDetailOrder(order)}
-                          className="font-bold text-left text-sm leading-snug mt-1 hover:underline line-clamp-2 w-full"
+                          className="font-bold text-left mt-0.5 hover:underline"
                           style={{ color: UI.dark }}
-                          title={orderItemSummary(order)}
                         >
                           {orderItemSummary(order)}
                         </button>
                         <p
-                          className="text-[11px] mt-0.5 truncate"
+                          className="text-[10px] mt-1 truncate max-w-[200px]"
                           style={{ color: UI.soft }}
-                          title={order.customer_email || ""}
                         >
                           {order.customer_email || "—"}
                         </p>
-                      </td>
-                      <td className="px-3 py-3.5 align-middle">
-                        <div className="flex flex-col items-start gap-1">
+                        <div className="mt-1.5 flex flex-wrap gap-1">
                           <AccountBadge tone={meta.tone}>
                             {meta.label}
                           </AccountBadge>
@@ -1866,50 +1836,68 @@ export default function AccountOrdersView({
                         </div>
                       </td>
                       <td
-                        className="px-3 py-3.5 align-middle text-right tabular-nums font-bold whitespace-nowrap"
+                        className="px-4 py-4 font-bold"
                         style={{ color: UI.dark }}
                       >
                         NT$ {formatNTD(order.total_amount)}
                       </td>
-                      <td className="px-2 py-3.5 align-middle text-center">
-                        {hasQr ? (
+                      <td className="px-4 py-4">
+                        <div className="flex gap-1.5">
                           <button
                             type="button"
-                            onClick={() => setQrOrder(order)}
-                            title="檢視 QR Code"
-                            className="inline-flex items-center justify-center w-8 h-8 mx-auto transition"
+                            disabled={!hasQr}
+                            onClick={() => hasQr && setQrOrder(order)}
+                            className="w-14 text-center py-1.5 text-[10px] font-bold transition disabled:opacity-40"
                             style={{
-                              borderRadius: UI.radiusSm,
                               border: `1px solid ${UI.border}`,
+                              borderRadius: UI.radiusSm,
                               backgroundColor: UI.wash,
                               color: UI.dark,
                             }}
                           >
-                            <AccountIcon name="qr_code_2" size={16} />
+                            {hasQr ? (
+                              <MaterialIcon
+                                name="qr_code_2"
+                                size={18}
+                                className="mx-auto"
+                              />
+                            ) : (
+                              "—"
+                            )}
+                            <span className="block mt-0.5">QR</span>
                           </button>
-                        ) : (
-                          <span style={{ color: UI.soft }}>—</span>
-                        )}
+                          <div
+                            className="w-14 text-center py-1.5 text-[10px] font-bold"
+                            style={{
+                              border: `1px solid ${UI.border}`,
+                              borderRadius: UI.radiusSm,
+                              backgroundColor: UI.wash,
+                              color: UI.dark,
+                            }}
+                          >
+                            <span className="block truncate px-0.5">
+                              {refundColumnLabel(order)}
+                            </span>
+                            <span
+                              className="block mt-0.5"
+                              style={{ color: UI.soft }}
+                            >
+                              退款
+                            </span>
+                          </div>
+                        </div>
                       </td>
-                      <td
-                        className="px-2 py-3.5 align-middle text-center text-xs font-bold tabular-nums"
-                        style={{ color: UI.mid }}
-                        title={refundColumnLabel(order)}
-                      >
-                        {refundColumnLabel(order)}
-                      </td>
-                      <td className="px-3 py-3.5 align-middle">
+                      <td className="px-4 py-4">
                         {isPending && payInfo ? (
                           <button
                             type="button"
                             onClick={() => setPendingOrder(order)}
-                            className="text-[11px] font-bold px-2 py-1 max-w-full truncate"
+                            className="text-[11px] font-bold px-2 py-1"
                             style={{
                               color: SHOPIFY_BADGE.warning.text,
                               backgroundColor: SHOPIFY_BADGE.warning.bg,
                               borderRadius: UI.radiusSm,
                             }}
-                            title={paymentLabel(payInfo)}
                           >
                             {paymentLabel(payInfo)}
                           </button>
@@ -1917,7 +1905,7 @@ export default function AccountOrdersView({
                           <button
                             type="button"
                             onClick={() => setRefundDetailOrder(order)}
-                            className="text-[11px] font-bold px-2 py-1 max-w-full truncate"
+                            className="text-[11px] font-bold px-2 py-1"
                             style={{
                               color: SHOPIFY_BADGE.warning.text,
                               backgroundColor: SHOPIFY_BADGE.warning.bg,
@@ -1931,12 +1919,12 @@ export default function AccountOrdersView({
                         )}
                       </td>
                       <td
-                        className="px-3 py-3.5 align-middle text-xs whitespace-nowrap"
+                        className="px-4 py-4 text-xs whitespace-nowrap"
                         style={{ color: UI.soft }}
                       >
                         {formatDateFull(order.created_at)}
                       </td>
-                      <td className="px-3 py-3.5 align-middle">
+                      <td className="px-4 py-4">
                         <div className="flex items-center justify-center gap-1">
                           {hasQr ? (
                             <button
@@ -1951,11 +1939,9 @@ export default function AccountOrdersView({
                                 color: UI.dark,
                               }}
                             >
-                              <AccountIcon name="qr_code_2" size={16} />
+                              <MaterialIcon name="qr_code_2" size={16} />
                             </button>
-                          ) : (
-                            <span className="w-8 h-8" aria-hidden />
-                          )}
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => setDetailOrder(order)}
@@ -1968,7 +1954,7 @@ export default function AccountOrdersView({
                               color: UI.dark,
                             }}
                           >
-                            <AccountIcon name="edit" size={16} />
+                            <MaterialIcon name="edit" size={16} />
                           </button>
                         </div>
                       </td>

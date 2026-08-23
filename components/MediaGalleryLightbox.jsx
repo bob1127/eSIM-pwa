@@ -17,6 +17,13 @@ const GALLERY_LB_STYLE = `
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 100%;
+  }
+  .product-gallery-lb .swiper-slide > div,
+  .product-gallery-lb .swiper-slide > img,
+  .product-gallery-lb .swiper-slide > span {
+    margin-left: auto;
+    margin-right: auto;
   }
 `;
 
@@ -241,7 +248,7 @@ export default function MediaGalleryLightbox({
                       key={idx}
                       type="button"
                       onClick={() => goTo(idx)}
-                      className={`relative aspect-[3/4] overflow-hidden border-2 transition-all ${
+                      className={`relative aspect-[4/5] overflow-hidden border-2 transition-all ${
                         lbIndex === idx
                           ? "border-[#00befa]"
                           : "border-transparent opacity-70 hover:opacity-100"
@@ -258,7 +265,8 @@ export default function MediaGalleryLightbox({
                       ) : (
                         <MediaSlide
                           item={item}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="product-gallery-media bg-white"
                         />
                       )}
                     </button>
@@ -288,14 +296,14 @@ export default function MediaGalleryLightbox({
                       <div className="flex items-center justify-center w-full h-full">
                         <MediaSlide
                           item={item}
-                          className="max-h-[calc(100vh-220px)] max-w-full w-auto mx-auto object-contain bg-black"
+                          className="max-h-[calc(100vh-220px)] max-w-full w-auto mx-auto product-gallery-media bg-black"
                         />
                       </div>
                     ) : (
-                      <MediaSlide
-                        item={item}
-                        className="max-h-[calc(100vh-220px)] max-w-full w-auto mx-auto object-contain select-none"
-                      />
+                        <MediaSlide
+                          item={item}
+                          className="max-h-[calc(100vh-220px)] max-w-full w-auto mx-auto product-gallery-media select-none bg-transparent"
+                        />
                     )}
                   </SwiperSlide>
                 ))}
@@ -311,10 +319,10 @@ export default function MediaGalleryLightbox({
                     key={idx}
                     type="button"
                     onClick={() => goTo(idx)}
-                    className={`relative shrink-0 w-[60px] aspect-[3/4] sm:w-[72px] overflow-hidden transition-all duration-200 ${
+                    className={`product-gallery-thumb border-2 transition-all duration-200 ${
                       lbIndex === idx
-                        ? "border-2 border-[#00befa] opacity-100 shadow-[0_0_0_1px_rgba(0,190,250,0.4)]"
-                        : "border-2 border-transparent opacity-45 hover:opacity-75"
+                        ? "border-[#00befa] opacity-100 shadow-[0_0_0_1px_rgba(0,190,250,0.4)]"
+                        : "border-transparent opacity-45 hover:opacity-75"
                     }`}
                     aria-label={`第 ${idx + 1} 個媒體`}
                     aria-current={lbIndex === idx ? "true" : undefined}
@@ -330,7 +338,8 @@ export default function MediaGalleryLightbox({
                     ) : (
                       <MediaSlide
                         item={item}
-                        className="w-full h-full object-cover bg-black/20"
+                        fill
+                        className="product-gallery-media bg-black/20"
                       />
                     )}
                   </button>

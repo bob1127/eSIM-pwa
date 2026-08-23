@@ -11,6 +11,10 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import {
+  JAPAN_PRODUCT_THUMB,
+  japanProductImages,
+} from "./lib/japanProductGallery.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -73,9 +77,8 @@ const REBUILD = process.argv.includes("--rebuild");
 
 const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const CATEGORY_IDS = ["pcat_01KZJNBV5DAJTWWG22KSHC7FTN"]; // japan
-const THUMB =
-  process.env.JAPAN_PRODUCT_THUMB ||
-  "https://www.jeko-esim.com.tw/images/japan-esim-banner.jpg";
+const THUMB = JAPAN_PRODUCT_THUMB;
+const PRODUCT_IMAGES = japanProductImages();
 
 function retailFromCost(costTwd, profitPercent) {
   const margin = 1 + profitPercent / 100;
@@ -408,7 +411,7 @@ async function main() {
     status: "published",
     discountable: true,
     thumbnail: THUMB,
-    images: [{ url: THUMB }],
+    images: PRODUCT_IMAGES,
     metadata: productMeta,
     options: [
       { title: "使用天數", values: dayValues },

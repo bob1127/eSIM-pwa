@@ -366,6 +366,56 @@ section.section_article p{
   
 }
 
+/* 商品輪播：4:5 畫框 + 置中 contain（主圖／縮圖／燈箱一致） */
+.product-gallery-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: min(52vh, 460px);
+  background: #fff;
+}
+
+.product-main-swiper.swiper,
+.product-main-swiper .swiper-wrapper {
+  height: 100%;
+}
+
+.product-main-swiper .swiper-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.product-main-swiper .swiper-slide > button,
+.product-main-swiper .swiper-slide > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.product-gallery-media {
+  object-fit: contain;
+  object-position: center;
+}
+
+.product-gallery-thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 4rem;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: #fff;
+}
+
+@media (min-width: 640px) {
+  .product-gallery-thumb {
+    width: 4.5rem;
+  }
+}
+
 /* a{
   opacity: 0 !important;
 } */

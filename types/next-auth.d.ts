@@ -5,11 +5,14 @@ declare module "next-auth" {
     user: DefaultSession["user"] & {
       id: string;
     };
+    /** LINE／OAuth 首次建立帳號後短時間內為 true */
+    isNewUser?: boolean;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     accessToken?: string;
+    newUserUntil?: number;
   }
 }

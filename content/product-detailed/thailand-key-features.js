@@ -3,8 +3,10 @@
  * planKind: "unlimited" | "total"（依商品）
  */
 export const TH_TELECOM_TRUEMOVE = "Truemove H 當地號碼";
-export const TH_TELECOM_DTAC = "TRRE 電信";
-/** @deprecated 舊顯示名，請改用 TH_TELECOM_TRRE */
+export const TH_TELECOM_TRUE_UNLIMITED = "True 電信";
+/** @deprecated 舊顯示名，請改用 TH_TELECOM_TRUE_UNLIMITED */
+export const TH_TELECOM_DTAC = "True 電信";
+/** @deprecated 舊顯示名，請改用 TH_TELECOM_TRUE_UNLIMITED */
 export const TH_TELECOM_TRRE = "TRRE 電信";
 export const TH_TELECOM_AIS = "AIS";
 export const TH_TELECOM_TRUE = "TRUE";
@@ -33,15 +35,15 @@ export function truemoveHKeyFeatures() {
   );
 }
 
-/** TRRE 電信（FUP 10Mbps 吃到飽）— 函式名保留相容舊引用 */
+/** True 電信（FUP 10Mbps 吃到飽）— 函式名保留相容舊引用 */
 export function trueDtacKeyFeatures() {
   return pack(
     [
-      "TRRE 電信走 TRUE 體系的泰國主流網路，泰國原生網路與泰國 IP。本方案以 FUP 10Mbps 無限流量為特色，天數選擇多（1～30 天等），適合需要整天有網、但不需極限速的旅客，價格與用量平衡、安裝即用。",
-      "**為什麼選擇 TRRE 電信旅遊 eSIM？**",
+      "True 電信走 TRUE 體系的泰國主流網路，泰國原生網路與泰國 IP。本方案以 FUP 10Mbps 無限流量為特色，天數選擇多（1～30 天等），適合需要整天有網、但不需極限速的旅客，價格與用量平衡、安裝即用。",
+      "**為什麼選擇 True 電信旅遊 eSIM？**",
       "**泰國原生 IP**：當地網路與泰國 IP，適合導航、Grab、社群與視訊，體驗接近在地用戶。",
       "**FUP 10Mbps 吃到飽**：公平使用政策為約 10 Mbps 的無限流量，實際速度可能因位置與網路環境變動，整天有網更安心。",
-      "**4G／5G 覆蓋**：TRUE／TRRE 網路覆蓋曼谷與主要旅遊城市，適合短途與多日行程。",
+      "**4G／5G 覆蓋**：TRUE 網路覆蓋曼谷與主要旅遊城市，適合短途與多日行程。",
       "**支援熱點與常用 App**：熱點分享、ChatGPT、TikTok、Gemini 等常用工具皆可使用。",
       "**天數彈性好選**：依停留天數挑選方案，建議抵達泰國後再安裝／啟用 eSIM。",
     ],

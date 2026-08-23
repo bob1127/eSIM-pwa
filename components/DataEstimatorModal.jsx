@@ -802,7 +802,7 @@ export default function DataEstimatorModal({
                                     </span>
                                   ) : null}
                                   {item.isHotSale ? (
-                                    <span className="text-[10px] font-bold text-slate-700">
+                                    <span className="inline-flex items-center rounded-full bg-[#8B0000] px-2 py-0.5 text-[10px] font-bold text-white tracking-wide shrink-0">
                                       HOT SALE
                                     </span>
                                   ) : null}

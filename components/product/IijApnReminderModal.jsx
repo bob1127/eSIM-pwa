@@ -77,8 +77,9 @@ export default function IijApnReminderModal({
                     {IIJ_DOCOMO_APN}
                   </p>
                   <p className="mt-2 text-[12px] text-slate-600 leading-relaxed">
-                    安裝 eSIM 後，請到手機「行動數據／蜂巢式」網路設定中新增或修改
-                    APN，名稱可自訂，APN 欄位填入上方值後再啟用此線路。
+                    安裝 eSIM 後，請到手機「行動數據」網路設定中新增或修改
+                    APN，名稱可自訂，APN 欄位填入上方值後再啟用此線路；也可到
+                    Email 信中查看。
                   </p>
                 </div>
 

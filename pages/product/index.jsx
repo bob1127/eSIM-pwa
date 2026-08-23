@@ -10,11 +10,8 @@ import FilterSideBar, {
   buildDisplayTagsFromProduct,
 } from "../../components/FilterSideBar";
 import SafeImage from "../../components/SafeImage";
-import {
-  resolveMedusaImageUrl,
-  shouldBypassImageOptimization,
-} from "../../lib/resolveMedusaImageUrl";
-import { withUsEsimDefaultImage } from "../../lib/usEsimDefaultImage";
+import { shouldBypassImageOptimization } from "../../lib/resolveMedusaImageUrl";
+import { resolveProductListingImage } from "../../lib/resolveProductListingImage";
 import { buildAllProductsSeo } from "../../lib/seo.config";
 import {
   getMedusaBackendUrl,
@@ -136,9 +133,10 @@ function formatListingProduct(p) {
     category_name: categoryName,
     price,
     original_price: originalPrice,
-    image_url: withUsEsimDefaultImage(resolveMedusaImageUrl(p.thumbnail), {
+    image_url: resolveProductListingImage(p.thumbnail, {
       categorySlug,
       handle: p.handle,
+      categories: p.categories,
     }),
     tags: filterTags,
     displayTags: buildDisplayTagsFromProduct(p, filterTags),

@@ -528,7 +528,7 @@ export default function Slider() {
                         </HeroCardAction>
                         <HeroCardAction
                           icon="person_add"
-                          href={buildLoginUrl("/account")}
+                          href={buildLoginUrl()}
                         >
                           加入會員
                         </HeroCardAction>

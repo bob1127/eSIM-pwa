@@ -8,13 +8,14 @@ import {
   getOAuthRedirectUrl,
   startLineLoginWithFormPost,
 } from "../lib/authDebug";
-import { sanitizeRedirect } from "../lib/authRedirect";
+import { markJustRegistered } from "../lib/authRedirect";
+import { markWelcomeGiftPopup } from "../lib/welcomeGiftPopup";
 import { validatePassword, PASSWORD_HINT } from "../lib/passwordPolicy";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 
 const RESEND_WAIT_SECONDS = 60;
 
-const RegisterForm = ({ onSuccess, redirectTo = "/account" }) => {
+const RegisterForm = ({ onSuccess }) => {
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -138,7 +139,9 @@ const RegisterForm = ({ onSuccess, redirectTo = "/account" }) => {
 
       setShowSuccessPopup(true);
       setMessage("");
-      onSuccess?.("註冊成功！請直接登入");
+      markJustRegistered();
+      markWelcomeGiftPopup();
+      onSuccess?.("註冊成功！請使用 Email 與密碼登入，將導向會員中心。");
       setTimeout(() => setShowSuccessPopup(false), 3000);
     } catch (err) {
       console.error("Register Error:", err.message);
@@ -148,12 +151,15 @@ const RegisterForm = ({ onSuccess, redirectTo = "/account" }) => {
     }
   };
 
-  const safeRedirect = sanitizeRedirect(redirectTo, "/account");
+  // 註冊分頁的社群登入：完成後進會員中心（首次註冊）
+  const registerDest = "/account";
 
   /* ====== 4. 社群快速註冊 (Google - Supabase OAuth) ====== */
   const handleOAuthLogin = async (provider) => {
     try {
-      const redirectToUrl = getOAuthRedirectUrl(safeRedirect);
+      markJustRegistered();
+      markWelcomeGiftPopup();
+      const redirectToUrl = getOAuthRedirectUrl(registerDest);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: { redirectTo: redirectToUrl },
@@ -171,9 +177,11 @@ const RegisterForm = ({ onSuccess, redirectTo = "/account" }) => {
       alert("請改用 http://localhost:3000 再開啟 LINE 登入");
       return;
     }
+    markJustRegistered();
+    markWelcomeGiftPopup();
     const { callbackUrl } = await logLineLoginStart(
       window.location.origin,
-      safeRedirect,
+      registerDest,
     );
     await startLineLoginWithFormPost(callbackUrl);
   };

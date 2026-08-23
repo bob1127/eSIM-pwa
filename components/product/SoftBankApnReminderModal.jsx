@@ -104,8 +104,8 @@ export default function SoftBankApnReminderModal({
                     ))}
                   </dl>
                   <p className="mt-2 text-[12px] text-slate-600 leading-relaxed">
-                    安裝 eSIM 後，請到手機「行動數據／蜂巢式」網路設定新增或修改
-                    APN，填入上方欄位後再啟用此線路。
+                    安裝 eSIM 後，請到手機「行動數據」網路設定新增或修改
+                    APN，填入上方欄位後再啟用此線路；也可到 Email 信中查看。
                   </p>
                 </div>
 

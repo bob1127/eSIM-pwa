@@ -113,7 +113,7 @@ function matchDayRange(tag, min, max) {
 
 /** 真．不限速吃到飽：只認明確標示，不含總量／FUP／10Mbps */
 const TRUE_UNLIMITED_TAG_RE =
-  /不降速吃到飽|不降速|真[．・.]?\s*不限速|真吃到飽|真高速吃到飽|unlimited\s*(high|max)\s*speed|AU\s*\(?\s*KDDI\s*\)?\s*高速數據|SK電信[（(]韓國IP[）)]|Truemove H 當地號碼/i;
+  /不降速吃到飽|不降速|真[．・.]?\s*不限速|真吃到飽|真高速吃到飽|unlimited\s*(high|max)\s*speed|AU\s*\(?\s*KDDI\s*\)?\s*(?:高速數據|真。吃到飽不降速)|SK電信[（(]韓國IP[）)]|Truemove H 當地號碼/i;
 
 function isTrueUnlimitedText(text) {
   const t = String(text || "");
@@ -121,7 +121,7 @@ function isTrueUnlimitedText(text) {
   // 越南等「總量型／用完斷網」即使文案有「高速數據」也不算
   if (
     /總量型|用完後斷網|用完即斷網/.test(t) &&
-    !/AU\s*\(?\s*KDDI\s*\)?\s*高速數據|SK電信[（(]韓國IP[）)]|Truemove H 當地號碼|不降速|真[．・.]?\s*不限速/i.test(
+    !/AU\s*\(?\s*KDDI\s*\)?\s*(?:高速數據|真。吃到飽不降速)|SK電信[（(]韓國IP[）)]|Truemove H 當地號碼|不降速|真[．・.]?\s*不限速/i.test(
       t,
     )
   ) {

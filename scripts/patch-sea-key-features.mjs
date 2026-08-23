@@ -115,7 +115,7 @@ const PATCHES = [
     replace: true,
     key_features_by_carrier: {
       "Truemove H 當地號碼": truemoveHKeyFeatures(),
-      "TRRE 電信": trueDtacKeyFeatures(),
+      "True 電信": trueDtacKeyFeatures(),
     },
   },
   {
