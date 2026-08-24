@@ -11,47 +11,8 @@ const supabaseAdmin = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 );
 
-function normalizeEmail(e) {
-  return String(e || "").trim().toLowerCase();
-}
-
 function normalizeIccid(value) {
   return String(value || "").replace(/\s+/g, "").trim();
-}
-
-function safeEqual(a, b) {
-  const sa = String(a || "");
-  const sb = String(b || "");
-  if (sa.length !== sb.length) return false;
-  let out = 0;
-  for (let i = 0; i < sa.length; i++) out |= sa.charCodeAt(i) ^ sb.charCodeAt(i);
-  return out === 0;
-}
-
-function verifyEmailCode(email, code) {
-  global.verificationCodes = global.verificationCodes || {};
-  const store = global.verificationCodes;
-  const record = store[email];
-  if (!record) return { ok: false, message: "尚未發送驗證碼" };
-  const now = Date.now();
-  if (record.lockedUntil && now < record.lockedUntil) {
-    return { ok: false, message: "嘗試過多，請稍後再試" };
-  }
-  if (now > record.expires) {
-    delete store[email];
-    return { ok: false, message: "驗證碼已過期" };
-  }
-  if (!safeEqual(record.code, code)) {
-    record.failCount = (record.failCount || 0) + 1;
-    return { ok: false, message: "驗證碼錯誤" };
-  }
-  delete store[email];
-  return { ok: true };
-}
-
-async function findTopupByEmail(email) {
-  const esims = await fetchMemberEsims(email);
-  return esims[0] || null;
 }
 
 export default async function handler(req, res) {
@@ -91,7 +52,6 @@ export default async function handler(req, res) {
 
   const member = await resolveMemberEmail(req, res);
   const iccid = normalizeIccid(rawIccid);
-  const email = normalizeEmail(rawEmail);
   const update = {
     iccid_bound_at: new Date().toISOString(),
     monitor_enabled: true,
@@ -117,8 +77,14 @@ export default async function handler(req, res) {
     update.bind_method = "member_order";
     if (target.iccid) update.iccid = target.iccid;
   }
-  // 路徑 A：手動 ICCID（訪客 / 會員皆可）
+  // 路徑 A：手動 ICCID（僅會員）
   else if (iccid) {
+    if (!member?.email) {
+      return res.status(401).json({
+        error: "請先登入會員",
+        hint: "流量提醒僅限會員使用，登入後即可綁定 ICCID",
+      });
+    }
     if (!/^\d{18,22}$/.test(iccid)) {
       return res.status(400).json({
         error: "ICCID 格式錯誤",
@@ -126,34 +92,18 @@ export default async function handler(req, res) {
       });
     }
     update.iccid = iccid;
-    update.bind_method = member?.email ? "member_iccid" : "guest_iccid";
-    if (email) update.guest_email = email;
-    else if (member?.email) update.guest_email = member.email;
+    update.bind_method = "member_iccid";
+    update.guest_email = member.email;
   }
-  // 路徑 B：訪客 Email 驗證碼
-  else if (email && code) {
-    const verified = verifyEmailCode(email, code);
-    if (!verified.ok) {
-      return res.status(400).json({ error: verified.message });
-    }
-    update.guest_email = email;
-    const target = await findTopupByEmail(email);
-    if (target) {
-      update.topup_id = target.topupId;
-      update.product_label = target.productName;
-      update.order_id = target.orderId;
-      update.bind_method = "guest_email";
-      if (target.iccid) update.iccid = target.iccid;
-    } else {
-      return res.status(400).json({
-        error: "此 Email 尚無可監控的 eSIM 訂單",
-        needsIccid: true,
-        hint: "若 eSIM 非本站購買，請改輸入 ICCID 綁定",
-      });
-    }
+  // 路徑 B：訪客 Email／驗證碼已停用
+  else if (rawEmail || code) {
+    return res.status(401).json({
+      error: "請先登入會員",
+      hint: "流量提醒不再支援訪客 Email 綁定",
+    });
   } else {
     return res.status(400).json({
-      error: "請提供 ICCID、Email+驗證碼，或選擇會員訂單",
+      error: "請提供 ICCID，或選擇會員訂單",
     });
   }
 

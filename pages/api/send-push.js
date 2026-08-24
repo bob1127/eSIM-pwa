@@ -59,11 +59,25 @@ export default async function handler(req, res) {
     });
   }
 
-  // 1. 從 Supabase 撈訂閱（可指定單一 user_id 或全部）
-  let query = supabaseAdmin.from("push_subscriptions").select("endpoint, p256dh, auth");
+  // 1. 日常推播：僅 general_push_enabled = true（與流量 Cron 分開）
+  let query = supabaseAdmin
+    .from("push_subscriptions")
+    .select("endpoint, p256dh, auth")
+    .eq("general_push_enabled", true);
   if (userId) query = query.eq("user_id", userId);
 
-  const { data: subscriptions, error: fetchError } = await query;
+  let { data: subscriptions, error: fetchError } = await query;
+
+  if (fetchError?.message?.includes("general_push_enabled")) {
+    let legacyQuery = supabaseAdmin
+      .from("push_subscriptions")
+      .select("endpoint, p256dh, auth");
+    if (userId) legacyQuery = legacyQuery.eq("user_id", userId);
+    const legacy = await legacyQuery;
+    subscriptions = legacy.data;
+    fetchError = legacy.error;
+  }
+
   if (fetchError) {
     console.error("[send-push] 撈訂閱失敗:", fetchError.message);
     return res.status(500).json({

@@ -20,10 +20,47 @@ export default async function handler(req, res) {
   const { data, error } = await supabaseAdmin
     .from("push_subscriptions")
     .select(
-      "iccid, guest_email, topup_id, monitor_enabled, iccid_bound_at, product_label, bind_method, order_id",
+      "iccid, guest_email, topup_id, monitor_enabled, general_push_enabled, iccid_bound_at, product_label, bind_method, order_id",
     )
     .eq("endpoint", endpoint)
     .maybeSingle();
+
+  if (error?.message?.includes("general_push_enabled")) {
+    const { data: legacy, error: legacyErr } = await supabaseAdmin
+      .from("push_subscriptions")
+      .select(
+        "iccid, guest_email, topup_id, monitor_enabled, iccid_bound_at, product_label, bind_method, order_id",
+      )
+      .eq("endpoint", endpoint)
+      .maybeSingle();
+    if (legacyErr) {
+      return res.status(500).json({ error: legacyErr.message });
+    }
+    if (!legacy) {
+      return res.status(200).json({
+        subscribed: false,
+        bound: false,
+        needsIccid: false,
+        generalPushEnabled: true,
+      });
+    }
+    const bound = Boolean(
+      legacy.monitor_enabled && (legacy.iccid || legacy.topup_id),
+    );
+    return res.status(200).json({
+      subscribed: true,
+      bound,
+      needsIccid: !bound,
+      generalPushEnabled: true,
+      iccid: legacy.iccid || null,
+      guestEmail: legacy.guest_email || null,
+      topupId: legacy.topup_id || null,
+      productName: legacy.product_label || null,
+      bindMethod: legacy.bind_method || null,
+      orderId: legacy.order_id || null,
+      boundAt: legacy.iccid_bound_at || null,
+    });
+  }
 
   if (error) {
     const missing =
@@ -52,6 +89,7 @@ export default async function handler(req, res) {
     subscribed: true,
     bound,
     needsIccid: !bound,
+    generalPushEnabled: data.general_push_enabled !== false,
     iccid: data.iccid || null,
     guestEmail: data.guest_email || null,
     topupId: data.topup_id || null,

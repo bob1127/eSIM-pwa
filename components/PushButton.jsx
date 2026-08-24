@@ -121,7 +121,8 @@ export default function PushButton({
       setCurrentStep("檢查伺服器");
       const cfg = serverConfig || (await fetchServerPushConfig());
       setServerConfig(cfg);
-      if (cfg && !cfg.ok) {
+      // 僅在伺服器明確回報未設定時擋下；401／略過檢查不阻擋正式站訂閱
+      if (cfg && cfg.ok === false && !cfg.skippedServerCheck) {
         throw new Error(cfg.hint || "伺服器推播環境變數未設定");
       }
 

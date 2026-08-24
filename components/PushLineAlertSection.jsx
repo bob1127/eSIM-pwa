@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import MaterialIcon from "./MaterialIcon";
-import { LineIconSvg, LineAppIconSvg } from "@/components/social/SocialBrandIcons";
+import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
 import { useAuth } from "../hooks/useAuth";
 import { getPushEndpoint } from "../lib/pushBind";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import JekoAnimatedCtaButton from "@/components/ui/JekoAnimatedCtaButton";
 
 /**
  * LINE 登入會員：開啟官方 LINE 低流量推播（不需 Web Push）
@@ -82,6 +83,19 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
     }
   };
 
+  const oaUrl = status?.oaUrl || "https://line.me/R/ti/p/@391huuts";
+
+  const lineGuideButton = (
+    <JekoAnimatedCtaButton
+      href={oaUrl}
+      external
+      className="w-full sm:w-auto [&>a]:w-full [&>a>span]:w-full [&>a>span]:justify-center"
+      surfaceClassName="border-[#06C755]/35 bg-white text-stone-900 hover:border-transparent"
+    >
+      加入官方 LINE 開啟流量提醒
+    </JekoAnimatedCtaButton>
+  );
+
   if (!authReady || loading) {
     return (
       <div
@@ -97,56 +111,37 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
       <div
         className={`rounded-xl border border-[#06C755]/30 bg-[#06C755]/5 p-4 ${className}`}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 mb-4">
           <LineAppIconSvg className="w-[22px] h-[22px] shrink-0 mt-0.5" />
-          <div>
-            <p className="font-bold text-stone-900 text-sm">LINE 推播提醒</p>
-            <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-              加入官方 LINE 後，可傳「一鍵綁定」連結 Google／FB 會員，或直接貼 ICCID 開啟偏低提醒。
-            </p>
-          </div>
+          <p className="font-bold text-stone-900 text-sm">LINE 推播提醒</p>
         </div>
+        {lineGuideButton}
       </div>
     );
   }
 
-  const oaUrl = status?.oaUrl || "https://line.me/R/ti/p/@391huuts";
   const enabled = status?.enabled;
   const needsFriend = status?.needsAddFriend;
   const needsLineLink = status && status.isLineLogin === false;
+  const showGuideOnly = needsFriend || needsLineLink || !enabled;
 
   return (
     <div
       className={`rounded-xl border border-[#06C755]/30 bg-[#06C755]/5 p-4 sm:p-5 ${className}`}
     >
-      <div className="flex items-start gap-3 mb-3">
+      <div className="flex items-start gap-3 mb-4">
         <div className="w-10 h-10 rounded-full bg-[#06C755]/15 flex items-center justify-center shrink-0 overflow-hidden">
           <LineAppIconSvg className="w-10 h-10" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-stone-900 text-sm">LINE 推播提醒</p>
-          <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-            加入官方 LINE 後，流量偏低時會收到訊息。Google／FB 會員請在 LINE 傳「一鍵綁定」。
-          </p>
-          {enabled && status?.productName && (
-            <p className="text-[11px] text-[#06C755] font-bold mt-2">
+          {enabled && status?.productName ? (
+            <p className="text-[11px] text-[#06C755] font-bold mt-1">
               已監控：{status.productName}
             </p>
-          )}
+          ) : null}
         </div>
       </div>
-
-      {needsFriend && (
-        <a
-          href={oaUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mb-3 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white text-sm font-bold transition-colors"
-        >
-          <LineIconSvg className="w-[18px] h-[18px]" />
-          加入官方 LINE 好友
-        </a>
-      )}
 
       {error && (
         <p className="text-xs text-red-600 mb-3 flex items-center gap-1">
@@ -155,50 +150,34 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
         </p>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        {needsLineLink ? (
-          <a
-            href={oaUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2"
-          >
-            <LineIconSvg className="w-[18px] h-[18px]" />
-            開啟官方 LINE 並一鍵綁定
-          </a>
-        ) : !enabled ? (
-          <button
-            type="button"
-            disabled={actionLoading}
-            onClick={() => toggleLineAlert(true)}
-            className="flex-1 bg-[#06C755] hover:bg-[#05b34c] disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2"
-          >
-            <MaterialIcon name="notifications_active" size={18} />
-            {actionLoading ? "設定中…" : "開啟 LINE 流量提醒"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled={actionLoading}
-            onClick={() => toggleLineAlert(false)}
-            className="flex-1 border border-stone-300 text-stone-700 font-bold py-3 rounded-xl text-sm hover:bg-white disabled:opacity-50"
-          >
-            {actionLoading ? (
-              <LoadingIndicator layout="inline" size="xs" label="處理中…" />
-            ) : (
-              "關閉 LINE 提醒"
-            )}
-          </button>
-        )}
-        <a
-          href={oaUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="sm:shrink-0 px-4 py-3 rounded-xl border border-[#06C755]/40 text-[#06C755] text-xs font-bold hover:bg-white text-center"
+      {showGuideOnly ? (
+        <div className="flex flex-col gap-3">
+          {lineGuideButton}
+          {!needsFriend && !needsLineLink && !enabled ? (
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={() => toggleLineAlert(true)}
+              className="w-full sm:w-auto self-start text-xs font-bold text-[#06C755] hover:underline disabled:opacity-50 px-1"
+            >
+              {actionLoading ? "設定中…" : "已加入？點此開啟提醒"}
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={actionLoading}
+          onClick={() => toggleLineAlert(false)}
+          className="w-full sm:w-auto border border-stone-300 text-stone-700 font-bold py-3 px-5 rounded-full text-sm hover:bg-white disabled:opacity-50"
         >
-          在 LINE 傳「一鍵綁定」或貼 ICCID
-        </a>
-      </div>
+          {actionLoading ? (
+            <LoadingIndicator layout="inline" size="xs" label="處理中…" />
+          ) : (
+            "關閉 LINE 提醒"
+          )}
+        </button>
+      )}
     </div>
   );
 }

@@ -12,9 +12,130 @@ import {
 import { logLineLoginStart, startLineLoginWithFormPost } from "@/lib/authDebug";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import { QuarterRing } from "@/components/ui/QuarterRing";
+import MaterialIcon from "@/components/MaterialIcon";
 
 const INPUT_CLASS =
   "w-full bg-white/10 border border-white/30 rounded-xl px-4 py-3 text-white placeholder:text-blue-300 text-sm outline-none focus:bg-white/20 focus:border-white/60 transition";
+
+const APPLY_HREF = "/register-distributor";
+
+/**
+ * 無夥伴資格／審核中／未通過 — 參考圖一 slippage modal 風格
+ */
+function PartnerAccessGateModal({ open, onClose, access = null }) {
+  if (!open) return null;
+
+  const status = access?.partner?.status || null;
+  const code = access?.code || "";
+
+  let title = "尚無夥伴後台資格";
+  let highlightLabel = "狀態";
+  let highlightValue = "未申請／未綁定";
+  let body =
+    "此帳號無法進入合作夥伴後台。請先完成夥伴申請，審核通過後即可使用申請時的 Email 或社群帳號登入。";
+  let primaryLabel = "立即申請";
+  let primaryHref = APPLY_HREF;
+  let showApply = true;
+
+  if (status === "pending") {
+    title = "申請審核中";
+    highlightLabel = "審核狀態";
+    highlightValue = "審核中";
+    body =
+      "您的夥伴申請尚在審核中。通過後會收到開通通知信，屆時即可登入夥伴後台管理賣場與分潤。";
+    primaryLabel = "我知道了";
+    primaryHref = null;
+    showApply = false;
+  } else if (status === "rejected") {
+    title = "申請未通過";
+    highlightLabel = "審核狀態";
+    highlightValue = "未通過";
+    body =
+      "此夥伴申請未通過審核。如需重新申請或有疑問，請聯繫 JEKO eSIM 客服，或再次提交申請資料。";
+    primaryLabel = "重新申請";
+    primaryHref = APPLY_HREF;
+    showApply = true;
+  } else if (code === "NOT_FOUND" || !access?.partner) {
+    title = "尚無夥伴後台資格";
+    highlightLabel = "資格";
+    highlightValue = "未找到申請";
+    body =
+      "找不到此帳號的合作夥伴資格。若尚未申請，請先提交夥伴申請；若已申請，請確認使用申請時填寫的 Email／社群帳號登入。";
+    primaryLabel = "立即申請";
+    primaryHref = APPLY_HREF;
+    showApply = true;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="partner-access-title"
+    >
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
+        aria-label="關閉"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-[400px] rounded-[28px] bg-[#F5F5F7] shadow-[0_24px_80px_-20px_rgba(0,0,0,0.45)] p-6 sm:p-7 animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <h2
+            id="partner-access-title"
+            className="text-[22px] font-black text-slate-900 tracking-tight"
+          >
+            {title}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-black/5 hover:text-slate-700 transition"
+            aria-label="關閉"
+          >
+            <MaterialIcon name="close" size={22} />
+          </button>
+        </div>
+
+        <p className="text-[14px] leading-relaxed text-slate-500 mb-5">
+          {body}
+        </p>
+
+        <div className="rounded-2xl border border-[#3B82F6]/35 bg-[#EFF6FF] px-4 py-4 mb-6">
+          <p className="text-[12px] font-bold text-[#3B82F6] mb-1">
+            {highlightLabel}
+          </p>
+          <p className="text-[28px] font-black text-[#3B82F6] tracking-tight leading-none">
+            {highlightValue}
+          </p>
+        </div>
+
+        {showApply && primaryHref ? (
+          <Link
+            href={primaryHref}
+            className="flex w-full items-center justify-center rounded-full bg-slate-950 hover:bg-black text-white font-bold text-[15px] py-3.5 transition shadow-sm"
+          >
+            {primaryLabel}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex w-full items-center justify-center rounded-full bg-slate-950 hover:bg-black text-white font-bold text-[15px] py-3.5 transition shadow-sm"
+          >
+            {primaryLabel}
+          </button>
+        )}
+
+        {showApply ? (
+          <p className="mt-4 text-center text-[12px] text-slate-400">
+            已申請過？請確認使用申請時的 Email 再登入一次
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 function PasswordInput({ value, onChange, show, onToggleShow, autoComplete }) {
   return (
@@ -340,17 +461,23 @@ export default function PartnerLogin() {
   const [oauthLoading, setOauthLoading] = useState("");
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(true);
+  const [accessGate, setAccessGate] = useState(null);
+
+  const openAccessGate = useCallback((access) => {
+    setAccessGate(access || { code: "NOT_FOUND", partner: null });
+  }, []);
 
   const finishPartnerLogin = useCallback(async () => {
     const access = await verifyPartnerAccess();
     if (!access?.ok) {
       await supabase.auth.signOut();
-      setError(access?.message || partnerLoginBlockMessage(access?.partner));
+      openAccessGate(access);
+      setError("");
       return false;
     }
     router.replace("/partner/dashboard");
     return true;
-  }, [router]);
+  }, [router, openAccessGate]);
 
   /** LINE NextAuth → 換成 Supabase session 再開後台 */
   const syncLineToSupabase = useCallback(async () => {
@@ -372,9 +499,12 @@ export default function PartnerLogin() {
 
   useEffect(() => {
     if (router.query.error === "not_partner") {
-      setError(
-        "此帳號尚未通過合作夥伴審核，或尚未綁定夥伴資格。請用申請時的 Email 登入一次，或重新申請時先用社群登入。",
-      );
+      openAccessGate({
+        code: "NOT_FOUND",
+        message: partnerLoginBlockMessage(null),
+        partner: null,
+      });
+      router.replace("/partner/login/", undefined, { shallow: true });
     }
 
     let cancelled = false;
@@ -419,7 +549,7 @@ export default function PartnerLogin() {
     return () => {
       cancelled = true;
     };
-  }, [router, nextAuthStatus, syncLineToSupabase]);
+  }, [router, nextAuthStatus, syncLineToSupabase, openAccessGate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -693,6 +823,12 @@ export default function PartnerLogin() {
       </div>
 
       <PartnerHeroPanel />
+
+      <PartnerAccessGateModal
+        open={Boolean(accessGate)}
+        access={accessGate}
+        onClose={() => setAccessGate(null)}
+      />
     </div>
   );
 }

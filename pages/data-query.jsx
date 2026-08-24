@@ -1,53 +1,50 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Layout from "./Layout";
 import MaterialIcon from "@/components/MaterialIcon";
-import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import { motion, AnimatePresence } from "framer-motion";
 import PushNotificationSection from "@/components/PushNotificationSection";
-import JekoPillButton from "@/components/ui/JekoPillButton";
+import MemberEsimQuerySheet from "@/components/MemberEsimQuerySheet";
 import { DATA_PLANS, USAGE_ROWS } from "@/lib/dataUsageTable";
 import { ICCID_STORAGE_KEY, normalizeIccid } from "@/lib/pushBind";
+import { buildLoginUrl } from "@/lib/authRedirect";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   {
     id: "query",
-    kicker: "USAGE",
-    label: "查詢 eSIM 用量",
-    short: "查詢用量",
+    label: "查詢用量",
+    short: "查詢",
     icon: "analytics",
-    headline: "隨時掌握 eSIM 剩餘流量",
-    sub: "輸入 ICCID 即可查看方案狀態。數據更新可能有約 30 分鐘延遲。",
+    headline: "查詢 eSIM 用量",
+    sub: "輸入 ICCID，立刻掌握剩餘流量。",
   },
   {
     id: "alert",
-    kicker: "ALERT",
-    label: "開啟流量提醒",
-    short: "流量提醒",
+    label: "流量提醒",
+    short: "提醒",
     icon: "notifications_active",
-    headline: "流量偏低時，自動提醒您",
-    sub: "一鍵開啟推播或 LINE 提醒，不必反覆手動查詢。",
+    headline: "開啟流量提醒",
+    sub: "流量偏低時自動推播或 LINE 通知。",
   },
   {
     id: "topup",
-    kicker: "TOP UP",
-    label: "流量即將用盡？",
-    short: "流量充值",
+    label: "流量充值",
+    short: "充值",
     icon: "bolt",
-    headline: "無需重買 eSIM，一鍵恢復上網",
-    sub: "流量快用完時直接加購，出國行程不中斷。",
+    headline: "流量即將用盡？",
+    sub: "無需重買 eSIM，一鍵恢復上網。",
   },
   {
     id: "guide",
-    kicker: "GUIDE",
     label: "使用教學",
-    short: "使用教學",
+    short: "教學",
     icon: "menu_book",
     headline: "四步驟搞懂用量與提醒",
-    sub: "從查詢、通知到省流量技巧，一次看懂。",
+    sub: "從查詢、通知到省流量技巧。",
   },
 ];
 
@@ -57,18 +54,21 @@ const HOW_IT_WORKS = [
     title: "輸入 ICCID",
     desc: "在電子郵件或 eSIM 設定中找到 19～20 碼號碼，貼上即可查詢。",
     tab: "query",
+    tint: "bg-[#EAF0FB]",
   },
   {
     step: "02",
     title: "查看剩餘流量",
     desc: "顯示已用／剩餘流量與效期。數據更新可能有約 30 分鐘延遲。",
     tab: "query",
+    tint: "bg-[#EEF1F6]",
   },
   {
     step: "03",
     title: "開啟流量通知",
     desc: "一鍵開啟推播。剩餘流量偏低時，系統會自動提醒您。",
     tab: "alert",
+    tint: "bg-[#EAF0FB]",
   },
   {
     step: "04",
@@ -76,36 +76,79 @@ const HOW_IT_WORKS = [
     desc: "流量即將用盡時，無需重買 eSIM，直接充值即可恢復上網。",
     tab: "topup",
     comingSoon: true,
+    tint: "bg-[#EEF1F6]",
   },
 ];
 
+/** 對齊感謝頁 CheckoutTicketReceipt：奶油紙底 + 票券藍 + 行動深藍 */
+const CARD =
+  "rounded-[28px] border border-[#1e4ad1]/10 bg-white shadow-[0_12px_40px_-24px_rgba(30,74,209,0.28)]";
+
+function StatusPill({ children, tone = "blue" }) {
+  const tones = {
+    blue: "bg-[#EAF0FB] text-[#1e4ad1]",
+    mint: "bg-[#EAF0FB] text-[#1e4ad1]",
+    amber: "bg-amber-100 text-amber-800",
+    slate: "bg-white/80 text-slate-600 border border-slate-200/80",
+    rose: "bg-rose-100 text-rose-700",
+  };
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold",
+        tones[tone] || tones.blue,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function SheetHandle({ light = false }) {
+  return (
+    <div className="flex justify-center pt-1 pb-4" aria-hidden>
+      <span
+        className={cn(
+          "h-1 w-10 rounded-full",
+          light ? "bg-white/45" : "bg-slate-300",
+        )}
+      />
+    </div>
+  );
+}
+
 function UsageTable() {
   return (
-    <section id="usage-table" className="scroll-mt-28">
-      <h3 className="text-lg font-black text-slate-900 mb-4">流量用量對照表</h3>
+    <section id="usage-table" className="scroll-mt-28 space-y-4">
+      <div className="flex items-end justify-between gap-3">
+        <h3 className="text-lg font-black text-slate-900 tracking-tight">
+          流量用量對照表
+        </h3>
+        <StatusPill tone="slate">參考估算</StatusPill>
+      </div>
 
-      <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+      <div className="hidden md:block overflow-x-auto rounded-[24px] border border-slate-200/80 bg-white">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
-              <th className="text-left p-4 font-bold border-b border-slate-200 bg-slate-50 w-[28%]">
+              <th className="text-left p-4 font-bold border-b border-slate-100 bg-[#F7F8FA] w-[28%]">
                 使用情境
               </th>
               {DATA_PLANS.map((plan) => (
                 <th
                   key={plan.key}
                   className={cn(
-                    "p-4 font-black border-b border-slate-200 text-center",
+                    "p-4 font-black border-b border-slate-100 text-center",
                     plan.highlight
-                      ? "bg-[#1E4AD1] text-white"
-                      : "bg-slate-50 text-slate-900",
+                      ? "bg-[#1e4ad1] text-white"
+                      : "bg-[#F7F8FA] text-slate-900",
                   )}
                 >
                   <div>{plan.label}</div>
                   <div
                     className={cn(
                       "text-[11px] font-normal mt-0.5",
-                      plan.highlight ? "text-white/80" : "text-slate-500",
+                      plan.highlight ? "text-white/70" : "text-slate-500",
                     )}
                   >
                     {plan.sub}
@@ -118,14 +161,14 @@ function UsageTable() {
             {USAGE_ROWS.map((row, idx) => (
               <tr
                 key={row.activity}
-                className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/80"}
+                className={idx % 2 === 0 ? "bg-white" : "bg-[#F7F8FA]/70"}
               >
                 <td className="p-4 border-b border-slate-100">
                   <div className="flex items-start gap-2">
                     <MaterialIcon
                       name={row.icon}
                       size={20}
-                      className="shrink-0 mt-0.5 text-[#1E4AD1]"
+                      className="shrink-0 mt-0.5 text-[#1e4ad1]"
                     />
                     <div>
                       <div className="font-bold">{row.activity}</div>
@@ -142,7 +185,7 @@ function UsageTable() {
                       key={plan.key}
                       className={cn(
                         "p-4 border-b border-slate-100 text-center",
-                        plan.highlight && "bg-blue-50/60",
+                        plan.highlight && "bg-[#eff6ff]",
                       )}
                     >
                       <div className="flex flex-col items-center gap-1">
@@ -151,7 +194,7 @@ function UsageTable() {
                             name="check_circle"
                             size={20}
                             filled
-                            className="text-[#1E4AD1]"
+                            className="text-[#1e4ad1]"
                           />
                         ) : (
                           <MaterialIcon
@@ -183,23 +226,24 @@ function UsageTable() {
           <div
             key={plan.key}
             className={cn(
-              "rounded-2xl border overflow-hidden bg-white",
-              plan.highlight ? "border-[#1E4AD1]" : "border-slate-200",
+              CARD,
+              "overflow-hidden bg-white",
+              plan.highlight && "ring-1 ring-[#1e4ad1]/20",
             )}
           >
             <div
               className={cn(
-                "px-5 py-3 font-black flex items-center justify-between",
+                "px-5 py-3.5 font-black flex items-center justify-between",
                 plan.highlight
-                  ? "bg-[#1E4AD1] text-white"
-                  : "bg-slate-50 text-slate-900",
+                  ? "bg-[#1e4ad1] text-white"
+                  : "bg-[#F7F8FA] text-slate-900",
               )}
             >
               <span>{plan.label}</span>
               <span
                 className={cn(
                   "text-xs font-normal",
-                  plan.highlight ? "text-white/80" : "text-slate-500",
+                  plan.highlight ? "text-white/70" : "text-slate-500",
                 )}
               >
                 {plan.sub}
@@ -217,7 +261,7 @@ function UsageTable() {
                       <MaterialIcon
                         name={row.icon}
                         size={18}
-                        className="shrink-0 text-[#1E4AD1]"
+                        className="shrink-0 text-slate-600"
                       />
                       <span className="text-[13px] font-medium truncate">
                         {row.activity}
@@ -229,7 +273,7 @@ function UsageTable() {
                           name="check_circle"
                           size={16}
                           filled
-                          className="text-[#1E4AD1]"
+                          className="text-[#1e4ad1]"
                         />
                       ) : (
                         <MaterialIcon
@@ -255,7 +299,7 @@ function UsageTable() {
         ))}
       </div>
 
-      <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           {
             icon: "offline_pin",
@@ -273,22 +317,21 @@ function UsageTable() {
             desc: "調至 480p，同等流量可看更久",
           },
         ].map((tip) => (
-          <div
-            key={tip.title}
-            className="rounded-2xl border border-slate-200 bg-white p-5"
-          >
-            <MaterialIcon
-              name={tip.icon}
-              size={24}
-              className="mb-2 text-[#1E4AD1]"
-            />
+          <div key={tip.title} className={cn(CARD, "bg-white p-5")}>
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#EAF0FB]">
+              <MaterialIcon
+                name={tip.icon}
+                size={20}
+                className="text-slate-800"
+              />
+            </div>
             <h4 className="font-bold text-sm mb-1">{tip.title}</h4>
             <p className="text-xs leading-relaxed text-slate-500">{tip.desc}</p>
           </div>
         ))}
       </div>
 
-      <p className="text-[11px] mt-6 leading-relaxed text-slate-400">
+      <p className="text-[11px] leading-relaxed text-slate-400">
         * 以上為業界平均估算，實際用量受 App
         版本、畫質與背景更新影響，僅供旅遊規劃參考。
       </p>
@@ -296,14 +339,135 @@ function UsageTable() {
   );
 }
 
+function UsageResultSheet({ usageResult }) {
+  if (!usageResult) return null;
+
+  const remaining = usageResult.remainingMb;
+  const total = usageResult.totalMb;
+  const hasMb = remaining != null;
+  const pct =
+    hasMb && total != null && total > 0
+      ? Math.max(0, Math.min(100, Math.round((remaining / total) * 100)))
+      : null;
+
+  return (
+    <div className={cn(CARD, "mt-5 bg-white overflow-hidden")}>
+      <SheetHandle />
+      <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <div className="min-w-0">
+            <h3 className="text-[17px] font-black text-slate-900 truncate">
+              {usageResult.productName || "eSIM 用量"}
+            </h3>
+            <p className="text-[12px] text-slate-500 mt-0.5">即時查詢結果</p>
+          </div>
+          <StatusPill
+            tone={hasMb && pct != null && pct <= 20 ? "amber" : "mint"}
+          >
+            {hasMb && pct != null && pct <= 20 ? "偏低" : "已更新"}
+          </StatusPill>
+        </div>
+
+        {hasMb ? (
+          <p className="text-[34px] sm:text-[40px] font-black tracking-tight text-slate-900 leading-none mt-3">
+            {remaining}
+            <span className="ml-1.5 text-base font-bold text-slate-400">
+              MB
+            </span>
+          </p>
+        ) : (
+          <p className="mt-3 text-sm text-slate-500 leading-relaxed">
+            {usageResult.note || "暫無流量數值"}
+          </p>
+        )}
+
+        <div className="mt-5 space-y-3 border-t border-slate-100 pt-4 text-[13px]">
+          {total != null && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-500">總流量</span>
+              <span className="font-bold text-slate-900">{total} MB</span>
+            </div>
+          )}
+          {pct != null && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-500">剩餘比例</span>
+              <span className="font-bold text-slate-900">{pct}%</span>
+            </div>
+          )}
+          {usageResult.expiresAt && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-500">有效期限</span>
+              <span className="font-bold text-slate-900">
+                {usageResult.expiresAt}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {pct != null && (
+          <div className="mt-4 h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all",
+                pct <= 20 ? "bg-amber-500" : "bg-[#1e8fff]",
+              )}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DataQueryPage() {
+  const { authReady, isLoggedIn } = useAuth();
   const [activeTab, setActiveTab] = useState("query");
   const [iccid, setIccid] = useState("");
   const [queryLoading, setQueryLoading] = useState(false);
   const [usageResult, setUsageResult] = useState(null);
   const [queryError, setQueryError] = useState("");
+  /** 從查詢用量「開啟提醒」帶入流量提醒 tab */
+  const [preferBindEsim, setPreferBindEsim] = useState(null);
+  /** 從商品頁／?setup=traffic 進來：直接開選綁層 */
+  const [preferOpenBindLayer, setPreferOpenBindLayer] = useState(false);
+
+  const loginHref = useMemo(() => buildLoginUrl("/data-query/"), []);
+
+  const handleOpenTrafficAlert = useCallback((esim) => {
+    if (!esim) return;
+    setPreferBindEsim({
+      topupId: esim.topupId || null,
+      productName: esim.productName || null,
+      iccid: esim.iccid || null,
+      orderId: esim.orderId || null,
+    });
+    setActiveTab("alert");
+    if (typeof window !== "undefined") {
+      window.setTimeout(() => {
+        document
+          .getElementById("push-notification-section")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 160);
+    }
+  }, []);
+
+  const clearPreferBindEsim = useCallback(() => {
+    setPreferBindEsim(null);
+  }, []);
 
   const activeMeta = TABS.find((t) => t.id === activeTab) || TABS[0];
+  const todayLabel = useMemo(() => {
+    try {
+      return new Intl.DateTimeFormat("zh-TW", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }).format(new Date());
+    } catch {
+      return "";
+    }
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem(ICCID_STORAGE_KEY);
@@ -325,6 +489,7 @@ export default function DataQueryPage() {
 
     if (params.get("setup") === "traffic") {
       setActiveTab("alert");
+      setPreferOpenBindLayer(true);
     }
   }, []);
 
@@ -354,219 +519,324 @@ export default function DataQueryPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-[#FAFAFA] text-slate-900 pb-36 lg:pb-32">
-        <div className="max-w-[920px] mx-auto px-4 sm:px-6 pt-8 sm:pt-12">
-          {/* Hero */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
+      <div className="data-query-page text-slate-900 pb-8 md:pb-12">
+        <div className="max-w-[920px] mx-auto px-4 sm:px-6 pt-7 sm:pt-10">
+          {/* Header — job-board / sheet language */}
+          <motion.header
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45 }}
-            className="mb-8 sm:mb-10"
+            transition={{ duration: 0.4 }}
+            className="mb-6 sm:mb-8"
           >
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#1E4AD1] mb-3">
-              Jeko eSIM · Data Center
-            </p>
-            <h1 className="text-[clamp(1.75rem,5vw,2.75rem)] font-black tracking-tight leading-[1.08] text-slate-900">
-              {activeMeta.headline}
-            </h1>
-            <p className="mt-3 text-sm sm:text-base text-slate-500 max-w-xl leading-relaxed">
-              {activeMeta.sub}
-            </p>
-          </motion.div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1e4ad1] mb-1">
+                  Data Center
+                </p>
+                <h1 className="text-[clamp(2rem,6vw,2.75rem)] font-black tracking-tight leading-none text-slate-900">
+                  你好
+                </h1>
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-800">
+                    <span className="h-2 w-2 rounded-full bg-[#1e8fff]" />
+                    流量提醒
+                  </span>
+                  {todayLabel ? (
+                    <span className="text-[12px] text-slate-400">
+                      更新於 {todayLabel}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </div>
 
-          {/* Panel */}
-          <div className="rounded-[28px] border border-slate-200/80 bg-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.18)] overflow-hidden min-h-[420px]">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25 }}
-                className="p-5 sm:p-8 lg:p-10"
-              >
-                {activeTab === "query" && (
-                  <div id="query-section" className="scroll-mt-28">
-                    <div className="flex flex-col lg:flex-row lg:items-start gap-8">
-                      <div className="flex-1 min-w-0">
-                        <h2 className="text-xl font-black mb-1">
-                          查詢 eSIM 用量
+            {/* Segment tabs */}
+            <div className="mt-6 flex items-center gap-5 overflow-x-auto no-scrollbar">
+              {TABS.map((tab) => {
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "shrink-0 pb-2 text-[15px] font-bold transition-colors border-b-2",
+                      active
+                        ? "text-[#1e4ad1] border-[#1e4ad1]"
+                        : "text-slate-400 border-transparent hover:text-slate-600",
+                    )}
+                  >
+                    {tab.label}
+                    {tab.id === "topup" ? (
+                      <span className="ml-1.5 align-middle text-[10px] font-bold text-amber-700 bg-amber-100 rounded-full px-1.5 py-0.5">
+                        即將
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.header>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.28 }}
+              className="space-y-4"
+            >
+              {activeTab === "query" && (
+                <div id="query-section" className="scroll-mt-28 space-y-4">
+                  {authReady && isLoggedIn ? (
+                    <MemberEsimQuerySheet
+                      onOpenTrafficAlert={handleOpenTrafficAlert}
+                    />
+                  ) : null}
+
+                  <div className={cn(CARD, "bg-[#1e8fff] p-5 sm:p-7 text-white")}>
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">
+                        ICCID
+                      </span>
+                      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">
+                        {isLoggedIn ? "手動查詢" : "即時查詢"}
+                      </span>
+                      <span className="ml-auto text-[12px] font-medium text-white/80">
+                        約 30 分延遲
+                      </span>
+                    </div>
+
+                    <div className="flex items-start gap-3 mb-5">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
+                        <MaterialIcon name="sim_card" size={22} />
+                      </div>
+                      <div className="min-w-0">
+                        <h2 className="text-xl font-black text-white tracking-tight">
+                          {isLoggedIn
+                            ? "用 ICCID 手動查詢"
+                            : activeMeta.headline}
                         </h2>
-                        <p className="text-sm text-slate-500 mb-6">
-                          輸入 ICCID（19～20 碼）即可查看剩餘流量。
+                        <p className="text-sm text-white/85 mt-0.5">
+                          {isLoggedIn
+                            ? "非本站購買、或清單沒有的方案，可貼上 ICCID 查詢。"
+                            : activeMeta.sub}
                         </p>
+                      </div>
+                    </div>
 
-                        <form onSubmit={handleSearch} className="space-y-3">
-                          <div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 focus-within:border-[#1E4AD1]/40 focus-within:ring-2 focus-within:ring-[#1E4AD1]/10 transition-all">
-                            <MaterialIcon
-                              name="description"
-                              size={20}
-                              className="shrink-0 mr-3 text-slate-400"
-                            />
-                            <input
-                              type="text"
-                              value={iccid}
-                              onChange={(e) => setIccid(e.target.value)}
-                              placeholder="輸入 ICCID（19～20 碼）"
-                              className="flex-1 bg-transparent border-none outline-none text-sm font-medium min-w-0 text-slate-800 placeholder:text-slate-400"
-                            />
-                          </div>
-                          <JekoPillButton type="submit" disabled={queryLoading}>
-                            {queryLoading ? "查詢中…" : "立即查詢"}
-                          </JekoPillButton>
-                        </form>
-
-                        <a
-                          href={
-                            process.env.NEXT_PUBLIC_LINE_OA_URL ||
-                            "https://line.me/R/ti/p/@391huuts"
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-4 inline-flex items-center gap-2 text-[12px] font-medium text-slate-600 hover:text-[#1E4AD1]"
-                        >
-                          <LineIconSvg className="w-4 h-4" />
-                          加入官方 LINE，傳「查詢用量」或直接貼 ICCID
-                        </a>
-
-                        {queryError && (
-                          <p className="mt-4 text-sm flex items-center gap-1 font-medium text-rose-600">
-                            <MaterialIcon name="error" size={16} />
-                            {queryError}
-                          </p>
-                        )}
-
-                        {usageResult && (
-                          <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50/50 p-4 text-sm text-slate-800">
-                            <p className="font-bold mb-2 flex items-center gap-2 text-[#1E4AD1]">
-                              <MaterialIcon name="analytics" size={18} />
-                              查詢結果
-                            </p>
-                            {usageResult.productName && (
-                              <p>方案：{usageResult.productName}</p>
-                            )}
-                            {usageResult.remainingMb != null ? (
-                              <p className="font-bold mt-1">
-                                剩餘流量：約 {usageResult.remainingMb} MB
-                                {usageResult.totalMb != null &&
-                                  ` / ${usageResult.totalMb} MB`}
-                              </p>
-                            ) : (
-                              <p className="mt-1 text-slate-500">
-                                {usageResult.note}
-                              </p>
-                            )}
-                            {usageResult.expiresAt && (
-                              <p className="text-xs mt-1 text-slate-500">
-                                有效期限：{usageResult.expiresAt}
-                              </p>
-                            )}
-                          </div>
-                        )}
+                    <form onSubmit={handleSearch} className="space-y-3">
+                      <div className="flex items-center rounded-2xl border border-white/30 bg-white px-4 py-3.5 shadow-sm focus-within:ring-2 focus-within:ring-white/40">
+                        <MaterialIcon
+                          name="description"
+                          size={20}
+                          className="shrink-0 mr-3 text-slate-400"
+                        />
+                        <input
+                          type="text"
+                          value={iccid}
+                          onChange={(e) => setIccid(e.target.value)}
+                          placeholder="輸入 ICCID（19～20 碼）"
+                          className="flex-1 bg-transparent border-none outline-none text-sm font-semibold min-w-0 text-slate-800 placeholder:text-slate-400"
+                        />
                       </div>
 
-                      <div className="lg:w-[42%] shrink-0">
-                        <div className="rounded-2xl bg-slate-900 text-white p-5 sm:p-6 relative overflow-hidden">
-                          <div
-                            className="absolute inset-0 opacity-30 bg-cover bg-center"
-                            style={{
-                              backgroundImage: "url('/images/hero-img.jpg')",
-                            }}
-                            aria-hidden
-                          />
-                          <div
-                            className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/75 to-[#1E4AD1]/40"
-                            aria-hidden
-                          />
-                          <div className="relative z-10">
-                            <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-white/15 px-2 py-0.5 rounded-full mb-3">
-                              Tip
-                            </span>
-                            <p className="text-sm leading-relaxed text-white/90">
-                              ICCID 可在 eSIM 設定或訂單 Email
-                              中找到。查詢結果僅供參考，建議同時查看手機內建用量。
-                            </p>
+                      {isLoggedIn ? (
+                        <button
+                          type="submit"
+                          disabled={queryLoading}
+                          className="w-full inline-flex items-center justify-center rounded-2xl bg-[#1e4ad1] px-4 py-3.5 text-sm font-bold text-white shadow-sm disabled:opacity-60"
+                        >
+                          {queryLoading ? "查詢中…" : "立即查詢"}
+                        </button>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-2.5">
+                            <Link
+                              href={loginHref}
+                              className="inline-flex items-center justify-center rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-[#1e4ad1] border border-white shadow-sm"
+                            >
+                              登入會員
+                            </Link>
+                            <button
+                              type="submit"
+                              disabled={queryLoading}
+                              className="inline-flex items-center justify-center rounded-2xl bg-[#1e4ad1] px-4 py-3.5 text-sm font-bold text-white shadow-sm disabled:opacity-60"
+                            >
+                              {queryLoading ? "查詢中…" : "立即查詢"}
+                            </button>
                           </div>
-                        </div>
+                          <p className="text-center text-[12px] text-white/80 leading-snug">
+                            登入後留在本頁，一鍵查看您的 eSIM 流量
+                          </p>
+                        </>
+                      )}
+                    </form>
 
-                        <div className="mt-4 rounded-2xl border border-slate-200 p-4">
-                          <h3 className="text-sm font-bold mb-2">查詢前請注意</h3>
-                          <ul className="text-[13px] space-y-1.5 text-slate-500 leading-relaxed">
-                            <li>時間顯示為台灣時間（UTC+8）</li>
-                            <li>流量數據非即時，通常延遲 30 分鐘至數小時</li>
-                            <li>建議同時參考手機內建行動數據用量</li>
-                          </ul>
-                          <Link
-                            href="/support"
-                            className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-[#1E4AD1] hover:underline"
-                          >
-                            常見問題
-                            <MaterialIcon name="arrow_forward" size={16} />
-                          </Link>
-                        </div>
+                    {queryError && (
+                      <p className="mt-4 text-sm flex items-center gap-1.5 font-semibold text-white bg-rose-600/90 rounded-xl px-3 py-2">
+                        <MaterialIcon name="error" size={16} />
+                        {queryError}
+                      </p>
+                    )}
+                  </div>
+
+                  <UsageResultSheet usageResult={usageResult} />
+
+                  <div className={cn(CARD, "bg-white p-5 sm:p-6")}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-black text-slate-900">
+                        查詢前請注意
+                      </h3>
+                      <StatusPill tone="slate">UTC+8</StatusPill>
+                    </div>
+                    <ul className="text-[13px] space-y-2 text-slate-500 leading-relaxed">
+                      <li className="flex gap-2">
+                        <MaterialIcon
+                          name="schedule"
+                          size={16}
+                          className="shrink-0 mt-0.5 text-slate-400"
+                        />
+                        時間顯示為台灣時間；流量非即時，通常延遲 30 分鐘至數小時
+                      </li>
+                      <li className="flex gap-2">
+                        <MaterialIcon
+                          name="phone_iphone"
+                          size={16}
+                          className="shrink-0 mt-0.5 text-slate-400"
+                        />
+                        建議同時參考手機內建行動數據用量
+                      </li>
+                    </ul>
+                    <Link
+                      href="/support"
+                      className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-slate-900"
+                    >
+                      常見問題
+                      <MaterialIcon name="arrow_forward" size={16} />
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "alert" && (
+                <div
+                  id="push-notification-section"
+                  className="scroll-mt-28 space-y-4"
+                >
+                  <div className={cn(CARD, "bg-[#1e8fff] p-5 sm:p-7 text-white")}>
+                    <SheetHandle light />
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">
+                        Push
+                      </span>
+                      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">
+                        LINE
+                      </span>
+                      <span className="rounded-full bg-[#1e4ad1] px-2.5 py-1 text-[11px] font-bold text-white">
+                        推薦開啟
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-3 mb-2">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
+                        <MaterialIcon name="notifications_active" size={22} />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-black text-white tracking-tight">
+                          {activeMeta.headline}
+                        </h2>
+                        <p className="text-sm text-white/85 mt-0.5">
+                          {activeMeta.sub}
+                        </p>
                       </div>
                     </div>
                   </div>
-                )}
 
-                {activeTab === "alert" && (
-                  <div id="push-notification-section" className="scroll-mt-28">
-                    <h2 className="text-xl font-black mb-1">開啟流量提醒</h2>
-                    <p className="text-sm text-slate-500 mb-6">
-                      綁定 eSIM 後，剩餘流量偏低時將自動推播通知。
-                    </p>
+                  <div
+                    className={cn(CARD, "bg-white p-4 sm:p-6 overflow-hidden")}
+                  >
                     <PushNotificationSection
                       onIccidBound={(boundIccid) => setIccid(boundIccid)}
                       initialIccid={iccid}
                       variant="banner"
+                      preferBindEsim={preferBindEsim}
+                      onPreferBindHandled={clearPreferBindEsim}
+                      preferOpenBindLayer={preferOpenBindLayer}
+                      onPreferOpenBindHandled={() =>
+                        setPreferOpenBindLayer(false)
+                      }
                     />
                   </div>
-                )}
+                </div>
+              )}
 
-                {activeTab === "topup" && (
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-8">
-                    <div className="flex-1">
-                      <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full mb-4">
-                        即將上線
-                      </span>
-                      <h2 className="text-xl sm:text-2xl font-black mb-2">
-                        流量即將用盡？
+              {activeTab === "topup" && (
+                <div className={cn(CARD, "bg-[#EEF1F6] p-5 sm:p-7")}>
+                  <SheetHandle />
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <StatusPill tone="amber">即將上線</StatusPill>
+                  </div>
+                  <div className="flex items-start gap-3 mb-5">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1e8fff] text-white">
+                      <MaterialIcon name="bolt" size={22} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                        {activeMeta.headline}
                       </h2>
-                      <p className="text-sm text-slate-500 leading-relaxed mb-6 max-w-md">
+                      <p className="text-sm text-slate-600 mt-1 max-w-md leading-relaxed">
                         無需重新購買 eSIM，一鍵恢復原有流量，出國上網不中斷。
                       </p>
-                      <JekoPillButton
-                        type="button"
-                        onClick={() => alert("此功能即將上線")}
-                      >
-                        前往充值方案
-                      </JekoPillButton>
-                    </div>
-                    <div className="lg:w-[45%] aspect-[4/3] rounded-2xl overflow-hidden relative">
-                      <div
-                        className="absolute inset-0 bg-cover bg-[70%_20%]"
-                        style={{
-                          backgroundImage:
-                            "url('/images/7bf7a01a-6740-4390-800c-566683623985.png')",
-                        }}
-                        aria-hidden
-                      />
-                      <div
-                        className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"
-                        aria-hidden
-                      />
                     </div>
                   </div>
-                )}
 
-                {activeTab === "guide" && (
-                  <div>
-                    <h2 className="text-xl font-black mb-1">使用教學</h2>
-                    <p className="text-sm text-slate-500 mb-6">
-                      四步驟完成查詢、提醒與省流量規劃。
+                  <div className="rounded-[22px] overflow-hidden relative aspect-[16/9] mb-5 bg-slate-200">
+                    <div
+                      className="absolute inset-0 bg-cover bg-[70%_20%]"
+                      style={{
+                        backgroundImage:
+                          "url('/images/7bf7a01a-6740-4390-800c-566683623985.png')",
+                      }}
+                      aria-hidden
+                    />
+                    <div
+                      className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent"
+                      aria-hidden
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("alert")}
+                      className="rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-[#1e4ad1] border border-[#1e4ad1]/35"
+                    >
+                      先開提醒
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => alert("此功能即將上線")}
+                      className="rounded-2xl bg-[#1e4ad1] px-4 py-3.5 text-sm font-bold text-white"
+                    >
+                      前往充值方案
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "guide" && (
+                <div className="space-y-4">
+                  <div className={cn(CARD, "bg-white p-5 sm:p-6")}>
+                    <SheetHandle />
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight mb-1">
+                      {activeMeta.headline}
+                    </h2>
+                    <p className="text-sm text-slate-500 mb-5">
+                      {activeMeta.sub}
                     </p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {HOW_IT_WORKS.map((item) => (
                         <button
                           key={item.step}
@@ -575,82 +845,57 @@ export default function DataQueryPage() {
                             !item.comingSoon && setActiveTab(item.tab)
                           }
                           className={cn(
-                            "rounded-2xl border p-5 text-left transition-all",
+                            "rounded-[24px] p-5 text-left transition-transform active:scale-[0.99]",
+                            item.tint,
                             item.comingSoon
-                              ? "border-slate-200 bg-slate-50/50 cursor-default"
-                              : "border-slate-200 bg-white hover:border-[#1E4AD1]/30 hover:shadow-md cursor-pointer",
+                              ? "cursor-default opacity-80"
+                              : "cursor-pointer hover:brightness-[0.98]",
                           )}
                         >
                           <div className="flex items-center gap-2 mb-3">
-                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl text-xs font-black text-white bg-[#1E4AD1]">
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-black bg-[#1e4ad1] text-white">
                               {item.step}
                             </span>
                             {item.comingSoon && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600">
-                                即將上線
-                              </span>
+                              <StatusPill tone="amber">即將上線</StatusPill>
                             )}
                           </div>
-                          <h3 className="text-base font-bold mb-2">
+                          <h3 className="text-base font-black mb-1.5 text-slate-900">
                             {item.title}
                           </h3>
-                          <p className="text-sm leading-relaxed text-slate-500">
+                          <p className="text-sm leading-relaxed text-slate-600">
                             {item.desc}
                           </p>
                           {!item.comingSoon && (
-                            <span className="mt-3 inline-block text-sm font-bold text-[#1E4AD1]">
-                              前往 →
+                            <span className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-slate-900">
+                              前往
+                              <MaterialIcon name="arrow_forward" size={16} />
                             </span>
                           )}
                         </button>
                       ))}
                     </div>
+                  </div>
 
+                  <div className={cn(CARD, "bg-white p-5 sm:p-6")}>
                     <UsageTable />
                   </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* SwiftPay 風格底部 Tab */}
-        <div className="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200/80 bg-white/95 backdrop-blur-md pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 px-3 sm:px-4">
-          <div className="max-w-[920px] mx-auto">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-              {TABS.map((tab) => {
-                const active = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "rounded-full border px-2 py-2.5 sm:py-3 text-center transition-all duration-200",
-                      active
-                        ? "border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/15 scale-[1.02]"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "block text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.12em] leading-none",
-                        active ? "text-white/70" : "text-slate-400",
-                      )}
-                    >
-                      {tab.kicker}
-                    </span>
-                    <span className="block text-[11px] sm:text-[13px] font-semibold leading-snug mt-1 px-0.5">
-                      {tab.short}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
+      <style jsx global>{`
+        .data-query-page {
+          background-color: #f4f1ea;
+          background-image: repeating-linear-gradient(
+            transparent,
+            transparent 1px,
+            rgb(54 65 83 / 0.12) 0 3px
+          );
+        }
+      `}</style>
     </Layout>
   );
 }

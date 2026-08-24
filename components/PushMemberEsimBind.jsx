@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MaterialIcon from "./MaterialIcon";
 import { useUser } from "./context/UserContext";
 import { getPushEndpoint, ICCID_STORAGE_KEY } from "../lib/pushBind";
@@ -72,32 +72,92 @@ function PillButton({
 }
 
 /**
- * 會員：從本站訂單選擇 eSIM 綁定（不需手打 ICCID）
+ * 第二層：會員從本站訂單選擇 eSIM 綁定（圖二）
+ * 一次只能綁一張；已綁定方案會注記
  */
 export default function PushMemberEsimBind({
   esims = [],
   onBound,
   onManualIccid,
+  onBack,
+  boundTopupId = null,
+  /** 從查詢用量頁帶入時預選 */
+  initialSelectedTopupId = null,
   className = "",
+  initialError = "",
+  /** 本機假資料：不打真實 API，直接模擬綁定成功 */
+  demoMode = false,
+  /** 假資料下模擬綁定失敗 */
+  demoForceFail = false,
 }) {
   const { token } = useUser();
-  const [selected, setSelected] = useState(esims[0]?.topupId || "");
+  const defaultSelected =
+    (initialSelectedTopupId &&
+      esims.some((e) => e.topupId === initialSelectedTopupId) &&
+      initialSelectedTopupId) ||
+    (boundTopupId && esims.some((e) => e.topupId === boundTopupId)
+      ? boundTopupId
+      : esims[0]?.topupId || "");
+  const [selected, setSelected] = useState(defaultSelected);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError);
 
-  const handleBind = async (topupIdOverride) => {
+  useEffect(() => {
+    setError(initialError || "");
+  }, [initialError]);
+
+  useEffect(() => {
+    if (!esims.length) return;
+    setSelected((prev) => {
+      if (
+        initialSelectedTopupId &&
+        esims.some((e) => e.topupId === initialSelectedTopupId)
+      ) {
+        return initialSelectedTopupId;
+      }
+      if (prev && esims.some((e) => e.topupId === prev)) return prev;
+      if (boundTopupId && esims.some((e) => e.topupId === boundTopupId)) {
+        return boundTopupId;
+      }
+      return esims[0].topupId;
+    });
+  }, [esims, boundTopupId, initialSelectedTopupId]);
+
+  const handleBind = async () => {
     setError("");
     setLoading(true);
     try {
+      if (boundTopupId && selected === boundTopupId) {
+        throw new Error("此方案已綁定監控中。若要換卡，請先回上一層取消綁定。");
+      }
+
+      if (demoMode) {
+        await new Promise((r) => setTimeout(r, 400));
+        if (demoForceFail) {
+          throw new Error(initialError || "① 綁定失敗");
+        }
+        const esim = esims.find((e) => e.topupId === selected) || esims[0];
+        if (!esim) throw new Error("請選擇 eSIM");
+        onBound?.({
+          success: true,
+          productName: esim.productName,
+          topupId: esim.topupId,
+          iccid: esim.iccid || null,
+          bindMethod: "member_order",
+          boundAt: new Date().toISOString(),
+          message: `（假資料）已綁定「${esim.productName}」`,
+        });
+        return;
+      }
+
       const endpoint = await getPushEndpoint();
       if (!endpoint) throw new Error("請先開啟流量提醒通知");
 
-      const tid = topupIdOverride || selected;
       const res = await fetch("/api/push/auto-bind-member", {
         method: "POST",
         credentials: "include",
         headers: authHeaders(token),
-        body: JSON.stringify({ endpoint, topupId: tid || undefined }),
+        body: JSON.stringify({ endpoint, topupId: selected || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.hint || "綁定失敗");
@@ -119,7 +179,18 @@ export default function PushMemberEsimBind({
         backgroundColor: PRIMARY_SOFT,
       }}
     >
-      <div className="flex items-start gap-3 mb-4">
+      {onBack ? (
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-3 inline-flex items-center gap-1 text-sm font-bold text-stone-700 hover:text-stone-900"
+        >
+          <MaterialIcon name="arrow_back" size={18} />
+          回到上一層
+        </button>
+      ) : null}
+
+      <div className="flex items-start gap-3 mb-3">
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
           style={{ backgroundColor: "#FFFFFF" }}
@@ -135,13 +206,22 @@ export default function PushMemberEsimBind({
           <p className="text-xs mt-1 leading-relaxed" style={{ color: MUTED }}>
             已偵測到您在本站購買的 eSIM，可直接選擇方案綁定，
             <strong style={{ color: PRIMARY }}>無需輸入 ICCID</strong>。
+            <span className="block mt-1 font-bold text-stone-700">
+              一次只能綁定一張做流量提醒。
+            </span>
+            {demoMode ? (
+              <span className="block mt-1 font-bold text-amber-700">
+                假資料預覽：綁定不會打真實 API。
+              </span>
+            ) : null}
           </p>
         </div>
       </div>
 
-      <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+      <div className="space-y-2 mb-4 max-h-56 overflow-y-auto">
         {esims.map((esim) => {
           const active = selected === esim.topupId;
+          const isCurrentBound = boundTopupId === esim.topupId;
           return (
             <label
               key={esim.topupId}
@@ -160,9 +240,19 @@ export default function PushMemberEsimBind({
                 className="mt-1 accent-[#3768C7]"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-stone-900 truncate">
-                  {esim.productName}
-                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-bold text-stone-900 truncate">
+                    {esim.productName}
+                  </p>
+                  {isCurrentBound ? (
+                    <span
+                      className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black text-white"
+                      style={{ backgroundColor: PRIMARY }}
+                    >
+                      監控中
+                    </span>
+                  ) : null}
+                </div>
                 <p className="text-[11px] mt-0.5" style={{ color: MUTED }}>
                   訂單 {String(esim.orderId || "").slice(0, 8)}… · Topup{" "}
                   {esim.topupId}
@@ -180,32 +270,27 @@ export default function PushMemberEsimBind({
         </p>
       )}
 
-      <div className="flex flex-col gap-2.5">
-        <PillButton
-          disabled={loading || !selected}
-          onClick={() => handleBind()}
-        >
-          {loading ? "綁定中…" : "綁定所選 eSIM"}
-        </PillButton>
-        {esims.length > 1 && (
-          <PillButton
-            variant="secondary"
-            disabled={loading}
-            onClick={() => handleBind(esims[0].topupId)}
-          >
-            綁定最新一筆
-          </PillButton>
-        )}
-      </div>
-
-      <button
-        type="button"
-        onClick={onManualIccid}
-        className="mt-3 text-xs hover:underline w-full text-left"
-        style={{ color: MUTED }}
+      <PillButton
+        disabled={loading || !selected || selected === boundTopupId}
+        onClick={handleBind}
       >
-        非使用會員購買？改用手動輸入 ICCID
-      </button>
+        {loading
+          ? "綁定中…"
+          : selected === boundTopupId
+            ? "此方案已綁定"
+            : "綁定所選 eSIM"}
+      </PillButton>
+
+      {onManualIccid ? (
+        <button
+          type="button"
+          onClick={onManualIccid}
+          className="mt-3 text-xs hover:underline w-full text-left"
+          style={{ color: MUTED }}
+        >
+          非使用會員購買？改用手動輸入 ICCID
+        </button>
+      ) : null}
     </div>
   );
 }

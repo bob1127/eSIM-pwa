@@ -3,7 +3,7 @@ import {
   getSupabaseAdmin,
   verifyPartnerAccessForUser,
 } from "../../../lib/partnerServer";
-import { upsertMedusaProductToSupabase } from "../../../lib/medusaProductSync";
+import { upsertMedusaProductToSupabase, ensureMedusaProductsInSupabase } from "../../../lib/medusaProductSync";
 import { applyPartnerB2BMarkup } from "../../../lib/medusaPartnerPricing";
 import { loadB2BMarkupMultiplier } from "../../../lib/platformSettings";
 import { validateCustomPricesInput } from "../../../lib/partnerPricing";
@@ -350,82 +350,204 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const { medusa_product_id: medusaProductId } = req.body || {};
-    if (!medusaProductId) {
-      return res.status(400).json({ error: "缺少 medusa_product_id" });
+    const body = req.body || {};
+    const singleId = body.medusa_product_id;
+    const batchIds = Array.isArray(body.medusa_product_ids)
+      ? body.medusa_product_ids
+      : null;
+    const medusaIds = [
+      ...new Set(
+        (batchIds || (singleId != null ? [singleId] : []))
+          .map((id) => (id != null ? String(id).trim() : ""))
+          .filter(Boolean),
+      ),
+    ];
+
+    if (!medusaIds.length) {
+      return res.status(400).json({
+        error: "缺少 medusa_product_id 或 medusa_product_ids",
+      });
     }
 
-    try {
-      const { productId, formatted } = await upsertMedusaProductToSupabase(
-        medusaProductId,
-      );
-
+    // 單筆維持舊行為（含 heal），避免影響選品管理手動上架
+    if (medusaIds.length === 1 && !batchIds) {
+      const medusaProductId = medusaIds[0];
       try {
-        await healEmptyListingsForProduct(supabase, {
-          storeId,
-          productId,
+        const { productId, formatted } = await upsertMedusaProductToSupabase(
           medusaProductId,
-          productName: formatted?.name,
-        });
-      } catch (healErr) {
-        console.warn(
-          "[store-listings POST] heal:",
-          healErr?.message || healErr,
         );
-      }
 
-      const { data: existing } = await supabase
-        .from("store_products")
-        .select("id, medusa_product_id")
-        .eq("store_id", storeId)
-        .eq("product_id", productId)
-        .maybeSingle();
+        try {
+          await healEmptyListingsForProduct(supabase, {
+            storeId,
+            productId,
+            medusaProductId,
+            productName: formatted?.name,
+          });
+        } catch (healErr) {
+          console.warn(
+            "[store-listings POST] heal:",
+            healErr?.message || healErr,
+          );
+        }
 
-      const hasMedusaCol = !(
-        await supabase.from("store_products").select("medusa_product_id").limit(1)
-      ).error;
+        const { data: existing } = await supabase
+          .from("store_products")
+          .select("id, medusa_product_id")
+          .eq("store_id", storeId)
+          .eq("product_id", productId)
+          .maybeSingle();
 
-      if (existing) {
-        if (hasMedusaCol && !existing.medusa_product_id) {
+        const hasMedusaCol = !(
           await supabase
             .from("store_products")
-            .update({ medusa_product_id: medusaProductId })
-            .eq("id", existing.id);
+            .select("medusa_product_id")
+            .limit(1)
+        ).error;
+
+        if (existing) {
+          if (hasMedusaCol && !existing.medusa_product_id) {
+            await supabase
+              .from("store_products")
+              .update({ medusa_product_id: medusaProductId })
+              .eq("id", existing.id);
+          }
+          return res.status(200).json({
+            ok: true,
+            productId,
+            medusaProductId,
+            listingId: existing.id,
+            alreadyListed: true,
+          });
         }
+
+        const insertPayload = {
+          store_id: storeId,
+          product_id: productId,
+          custom_prices: {},
+        };
+        if (hasMedusaCol) insertPayload.medusa_product_id = medusaProductId;
+
+        const { data, error } = await supabase
+          .from("store_products")
+          .insert([insertPayload])
+          .select("id, created_at")
+          .single();
+
+        if (error) return res.status(500).json({ error: error.message });
+
         return res.status(200).json({
           ok: true,
           productId,
           medusaProductId,
-          listingId: existing.id,
-          alreadyListed: true,
+          listingId: data.id,
+          listedAt: data.created_at,
+        });
+      } catch (err) {
+        console.error("[store-listings POST]", err);
+        return res.status(502).json({ error: err.message || "上架失敗" });
+      }
+    }
+
+    // 批次：優先用已同步快照，再並行補缺，最後一次 bulk insert
+    try {
+      const resolved = await ensureMedusaProductsInSupabase(medusaIds, {
+        syncConcurrency: 5,
+      });
+
+      const hasMedusaCol = !(
+        await supabase
+          .from("store_products")
+          .select("medusa_product_id")
+          .limit(1)
+      ).error;
+
+      const { data: existingRows, error: existingErr } = await supabase
+        .from("store_products")
+        .select(
+          hasMedusaCol
+            ? "id, product_id, medusa_product_id"
+            : "id, product_id",
+        )
+        .eq("store_id", storeId);
+
+      if (existingErr) {
+        return res.status(500).json({ error: existingErr.message });
+      }
+
+      const listedProductIds = new Set(
+        (existingRows || []).map((r) => r.product_id).filter(Boolean),
+      );
+
+      const toInsert = [];
+      const listed = [];
+      const failed = [];
+
+      for (const medusaProductId of medusaIds) {
+        const productId = resolved.get(medusaProductId);
+        if (!productId) {
+          failed.push({ medusaProductId, error: "無法同步商品" });
+          continue;
+        }
+        if (listedProductIds.has(productId)) {
+          listed.push({
+            medusaProductId,
+            productId,
+            alreadyListed: true,
+          });
+          continue;
+        }
+        const row = {
+          store_id: storeId,
+          product_id: productId,
+          custom_prices: {},
+        };
+        if (hasMedusaCol) row.medusa_product_id = medusaProductId;
+        toInsert.push(row);
+        listedProductIds.add(productId);
+        listed.push({
+          medusaProductId,
+          productId,
+          alreadyListed: false,
         });
       }
 
-      const insertPayload = {
-        store_id: storeId,
-        product_id: productId,
-        custom_prices: {},
-      };
-      if (hasMedusaCol) insertPayload.medusa_product_id = medusaProductId;
+      if (toInsert.length) {
+        const insertChunk = 50;
+        for (let i = 0; i < toInsert.length; i += insertChunk) {
+          const slice = toInsert.slice(i, i + insertChunk);
+          const { error: insertError } = await supabase
+            .from("store_products")
+            .insert(slice);
+          if (insertError) {
+            return res.status(500).json({
+              error: insertError.message || "批次上架失敗",
+              listed,
+              failed,
+            });
+          }
+        }
+      }
 
-      const { data, error } = await supabase
-        .from("store_products")
-        .insert([insertPayload])
-        .select("id, created_at")
-        .single();
-
-      if (error) return res.status(500).json({ error: error.message });
+      if (failed.length && !listed.length) {
+        return res.status(502).json({
+          error: failed[0]?.error || "批次上架失敗",
+          failed,
+        });
+      }
 
       return res.status(200).json({
         ok: true,
-        productId,
-        medusaProductId,
-        listingId: data.id,
-        listedAt: data.created_at,
+        listedCount: listed.length,
+        insertedCount: toInsert.length,
+        alreadyListedCount: listed.filter((r) => r.alreadyListed).length,
+        failedCount: failed.length,
+        listed,
+        failed,
       });
     } catch (err) {
-      console.error("[store-listings POST]", err);
-      return res.status(502).json({ error: err.message || "上架失敗" });
+      console.error("[store-listings POST batch]", err);
+      return res.status(502).json({ error: err.message || "批次上架失敗" });
     }
   }
 

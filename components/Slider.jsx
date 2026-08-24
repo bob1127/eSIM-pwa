@@ -7,13 +7,12 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import MaterialIcon from "@/components/MaterialIcon";
-import { useUser } from "@/components/context/UserContext";
-import { detectPushSupport } from "@/lib/pushSupport";
 import { buildLoginUrl } from "@/lib/authRedirect";
 import { buildInstallHintText } from "@/lib/deviceDetect";
 import { usePWAInstall } from "./usePWAInstall";
 import AppInstallGuideModal from "./AppInstallGuideModal";
 import HeroCountryPlanPicker from "./HeroCountryPlanPicker";
+import GeneralPushToggle from "./GeneralPushToggle";
 import { QuarterRing } from "@/components/ui/QuarterRing";
 
 const LINE_OA_URL =
@@ -181,7 +180,6 @@ function HeroSlideImage({ slide }) {
 
 export default function Slider() {
   const router = useRouter();
-  const { token } = useUser();
   const containerRef = useRef(null);
   const imagesRef = useRef([]);
   const titleRef = useRef(null);
@@ -193,11 +191,9 @@ export default function Slider() {
     installPWA,
     deviceType,
     isStandalone,
-    subscribeToPush,
   } = usePWAInstall();
 
   const [showPrompt, setShowPrompt] = useState(false);
-  const [pushLoading, setPushLoading] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [installHint, setInstallHint] = useState(null);
 
@@ -212,28 +208,6 @@ export default function Slider() {
 
   const openInstallGuide = () => {
     setShowPrompt(true);
-  };
-
-  const handleOpenPush = async () => {
-    if (needsAppleInstall) {
-      openInstallGuide();
-      return;
-    }
-
-    const support = await detectPushSupport();
-    if (!support.supported) {
-      alert(support.hint || support.title || "此裝置不支援推播通知");
-      return;
-    }
-
-    setPushLoading(true);
-    try {
-      await subscribeToPush({ token });
-    } catch {
-      /* alert handled in hook */
-    } finally {
-      setPushLoading(false);
-    }
   };
 
   const handleTrafficAlert = () => {
@@ -499,45 +473,41 @@ export default function Slider() {
               <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div className="bg-[#3583d8] rounded-lg md:rounded-xl p-5 md:p-6 shadow-[0_8px_32px_rgba(29,92,197,0.35)]">
                   <h3 className="text-white font-bold text-base md:text-lg mb-4 tracking-wide">
-                    {isStandalone ? "推播與警示" : "APP 與會員"}
+                    {isStandalone ? "推播與警示" : "APP 與推播"}
                   </h3>
-                  <div className="flex flex-col sm:flex-row gap-2.5">
-                    {isStandalone ? (
-                      <>
-                        <HeroCardAction
-                          icon="notifications_active"
-                          onClick={handleOpenPush}
-                          loading={pushLoading}
-                        >
-                          開啟推播
-                        </HeroCardAction>
-                        <HeroCardAction
-                          icon="speed"
-                          onClick={handleTrafficAlert}
-                        >
-                          開啟流量警示
-                        </HeroCardAction>
-                      </>
-                    ) : (
-                      <>
-                        <HeroCardAction
-                          icon="install_mobile"
-                          onClick={handleInstallApp}
-                        >
-                          安裝 APP
-                        </HeroCardAction>
-                        <HeroCardAction
-                          icon="person_add"
-                          href={buildLoginUrl()}
-                        >
-                          加入會員
-                        </HeroCardAction>
-                      </>
-                    )}
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex flex-col sm:flex-row gap-2.5">
+                      {isStandalone ? (
+                        <>
+                          <HeroCardAction
+                            icon="speed"
+                            onClick={handleTrafficAlert}
+                          >
+                            開啟流量警示
+                          </HeroCardAction>
+                        </>
+                      ) : (
+                        <>
+                          <HeroCardAction
+                            icon="install_mobile"
+                            onClick={handleInstallApp}
+                          >
+                            安裝 APP
+                          </HeroCardAction>
+                          <HeroCardAction
+                            icon="person_add"
+                            href={buildLoginUrl()}
+                          >
+                            加入會員
+                          </HeroCardAction>
+                        </>
+                      )}
+                    </div>
+                    <GeneralPushToggle theme="dark" className="w-full" />
                   </div>
                   {isStandalone ? (
                     <p className="mt-3 text-[11px] text-white/80 leading-relaxed">
-                      已安裝 APP，可開啟推播通知與 eSIM 低流量警示。
+                      日常推播：優惠公告；流量警示請至查詢頁綁定 eSIM。
                     </p>
                   ) : (
                     installHintText && (

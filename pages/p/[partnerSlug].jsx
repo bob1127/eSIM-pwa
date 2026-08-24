@@ -20,7 +20,9 @@ import {
   PARTNER_COUNTRY_DEFS,
 } from "@/lib/partnerNavCountries";
 import { resolveHomepageDisplay } from "@/lib/partnerHomepageCms";
-import ButtonAnimatedGradient from "@/components/ui/button-animated-gradient";
+import JekoAnimatedCtaButton, {
+  JekoShopCatalogButton,
+} from "@/components/ui/JekoAnimatedCtaButton";
 import PartnerStoreCategoryTabs from "@/components/Shop/PartnerStoreCategoryTabs";
 
 const CONTAINER = "max-w-[1680px] mx-auto px-6 lg:px-10";
@@ -208,12 +210,13 @@ export default function PartnerStorefront({ store, products }) {
               ) : null}
             </div>
           </div>
-          <ButtonAnimatedGradient
+          <JekoShopCatalogButton
             href={display.plans?.shop_link_href || "/shop/"}
+            label={
+              display.plans?.shop_link_label || "查看 Jeko Shop 全部商品"
+            }
             className="shrink-0"
-          >
-            {display.plans?.shop_link_label || "查看 Jeko Shop 全部商品 →"}
-          </ButtonAnimatedGradient>
+          />
         </div>
 
         <PartnerStoreCategoryTabs
@@ -237,7 +240,7 @@ export default function PartnerStorefront({ store, products }) {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-2.5 lg:gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-2.5 lg:gap-3">
             {list.map((p) => (
               <ProductCard key={String(p.id)} product={p} domain={domain} />
             ))}
@@ -278,9 +281,9 @@ export default function PartnerStorefront({ store, products }) {
             <p className="text-white/90 text-sm sm:text-base">
               {display.discover.subtitle}
             </p>
-            <ButtonAnimatedGradient nested className="mt-3">
+            <JekoAnimatedCtaButton nested className="mt-3">
               {display.discover.button_label}
-            </ButtonAnimatedGradient>
+            </JekoAnimatedCtaButton>
           </div>
         </Link>
       </section>

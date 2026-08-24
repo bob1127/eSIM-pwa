@@ -84,7 +84,13 @@ export default async function handler(req, res) {
   const { error: dbError } = await supabaseAdmin
     .from("push_subscriptions")
     .upsert(
-      { user_id: userId, endpoint, p256dh: keys.p256dh, auth: keys.auth },
+      {
+        user_id: userId,
+        endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        general_push_enabled: true,
+      },
       { onConflict: "endpoint" }
     );
 

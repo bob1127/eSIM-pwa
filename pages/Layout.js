@@ -84,14 +84,14 @@ export default function RootLayout({
 
               <SmartWizardFloat />
               {/* AiChatWidget 已移至 _app，避免換頁卸載中斷請求 */}
-              {/* 手機版全域上拉選單：我的 eSIM（/shop 路徑內不顯示） */}
-              <EsimBottomSheet />
               <Footer
                 forceShow={
                   router.pathname === "/shop" ||
                   router.pathname?.startsWith("/shop/")
                 }
               />
+              {/* 固定底欄：必須在 Footer 之後，勿再插入 in-flow 佔位（會在 footer 上方留白） */}
+              <EsimBottomSheet />
             </UserProvider>
           </NextThemesProvider>
         </NextUIProvider>

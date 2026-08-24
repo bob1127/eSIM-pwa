@@ -14,11 +14,17 @@ type ButtonAnimatedGradientProps = {
   className?: string;
   surfaceClassName?: string;
   showArrow?: boolean;
+  /** 外連（LINE OA 等）：開新分頁 */
+  external?: boolean;
 };
 
 function stripTrailingArrow(label: ReactNode): ReactNode {
   if (typeof label !== "string") return label;
   return label.replace(/\s*[→›»]\s*$/, "").trim();
+}
+
+function isExternalHref(href: string) {
+  return /^(https?:|mailto:|tel:)/i.test(href);
 }
 
 const baseSurfaceClass =
@@ -85,6 +91,7 @@ export default function ButtonAnimatedGradient({
   className,
   surfaceClassName,
   showArrow = true,
+  external = false,
 }: ButtonAnimatedGradientProps) {
   const label = stripTrailingArrow(children);
   const surface = surfaceClasses(nested, surfaceClassName);
@@ -110,6 +117,7 @@ export default function ButtonAnimatedGradient({
 
   if (href) {
     const isHash = href.startsWith("#");
+    const openExternal = external || isExternalHref(href);
     const inner = (
       <span className={surface}>
         <AnimatedInner label={label} showArrow={showArrow} />
@@ -119,6 +127,19 @@ export default function ButtonAnimatedGradient({
     if (isHash) {
       return motionWrap(
         <a href={href} className="inline-flex no-underline">
+          {inner}
+        </a>,
+      );
+    }
+
+    if (openExternal) {
+      return motionWrap(
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex no-underline"
+        >
           {inner}
         </a>,
       );

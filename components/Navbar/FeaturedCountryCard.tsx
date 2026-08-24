@@ -4,7 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { toSameOriginImagePath } from "@/lib/resolveMedusaImageUrl";
 import { getCountryProductImagePath } from "@/lib/countryProductImages";
-import { getFeaturedCountryCode } from "@/lib/featuredCountryCode";
+import {
+  getFeaturedCountryCode,
+  getFeaturedCountryCodeTopClass,
+} from "@/lib/featuredCountryCode";
 
 /** Medusa 分類 metadata 圖常連到外部 Storage；失效時改用本地圖 */
 export const CATEGORY_IMAGE_FALLBACKS: Record<string, string> = {
@@ -99,6 +102,7 @@ export default function FeaturedCountryCard({
       : "即將上架更多方案");
   const cardHref = country.href || `/product/${country.slug}`;
   const countryCode = getFeaturedCountryCode(country.slug);
+  const codeTopClass = getFeaturedCountryCodeTopClass(country.slug);
 
   return (
     <Link
@@ -128,7 +132,8 @@ export default function FeaturedCountryCard({
         {countryCode ? (
           <span
             className={[
-              "absolute left-1/2 top-[22%] z-10 -translate-x-1/2",
+              "absolute left-1/2 z-10 -translate-x-1/2",
+              codeTopClass,
               "flex min-h-[1.75rem] min-w-[1.75rem] items-center justify-center rounded-full",
               "bg-[#1E4AD1] px-1 text-[10px] font-black leading-none text-white shadow-md",
               countryCode.length > 2 ? "text-[8px] tracking-tight" : "",

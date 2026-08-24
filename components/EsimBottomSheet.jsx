@@ -920,31 +920,13 @@ export default function EsimBottomSheet() {
       // ── Android／電腦／已安裝的 iPhone App：直接開通知（不強制裝 PWA）──
       await subscribeToPush({ token });
 
-      const endpoint = await getPushEndpoint();
-      let bound = false;
-      if (endpoint) {
-        const res = await fetch("/api/push/auto-bind-member", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ endpoint }),
-        });
-        const data = await res.json().catch(() => ({}));
-        bound = res.ok && !!data.success;
-      }
-
       setTrafficOn(true);
 
-      if (bound) {
-        alert("完成！已自動對應您的 eSIM，流量快用完時會通知您。");
-      } else {
-        alert(
-          "通知已開啟！\n\n系統會自動對應本站訂單。若暫時對應不到，到「剩餘用量」查看方案即可，一般會員不必手動輸入 ICCID。",
-        );
-      }
+      // 與 data-query 兩層流程一致：訂閱後到「流量提醒」手動選綁（不 silent auto-bind）
+      alert(
+        "通知已開啟！接下來請選擇要監控的 eSIM（一次只能綁一張）。",
+      );
+      router.push("/data-query/?setup=traffic");
 
       // Android／Chrome：通知開好後「可選」安裝，不擋主流程
       if (
@@ -1127,14 +1109,9 @@ export default function EsimBottomSheet() {
 
   const miniCollapsed = isProductRoute && !expanded;
 
+  // 底欄佔位改由 Footer pb 負責；此處若再插 h-[118px] 會在 footer 上方留出大空白
   return (
     <>
-      {/* 佔位：避免頁面內容被固定底欄遮住 */}
-      <div
-        className={`md:hidden ${miniCollapsed ? "h-8" : "h-[118px]"}`}
-        aria-hidden
-      />
-
       {expanded && (
         <button
           type="button"

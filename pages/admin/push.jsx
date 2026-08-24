@@ -1,43 +1,72 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "../Layout";
-import { useUser } from "../../components/context/UserContext";
 import { BellIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { PWA_LOGO } from "../../lib/pwaConfig";
-
-const INTERNAL_SECRET = "jeko-push-secret-2026";
+import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
 
 export default function AdminPushPage() {
-  const { user } = useUser();
-
+  const [channel, setChannel] = useState("web");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [linkUrl, setLinkUrl] = useState("/");
-  const [status, setStatus] = useState("idle"); // idle | sending | success | error
+  const [secret, setSecret] = useState("");
+  const [lineUserId, setLineUserId] = useState("");
+  const [lineFriendCount, setLineFriendCount] = useState(null);
+  const [status, setStatus] = useState("idle");
   const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/admin/line-broadcast/")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.friendCount != null) setLineFriendCount(d.friendCount);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!confirm(`確定要發送廣播推播給所有訂閱用戶嗎？`)) return;
+    if (!secret.trim()) {
+      alert("請輸入內部密鑰（PUSH_INTERNAL_SECRET）");
+      return;
+    }
+    const label = channel === "web" ? "Web Push" : "LINE";
+    if (
+      !confirm(
+        channel === "line" && lineUserId.trim()
+          ? `確定發送 LINE 測試給 ${lineUserId.slice(0, 12)}…？`
+          : `確定要${label}廣播給所有${channel === "web" ? "已開啟日常推播" : "官方 LINE 好友"}？`,
+      )
+    ) {
+      return;
+    }
 
     setStatus("sending");
     setResult(null);
 
     try {
-      const res = await fetch("/api/send-push", {
+      const endpoint =
+        channel === "web" ? "/api/send-push/" : "/api/admin/line-broadcast/";
+      const payload = {
+        secret: secret.trim(),
+        title,
+        body,
+        url: linkUrl,
+      };
+      if (channel === "line" && lineUserId.trim()) {
+        payload.lineUserId = lineUserId.trim();
+      }
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          secret: INTERNAL_SECRET,
-          title,
-          body,
-          url: linkUrl,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
-      if (res.ok && data.success) {
+      if (res.ok && (data.success || data.ok)) {
         setStatus("success");
         setResult(data);
         setTitle("");
@@ -61,79 +90,157 @@ export default function AdminPushPage() {
   return (
     <Layout>
       <div className="min-h-screen bg-stone-50 pb-20">
-        <div className="max-w-2xl mx-auto w-[92%]">
+        <div className="max-w-2xl mx-auto w-[92%] pt-8">
           <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-8">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-[#0A6CD0] rounded-xl flex items-center justify-center">
                 <BellIcon className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-2xl font-black text-stone-900">發送 PWA 推播通知</h1>
+              <h1 className="text-2xl font-black text-stone-900">日常推播廣播</h1>
             </div>
-            <p className="text-sm text-stone-500 mb-8 pl-13 border-l-4 border-orange-400 pl-4 ml-1 mt-2">
-              廣播推播給所有已訂閱的用戶（已安裝 PWA 且開啟通知）
+            <p className="text-sm text-stone-500 mb-6 pl-1 mt-2 leading-relaxed">
+              Web Push 只發給<strong className="text-stone-700"> 日常推播 ON </strong>
+              的訂閱者；LINE 發給<strong className="text-stone-700"> 官方 OA 好友 </strong>
+              （與流量提醒分開）。
             </p>
+
+            <div className="flex gap-2 mb-6 p-1 bg-stone-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setChannel("web")}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                  channel === "web"
+                    ? "bg-white text-[#0A6CD0] shadow-sm"
+                    : "text-stone-600"
+                }`}
+              >
+                Web Push
+              </button>
+              <button
+                type="button"
+                onClick={() => setChannel("line")}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors inline-flex items-center justify-center gap-1.5 ${
+                  channel === "line"
+                    ? "bg-white text-[#06C755] shadow-sm"
+                    : "text-stone-600"
+                }`}
+              >
+                <LineAppIconSvg className="w-4 h-4" />
+                LINE
+                {lineFriendCount != null ? (
+                  <span className="text-[10px] font-normal opacity-70">
+                    ({lineFriendCount})
+                  </span>
+                ) : null}
+              </button>
+            </div>
 
             <form onSubmit={handleSend} className="space-y-5">
               <div>
                 <label className="block text-sm font-bold text-stone-700 mb-2">
-                  推播標題 <span className="text-stone-400 font-normal">（建議 20 字內）</span>
+                  內部密鑰{" "}
+                  <span className="text-stone-400 font-normal">（PUSH_INTERNAL_SECRET）</span>
+                </label>
+                <input
+                  type="password"
+                  required
+                  autoComplete="off"
+                  value={secret}
+                  onChange={(e) => setSecret(e.target.value)}
+                  placeholder="貼上伺服器內部密鑰"
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0A6CD0]/30 transition-all text-sm"
+                />
+              </div>
+
+              {channel === "line" ? (
+                <div>
+                  <label className="block text-sm font-bold text-stone-700 mb-2">
+                    測試用 LINE userId{" "}
+                    <span className="text-stone-400 font-normal">（選填；空白＝全部好友）</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={lineUserId}
+                    onChange={(e) => setLineUserId(e.target.value)}
+                    placeholder="Uxxxxxxxx…"
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#06C755]/30 transition-all text-sm font-mono"
+                  />
+                </div>
+              ) : null}
+
+              <div>
+                <label className="block text-sm font-bold text-stone-700 mb-2">
+                  標題 <span className="text-stone-400 font-normal">（建議 20 字內）</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="例：⚡ Jeko eSIM 日本 5GB 限時特惠！"
+                  placeholder={
+                    channel === "web"
+                      ? "例：⚡ Jeko eSIM 日本 5GB 限時特惠！"
+                      : "例：🎁 本週優惠碼 JEKO88"
+                  }
                   className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0A6CD0]/30 transition-all text-sm"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-stone-700 mb-2">
-                  推播內容
+                  內容
                 </label>
                 <textarea
                   required
                   rows={3}
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  placeholder="例：輸入折扣碼 JEKO88 享全站 88 折，活動截止 6/30！"
+                  placeholder="例：輸入折扣碼享全站 88 折，活動截止 6/30！"
                   className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0A6CD0]/30 transition-all text-sm resize-none"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-stone-700 mb-2">
-                  點擊後跳轉頁面 <span className="text-stone-400 font-normal">（相對路徑）</span>
+                  點擊後跳轉 <span className="text-stone-400 font-normal">（相對路徑）</span>
                 </label>
                 <input
                   type="text"
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="/ 或 /product/ 或 /data-query/"
+                  placeholder="/ 或 /promo/ 或 /product/japan/"
                   className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0A6CD0]/30 transition-all text-sm"
                 />
               </div>
 
-              {/* 預覽 */}
-              {title && (
+              {title ? (
                 <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
                   <p className="text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">
-                    推播預覽
+                    預覽
                   </p>
-                  <div className="flex items-start gap-3">
-                    <img
-                      src={PWA_LOGO}
-                      className="w-10 h-10 rounded-xl shrink-0"
-                      alt="icon"
-                    />
-                    <div>
-                      <p className="font-bold text-stone-900 text-sm">{title}</p>
-                      <p className="text-stone-600 text-sm mt-0.5">{body}</p>
+                  {channel === "web" ? (
+                    <div className="flex items-start gap-3">
+                      <img
+                        src={PWA_LOGO}
+                        className="w-10 h-10 rounded-xl shrink-0"
+                        alt="icon"
+                      />
+                      <div>
+                        <p className="font-bold text-stone-900 text-sm">{title}</p>
+                        <p className="text-stone-600 text-sm mt-0.5">{body}</p>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="rounded-xl border border-[#06C755]/30 bg-white p-3">
+                      <p className="font-bold text-stone-900 text-sm">{title}</p>
+                      <p className="text-stone-600 text-sm mt-1">{body}</p>
+                      <p className="mt-3 text-center text-xs font-bold text-[#3768C7]">
+                        [ 查看詳情 ]
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
+              ) : null}
 
               <button
                 type="submit"
@@ -141,16 +248,21 @@ export default function AdminPushPage() {
                 className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-white transition-all ${
                   status === "sending"
                     ? "bg-stone-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-[#0A6CD0] to-[#0851A8] hover:from-[#0851A8] hover:to-[#063d82] shadow-md"
+                    : channel === "line"
+                      ? "bg-[#06C755] hover:bg-[#05b34c] shadow-md"
+                      : "bg-gradient-to-r from-[#0A6CD0] to-[#0851A8] hover:from-[#0851A8] hover:to-[#063d82] shadow-md"
                 }`}
               >
                 <PaperAirplaneIcon className="w-5 h-5" />
-                {status === "sending" ? "發送中..." : "立即廣播推播"}
+                {status === "sending"
+                  ? "發送中..."
+                  : channel === "line"
+                    ? "立即 LINE 廣播"
+                    : "立即 Web Push 廣播"}
               </button>
             </form>
 
-            {/* 結果顯示 */}
-            {result && (
+            {result ? (
               <div
                 className={`mt-5 rounded-xl p-4 text-sm font-medium ${
                   status === "success"
@@ -161,30 +273,36 @@ export default function AdminPushPage() {
                 {status === "success" ? (
                   <>
                     ✅ 成功發送 <strong>{result.sent}</strong> 則 / 共{" "}
-                    <strong>{result.total}</strong> 位訂閱者
-                    {result.removed > 0 && (
+                    <strong>{result.total}</strong>{" "}
+                    {channel === "line" ? "位好友" : "位訂閱者"}
+                    {result.removed > 0 ? (
                       <span className="ml-2 text-stone-500">
                         （清除 {result.removed} 筆失效訂閱）
                       </span>
-                    )}
+                    ) : null}
+                    {result.failed > 0 ? (
+                      <span className="block mt-1 text-amber-700">
+                        失敗 {result.failed} 則
+                      </span>
+                    ) : null}
                   </>
                 ) : (
                   <div className="space-y-1">
                     <p>❌ 發送失敗：{result.error}</p>
-                    {result.detail && (
+                    {result.detail ? (
                       <p className="text-xs font-normal opacity-80">
                         詳細：{result.detail}
                       </p>
-                    )}
-                    {result.hint && (
+                    ) : null}
+                    {result.hint ? (
                       <p className="text-xs font-normal opacity-80">
                         提示：{result.hint}
                       </p>
-                    )}
+                    ) : null}
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

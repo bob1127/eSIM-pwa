@@ -11,6 +11,7 @@ import {
   CurrencyDollarIcon,
   ClipboardDocumentCheckIcon,
   Cog6ToothIcon,
+  BellAlertIcon,
 } from "@heroicons/react/24/outline";
 import { clearBossSession, getBossEmail } from "@/lib/bossAdminClient";
 import { StatCard } from "@/components/partner/PartnerAdminLayout";
@@ -25,6 +26,12 @@ const NAV_ITEMS = [
     href: "/admin-boss?tab=withdrawals",
     label: "提領審核",
     icon: CurrencyDollarIcon,
+  },
+  {
+    id: "traffic-copy",
+    href: "/admin-boss?tab=traffic-copy",
+    label: "流量提醒文案",
+    icon: BellAlertIcon,
   },
   {
     id: "settings",

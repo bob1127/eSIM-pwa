@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import Layout from "../Layout";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
-const SECRET = process.env.NEXT_PUBLIC_CHAT_LOGS_SECRET || "jeko-push-secret-2026";
+const SECRET = process.env.NEXT_PUBLIC_CHAT_LOGS_SECRET || "";
 
 const ROLE_COLOR = {
   user: "bg-blue-100 text-blue-700",
@@ -34,6 +34,10 @@ export default function AdminChatLogsPage() {
   const [expandedId, setExpandedId] = useState(null);
 
   const fetchLogs = useCallback(async () => {
+    if (!SECRET) {
+      alert("未設定 NEXT_PUBLIC_CHAT_LOGS_SECRET，無法載入聊天紀錄");
+      return;
+    }
     setLoading(true);
     try {
       const params = new URLSearchParams({

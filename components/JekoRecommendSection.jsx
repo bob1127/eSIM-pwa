@@ -22,7 +22,7 @@ const CHINA_HREF = "/product/china/china-unlimited-esim?telecom=cmcc-70&days=5";
 const MEMBER_PROMO_HREF = "/promo";
 
 const RECOMMEND_SLIDES = [
-  { src: "/images/日本eSIM.png", href: JAPAN_HREF, alt: "日本 eSIM 方案" },
+  { src: "/images/日本eSIM方案.png", href: JAPAN_HREF, alt: "日本 eSIM 方案" },
   { src: "/images/九州01.png", href: KYUSHU_HREF, alt: "九州不限速 eSIM 方案" },
   { src: "/images/中國.png", href: CHINA_HREF, alt: "中國 eSIM 方案" },
   {
@@ -32,7 +32,7 @@ const RECOMMEND_SLIDES = [
   },
   { src: "/images/韓國01.png", href: KOREA_HREF, alt: "韓國原生 eSIM 方案" },
   { src: "/images/泰國原生eSIM.png", href: THAILAND_HREF, alt: "泰國原生 eSIM 方案" },
-  { src: "/images/日本eSIM.png", href: JAPAN_HREF, alt: "日本 eSIM 方案" },
+  { src: "/images/日本eSIM方案.png", href: JAPAN_HREF, alt: "日本 eSIM 方案" },
   { src: "/images/九州01.png", href: KYUSHU_HREF, alt: "九州不限速 eSIM 方案" },
   { src: "/images/中國.png", href: CHINA_HREF, alt: "中國 eSIM 方案" },
   { src: "/images/韓國01.png", href: KOREA_HREF, alt: "韓國原生 eSIM 方案" },

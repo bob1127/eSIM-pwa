@@ -1,15 +1,21 @@
 /**
  * GET /api/cron/check-traffic
  *
- * Vercel Cron 每 30 分鐘檢查已綁定 eSIM 的剩餘流量，偏低時發 Web Push + LINE 推播。
- * 需帶 Authorization: Bearer {CRON_SECRET} 或 ?secret=
+ * Vercel Cron 檢查已綁定 eSIM 的剩餘流量，偏低時發 Web Push + LINE 推播。
+ * 排程見 esim-store-front/vercel.json（目前每 10 分鐘，cron: *\/10）。
+ *
+ * 授權：Vercel Cron header（x-vercel-cron），或 Bearer / ?secret= CRON_SECRET
+ * （無硬編碼 fallback；未設密鑰時僅允許 Vercel Cron）
  */
 import { runTrafficMonitor } from "../../../lib/trafficMonitor";
 
 const CRON_SECRET =
-  process.env.CRON_SECRET ||
-  process.env.PUSH_INTERNAL_SECRET ||
-  "jeko-push-secret-2026";
+  process.env.CRON_SECRET || process.env.PUSH_INTERNAL_SECRET || "";
+
+/** Pro：單次最多跑 5 分鐘，避免監控人數變多時被預設時限砍斷 */
+export const config = {
+  maxDuration: 300,
+};
 
 export default async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
@@ -24,8 +30,8 @@ export default async function handler(req, res) {
 
   const authorized =
     vercelCron ||
-    bearer === CRON_SECRET ||
-    querySecret === CRON_SECRET;
+    (Boolean(CRON_SECRET) &&
+      (bearer === CRON_SECRET || querySecret === CRON_SECRET));
 
   if (!authorized) {
     return res.status(401).json({ error: "Unauthorized" });

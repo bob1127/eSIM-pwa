@@ -216,21 +216,30 @@ export default function SmartStoreSetupWizard({
     try {
       const headers = await authHeader();
       const ids = [...selectedIds];
+      const CHUNK = 16;
       let done = 0;
 
-      for (const medusaId of ids) {
+      setProgress(12);
+      setStatusText(`正在上架商品（0/${ids.length}）…`);
+
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
         setStatusText(`正在上架商品（${done + 1}/${ids.length}）…`);
         const res = await fetch("/api/partner/store-listings", {
           method: "POST",
           headers,
-          body: JSON.stringify({ medusa_product_id: medusaId }),
+          body: JSON.stringify({ medusa_product_ids: chunk }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(data.error || `上架失敗：${medusaId}`);
+          throw new Error(data.error || "批次上架失敗");
         }
-        done += 1;
-        setProgress(Math.round(10 + (done / ids.length) * 80));
+        if (data.failedCount > 0 && data.listedCount === 0) {
+          throw new Error(data.failed?.[0]?.error || "批次上架失敗");
+        }
+        done += chunk.length;
+        setStatusText(`正在上架商品（${done}/${ids.length}）…`);
+        setProgress(Math.round(12 + (done / ids.length) * 78));
       }
 
       setProgress(95);
@@ -249,7 +258,6 @@ export default function SmartStoreSetupWizard({
       }
 
       setStatusText("正在產生賣場頁面…");
-      await new Promise((r) => setTimeout(r, 700));
 
       try {
         localStorage.setItem(
@@ -268,7 +276,7 @@ export default function SmartStoreSetupWizard({
       setPhase("success");
       fireRibbon();
 
-      await new Promise((r) => setTimeout(r, 1600));
+      await new Promise((r) => setTimeout(r, 900));
       window.location.href = storePath || `/p/${store?.domain}/`;
     } catch (err) {
       setPhase("error");
@@ -315,9 +323,6 @@ export default function SmartStoreSetupWizard({
           />
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-bold text-blue-100 uppercase tracking-wider">
-                Smart Store Setup
-              </p>
               <h2 className="text-lg font-black mt-0.5">
                 {STEPS[step]?.title || "智慧開立商店"}
               </h2>
@@ -496,7 +501,8 @@ export default function SmartStoreSetupWizard({
               {pool.length > 0 && filteredPool.length < pool.length ? (
                 <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 leading-relaxed">
                   主站商品池共 <strong>{pool.length}</strong> 款，依目的地篩選{" "}
-                  <strong>{filteredPool.length}</strong> 款。若缺少方案，請回上一步勾選更多目的地。
+                  <strong>{filteredPool.length}</strong>{" "}
+                  款。若缺少方案，請回上一步勾選更多目的地。
                 </p>
               ) : null}
               <div className="flex items-center justify-between gap-2 flex-wrap">
