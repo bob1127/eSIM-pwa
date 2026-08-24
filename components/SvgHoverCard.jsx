@@ -189,17 +189,16 @@ export default function SVGCardCarousel() {
   const cards = [
     {
       id: "card-1",
-      title: "旅行小知識",
+      title: "Go 立即前往",
       img: "/images/Generated-Image-November-15,-2025---5_19PM.png",
     },
-    { id: "card-2", title: "推薦eSIM方案", img: "/images/01.png" },
-    { id: "card-5", title: "Muted Presence", img: "/images/問題解決.png" },
-    { id: "card-3", title: "Material Pause", img: "/images/推薦eSIM方案.png" },
-    { id: "card-4", title: "Obscured Profile", img: "/images/操作安裝.png" },
-    // 修正了重複的 ID，改為 card-6
+    { id: "card-2", title: "Go 立即前往", img: "/images/01.png" },
+    { id: "card-5", title: "Go 立即前往", img: "/images/問題解決.png" },
+    { id: "card-3", title: "Go 立即前往", img: "/images/推薦eSIM方案.png" },
+    { id: "card-4", title: "Go 立即前往", img: "/images/操作安裝.png" },
     {
       id: "card-6",
-      title: "Spatial Balance",
+      title: "Go 立即前往",
       img: "/images/Gemini_Generated_Image_6c0o006c0o006c0o.png",
     },
   ];

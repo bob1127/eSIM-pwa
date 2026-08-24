@@ -132,7 +132,7 @@ export default function HeroCountryPlanPicker() {
       </h3>
 
       <div ref={dropdownRef} className="relative">
-        <div className="flex items-center bg-white rounded-lg px-3 py-2.5 text-[#1d5cc5] focus-within:ring-2 focus-within:ring-[#1d5cc5]/25">
+        <div className="flex items-center bg-white rounded-lg border-0 px-3 py-2.5 text-[#1d5cc5] shadow-none focus-within:ring-0">
           <MaterialIcon name="search" size={20} className="shrink-0 text-[#1d5cc5]" />
           <input
             ref={inputRef}
@@ -166,7 +166,7 @@ export default function HeroCountryPlanPicker() {
             aria-expanded={dropdownOpen}
             aria-haspopup="listbox"
             aria-label="搜尋國家或方案關鍵字"
-            className="min-w-0 flex-1 bg-transparent px-2 py-1 text-sm font-bold text-[#1d5cc5] placeholder:font-medium placeholder:text-slate-600 outline-none"
+            className="min-w-0 flex-1 border-0 bg-transparent px-2 py-1 text-sm font-bold text-[#1d5cc5] placeholder:font-medium placeholder:text-slate-600 outline-none ring-0 shadow-none focus:border-0 focus:outline-none focus:ring-0"
           />
           {query ? (
             <button

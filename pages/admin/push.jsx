@@ -4,15 +4,25 @@ import Layout from "../Layout";
 import { BellIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { PWA_LOGO } from "../../lib/pwaConfig";
 import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
+import LineBroadcastEditor, {
+  LINE_TEMPLATES,
+} from "@/components/admin/LineBroadcastEditor";
+import { defaultLineCardStyle, emptyLineCard } from "@/lib/lineBroadcastCard";
 
 export default function AdminPushPage() {
   const [channel, setChannel] = useState("web");
+  const [lineTemplate, setLineTemplate] = useState("text");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [linkUrl, setLinkUrl] = useState("/");
+  const [card, setCard] = useState(() => emptyLineCard({ url: "/" }));
+  const [cards, setCards] = useState([]);
+  const [cardStyle, setCardStyle] = useState(() => defaultLineCardStyle("hero"));
   const [secret, setSecret] = useState("");
   const [lineUserId, setLineUserId] = useState("");
   const [lineFriendCount, setLineFriendCount] = useState(null);
+  const [heroPresets, setHeroPresets] = useState([]);
+  const [carouselPresets, setCarouselPresets] = useState([]);
   const [status, setStatus] = useState("idle");
   const [result, setResult] = useState(null);
 
@@ -21,6 +31,10 @@ export default function AdminPushPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.friendCount != null) setLineFriendCount(d.friendCount);
+        if (d.presets?.heroImages) setHeroPresets(d.presets.heroImages);
+        if (d.presets?.carouselProducts) {
+          setCarouselPresets(d.presets.carouselProducts);
+        }
       })
       .catch(() => {});
   }, []);
@@ -31,12 +45,42 @@ export default function AdminPushPage() {
       alert("請輸入內部密鑰（PUSH_INTERNAL_SECRET）");
       return;
     }
+
+    if (channel === "line") {
+      if (
+        (lineTemplate === "hero" || lineTemplate === "text_hero") &&
+        !card.imageUrl?.trim()
+      ) {
+        alert("DM 卡片請填圖片網址或選一鍵帶入");
+        return;
+      }
+      if (
+        (lineTemplate === "carousel" || lineTemplate === "text_carousel") &&
+        !cards.length
+      ) {
+        alert("輪播請至少新增 1 張卡片");
+        return;
+      }
+      if (
+        (lineTemplate === "text_hero" || lineTemplate === "text_carousel") &&
+        !title.trim() &&
+        !body.trim()
+      ) {
+        alert("文字＋圖文版型請填前導標題或內容");
+        return;
+      }
+    }
+
     const label = channel === "web" ? "Web Push" : "LINE";
+    const templateLabel =
+      channel === "line"
+        ? LINE_TEMPLATES.find((t) => t.id === lineTemplate)?.label || ""
+        : "";
     if (
       !confirm(
         channel === "line" && lineUserId.trim()
-          ? `確定發送 LINE 測試給 ${lineUserId.slice(0, 12)}…？`
-          : `確定要${label}廣播給所有${channel === "web" ? "已開啟日常推播" : "官方 LINE 好友"}？`,
+          ? `確定發送 LINE${templateLabel ? `（${templateLabel}）` : ""} 測試給 ${lineUserId.slice(0, 12)}…？`
+          : `確定要${label}${templateLabel ? `（${templateLabel}）` : ""}廣播給所有${channel === "web" ? "已開啟日常推播" : "官方 LINE 好友"}？`,
       )
     ) {
       return;
@@ -52,10 +96,14 @@ export default function AdminPushPage() {
         secret: secret.trim(),
         title,
         body,
-        url: linkUrl,
+        url: channel === "line" ? card.url || linkUrl : linkUrl,
       };
-      if (channel === "line" && lineUserId.trim()) {
-        payload.lineUserId = lineUserId.trim();
+      if (channel === "line") {
+        payload.template = lineTemplate;
+        payload.cardStyle = cardStyle;
+        payload.card = card;
+        payload.cards = cards;
+        if (lineUserId.trim()) payload.lineUserId = lineUserId.trim();
       }
 
       const res = await fetch(endpoint, {
@@ -72,6 +120,8 @@ export default function AdminPushPage() {
         setTitle("");
         setBody("");
         setLinkUrl("/");
+        setCard(emptyLineCard({ url: "/" }));
+        setCards([]);
       } else {
         setStatus("error");
         setResult({
@@ -101,7 +151,7 @@ export default function AdminPushPage() {
             <p className="text-sm text-stone-500 mb-6 pl-1 mt-2 leading-relaxed">
               Web Push 只發給<strong className="text-stone-700"> 日常推播 ON </strong>
               的訂閱者；LINE 發給<strong className="text-stone-700"> 官方 OA 好友 </strong>
-              （與流量提醒分開）。
+              。LINE 可先發文字再接 DM／輪播，卡片圖片與文案皆可自訂。
             </p>
 
             <div className="flex gap-2 mb-6 p-1 bg-stone-100 rounded-xl">
@@ -153,94 +203,85 @@ export default function AdminPushPage() {
               </div>
 
               {channel === "line" ? (
-                <div>
-                  <label className="block text-sm font-bold text-stone-700 mb-2">
-                    測試用 LINE userId{" "}
-                    <span className="text-stone-400 font-normal">（選填；空白＝全部好友）</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={lineUserId}
-                    onChange={(e) => setLineUserId(e.target.value)}
-                    placeholder="Uxxxxxxxx…"
-                    className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#06C755]/30 transition-all text-sm font-mono"
-                  />
-                </div>
-              ) : null}
-
-              <div>
-                <label className="block text-sm font-bold text-stone-700 mb-2">
-                  標題 <span className="text-stone-400 font-normal">（建議 20 字內）</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={
-                    channel === "web"
-                      ? "例：⚡ Jeko eSIM 日本 5GB 限時特惠！"
-                      : "例：🎁 本週優惠碼 JEKO88"
-                  }
-                  className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0A6CD0]/30 transition-all text-sm"
+                <LineBroadcastEditor
+                  template={lineTemplate}
+                  onTemplateChange={setLineTemplate}
+                  lineUserId={lineUserId}
+                  onLineUserIdChange={setLineUserId}
+                  title={title}
+                  body={body}
+                  onTitleChange={setTitle}
+                  onBodyChange={setBody}
+                  card={card}
+                  onCardChange={setCard}
+                  cards={cards}
+                  onCardsChange={setCards}
+                  cardStyle={cardStyle}
+                  onCardStyleChange={setCardStyle}
+                  heroPresets={heroPresets}
+                  carouselPresets={carouselPresets}
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-stone-700 mb-2">
-                  內容
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder="例：輸入折扣碼享全站 88 折，活動截止 6/30！"
-                  className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0A6CD0]/30 transition-all text-sm resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-stone-700 mb-2">
-                  點擊後跳轉 <span className="text-stone-400 font-normal">（相對路徑）</span>
-                </label>
-                <input
-                  type="text"
-                  value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="/ 或 /promo/ 或 /product/japan/"
-                  className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0A6CD0]/30 transition-all text-sm"
-                />
-              </div>
-
-              {title ? (
-                <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
-                  <p className="text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">
-                    預覽
-                  </p>
-                  {channel === "web" ? (
-                    <div className="flex items-start gap-3">
-                      <img
-                        src={PWA_LOGO}
-                        className="w-10 h-10 rounded-xl shrink-0"
-                        alt="icon"
-                      />
-                      <div>
-                        <p className="font-bold text-stone-900 text-sm">{title}</p>
-                        <p className="text-stone-600 text-sm mt-0.5">{body}</p>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-bold text-stone-700 mb-2">
+                      標題 <span className="text-stone-400 font-normal">（建議 20 字內）</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="例：⚡ Jeko eSIM 日本 5GB 限時特惠！"
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0A6CD0]/30 transition-all text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-stone-700 mb-2">
+                      內容
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={body}
+                      onChange={(e) => setBody(e.target.value)}
+                      placeholder="例：輸入折扣碼享全站 88 折，活動截止 6/30！"
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0A6CD0]/30 transition-all text-sm resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-stone-700 mb-2">
+                      點擊後跳轉{" "}
+                      <span className="text-stone-400 font-normal">（相對路徑）</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                      placeholder="/ 或 /promo/ 或 /product/japan/"
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#0A6CD0]/30 transition-all text-sm"
+                    />
+                  </div>
+                  {title ? (
+                    <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
+                      <p className="text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">
+                        預覽
+                      </p>
+                      <div className="flex items-start gap-3">
+                        <img
+                          src={PWA_LOGO}
+                          className="w-10 h-10 rounded-xl shrink-0"
+                          alt="icon"
+                        />
+                        <div>
+                          <p className="font-bold text-stone-900 text-sm">{title}</p>
+                          <p className="text-stone-600 text-sm mt-0.5">{body}</p>
+                        </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="rounded-xl border border-[#06C755]/30 bg-white p-3">
-                      <p className="font-bold text-stone-900 text-sm">{title}</p>
-                      <p className="text-stone-600 text-sm mt-1">{body}</p>
-                      <p className="mt-3 text-center text-xs font-bold text-[#3768C7]">
-                        [ 查看詳情 ]
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : null}
+                  ) : null}
+                </>
+              )}
 
               <button
                 type="submit"
@@ -275,6 +316,11 @@ export default function AdminPushPage() {
                     ✅ 成功發送 <strong>{result.sent}</strong> 則 / 共{" "}
                     <strong>{result.total}</strong>{" "}
                     {channel === "line" ? "位好友" : "位訂閱者"}
+                    {result.productCount ? (
+                      <span className="block mt-1 text-stone-600">
+                        輪播 {result.productCount} 張卡片
+                      </span>
+                    ) : null}
                     {result.removed > 0 ? (
                       <span className="ml-2 text-stone-500">
                         （清除 {result.removed} 筆失效訂閱）

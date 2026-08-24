@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { formatMb } from "@/lib/esimUsageFormat";
 
@@ -12,7 +12,6 @@ import { formatMb } from "@/lib/esimUsageFormat";
  * 下方：白色 bottom sheet（選擇 eSIM／ICCID／綁定／開啟提醒）
  */
 const BLUE = "#276EF1";
-const GREEN = "#34A853";
 const NAVY = "#0B1F40";
 
 /** 與主站 EsimBottomSheet 相同彈簧 */
@@ -22,6 +21,18 @@ const SHEET_SPRING = {
   damping: 26,
   mass: 0.82,
 };
+
+function greetingByHour(date = new Date()) {
+  const h = date.getHours();
+  if (h < 12) return "早安";
+  if (h < 18) return "午安";
+  return "晚安";
+}
+
+function memberGreetingLabel(memberName) {
+  const name = String(memberName || "").trim() || "會員";
+  return `${greetingByHour()}，${name}`;
+}
 
 const LineTrafficUsageHero = dynamic(() => import("./LineTrafficUsageHero"), {
   ssr: false,
@@ -37,15 +48,35 @@ const BindSuccessSheet = dynamic(() => import("./BindSuccessSheet"), {
 });
 
 function SheetRow({
-  dotColor,
   title,
   subtitle,
   open = false,
   onToggle,
   children,
+  variant = "default",
 }) {
+  const isTicket = variant === "ticket";
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#E6EAF2] bg-white shadow-[0_1px_2px_rgba(15,40,80,0.04)]">
+    <div
+      className={`relative overflow-hidden rounded-2xl ${
+        isTicket
+          ? "bg-[#3B9EFF] text-white shadow-[0_10px_28px_-12px_rgba(30,74,209,0.45)]"
+          : "border border-[#E6EAF2] bg-white shadow-[0_1px_2px_rgba(15,40,80,0.04)]"
+      }`}
+    >
+      {isTicket ? (
+        <>
+          <span
+            className="pointer-events-none absolute left-0 top-[46%] z-10 h-5 w-2.5 -translate-y-1/2 rounded-r-full bg-white"
+            aria-hidden
+          />
+          <span
+            className="pointer-events-none absolute right-0 top-[46%] z-10 h-5 w-2.5 -translate-y-1/2 rounded-l-full bg-white"
+            aria-hidden
+          />
+        </>
+      ) : null}
       <button
         type="button"
         onClick={onToggle}
@@ -53,21 +84,32 @@ function SheetRow({
         className="flex w-full items-center gap-3 px-3.5 py-3.5 text-left"
       >
         <span
-          className="h-2.5 w-2.5 shrink-0 rounded-full"
-          style={{ backgroundColor: dotColor }}
+          className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+            isTicket ? "bg-white/90" : "bg-[#276EF1]"
+          }`}
         />
         <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-bold" style={{ color: NAVY }}>
+          <span
+            className={`block text-[15px] font-bold ${
+              isTicket ? "text-white" : "text-[#0B1F40]"
+            }`}
+          >
             {title}
           </span>
           {subtitle ? (
-            <span className="mt-0.5 block text-[12px] text-[#8A94A6]">
+            <span
+              className={`mt-0.5 block text-[12px] ${
+                isTicket ? "text-white/85" : "text-[#8A94A6]"
+              }`}
+            >
               {subtitle}
             </span>
           ) : null}
         </span>
         <span
-          className="text-[18px] leading-none text-[#C5CDD8] transition-transform duration-200"
+          className={`text-[18px] leading-none transition-transform duration-200 ${
+            isTicket ? "text-white/80" : "text-[#C5CDD8]"
+          }`}
           style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
           aria-hidden
         >
@@ -75,7 +117,13 @@ function SheetRow({
         </span>
       </button>
       {open && children ? (
-        <div className="border-t border-[#EEF1F6] px-3.5 pb-3.5 pt-3">
+        <div
+          className={`px-3.5 pb-3.5 pt-3 ${
+            isTicket
+              ? "border-t border-dashed border-white/45"
+              : "border-t border-[#EEF1F6]"
+          }`}
+        >
           {children}
         </div>
       ) : null}
@@ -101,6 +149,7 @@ export default function LineIccidScreen({
   lineBindStatus,
   authReady,
   isLoggedIn = false,
+  memberName = "",
   memberEsims,
   selectedTopupId,
   onSelectTopup,
@@ -222,12 +271,11 @@ export default function LineIccidScreen({
   return (
     <main className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#D5E3F7]">
       {/* 上方：使用用量圖表（收合時往可視區中央） */}
-      <motion.div
+      <div
         className="relative flex min-h-0 flex-1 flex-col"
-        layout
-        transition={SHEET_SPRING}
-        animate={{
+        style={{
           minHeight: sheetExpanded ? "42dvh" : "58dvh",
+          transition: "min-height 240ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
         <div className="absolute left-4 top-4 z-20 flex items-center gap-2">
@@ -271,14 +319,10 @@ export default function LineIccidScreen({
               : undefined
           }
         />
-      </motion.div>
+      </div>
 
       {/* 下方：bottom sheet（整塊可收折 + 彈簧） */}
-      <motion.section
-        layout
-        transition={SHEET_SPRING}
-        className="relative z-10 -mt-5 rounded-t-[28px] bg-white px-4 pb-8 pt-2 shadow-[0_-8px_30px_rgba(15,40,80,0.12)]"
-      >
+      <section className="relative z-10 -mt-5 rounded-t-[28px] bg-white px-4 pb-8 pt-2 shadow-[0_-8px_30px_rgba(15,40,80,0.12)]">
         <button
           type="button"
           onClick={toggleSheet}
@@ -316,37 +360,34 @@ export default function LineIccidScreen({
           </span>
         </button>
 
-        <AnimatePresence initial={false} mode="sync">
-          {!sheetExpanded ? (
-            <motion.button
-              key="sheet-peek"
-              type="button"
-              onClick={toggleSheet}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={SHEET_SPRING}
-              className="mb-4 w-full rounded-2xl bg-[#F3F6FB] px-3.5 py-3 text-left"
-            >
-              <p className="text-[13px] font-bold text-[#0B1F40]">
-                {viewName}
-                {viewUsage?.remainingMb != null
-                  ? ` · 剩餘 ${formatMb(viewUsage.remainingMb)}`
-                  : ""}
-              </p>
-              <p className="mt-0.5 text-[12px] text-[#8A94A6]">
-                點此展開選擇 eSIM、ICCID 與設定
-              </p>
-            </motion.button>
-          ) : (
-            <motion.div
-              key="sheet-body"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={SHEET_SPRING}
-              className="overflow-hidden"
-            >
+        <button
+          type="button"
+          onClick={toggleSheet}
+          className={`mb-4 w-full rounded-2xl bg-[#F3F6FB] px-3.5 py-3 text-left transition-all duration-200 ${
+            sheetExpanded
+              ? "pointer-events-none max-h-0 translate-y-1 overflow-hidden p-0 opacity-0"
+              : "pointer-events-auto max-h-28 translate-y-0 opacity-100"
+          }`}
+        >
+          <p className="text-[13px] font-bold text-[#0B1F40]">
+            {viewName}
+            {viewUsage?.remainingMb != null
+              ? ` · 剩餘 ${formatMb(viewUsage.remainingMb)}`
+              : ""}
+          </p>
+          <p className="mt-0.5 text-[12px] text-[#8A94A6]">
+            點此展開選擇 eSIM、ICCID 與設定
+          </p>
+        </button>
+
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-out ${
+            sheetExpanded
+              ? "max-h-[2800px] translate-y-0 opacity-100"
+              : "pointer-events-none max-h-0 -translate-y-1 opacity-0"
+          }`}
+          style={{ willChange: "max-height, opacity, transform" }}
+        >
             {modeHint || flowHint ? (
               <p className="mb-3 rounded-xl bg-[#F3F6FB] px-3 py-2 text-[11px] leading-relaxed text-[#5B6B82]">
                 {modeHint || flowHint}
@@ -366,7 +407,7 @@ export default function LineIccidScreen({
                 className="mb-3 w-full rounded-2xl border border-[#E6EAF2] bg-[#F7F9FC] px-3.5 py-3 text-left"
               >
                 <p className="text-[13px] font-black text-[#0B1F40]">
-                  ✓ 已連結會員
+                  ✓ {memberGreetingLabel(memberName)}
                 </p>
                 <p className="mt-0.5 text-[12px] text-[#5B6B82]">
                   下一步：選一張 eSIM → 開啟提醒（一次一張）
@@ -413,12 +454,12 @@ export default function LineIccidScreen({
                         key={id}
                         type="button"
                         onClick={() => selectEsim(id)}
-                        className="shrink-0 rounded-xl border px-3.5 py-2.5 text-left"
+                        className="shrink-0 rounded-xl border px-3.5 py-2.5 text-left transition-colors"
                         style={
                           on
                             ? {
                                 borderColor: BLUE,
-                                backgroundColor: "#EEF3FF",
+                                backgroundColor: BLUE,
                                 borderWidth: 2,
                               }
                             : {
@@ -430,14 +471,17 @@ export default function LineIccidScreen({
                       >
                         <span
                           className="block text-[13px] font-black"
-                          style={{ color: on ? BLUE : NAVY }}
+                          style={{ color: on ? "#fff" : NAVY }}
                         >
                           {String(activeTopupId) === id ? "監控中 · " : ""}
                           {esim.productName.length > 12
                             ? `${esim.productName.slice(0, 12)}…`
                             : esim.productName}
                         </span>
-                        <span className="mt-0.5 block text-[11px] text-[#8A94A6]">
+                        <span
+                          className="mt-0.5 block text-[11px]"
+                          style={{ color: on ? "rgba(255,255,255,0.88)" : "#8A94A6" }}
+                        >
                           {rem != null
                             ? `剩餘 ${formatMb(rem)}`
                             : "點選查看用量"}
@@ -455,11 +499,11 @@ export default function LineIccidScreen({
               )}
             </div>
 
-            {/* 路線式兩列資訊 — 點擊展開／收合 */}
+            {/* 路線式兩列資訊 — 圖二票券色感 */}
             <div className="mb-4">
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2.5">
                 <SheetRow
-                  dotColor={BLUE}
+                  variant="ticket"
                   title={viewName}
                   subtitle={
                     viewUsage?.remainingMb != null
@@ -475,12 +519,12 @@ export default function LineIccidScreen({
                   open={showUsageDetail}
                   onToggle={() => setShowUsageDetail((v) => !v)}
                 >
-                  <div className="space-y-2 text-[13px] text-[#5B6B82]">
+                  <div className="space-y-2 text-[13px] text-white/90">
                     {viewUsage?.remainingMb != null ? (
                       <>
                         <p>
                           剩餘{" "}
-                          <span className="font-bold text-[#0B1F40]">
+                          <span className="font-black text-white">
                             {formatMb(viewUsage.remainingMb)}
                           </span>
                           {viewUsage.totalMb != null
@@ -494,7 +538,7 @@ export default function LineIccidScreen({
                           <p>到期 {String(viewUsage.expiresAt).slice(0, 10)}</p>
                         ) : null}
                         {viewEsim?.productName ? (
-                          <p className="text-[12px] text-[#8A94A6]">
+                          <p className="text-[12px] text-white/75">
                             方案：{viewEsim.productName}
                           </p>
                         ) : null}
@@ -503,14 +547,14 @@ export default function LineIccidScreen({
                             type="button"
                             onClick={() => onRefreshUsage(usageViewId)}
                             disabled={usageLoading}
-                            className="pt-1 text-[12px] font-bold text-[#276EF1] disabled:opacity-50"
+                            className="pt-1 text-[12px] font-bold text-white underline underline-offset-2 disabled:opacity-50"
                           >
                             {usageLoading ? "更新中…" : "更新用量"}
                           </button>
                         ) : null}
                       </>
                     ) : (
-                      <p className="leading-relaxed">
+                      <p className="leading-relaxed text-white/90">
                         {loggedIn
                           ? "請先在上方選擇一張 eSIM，用量會顯示在這裡。"
                           : "訪客請展開下方 ICCID 列輸入卡號查詢。"}
@@ -520,7 +564,7 @@ export default function LineIccidScreen({
                 </SheetRow>
 
                 <SheetRow
-                  dotColor={GREEN}
+                  variant="ticket"
                   title={
                     viewEsim?.iccidMasked
                       ? `ICCID ${viewEsim.iccidMasked}`
@@ -548,20 +592,20 @@ export default function LineIccidScreen({
                         )
                       }
                       placeholder="請輸入 19～20 碼 eSIM 卡號"
-                      className="w-full rounded-2xl border border-[#E6EAF2] bg-[#F7F9FC] px-4 py-3.5 text-[16px] tracking-wide outline-none focus:border-[#276EF1]"
+                      className="w-full rounded-2xl border border-white/50 bg-white px-4 py-3.5 text-[16px] tracking-wide text-[#0B1F40] outline-none placeholder:text-[#8A94A6] focus:border-white"
                     />
                     {liffError ? (
-                      <p className="mt-2 text-[12px] text-amber-800">
+                      <p className="mt-2 text-[12px] text-amber-100">
                         {liffError}
                       </p>
                     ) : null}
                     {error ? (
-                      <p className="mt-2 text-[12px] text-red-600">{error}</p>
+                      <p className="mt-2 text-[12px] text-red-100">{error}</p>
                     ) : null}
                     <button
                       type="submit"
                       disabled={loading || !liffReady}
-                      className="mt-3 w-full rounded-2xl border border-[#276EF1] bg-white py-3 text-[14px] font-black text-[#276EF1] disabled:opacity-60"
+                      className="mt-3 w-full rounded-2xl bg-[#1E4AD1] py-3 text-[14px] font-black text-white shadow-[0_6px_16px_rgba(30,74,209,0.35)] disabled:opacity-60"
                     >
                       {loading ? (
                         <LoadingIndicator
@@ -569,8 +613,8 @@ export default function LineIccidScreen({
                           size="sm"
                           label="查詢中…"
                           className="justify-center w-full"
-                          labelClassName="text-sm font-black text-[#276EF1]"
-                          spinnerClassName="text-[#276EF1]"
+                          labelClassName="text-sm font-black text-white"
+                          spinnerClassName="text-white"
                         />
                       ) : isWeb ? (
                         "查詢用量"
@@ -588,22 +632,23 @@ export default function LineIccidScreen({
                 {result.usageText}
               </pre>
             ) : null}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        </div>
 
         {/* 帳號列 + 主要 CTA（收合時也保留） */}
         <div className="mb-3 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={loggedIn ? onLogoutClick : onLoginClick}
-            className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#0B1F40]"
-          >
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-black text-[10px] font-black text-white">
-              {loggedIn ? "IN" : "OUT"}
-            </span>
-            {loggedIn ? "已登入會員 ▾" : "訪客 · 點此登入 ▾"}
-          </button>
+          {loggedIn ? (
+            <p className="text-[13px] font-semibold text-[#0B1F40]">
+              {memberGreetingLabel(memberName)}
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={onLoginClick}
+              className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#0B1F40]"
+            >
+              訪客 · 點此登入
+            </button>
+          )}
           <span className="text-[15px] font-black text-[#0B1F40]">
             {viewUsage?.remainingMb != null
               ? formatMb(viewUsage.remainingMb)
@@ -652,12 +697,7 @@ export default function LineIccidScreen({
         ) : null}
 
         {sheetExpanded ? (
-          <motion.div
-            key="sheet-footer"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={SHEET_SPRING}
-          >
+          <div>
             <p className="mt-3 text-center text-[11px] leading-relaxed text-[#8A94A6]">
               ICCID 可在手機「設定 → 行動服務 → eSIM」或購買信件中找到。
             </p>
@@ -679,9 +719,9 @@ export default function LineIccidScreen({
                 會員中心
               </a>
             </nav>
-          </motion.div>
+          </div>
         ) : null}
-      </motion.section>
+      </section>
 
       <BindSuccessSheet
         open={bindSheetOpen && showBindSuccess}

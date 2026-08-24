@@ -595,7 +595,9 @@ export default function DataQueryPage() {
                     />
                   ) : null}
 
-                  <div className={cn(CARD, "bg-[#1e8fff] p-5 sm:p-7 text-white")}>
+                  <div
+                    className={cn(CARD, "bg-[#1e8fff] p-5 sm:p-7 text-white")}
+                  >
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                       <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">
                         ICCID
@@ -725,7 +727,9 @@ export default function DataQueryPage() {
                   id="push-notification-section"
                   className="scroll-mt-28 space-y-4"
                 >
-                  <div className={cn(CARD, "bg-[#1e8fff] p-5 sm:p-7 text-white")}>
+                  <div
+                    className={cn(CARD, "bg-[#1e8fff] p-5 sm:p-7 text-white")}
+                  >
                     <SheetHandle light />
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                       <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import Layout from "../Layout";
@@ -44,7 +44,18 @@ function mapMemberEsims(list) {
  */
 export default function LineIccidPage() {
   const router = useRouter();
-  const { isLoggedIn, authReady, token } = useAuth();
+  const { isLoggedIn, authReady, token, user, session } = useAuth();
+
+  const memberName = useMemo(() => {
+    const fromUser =
+      user?.user_metadata?.full_name ||
+      user?.user_metadata?.name ||
+      user?.user_metadata?.display_name ||
+      user?.email?.split("@")[0];
+    const fromSession =
+      session?.user?.name || session?.user?.email?.split("@")[0];
+    return String(fromUser || fromSession || "").trim();
+  }, [user, session]);
   const [pageMode, setPageMode] = useState("web"); // web | liff
   const [iccid, setIccid] = useState("");
   const [idToken, setIdToken] = useState("");
@@ -455,6 +466,7 @@ export default function LineIccidPage() {
       lineBindStatus={lineBindStatus}
       authReady={authReady}
       isLoggedIn={isLoggedIn}
+      memberName={memberName}
       memberEsims={memberEsims}
       selectedTopupId={selectedTopupId}
       onSelectTopup={setSelectedTopupId}

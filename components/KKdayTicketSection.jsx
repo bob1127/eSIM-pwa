@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import MobileCardCarousel from "./MobileCardCarousel";
+import HomeSectionHeader from "./HomeSectionHeader";
 import {
   KKDAY_TICKETS as KKDAY_ONLY,
   kkdayAff as aff,
@@ -311,17 +312,6 @@ function KKdayCard({ item, onClick }) {
           alt={item.title}
           aspectClass="aspect-[4/3]"
         />
-        <span className="absolute top-2.5 left-2.5 z-10 rounded-md bg-black/80 px-2 py-0.5 text-[10px] font-bold text-white">
-          {item.regionLabel}
-        </span>
-        {item.badge && (
-          <span
-            className="absolute top-2.5 right-2.5 z-10 rounded-md px-2 py-0.5 text-[10px] font-bold text-white"
-            style={{ backgroundColor: accent }}
-          >
-            {item.badge}
-          </span>
-        )}
         <span className="absolute bottom-2.5 left-2.5 rounded-md bg-white/90 px-2 py-0.5 text-[10px] font-bold text-slate-700 z-10">
           {item.category}
         </span>
@@ -402,18 +392,13 @@ export default function KKdayTicketSection() {
       className="w-full bg-[#f0f1f3] pb-12 lg:pb-16 pt-4 scroll-mt-28"
     >
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        {/* 標題 */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-          <div className="flex flex-wrap items-baseline gap-3">
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
-              Jeko 門票推薦
-            </h2>
-            <span className="text-base font-semibold text-gray-500"></span>
-          </div>
-          <p className="text-sm font-bold text-[#202020] shrink-0">
-            景點 / 體驗
-          </p>
-        </div>
+        <HomeSectionHeader
+          eyebrow="景點 / 體驗"
+          title="Jeko 門票推薦"
+          href={listingUrl}
+          moreLabel="查看更多門票"
+          external
+        />
 
         {/* 國家 Tab — Google 底線風格 */}
         <div className="flex gap-6 sm:gap-8 mb-8 border-b border-gray-200/80 overflow-x-auto scrollbar-none">

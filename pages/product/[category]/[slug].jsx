@@ -1690,6 +1690,10 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
     [displayedFaq],
   );
   const faqHasSectionHead = sanitizedFaqHtml.includes("jeko-section-head");
+  const detailedHasSelfTitle =
+    sanitizedDisplayHtml.includes("jeko-sum-plan") ||
+    sanitizedDisplayHtml.includes("jeko-track-plan") ||
+    sanitizedDisplayHtml.includes("jeko-ir-plan");
 
   useEffect(() => {
     if (!isEditingDesc) {
@@ -1865,19 +1869,21 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
               <div className="mb-10 text-slate-600 text-sm leading-relaxed">
                 {sanitizedDisplayHtml ? (
                   <div>
-                    <h4 className="font-bold text-slate-800 mb-4 inline-flex items-center gap-2">
-                      <MaterialIcon
-                        name="menu_book"
-                        size={20}
-                        className="text-[#2B59C3]"
-                      />
-                      方案詳細說明
-                      {safeCarrier ? (
-                        <span className="text-gray-400 font-normal text-sm ml-2">
-                          （{safeCarrier}）
-                        </span>
-                      ) : null}
-                    </h4>
+                    {!detailedHasSelfTitle ? (
+                      <h4 className="font-bold text-slate-800 mb-4 inline-flex items-center gap-2">
+                        <MaterialIcon
+                          name="menu_book"
+                          size={20}
+                          className="text-[#2B59C3]"
+                        />
+                        方案詳細說明
+                        {safeCarrier ? (
+                          <span className="text-gray-400 font-normal text-sm ml-2">
+                            （{safeCarrier}）
+                          </span>
+                        ) : null}
+                      </h4>
+                    ) : null}
                     <div
                       dangerouslySetInnerHTML={{
                         __html: sanitizedDisplayHtml,
@@ -4803,10 +4809,10 @@ export default function ProductPage({
           </div>
         </PageShell>
 
-        {/* 滾過頁內購買區後才出現：規格選擇 + 立即購買（層級低於「我的 eSIM」） */}
+        {/* 滾過頁內購買區後才出現：規格選擇 + 立即購買（高於 footer z-99，低於「我的 eSIM」z-110） */}
         {showStickyBuy && (
           <div
-            className="fixed inset-x-0 z-[80] md:hidden border-t border-gray-300 bg-white"
+            className="fixed inset-x-0 z-[100] md:hidden border-t border-gray-300 bg-white"
             style={{ bottom: 32 }}
           >
             <div className="mx-auto max-w-lg px-3 pt-2.5 pb-2 space-y-2">

@@ -609,33 +609,37 @@ export default function Home() {
           <div className="flex flex-col gap-5 pt-4 lg:gap-0 lg:flex-row max-w-[1250px] mx-auto justify-between px-5 sm:px-6 lg:px-0">
             <div className="txt min-w-0 w-full lg:max-w-[62%]">
               <MaskText blockColor="#0A6CD0">
-                <h2 className="text-stone-900 font-bold leading-[1.35]">
-                  <span className="block text-[22px] sm:text-3xl lg:text-5xl tracking-wide lg:tracking-widest">
-                    快速找到您想去的
-                  </span>
-                  <span className="block mt-2 sm:mt-3 lg:mt-5 text-[28px] sm:text-4xl lg:text-6xl font-extrabold tracking-wide lg:tracking-widest">
-                    旅遊 eSIM
-                  </span>
-                </h2>
+                <h1 className="text-stone-900 font-extrabold leading-[1.2] text-[28px] sm:text-4xl lg:text-6xl tracking-wide lg:tracking-widest">
+                  全球旅遊eSIM
+                </h1>
               </MaskText>
               <MaskText blockColor="#0A6CD0">
                 <p className="text-stone-800 font-normal text-[14px] lg:text-[16px] mt-4 md:mt-6 leading-relaxed tracking-normal max-w-xl">
-                  在 Jeko 探索經濟高效的旅遊數據方案，
+                  日本、韓國、東南亞到歐美，一次找齊出國上網方案。
                   <br className="hidden lg:block" />
-                  隨時隨地無縫連接，告別昂貴的國際漫遊費
+                  QR Code 即裝即用，免換實體卡，告別昂貴國際漫遊。
                 </p>
               </MaskText>
             </div>
             <div className="flex items-start lg:items-end w-full lg:w-auto shrink-0">
               <div className="flex flex-wrap gap-x-2 gap-y-2 sm:gap-x-3 text-[12px] sm:text-[14px] text-stone-700">
                 <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
-                  . 旅遊eSIM
+                  . 日本eSIM
                 </span>
                 <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
-                  . 商務留學用eSIM
+                  . 韓國eSIM
                 </span>
                 <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
-                  . 各國旅遊eSIM方案
+                  . 出國上網
+                </span>
+                <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
+                  . 吃到飽網卡
+                </span>
+                <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
+                  . 免換卡eSIM
+                </span>
+                <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
+                  . 歐洲eSIM
                 </span>
               </div>
             </div>
@@ -679,6 +683,21 @@ export default function Home() {
                       卡）是新一代的網路技術。無需抽換實體卡片，只需掃描 QR Code
                       設定，抵達目的地後開啟數據漫遊，即可立即連接當地高速網路，省去保管實體卡片的麻煩。
                     </p>
+                    <h4 className="text-xl lg:text-2xl font-bold mt-8 lg:mt-10 text-stone-900">
+                      未來旅遊 eSIM 趨勢
+                    </h4>
+                    <p className="mt-3 leading-relaxed text-stone-900 text-sm lg:text-base">
+                      出國上網正快速從實體網卡轉向 eSIM。市場研究顯示，旅遊
+                      eSIM 規模在 2025 至 2030 年預估可成長約 4.8
+                      倍；台灣旅客也已有近半數把 eSIM
+                      當作出國首選。新機雙 eSIM、美區 eSIM-only
+                      等趨勢持續擴大，未來出國前線上購買、到站即連網，將成為自由行的標準配備。
+                    </p>
+                    <ul className="mt-4 space-y-2 text-sm lg:text-base text-stone-800 leading-relaxed list-disc list-inside marker:text-[#0A6CD0]">
+                      <li>免換卡、多國方案一次搞定，適合多趟旅程切換</li>
+                      <li>雙 eSIM 機種普及，可同時保留門號與旅遊數據</li>
+                      <li>QR Code 即裝即用，出發前完成設定更安心</li>
+                    </ul>
                   </div>
                 </div>
                 <div className="w-[86%] mx-auto lg:mx-0 lg:w-1/2 lg:pr-10">

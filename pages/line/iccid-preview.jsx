@@ -248,6 +248,7 @@ export default function LineIccidPreviewPage() {
       lineBindStatus={lineBindStatus}
       authReady
       isLoggedIn={isLoggedIn}
+      memberName={isLoggedIn ? "Bob" : ""}
       memberEsims={memberEsims}
       selectedTopupId={selectedTopupId}
       onSelectTopup={(id) => {

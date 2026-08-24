@@ -6,7 +6,6 @@ import { toSameOriginImagePath } from "@/lib/resolveMedusaImageUrl";
 import { getCountryProductImagePath } from "@/lib/countryProductImages";
 import {
   getFeaturedCountryCode,
-  getFeaturedCountryCodeTopClass,
 } from "@/lib/featuredCountryCode";
 
 /** Medusa 分類 metadata 圖常連到外部 Storage；失效時改用本地圖 */
@@ -102,7 +101,6 @@ export default function FeaturedCountryCard({
       : "即將上架更多方案");
   const cardHref = country.href || `/product/${country.slug}`;
   const countryCode = getFeaturedCountryCode(country.slug);
-  const codeTopClass = getFeaturedCountryCodeTopClass(country.slug);
 
   return (
     <Link
@@ -129,19 +127,6 @@ export default function FeaturedCountryCard({
             if (imgSrc !== fallbackSrc) setImgSrc(fallbackSrc);
           }}
         />
-        {countryCode ? (
-          <span
-            className={[
-              "absolute left-1/2 z-10 -translate-x-1/2",
-              codeTopClass,
-              "flex min-h-[1.75rem] min-w-[1.75rem] items-center justify-center rounded-full",
-              "bg-[#1E4AD1] px-1 text-[10px] font-black leading-none text-white shadow-md",
-              countryCode.length > 2 ? "text-[8px] tracking-tight" : "",
-            ].join(" ")}
-          >
-            {countryCode}
-          </span>
-        ) : null}
       </div>
 
       {/* 內容區 */}
@@ -155,9 +140,17 @@ export default function FeaturedCountryCard({
 
         <div className="mt-1.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FFD43A]/90 text-[8px] font-black text-slate-800">
-              NT
-            </span>
+            {countryCode ? (
+              <span
+                className={[
+                  "flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full",
+                  "bg-[#1E4AD1] px-1 text-[8px] font-black leading-none text-white",
+                  countryCode.length > 2 ? "tracking-tight" : "",
+                ].join(" ")}
+              >
+                {countryCode}
+              </span>
+            ) : null}
             {priceText ? (
               <div className="flex items-baseline gap-0.5 min-w-0">
                 <span className="text-[10px] text-gray-600 shrink-0">NT$</span>

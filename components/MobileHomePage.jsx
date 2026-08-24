@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import CarRentalCharterSection from "./CarRentalCharterSection";
 import AccommodationRecommendSection from "./AccommodationRecommendSection";
 import KKdayTicketSection from "./KKdayTicketSection";
@@ -10,6 +11,14 @@ import TransportTicketSection from "./TransportTicketSection";
 import JekoRecommendSection from "./JekoRecommendSection";
 import ServiceSection from "./ServiceSection";
 import MobileCardCarousel from "./MobileCardCarousel";
+import MaterialIcon from "@/components/MaterialIcon";
+import { buildLoginUrl } from "@/lib/authRedirect";
+import { buildInstallHintText } from "@/lib/deviceDetect";
+import { usePWAInstall } from "./usePWAInstall";
+import AppInstallGuideModal from "./AppInstallGuideModal";
+import HeroCountryPlanPicker from "./HeroCountryPlanPicker";
+import GeneralPushToggle from "./GeneralPushToggle";
+import { QuarterRing } from "@/components/ui/QuarterRing";
 
 const LINE_OA_URL =
   process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn";
@@ -59,10 +68,54 @@ const QUICK_ICONS = [
 const PROMO_BANNERS = [
   { src: "/images/優惠折扣.png", alt: "優惠折扣活動", href: "/promo" },
   { src: "/images/出國必備.png", alt: "出國必備清單", href: "/product" },
-  { src: "/images/立即租車.png", alt: "立即租車包車", href: "#car-rental-charter" },
+  {
+    src: "/images/立即租車.png",
+    alt: "立即租車包車",
+    href: "#car-rental-charter",
+  },
 ];
 
-/** 原本主頁圖片輪播（手機版） */
+function MobileHeroCardAction({ children, onClick, href, icon, loading }) {
+  const cls =
+    "group flex flex-1 min-w-0 items-center gap-2.5 bg-white text-[#1d5cc5] rounded-lg px-3 py-3 transition-colors shadow-sm text-left active:opacity-90";
+
+  const inner = (
+    <>
+      <MaterialIcon name={icon} size={20} className="shrink-0 text-[#1d5cc5]" />
+      <span className="flex-1 min-w-0 text-[13px] font-bold leading-tight text-black inline-flex items-center gap-2">
+        {loading ? (
+          <>
+            <QuarterRing size="xs" />
+            處理中…
+          </>
+        ) : (
+          children
+        )}
+      </span>
+      <MaterialIcon
+        name="chevron_right"
+        size={18}
+        className="shrink-0 text-[#1d5cc5]"
+      />
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={cls}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onClick} disabled={loading} className={cls}>
+      {inner}
+    </button>
+  );
+}
+
+/** 手機版滿版 Hero 輪播 */
 function MobileHeroCarousel() {
   const [active, setActive] = useState(0);
   const timerRef = useRef(null);
@@ -75,7 +128,7 @@ function MobileHeroCarousel() {
   }, []);
 
   return (
-    <section className="relative mx-4 mt-3 h-[58vh] min-h-[340px] max-h-[520px] overflow-hidden rounded-2xl bg-black">
+    <section className="relative w-full h-[56vh] min-h-[360px] max-h-[560px] overflow-hidden bg-black">
       {HERO_SLIDES.map((slide, idx) => (
         <div
           key={`hero-${idx}`}
@@ -105,12 +158,10 @@ function MobileHeroCarousel() {
         </div>
       ))}
 
-      {/* 漸層遮罩 */}
-      <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-b from-black/20 via-black/15 to-black/55" />
+      <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-b from-black/20 via-black/15 to-black/60" />
 
-      {/* 文案 */}
-      <div className="absolute left-0 right-0 top-[18%] z-20 px-5">
-        <h1 className="text-[36px] font-black leading-[1.08] tracking-tight text-white drop-shadow-lg italic">
+      <div className="absolute left-0 right-0 top-[28%] z-20 px-5">
+        <h1 className="text-[40px] font-black leading-[1.08] tracking-tight text-white drop-shadow-lg italic">
           Jeko eSIM
         </h1>
         <p className="mt-2 text-[14px] text-white/95 font-medium drop-shadow-md">
@@ -121,25 +172,11 @@ function MobileHeroCarousel() {
           className="mt-4 inline-flex items-center gap-1.5 bg-white text-[#1d5cc5] rounded-full px-5 py-2 text-sm font-bold shadow-md active:scale-[0.98] transition-transform"
         >
           查看 eSIM 方案
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-          >
-            <path
-              d="M5 12h14M13 5l7 7-7 7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <MaterialIcon name="arrow_forward" size={16} />
         </Link>
       </div>
 
-      {/* 指示點 */}
-      <div className="absolute left-5 bottom-6 z-20 flex items-center gap-1.5">
+      <div className="absolute left-5 bottom-14 z-20 flex items-center gap-1.5">
         {HERO_SLIDES.map((_, idx) => (
           <button
             key={`dot-${idx}`}
@@ -156,14 +193,108 @@ function MobileHeroCarousel() {
   );
 }
 
+/** 圖二：APP 與推播 + 選擇國家方案（手機疊在 hero 下方） */
+function MobileHeroDock() {
+  const router = useRouter();
+  const { isInstallable, installPWA, deviceType, isStandalone } =
+    usePWAInstall();
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [installHint, setInstallHint] = useState(null);
+
+  useEffect(() => {
+    setInstallHint(buildInstallHintText({ isStandalone }));
+  }, [isStandalone]);
+
+  const needsAppleInstall =
+    !isStandalone && (deviceType === "ios" || deviceType === "mac");
+
+  const handleTrafficAlert = () => {
+    if (needsAppleInstall) {
+      setShowPrompt(true);
+      return;
+    }
+    router.push("/data-query?setup=traffic#push-notification-section");
+  };
+
+  const handleInstallApp = async () => {
+    if (isStandalone) {
+      alert("您已安裝 Jeko APP。");
+      return;
+    }
+    if (isInstallable) {
+      const outcome = await installPWA();
+      if (outcome === "accepted" || outcome === "dismissed") return;
+    }
+    setShowPrompt(true);
+  };
+
+  return (
+    <>
+      <AppInstallGuideModal
+        open={showPrompt}
+        onClose={() => setShowPrompt(false)}
+      />
+      <div className="relative z-20 -mt-10 px-3 space-y-3">
+        <div className="bg-[#3583d8] rounded-xl p-4 shadow-[0_8px_28px_rgba(29,92,197,0.35)]">
+          <h3 className="text-white font-bold text-[15px] mb-3 tracking-wide">
+            {isStandalone ? "推播與警示" : "APP 與推播"}
+          </h3>
+          <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2">
+              {isStandalone ? (
+                <MobileHeroCardAction icon="speed" onClick={handleTrafficAlert}>
+                  開啟流量警示
+                </MobileHeroCardAction>
+              ) : (
+                <div className="flex gap-2">
+                  <MobileHeroCardAction
+                    icon="install_mobile"
+                    onClick={handleInstallApp}
+                  >
+                    安裝 APP
+                  </MobileHeroCardAction>
+                  <MobileHeroCardAction
+                    icon="person_add"
+                    href={buildLoginUrl()}
+                  >
+                    加入會員
+                  </MobileHeroCardAction>
+                </div>
+              )}
+            </div>
+            <GeneralPushToggle theme="dark" className="w-full" />
+          </div>
+          {isStandalone ? (
+            <p className="mt-3 text-[11px] text-white/80 leading-relaxed">
+              推播通知：優惠公告；流量警示請至查詢頁或官方 LINE 綁定 eSIM。
+            </p>
+          ) : (
+            installHint && (
+              <p className="mt-3 text-[11px] text-white/80 leading-relaxed">
+                {installHint}
+              </p>
+            )
+          )}
+        </div>
+
+        <HeroCountryPlanPicker />
+      </div>
+    </>
+  );
+}
+
 export default function MobileHomePage() {
   return (
     <div className="bg-[#f2f3f5] min-h-screen pb-4">
-      {/* ═══ 1. 原本主頁圖片輪播 ═══ */}
+      {/* ═══ 1. 滿版 Hero 輪播 ═══ */}
       <MobileHeroCarousel />
 
-      {/* ═══ 2. 快捷功能圖示 ═══ */}
-      <div className="mx-4 -mt-10 relative z-10 bg-white rounded-3xl border-1 border-gray-200 px-2.5 pt-4 pb-3">
+      {/* ═══ 2. APP／推播 + 國家方案（圖二）═══ */}
+      <MobileHeroDock />
+
+      {/* ═══ 3. 快捷功能圖示（暫隱藏）═══ */}
+      {false && (
+      <div className="mx-3 mt-3 relative z-10 bg-white rounded-2xl border border-gray-200 px-2.5 pt-4 pb-3">
         <div className="grid grid-cols-5 gap-1.5">
           {QUICK_ICONS.map((item) => (
             <Link
@@ -188,9 +319,15 @@ export default function MobileHomePage() {
           ))}
         </div>
       </div>
+      )}
 
-      {/* ═══ 3. 促銷輪播橫幅（置中，左右露出相鄰圖）═══ */}
-      <div className="mt-4">
+      {/* ═══ 4. 連線方案 ═══ */}
+      <div className="mt-3">
+        <ServiceSection />
+      </div>
+
+      {/* ═══ 5. 促銷輪播（原圖一 → 移至推薦專區位置）═══ */}
+      <div className="mt-3">
         <MobileCardCarousel
           align="center"
           slideClassName="min-w-0 flex-[0_0_76%]"
@@ -220,36 +357,31 @@ export default function MobileHomePage() {
         </MobileCardCarousel>
       </div>
 
-      {/* ═══ 4. 連線方案（原生卡／日韓東南亞）═══ */}
-      <div className="mt-3">
-        <ServiceSection />
-      </div>
-
-      {/* ═══ 5. 精選 eSIM 方案 ═══ */}
+      {/* ═══ 6. 精選 eSIM 方案 ═══ */}
       <div className="mt-3">
         <div className="[&>section]:!bg-transparent [&>section]:!pt-0">
           <JekoRecommendSection />
         </div>
       </div>
 
-      {/* ═══ 6. 租車包車 ═══ */}
+      {/* ═══ 7. 租車包車 ═══ */}
       <div className="mt-3" id="car-rental-charter">
         <div className="[&>section]:!bg-transparent [&>section]:!pt-0 [&>section_.flex.flex-wrap.items-baseline]:!hidden">
           <CarRentalCharterSection />
         </div>
       </div>
 
-      {/* ═══ 7. 住宿推薦 ═══ */}
+      {/* ═══ 8. 住宿推薦 ═══ */}
       <div className="mt-3" id="accommodation-section">
         <AccommodationRecommendSection />
       </div>
 
-      {/* ═══ 8. 景點門票 ═══ */}
+      {/* ═══ 9. 景點門票 ═══ */}
       <div className="mt-3" id="kkday-section">
         <KKdayTicketSection />
       </div>
 
-      {/* ═══ 9. 交通票券 ═══ */}
+      {/* ═══ 10. 交通票券 ═══ */}
       <div className="mt-3" id="transport-section">
         <TransportTicketSection />
       </div>

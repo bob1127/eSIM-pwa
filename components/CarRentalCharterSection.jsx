@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import MobileCardCarousel from "./MobileCardCarousel";
+import HomeSectionHeader from "./HomeSectionHeader";
 
 function DecoDot({ className, color = "white" }) {
   return (
@@ -102,15 +103,12 @@ export default function CarRentalCharterSection() {
       className="w-full bg-[#f0f1f3] pt-12 lg:pt-14 pb-4 scroll-mt-28"
     >
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        {/* 標題列：大標 + 右側副標（同參考圖） */}
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-6 lg:mb-8">
-          <h2 className="text-2xl sm:text-[28px] font-black text-gray-900 tracking-tight">
-            租車包車服務
-          </h2>
-          <p className="text-sm text-gray-600 font-medium">
-            機場接送・包車觀光・自駕租車，一站式預約
-          </p>
-        </div>
+        <HomeSectionHeader
+          eyebrow="出行服務"
+          title="租車包車服務"
+          href="#car-rental-charter"
+          moreLabel="機場接送・包車觀光・自駕租車"
+        />
 
         {/* 手機版輪播 */}
         <div className="md:hidden -mx-4">

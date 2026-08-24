@@ -5,12 +5,23 @@ import MaterialIcon from "./MaterialIcon";
 import { detectPushSupport } from "@/lib/pushSupport";
 import { getPushEndpoint } from "@/lib/pushBind";
 import { subscribeToPush } from "@/lib/pushSubscribe";
+import {
+  broadcastPushNotifyState,
+  subscribePushNotifySync,
+} from "@/lib/pushNotifySync";
 import { useUser } from "./context/UserContext";
 import { QuarterRing } from "@/components/ui/QuarterRing";
+import TrafficNotifyToggle from "@/components/ui/TrafficNotifyToggle";
+import { LineIconSvg } from "@/components/social/SocialBrandIcons";
+
+const LINE_OA_URL =
+  process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn";
+
+const SYNC_SOURCE = "general-push-toggle";
 
 /**
- * 首頁／會員區：日常推播（優惠、公告）ON/OFF
- * 與流量提醒 monitor_enabled 無關。
+ * 首頁／會員區：推播通知 ON/OFF
+ * 與 BottomSheet 流量通知共用訂閱狀態，開關會全站同步並跳出提示。
  */
 export default function GeneralPushToggle({
   className = "",
@@ -62,45 +73,90 @@ export default function GeneralPushToggle({
     load();
   }, [load]);
 
-  const handleSubscribe = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      const support = await detectPushSupport();
-      if (!support.supported) {
-        setError(support.hint || support.title || "此裝置不支援推播");
-        return;
+  useEffect(() => {
+    return subscribePushNotifySync((detail) => {
+      if (detail?.source === SYNC_SOURCE) return;
+      if (detail?.on) {
+        setSubscribed(true);
+        setEnabled(true);
+      } else {
+        setSubscribed(false);
+        setEnabled(false);
       }
-      await subscribeToPush({ token });
-      await load();
-    } catch (e) {
-      setError(e?.message || "訂閱失敗");
-    } finally {
-      setBusy(false);
+    });
+  }, []);
+
+  const enablePush = async () => {
+    const support = await detectPushSupport();
+    if (!support.supported) {
+      throw new Error(support.hint || support.title || "此裝置不支援推播");
     }
+    await subscribeToPush({ token });
+    const endpoint = await getPushEndpoint();
+    if (endpoint) {
+      await fetch("/api/push/general-push/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint, enabled: true }),
+      });
+    }
+    setSubscribed(true);
+    setEnabled(true);
+    broadcastPushNotifyState({ on: true, source: SYNC_SOURCE });
+    alert("推播通知已開啟！\n優惠、公告會推播到本裝置。");
+  };
+
+  const disablePush = async () => {
+    const endpoint = await getPushEndpoint();
+    if (endpoint) {
+      try {
+        await fetch("/api/push/unbind", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint }),
+        });
+      } catch {
+        /* ignore */
+      }
+      try {
+        await fetch("/api/push/general-push/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint, enabled: false }),
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) await sub.unsubscribe();
+      } catch {
+        /* ignore */
+      }
+    }
+
+    setSubscribed(false);
+    setEnabled(false);
+    broadcastPushNotifyState({ on: false, source: SYNC_SOURCE });
+    alert("已關閉推播通知。");
   };
 
   const handleToggle = async () => {
+    if (busy) return;
     setBusy(true);
     setError("");
     try {
-      const endpoint = await getPushEndpoint();
-      if (!endpoint) {
-        await handleSubscribe();
-        return;
-      }
-      const next = !enabled;
-      const res = await fetch("/api/push/general-push/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ endpoint, enabled: next }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.hint || "設定失敗");
-      setEnabled(next);
-      setSubscribed(true);
+      const isOn = subscribed && enabled;
+      if (isOn) await disablePush();
+      else await enablePush();
     } catch (e) {
-      setError(e?.message || "設定失敗");
+      const msg = e?.message || "設定失敗";
+      setError(msg);
+      alert(`操作失敗：${msg}\n\n請再試一次。`);
     } finally {
       setBusy(false);
     }
@@ -117,7 +173,7 @@ export default function GeneralPushToggle({
 
   if (loading) {
     return (
-      <div className={wrapCls}>
+      <div className={`${wrapCls} flex items-center gap-2`}>
         <QuarterRing size="xs" className={isDark ? "text-white" : "text-[#1d5cc5]"} />
         <span className={`text-xs ${isDark ? "text-white/80" : "text-slate-600"}`}>
           載入推播設定…
@@ -129,42 +185,24 @@ export default function GeneralPushToggle({
   if (!supported) {
     return (
       <div className={wrapCls}>
-        <MaterialIcon
-          name="notifications_off"
-          size={18}
-          className={isDark ? "text-white/70" : "text-slate-400"}
-        />
-        <span className={`text-xs leading-relaxed ${isDark ? "text-white/75" : "text-slate-500"}`}>
-          {supportHint || "此裝置請先安裝 APP 或改用 Chrome"}
-        </span>
+        <div className="flex items-center gap-2">
+          <MaterialIcon
+            name="notifications_off"
+            size={18}
+            className={isDark ? "text-white/70" : "text-slate-400"}
+          />
+          <span
+            className={`text-xs leading-relaxed ${isDark ? "text-white/75" : "text-slate-500"}`}
+          >
+            {supportHint || "此裝置請先安裝 APP 或改用 Chrome"}
+          </span>
+        </div>
+        <LinePushBlock isDark={isDark} />
       </div>
     );
   }
 
-  if (!subscribed) {
-    return (
-      <div className={wrapCls}>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={handleSubscribe}
-          className={`flex flex-1 min-w-0 items-center gap-2.5 rounded-lg px-3.5 py-3.5 text-left transition-colors shadow-sm disabled:opacity-60 w-full ${
-            isDark
-              ? "bg-white text-[#1d5cc5] hover:bg-white/95"
-              : "bg-[#1d5cc5] text-white hover:bg-[#174da8]"
-          }`}
-        >
-          <MaterialIcon name="campaign" size={22} className="shrink-0" />
-          <span className="text-sm font-bold leading-tight">
-            {busy ? "處理中…" : "開啟日常推播"}
-          </span>
-        </button>
-        {error ? (
-          <p className="text-xs text-red-500 mt-2 w-full">{error}</p>
-        ) : null}
-      </div>
-    );
-  }
+  const isOn = subscribed && enabled;
 
   return (
     <div className={wrapCls}>
@@ -173,32 +211,70 @@ export default function GeneralPushToggle({
           <p
             className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}
           >
-            日常推播
+            推播通知
           </p>
           <p
             className={`text-[11px] mt-0.5 ${isDark ? "text-white/75" : "text-slate-500"}`}
           >
-            優惠、公告（流量提醒另設）
+            {isOn
+              ? "優惠、公告已開啟"
+              : "優惠、公告（流量提醒另設）"}
           </p>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={enabled}
-          disabled={busy}
+        <TrafficNotifyToggle
+          on={isOn}
+          busy={busy}
           onClick={handleToggle}
-          className={`relative shrink-0 w-12 h-7 rounded-full transition-colors disabled:opacity-50 ${
-            enabled ? "bg-[#06C755]" : "bg-slate-300"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${
-              enabled ? "translate-x-5" : ""
-            }`}
-          />
-        </button>
+          aria-label={isOn ? "關閉推播通知" : "開啟推播通知"}
+        />
       </div>
-      {error ? <p className="text-xs text-red-500 mt-2">{error}</p> : null}
+      {error ? (
+        <p
+          className={`text-xs mt-2 ${isDark ? "text-red-200" : "text-red-500"}`}
+        >
+          {error}
+        </p>
+      ) : null}
+      <LinePushBlock isDark={isDark} />
+    </div>
+  );
+}
+
+function LinePushBlock({ isDark }) {
+  return (
+    <div className="mt-3 pt-3 border-t border-white/20 space-y-2">
+      <a
+        href={LINE_OA_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={[
+          "flex w-full items-center justify-center gap-2 rounded-xl py-2.5 px-3",
+          "text-[13px] font-bold transition",
+          "bg-[#06C755] hover:brightness-105 text-white",
+          isDark ? "shadow-[0_2px_8px_rgba(0,0,0,0.2)]" : "",
+        ].join(" ")}
+      >
+        <LineIconSvg className="w-5 h-5" />
+        LINE 推播通知
+      </a>
+      <p
+        className={`text-center text-[10px] leading-relaxed ${
+          isDark ? "text-white/75" : "text-slate-500"
+        }`}
+      >
+        <a
+          href={LINE_OA_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={
+            isDark
+              ? "underline underline-offset-2 decoration-white/40 hover:text-white hover:decoration-white"
+              : "underline underline-offset-2 decoration-slate-300 hover:text-[#06C755] hover:decoration-[#06C755]"
+          }
+        >
+          加入官方 LINE 後，點擊開啟流量提醒綁定
+        </a>
+      </p>
     </div>
   );
 }

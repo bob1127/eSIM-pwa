@@ -507,7 +507,7 @@ export default function Slider() {
                   </div>
                   {isStandalone ? (
                     <p className="mt-3 text-[11px] text-white/80 leading-relaxed">
-                      日常推播：優惠公告；流量警示請至查詢頁綁定 eSIM。
+                      推播通知：優惠公告；流量警示請至查詢頁或官方 LINE 綁定 eSIM。
                     </p>
                   ) : (
                     installHintText && (
@@ -522,39 +522,41 @@ export default function Slider() {
               </div>
             </div>
 
-            {/* 白底快捷區 */}
-            <div className="relative z-[55] bg-white pt-8 md:pt-10 pb-8 md:pb-10">
-              <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5 sm:gap-3 md:gap-4">
-                  <HeroQuickTile
-                    label="加入官方 LINE"
-                    imageSrc="/images/icon/01.png"
-                    href={LINE_OA_URL}
-                    external
-                  />
-                  <HeroQuickTile
-                    label="開啟 APP 流量提醒"
-                    imageSrc="/images/icon/02.png"
-                    onClick={handleTrafficAlert}
-                  />
-                  <HeroQuickTile
-                    label="訂單查詢"
-                    imageSrc="/images/icon/03.png"
-                    href="/account"
-                  />
-                  <HeroQuickTile
-                    label="租車包車"
-                    imageSrc="/images/icon/04.png"
-                    onClick={() => scrollToSection("car-rental-charter")}
-                  />
-                  <HeroQuickTile
-                    label="住宿"
-                    imageSrc="/images/icon/05.png"
-                    onClick={() => scrollToSection("accommodation-recommend")}
-                  />
+            {/* 白底快捷區（暫隱藏） */}
+            {false && (
+              <div className="relative z-[55] bg-white pt-8 md:pt-10 pb-8 md:pb-10">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5 sm:gap-3 md:gap-4">
+                    <HeroQuickTile
+                      label="加入官方 LINE"
+                      imageSrc="/images/icon/01.png"
+                      href={LINE_OA_URL}
+                      external
+                    />
+                    <HeroQuickTile
+                      label="開啟 APP 流量提醒"
+                      imageSrc="/images/icon/02.png"
+                      onClick={handleTrafficAlert}
+                    />
+                    <HeroQuickTile
+                      label="訂單查詢"
+                      imageSrc="/images/icon/03.png"
+                      href="/account"
+                    />
+                    <HeroQuickTile
+                      label="租車包車"
+                      imageSrc="/images/icon/04.png"
+                      onClick={() => scrollToSection("car-rental-charter")}
+                    />
+                    <HeroQuickTile
+                      label="住宿"
+                      imageSrc="/images/icon/05.png"
+                      onClick={() => scrollToSection("accommodation-recommend")}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </FadeUp>
       </div>

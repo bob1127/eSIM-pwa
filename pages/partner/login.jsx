@@ -68,7 +68,7 @@ function PartnerAccessGateModal({ open, onClose, access = null }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[12000] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="partner-access-title"
@@ -147,6 +147,7 @@ function PasswordInput({ value, onChange, show, onToggleShow, autoComplete }) {
         onChange={onChange}
         placeholder="••••••••"
         autoComplete={autoComplete}
+        maxLength={256}
         className={`${INPUT_CLASS} pr-11`}
       />
       <button
@@ -498,12 +499,8 @@ export default function PartnerLogin() {
   }, [finishPartnerLogin]);
 
   useEffect(() => {
-    if (router.query.error === "not_partner") {
-      openAccessGate({
-        code: "NOT_FOUND",
-        message: partnerLoginBlockMessage(null),
-        partner: null,
-      });
+    const kickedAsNotPartner = router.query.error === "not_partner";
+    if (kickedAsNotPartner) {
       router.replace("/partner/login/", undefined, { shallow: true });
     }
 
@@ -519,10 +516,20 @@ export default function PartnerLogin() {
 
         if (user) {
           const access = await verifyPartnerAccess();
+          if (cancelled) return;
+
           if (access?.ok) {
             router.replace("/partner/dashboard");
             return;
           }
+
+          // 審核中／未通過／無資格：必須彈窗（先前靜默略過導致 popup 消失）
+          await supabase.auth.signOut();
+          if (!cancelled) {
+            openAccessGate(access);
+            setError("");
+          }
+          return;
         }
 
         // 已 LINE 登入但尚無 Supabase session → 嘗試橋接
@@ -538,6 +545,16 @@ export default function PartnerLogin() {
           } finally {
             if (!cancelled) setOauthLoading("");
           }
+          return;
+        }
+
+        // 從後台 ?error=not_partner 踢回且已無 session
+        if (kickedAsNotPartner && !cancelled) {
+          openAccessGate({
+            code: "NOT_FOUND",
+            message: partnerLoginBlockMessage(null),
+            partner: null,
+          });
         }
       } finally {
         if (!cancelled) setChecking(false);
@@ -557,22 +574,42 @@ export default function PartnerLogin() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const honeypot =
+        typeof document !== "undefined"
+          ? document.getElementById("partner-login-company-website")?.value || ""
+          : "";
+
+      const res = await fetch("/api/partner/login/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        credentials: "same-origin",
         body: JSON.stringify({
           email: form.email.trim(),
           password: form.password,
+          company_website: honeypot,
         }),
       });
       const data = await res.json().catch(() => ({}));
+
+      if (res.status === 403 && (data.code === "NOT_ACTIVE" || data.code === "NOT_FOUND")) {
+        openAccessGate({
+          code: data.code,
+          message: data.message,
+          partner: data.partner || null,
+        });
+        setLoading(false);
+        return;
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(
           data.message ||
             (res.status === 429
               ? "登入嘗試過多，請稍候再試"
-              : "登入失敗，請確認帳號密碼"),
+              : "帳號或密碼錯誤，請再試一次"),
         );
       }
 
@@ -587,13 +624,12 @@ export default function PartnerLogin() {
       });
       if (setSessionError) throw setSessionError;
     } catch (err) {
-      setError("登入失敗：" + err.message);
+      setError(err.message || "登入失敗，請稍後再試");
       setLoading(false);
       return;
     }
 
-    const ok = await finishPartnerLogin();
-    if (!ok) setLoading(false);
+    router.replace("/partner/dashboard");
   };
 
   const handleOAuth = async (provider) => {
@@ -602,17 +638,38 @@ export default function PartnerLogin() {
     try {
       const origin =
         typeof window !== "undefined" ? window.location.origin : "";
-      const redirectTo = `${origin}/partner/login`;
+      // 僅允許導回本站夥伴登入頁（防 open redirect）
+      const redirectTo = `${origin}/partner/login/`;
       const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo,
           skipBrowserRedirect: false,
+          queryParams:
+            provider === "google"
+              ? { prompt: "select_account" }
+              : undefined,
         },
       });
       if (oauthErr) throw oauthErr;
-      if (data?.url) window.location.assign(data.url);
-      else throw new Error("未取得授權網址，請確認 Supabase OAuth 設定");
+      if (data?.url) {
+        try {
+          const u = new URL(data.url);
+          // 僅允許導向已知 OAuth／Supabase 網域
+          const host = u.hostname.toLowerCase();
+          const okHost =
+            host.includes("supabase.co") ||
+            host.includes("google.com") ||
+            host.includes("facebook.com") ||
+            host.includes("fb.com") ||
+            host === "localhost" ||
+            host === "127.0.0.1";
+          if (!okHost) throw new Error("OAuth 導向網域異常");
+        } catch (parseErr) {
+          if (parseErr?.message === "OAuth 導向網域異常") throw parseErr;
+        }
+        window.location.assign(data.url);
+      } else throw new Error("未取得授權網址，請確認 Supabase OAuth 設定");
     } catch (err) {
       setError(
         `${provider === "google" ? "Google" : "Facebook"} 登入失敗：${err.message}`,
@@ -657,6 +714,8 @@ export default function PartnerLogin() {
     <div className="min-h-screen flex font-sans">
       <Head>
         <title>合作夥伴登入 | JEKO eSIM</title>
+        <meta name="robots" content="noindex, nofollow" />
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
       </Head>
 
       <div className="w-full lg:w-1/2 bg-[#1E4AD1] flex flex-col justify-center px-10 md:px-16 py-12 relative overflow-hidden">
@@ -740,7 +799,27 @@ export default function PartnerLogin() {
                 <div className="flex-grow border-t border-white/20" />
               </div>
 
-              <form onSubmit={handleLogin} className="flex flex-col gap-5">
+              <form
+                onSubmit={handleLogin}
+                className="relative flex flex-col gap-5"
+                autoComplete="on"
+              >
+                {/* 蜜罐：對使用者隱藏，機器人常會填寫 */}
+                <div
+                  aria-hidden="true"
+                  className="absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0"
+                >
+                  <label htmlFor="partner-login-company-website">
+                    Company website
+                  </label>
+                  <input
+                    id="partner-login-company-website"
+                    name="company_website"
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+                </div>
                 <div>
                   <label className="block text-xs font-bold text-blue-200 mb-1.5 uppercase tracking-wide">
                     Email 地址
@@ -748,11 +827,15 @@ export default function PartnerLogin() {
                   <input
                     required
                     type="email"
+                    name="email"
+                    inputMode="email"
+                    autoComplete="username"
                     value={form.email}
                     onChange={(e) =>
                       setForm({ ...form, email: e.target.value })
                     }
                     placeholder="your@email.com"
+                    maxLength={254}
                     className={INPUT_CLASS}
                   />
                 </div>
@@ -784,7 +867,10 @@ export default function PartnerLogin() {
                 </div>
 
                 {error && (
-                  <p className="text-sm text-blue-100 leading-relaxed">
+                  <p
+                    className="text-sm text-blue-100 leading-relaxed"
+                    role="alert"
+                  >
                     {error}
                   </p>
                 )}
@@ -796,6 +882,10 @@ export default function PartnerLogin() {
                 >
                   {loading ? "登入中..." : "登入夥伴後台 →"}
                 </button>
+
+                <p className="text-[10px] text-blue-200/80 leading-relaxed text-center">
+                  此為夥伴專用入口，已啟用登入限流、同源驗證與資格伺服器重算。請勿在共用電腦勾選記住密碼。
+                </p>
               </form>
             </>
           )}

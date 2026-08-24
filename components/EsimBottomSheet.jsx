@@ -14,11 +14,24 @@ import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
 import { normalizeIccid, getPushEndpoint } from "@/lib/pushBind";
 import { subscribeToPush } from "@/lib/pushSubscribe";
 import { detectPushSupport, getBrowserContext } from "@/lib/pushSupport";
+import {
+  broadcastPushNotifyState,
+  subscribePushNotifySync,
+} from "@/lib/pushNotifySync";
+import { detectDeviceLabel } from "@/lib/deviceDetect";
+import {
+  pickInstallUrlForOs,
+  resolveInstallUrls,
+} from "@/lib/esimInstallLinks";
 import { usePWAInstall } from "./usePWAInstall";
 import AppInstallGuideModal from "./AppInstallGuideModal";
 import MaterialIcon from "@/components/MaterialIcon";
 import JekoPillButton from "@/components/ui/JekoPillButton";
+import TrafficNotifyToggle from "@/components/ui/TrafficNotifyToggle";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import UsageRingPreview, {
+  USAGE_DEMO,
+} from "@/components/UsageRingPreview";
 
 const COLLAPSED_H = 118;
 /** 產品頁預設縮小：只留可上拉的橫槓 */
@@ -106,6 +119,7 @@ export function extractQrPlansFromOrders(orders = []) {
         match?.total ??
         order.total_amount ??
         null;
+      const install = resolveInstallUrls(item);
       plans.push({
         id: `${order.id}-${item.topupId || item.topup_id || idx}`,
         name,
@@ -116,6 +130,9 @@ export function extractQrPlansFromOrders(orders = []) {
         orderId: order.id,
         orderDate: order.created_at,
         status: order.status,
+        lpa: install.lpa || item.lpa || null,
+        iosInstallUrl: install.iosInstallUrl,
+        androidInstallUrl: install.androidInstallUrl,
       });
     });
   }
@@ -144,7 +161,46 @@ function LoginGate() {
   );
 }
 
-function QrPanel({ plans, activeIdx, setActiveIdx, usageMap, usageLoading }) {
+function EsimBindSwitchRow({
+  plan,
+  trafficOn,
+  boundTopupId,
+  bindBusy,
+  onToggleBind,
+}) {
+  if (!trafficOn || !plan?.topupId) return null;
+  const isBound = String(boundTopupId || "") === String(plan.topupId);
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-200/80 flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-[12px] font-bold text-gray-800">eSIM 流量綁定</p>
+        <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">
+          {isBound ? "已綁定，流量偏低會提醒" : "開啟後監控此張 eSIM（一次一張）"}
+        </p>
+      </div>
+      <TrafficNotifyToggle
+        size="sm"
+        on={isBound}
+        busy={bindBusy}
+        onClick={() => onToggleBind?.(plan)}
+        aria-label={isBound ? "關閉此 eSIM 綁定" : "綁定此 eSIM"}
+        className="shrink-0"
+      />
+    </div>
+  );
+}
+
+function QrPanel({
+  plans,
+  activeIdx,
+  setActiveIdx,
+  usageMap,
+  usageLoading,
+  trafficOn,
+  boundTopupId,
+  bindBusy,
+  onToggleBind,
+}) {
   const scrollerRef = useRef(null);
   const plan = plans[activeIdx];
 
@@ -281,6 +337,13 @@ function QrPanel({ plans, activeIdx, setActiveIdx, usageMap, usageLoading }) {
               ← 左右滑動切換方案（{activeIdx + 1}/{plans.length}）
             </p>
           )}
+          <EsimBindSwitchRow
+            plan={plan}
+            trafficOn={trafficOn}
+            boundTopupId={boundTopupId}
+            bindBusy={bindBusy}
+            onToggleBind={onToggleBind}
+          />
         </div>
       )}
     </div>
@@ -298,6 +361,10 @@ function UsagePanel({
   guestUsage,
   guestLoading,
   onGuestQuery,
+  trafficOn,
+  boundTopupId,
+  bindBusy,
+  onToggleBind,
 }) {
   const [iccid, setIccid] = useState("");
   const [guestError, setGuestError] = useState("");
@@ -402,7 +469,10 @@ function UsagePanel({
   // ── 會員：方案列表 + 一鍵查剩餘流量 ──
   const plan = plans[activeIdx];
   const usage = plan?.topupId ? usageMap[plan.topupId] : null;
-  const pct = usage ? usagePercent(usage.remainingMb, usage.totalMb) : null;
+  const hasUsageChart =
+    usage?.remainingMb != null &&
+    usage?.totalMb != null &&
+    Number(usage.totalMb) > 0;
 
   if (!plans.length) {
     return (
@@ -461,61 +531,39 @@ function UsagePanel({
           {usageLoading ? "查詢中…" : "查詢剩餘流量"}
         </JekoPillButton>
 
-        <div className="mt-4 text-center">
+        <div className="mt-4">
           {usageLoading && !usage ? (
-            <p className="text-[28px] font-black text-gray-300">…</p>
-          ) : usage ? (
-            <>
-              <p className="text-[11px] text-gray-400 font-semibold tracking-wide">
-                剩餘流量
-              </p>
-              <p className="text-[36px] font-black text-gray-900 leading-none mt-1">
-                {formatMb(usage.remainingMb) || "—"}
-              </p>
-              {usage.totalMb != null && (
-                <p className="text-[12px] text-gray-500 mt-2">
-                  總量 {formatMb(usage.totalMb)}
-                  {pct != null && ` · 剩餘 ${Math.round(pct)}%`}
-                </p>
-              )}
-              {pct != null && (
-                <div className="mt-4 h-2 rounded-full bg-gray-200 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      pct <= 15
-                        ? "bg-red-500"
-                        : pct <= 40
-                          ? "bg-amber-400"
-                          : "bg-[#0A6CD0]"
-                    }`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              )}
-              {usage.expiresAt && (
-                <p className="text-[11px] text-gray-400 mt-3">
-                  到期：
-                  {new Date(usage.expiresAt).toLocaleString("zh-TW", {
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              )}
-              {usage.note && (
-                <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">
-                  {usage.note}
-                </p>
-              )}
-            </>
+            <p className="text-center text-[28px] font-black text-gray-300">…</p>
+          ) : hasUsageChart ? (
+            <UsageRingPreview
+              remainingMb={Number(usage.remainingMb)}
+              totalMb={Number(usage.totalMb)}
+              expiresAt={usage.expiresAt || null}
+              dailyUsedMb={USAGE_DEMO.dailyUsedMb}
+            />
           ) : (
-            <p className="text-[12px] text-gray-400 py-2">
-              點上方按鈕即可查詢此方案剩餘流量
-            </p>
+            <>
+              {/* 尚無供應商用量時先用示意圖；查到真實數據後自動切換 */}
+              <UsageRingPreview
+                remainingMb={USAGE_DEMO.remainingMb}
+                totalMb={USAGE_DEMO.totalMb}
+                expiresAt={USAGE_DEMO.expiresAt}
+                dailyUsedMb={USAGE_DEMO.dailyUsedMb}
+              />
+              <p className="mt-2 text-center text-[11px] text-slate-400">
+                點上方「查詢剩餘流量」載入此 eSIM 即時用量
+              </p>
+            </>
           )}
         </div>
+
+        <EsimBindSwitchRow
+          plan={plan}
+          trafficOn={trafficOn}
+          boundTopupId={boundTopupId}
+          bindBusy={bindBusy}
+          onToggleBind={onToggleBind}
+        />
       </div>
     </div>
   );
@@ -699,10 +747,14 @@ export default function EsimBottomSheet() {
   const [guestLoading, setGuestLoading] = useState(false);
   const [trafficBusy, setTrafficBusy] = useState(false);
   const [trafficOn, setTrafficOn] = useState(false);
+  const [boundTopupId, setBoundTopupId] = useState(null);
+  const [bindBusy, setBindBusy] = useState(false);
   const [promoCoupons, setPromoCoupons] = useState([]);
   const [promoPoints, setPromoPoints] = useState(0);
   const [promoLoading, setPromoLoading] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [showBindHint, setShowBindHint] = useState(false);
+  const [offerPwaAfterBindHint, setOfferPwaAfterBindHint] = useState(false);
 
   const memberEmail = useMemo(
     () =>
@@ -850,6 +902,54 @@ export default function EsimBottomSheet() {
     if (activeIdx >= plans.length) setActiveIdx(0);
   }, [plans.length, activeIdx]);
 
+  const [deviceOs, setDeviceOs] = useState("other");
+  useEffect(() => {
+    setDeviceOs(detectDeviceLabel().os);
+  }, []);
+
+  const activePlan = plans[activeIdx] || null;
+  const esimInstallUrl = useMemo(
+    () => (activePlan ? pickInstallUrlForOs(deviceOs, activePlan) : ""),
+    [activePlan, deviceOs],
+  );
+  const hasEsimInstallLinks = Boolean(
+    activePlan?.iosInstallUrl || activePlan?.androidInstallUrl,
+  );
+
+  const handleEsimOneClickInstall = useCallback(() => {
+    if (esimInstallUrl) {
+      window.open(esimInstallUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (hasEsimInstallLinks) {
+      alert("請用手機開啟本頁再點一鍵安裝；電腦請掃描上方 QR Code。");
+      setPanel("qr");
+      return;
+    }
+    alert("此方案尚無一鍵安裝連結，請掃描上方 QR Code 安裝。");
+    setPanel("qr");
+  }, [esimInstallUrl, hasEsimInstallLinks]);
+
+  const closeBindHint = useCallback(async () => {
+    setShowBindHint(false);
+    setPanel("qr");
+    setExpanded(true);
+    if (!offerPwaAfterBindHint) return;
+    setOfferPwaAfterBindHint(false);
+    if (
+      typeof window !== "undefined" &&
+      window.confirm(
+        "流量提醒已開好。\n\n要不要再安裝到主畫面？之後更好找（可略過）。",
+      )
+    ) {
+      try {
+        await installPWA();
+      } catch {
+        /* 略過 */
+      }
+    }
+  }, [offerPwaAfterBindHint, installPWA]);
+
   const handleInstall = useCallback(async () => {
     if (isStandalone) {
       alert("您已安裝 Jeko APP。");
@@ -867,6 +967,31 @@ export default function EsimBottomSheet() {
   const goLogin = () => {
     router.push(buildLoginUrl());
   };
+
+  const refreshBindStatus = useCallback(async () => {
+    try {
+      const endpoint = await getPushEndpoint();
+      if (!endpoint) {
+        setBoundTopupId(null);
+        return null;
+      }
+      const res = await fetch(
+        `/api/push/bind-status?endpoint=${encodeURIComponent(endpoint)}`,
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBoundTopupId(null);
+        return null;
+      }
+      const topup =
+        data.bound && data.topupId != null ? String(data.topupId) : null;
+      setBoundTopupId(topup);
+      return data;
+    } catch {
+      setBoundTopupId(null);
+      return null;
+    }
+  }, []);
 
   /** 依裝置自動分流：iPhone 先裝 App；Android／電腦直接開通知 */
   const enableTrafficAlert = useCallback(async () => {
@@ -921,27 +1046,19 @@ export default function EsimBottomSheet() {
       await subscribeToPush({ token });
 
       setTrafficOn(true);
+      await refreshBindStatus();
+      broadcastPushNotifyState({ on: true, source: "esim-bottom-sheet" });
 
-      // 與 data-query 兩層流程一致：訂閱後到「流量提醒」手動選綁（不 silent auto-bind）
-      alert(
-        "通知已開啟！接下來請選擇要監控的 eSIM（一次只能綁一張）。",
-      );
-      router.push("/data-query/?setup=traffic");
-
-      // Android／Chrome：通知開好後「可選」安裝，不擋主流程
-      if (
+      // 與 data-query 一致：訂閱後在此頁手動選綁（不 silent auto-bind）
+      const shouldOfferPwa =
         !isApplePhone &&
         !isStandalone &&
         isInstallable &&
-        typeof window !== "undefined" &&
-        window.confirm("通知已開好。\n\n要不要再安裝到主畫面？之後更好找（可略過）。")
-      ) {
-        try {
-          await installPWA();
-        } catch {
-          /* 略過 */
-        }
-      }
+        typeof window !== "undefined";
+      setOfferPwaAfterBindHint(shouldOfferPwa);
+      setShowBindHint(true);
+      setPanel("qr");
+      setExpanded(true);
     } catch (err) {
       const msg = err?.message || String(err);
       alert(
@@ -959,10 +1076,114 @@ export default function EsimBottomSheet() {
     isLoggedIn,
     isInstallable,
     isStandalone,
-    installPWA,
     token,
     router,
+    refreshBindStatus,
   ]);
+
+  const disableTrafficAlert = useCallback(async () => {
+    if (trafficBusy) return;
+    setTrafficBusy(true);
+    try {
+      const endpoint = await getPushEndpoint();
+      if (endpoint) {
+        const res = await fetch("/api/push/unbind", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok && res.status !== 404) {
+          throw new Error(data.error || "關閉失敗");
+        }
+      }
+
+      if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          const sub = await reg.pushManager.getSubscription();
+          if (sub) await sub.unsubscribe();
+        } catch {
+          /* 本機退訂失敗仍關閉 UI */
+        }
+      }
+
+      setBoundTopupId(null);
+      setTrafficOn(false);
+      broadcastPushNotifyState({ on: false, source: "esim-bottom-sheet" });
+      alert("已關閉流量通知。");
+    } catch (err) {
+      alert(err?.message || "關閉失敗，請再試一次");
+    } finally {
+      setTrafficBusy(false);
+    }
+  }, [trafficBusy]);
+
+  const toggleTrafficAlert = useCallback(async () => {
+    if (trafficBusy) return;
+    if (trafficOn) await disableTrafficAlert();
+    else await enableTrafficAlert();
+  }, [trafficBusy, trafficOn, disableTrafficAlert, enableTrafficAlert]);
+
+  const toggleEsimBind = useCallback(
+    async (plan) => {
+      if (bindBusy || !trafficOn || !plan?.topupId) return;
+      setBindBusy(true);
+      try {
+        const endpoint = await getPushEndpoint();
+        if (!endpoint) {
+          alert("請先開啟流量通知。");
+          return;
+        }
+        const already =
+          String(boundTopupId || "") === String(plan.topupId);
+
+        const label = plan.name || "此 eSIM";
+
+        if (already) {
+          const res = await fetch("/api/push/unbind", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ endpoint }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data.error || "取消綁定失敗");
+          }
+          setBoundTopupId(null);
+          alert(`已關閉「${label}」的流量綁定。`);
+          return;
+        }
+
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch("/api/push/bind-esim", {
+          method: "POST",
+          headers,
+          credentials: "include",
+          body: JSON.stringify({
+            endpoint,
+            topupId: plan.topupId,
+            bindMethod: "member_order",
+            ...(plan.iccid ? { iccid: plan.iccid } : {}),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || data.hint || "綁定失敗");
+        }
+        setBoundTopupId(String(plan.topupId));
+        alert(
+          `已綁定「${label}」。\n流量偏低時會推播提醒您（一次僅監控一張）。`,
+        );
+      } catch (err) {
+        alert(err?.message || "操作失敗，請再試一次");
+      } finally {
+        setBindBusy(false);
+      }
+    },
+    [bindBusy, trafficOn, boundTopupId, token],
+  );
 
   // 登入後帶 ?enableTraffic=1 → 自動開啟
   useEffect(() => {
@@ -985,7 +1206,10 @@ export default function EsimBottomSheet() {
       try {
         const ctx = getBrowserContext();
         if (ctx.isIOS && !ctx.isStandalone) {
-          if (!cancelled) setTrafficOn(false);
+          if (!cancelled) {
+            setTrafficOn(false);
+            setBoundTopupId(null);
+          }
           return;
         }
         const endpoint = await getPushEndpoint();
@@ -995,6 +1219,7 @@ export default function EsimBottomSheet() {
           Notification.permission === "granted"
         ) {
           setTrafficOn(true);
+          if (!cancelled) await refreshBindStatus();
         }
       } catch {
         /* ignore */
@@ -1003,11 +1228,25 @@ export default function EsimBottomSheet() {
     return () => {
       cancelled = true;
     };
-  }, [authReady, isLoggedIn, isStandalone]);
+  }, [authReady, isLoggedIn, isStandalone, refreshBindStatus]);
+
+  // 與首頁「推播通知」雙向同步
+  useEffect(() => {
+    return subscribePushNotifySync((detail) => {
+      if (detail?.source === "esim-bottom-sheet") return;
+      if (detail?.on) {
+        setTrafficOn(true);
+        refreshBindStatus();
+      } else {
+        setTrafficOn(false);
+        setBoundTopupId(null);
+      }
+    });
+  }, [refreshBindStatus]);
 
   const trafficButtonLabel = (() => {
-    if (trafficBusy) return "開啟中…";
-    if (trafficOn) return "流量通知已開";
+    if (trafficBusy) return trafficOn ? "關閉中…" : "開啟中…";
+    if (trafficOn) return "關閉流量通知";
     if (needsAppleInstall) return "先安裝再通知";
     return "開啟流量通知";
   })();
@@ -1303,6 +1542,10 @@ export default function EsimBottomSheet() {
                   guestUsage={guestUsage}
                   guestLoading={guestLoading}
                   onGuestQuery={queryGuestUsage}
+                  trafficOn={trafficOn}
+                  boundTopupId={boundTopupId}
+                  bindBusy={bindBusy}
+                  onToggleBind={toggleEsimBind}
                 />
               ) : isGuest ? (
                 <LoginGate />
@@ -1313,6 +1556,10 @@ export default function EsimBottomSheet() {
                   setActiveIdx={setActiveIdx}
                   usageMap={usageMap}
                   usageLoading={usageLoading}
+                  trafficOn={trafficOn}
+                  boundTopupId={boundTopupId}
+                  bindBusy={bindBusy}
+                  onToggleBind={toggleEsimBind}
                 />
               ) : panel === "install" ? (
                 <InstallPanel
@@ -1322,36 +1569,120 @@ export default function EsimBottomSheet() {
               ) : null}
 
               {(panel === "qr" || panel === "usage") && isLoggedIn && (
-                <div className="px-4 pb-8 pt-2 flex gap-2">
-                  <JekoPillButton
-                    href="/product"
-                    size="sm"
-                    className="flex-1 min-w-0"
-                    onClick={() => setExpanded(false)}
-                  >
-                    購買 eSIM
-                  </JekoPillButton>
-                  <JekoPillButton
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    className={`flex-1 min-w-0 ${
-                      trafficOn
-                        ? "!border-[#0F8A52] !text-[#0F8A52] !bg-[#e8fbf2]"
-                        : ""
-                    }`}
-                    disabled={trafficBusy}
-                    onClick={enableTrafficAlert}
-                    showChevron={!trafficOn}
-                  >
-                    {trafficButtonLabel}
-                  </JekoPillButton>
+                <div className="px-4 pb-8 pt-2 space-y-1.5">
+                  <div className="flex items-stretch gap-2">
+                    {!plans.length ? (
+                      <JekoPillButton
+                        href="/product"
+                        size="sm"
+                        className="flex-1 min-w-0 basis-0 !min-h-[42px]"
+                        onClick={() => setExpanded(false)}
+                      >
+                        購買 eSIM
+                      </JekoPillButton>
+                    ) : esimInstallUrl ? (
+                      <JekoPillButton
+                        href={esimInstallUrl}
+                        external
+                        size="sm"
+                        className="flex-1 min-w-0 basis-0 !min-h-[42px]"
+                      >
+                        一鍵安裝 eSIM
+                      </JekoPillButton>
+                    ) : (
+                      <JekoPillButton
+                        type="button"
+                        size="sm"
+                        className="flex-1 min-w-0 basis-0 !min-h-[42px]"
+                        onClick={handleEsimOneClickInstall}
+                      >
+                        一鍵安裝 eSIM
+                      </JekoPillButton>
+                    )}
+                    <TrafficNotifyToggle
+                      size="bar"
+                      on={trafficOn}
+                      busy={trafficBusy}
+                      onClick={toggleTrafficAlert}
+                      aria-label={trafficButtonLabel}
+                      className="flex-1 min-w-0 basis-0 w-full"
+                    />
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-500 text-center leading-tight">
+                    {!plans.length
+                      ? trafficOn
+                        ? boundTopupId
+                          ? "流量通知已開 · 已綁定 eSIM"
+                          : "流量通知已開 · 請綁定 eSIM"
+                        : needsAppleInstall
+                          ? "先安裝再開"
+                          : "點右側開關開啟／關閉流量通知"
+                      : [
+                          esimInstallUrl
+                            ? deviceOs === "ios"
+                              ? "左側一鍵安裝（iOS）"
+                              : "左側一鍵安裝（Android）"
+                            : hasEsimInstallLinks
+                              ? "請用手機開啟以一鍵安裝"
+                              : "請掃描上方 QR 安裝",
+                          trafficOn
+                            ? boundTopupId
+                              ? "流量通知已開"
+                              : "請綁定 eSIM"
+                            : "右側流量通知",
+                        ].join(" · ")}
+                  </p>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
+
+      {showBindHint ? (
+        <div
+          className="fixed inset-0 z-[130] flex items-center justify-center p-5 bg-black/40"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="esim-bind-hint-title"
+          onClick={closeBindHint}
+        >
+          <div
+            className="w-full max-w-[320px] rounded-2xl bg-white shadow-xl px-5 pt-5 pb-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 w-10 h-10 rounded-xl bg-[#EFF6FC] flex items-center justify-center">
+                <MaterialIcon
+                  name="notifications_active"
+                  size={22}
+                  className="text-[#1E4AD1]"
+                />
+              </div>
+              <div className="min-w-0">
+                <h3
+                  id="esim-bind-hint-title"
+                  className="text-[15px] font-bold text-slate-900 leading-snug"
+                >
+                  流量提醒已開啟
+                </h3>
+                <p className="mt-1.5 text-[13px] text-slate-600 leading-relaxed">
+                  請針對需要監控的 eSIM，在方案卡片開啟「eSIM
+                  流量綁定」，系統才會在流量偏低時通知您。
+                </p>
+              </div>
+            </div>
+            <JekoPillButton
+              type="button"
+              size="sm"
+              className="mt-4 !min-h-[42px]"
+              onClick={closeBindHint}
+            >
+              知道了，去綁定
+            </JekoPillButton>
+          </div>
+        </div>
+      ) : null}
 
       <AppInstallGuideModal
         open={showInstallGuide}

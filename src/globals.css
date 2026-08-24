@@ -371,8 +371,15 @@ section.section_article p{
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
-  max-height: min(52vh, 460px);
+  max-height: none;
   background: #fff;
+}
+
+/* LINE in-app browser 對 vh 計算偏小，手機端不要用 vh 限高，避免輪播比例被壓扁 */
+@media (min-width: 1024px) {
+  .product-gallery-frame {
+    max-height: min(52vh, 460px);
+  }
 }
 
 .product-main-swiper.swiper,
@@ -1324,6 +1331,102 @@ img {
   line-height: 1.7;
   font-family: 'Roboto', 'Noto Sans TC', -apple-system, BlinkMacSystemFont,
     "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* 方案詳情 — 雙欄資訊卡（藍底白字標題） */
+.product-content-wrapper .jeko-sum-plan {
+  margin: 0 0 2.5rem;
+}
+
+.product-content-wrapper .jeko-sum-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+.product-content-wrapper .jeko-sum-head {
+  background: #2d5be3;
+  padding: 1rem 1.25rem;
+  text-align: center;
+}
+
+.product-content-wrapper .jeko-sum-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+
+.product-content-wrapper .jeko-sum-body {
+  background: #fff;
+}
+
+.product-content-wrapper .jeko-sum-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.product-content-wrapper .jeko-sum-cell {
+  padding: 1.15rem 1.35rem;
+}
+
+.product-content-wrapper .jeko-sum-cell--split {
+  border-right: 1px solid #eef2f7;
+}
+
+.product-content-wrapper .jeko-sum-cell__label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.45rem;
+  line-height: 1.4;
+}
+
+.product-content-wrapper .jeko-sum-cell__icon {
+  font-size: 1rem;
+  color: #2d5be3;
+}
+
+.product-content-wrapper .jeko-sum-cell__value {
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.65;
+}
+
+.product-content-wrapper .jeko-sum-cell__value .jeko-sum-warn {
+  color: #ea580c;
+  font-weight: 700;
+}
+
+.product-content-wrapper .jeko-sum-full {
+  padding: 1.15rem 1.35rem 1.35rem;
+}
+
+@media (max-width: 640px) {
+  .product-content-wrapper .jeko-sum-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .product-content-wrapper .jeko-sum-cell--split {
+    border-right: 0;
+    border-bottom: 1px solid #eef2f7;
+  }
+
+  .product-content-wrapper .jeko-sum-cell {
+    padding: 1rem 1.1rem;
+  }
+
+  .product-content-wrapper .jeko-sum-full {
+    padding: 1rem 1.1rem 1.2rem;
+  }
 }
 
 .product-content-wrapper .jeko-usage {

@@ -23,7 +23,8 @@ export default function MobileCardCarousel({
   className = "",
   label = "卡片輪播",
   arrowsOutside = false,
-  hideArrowsOnMobile = false,
+  /** 手機版預設隱藏左右箭頭（可滑動／點點切換） */
+  hideArrowsOnMobile = true,
 }) {
   const slides = Children.toArray(children);
   const [reduceMotion, setReduceMotion] = useState(true);
@@ -109,7 +110,7 @@ export default function MobileCardCarousel({
   };
 
   const arrowBaseClass =
-    "absolute top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md border border-gray-100 text-stone-900 active:scale-95 transition-transform";
+    "absolute top-1/2 z-10 -translate-y-1/2 items-center justify-center h-9 w-9 rounded-full bg-white shadow-md border border-gray-100 text-stone-900 active:scale-95 transition-transform";
   const arrowVisibilityClass = hideArrowsOnMobile ? "hidden md:flex" : "flex";
   const arrowLeftClass = arrowsOutside
     ? "left-0 md:-left-5"

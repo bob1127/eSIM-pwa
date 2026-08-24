@@ -263,34 +263,35 @@ export default function PickUpJobsSection() {
       ],
       korea: [
         {
+          hotSale: true,
           pills: [
-            { text: "Speed", color: "#2E4457" },
-            { text: "SKT獨家", color: "#17806A" },
+            { text: "真．不限速", color: "#FF5252" },
+            { text: "SK電信・韓國IP", color: "#17806A" },
           ],
-          title: "韓國 SKT 原生線路",
-          desc: "與韓國當地人使用相同網路，享受超低延遲與極速飆網體驗。追星搶票、直播視訊完全不卡頓。",
-          tags: ["韓國第一", "低延遲", "原生IP"],
+          title: "韓國 SK電信 原生吃到飽",
+          desc: "SKT 原生韓國 IP、真．不限速高速吃到飽。適合導航、直播、搶票與整天大量使用；2 天以上方案完成線上實名後可收來電／簡訊。",
+          tags: ["韓國IP", "真．不限速", "原生線路"],
           link: "/product/korea/korea-unlimited-esim?telecom=sk-native&days=5&data_amount=unlimited",
         },
         {
           pills: [
-            { text: "Value", color: "#2E4457" },
+            { text: "高CP值", color: "#2E4457" },
             { text: "LG U+ / SK", color: "#17806A" },
           ],
           title: "LG U+ / SK 流量吃到飽",
-          desc: "新加坡IP漫遊：每日1GB高速，用完後維持約10Mbps吃到飽；LG U+／SK雙電信覆蓋，適合一般旅遊上網。",
+          desc: "新加坡 IP 漫遊：每日 1GB 高速，用完後維持約 10Mbps 吃到飽；LG U+／SK 雙電信覆蓋，適合一般旅遊上網。",
           tags: ["新加坡IP", "每日1GB", "10Mbps吃到飽"],
           link: "/product/korea/korea-unlimited-esim?telecom=lg-sk&days=5&data_amount=unlimited",
         },
         {
           pills: [
-            { text: "Voice", color: "#FF9800" },
-            { text: "含號碼", color: "#17806A" },
+            { text: "每日／總量", color: "#07819F" },
+            { text: "5G 雙切換", color: "#17806A" },
           ],
-          title: "含通話 / 簡訊收發功能",
-          desc: "附帶韓國 +82 手機號碼，可註冊外送 App、預約餐廳排隊或接收認證碼。",
-          tags: ["可通話", "外送預約", "實名認證"],
-          link: "/product/korea/korea-unlimited-esim?telecom=sk-native&days=5&data_amount=unlimited",
+          title: "韓國每日型・總量型",
+          desc: "可選每日高速額度或總量 GB 方案，LG U+／SK 5G 雙切換找訊號。短天數輕旅或長天期控流量都適合。",
+          tags: ["每日型", "總量型", "雙電信"],
+          link: "/product/korea/korea-daily-esim?telecom=lg-skt-dual",
         },
       ],
       sea: [

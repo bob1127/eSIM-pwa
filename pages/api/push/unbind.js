@@ -35,7 +35,6 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: "找不到推播訂閱" });
   }
 
-  const now = new Date().toISOString();
   const { error: updateErr } = await supabaseAdmin
     .from("push_subscriptions")
     .update({
@@ -46,12 +45,14 @@ export default async function handler(req, res) {
       order_id: null,
       bind_method: null,
       iccid_bound_at: null,
-      updated_at: now,
     })
     .eq("endpoint", endpoint);
 
   if (updateErr) {
-    return res.status(500).json({ error: "取消綁定失敗", detail: updateErr.message });
+    return res.status(500).json({
+      error: "取消綁定失敗",
+      detail: updateErr.message,
+    });
   }
 
   return res.status(200).json({

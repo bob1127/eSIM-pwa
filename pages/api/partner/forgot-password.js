@@ -5,6 +5,11 @@ import {
   mailErrorMessage,
 } from "../../../lib/partnerResetPasswordEmail";
 import { guardAuthRateLimit, getClientIp } from "../../../lib/authRateLimit";
+import {
+  applyPartnerAuthSecurityHeaders,
+  assertSameSiteRequest,
+  authFailureDelay,
+} from "../../../lib/partnerLoginSecurity";
 
 const supabaseAdmin =
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -58,7 +63,18 @@ function fixRecoveryRedirectLink(actionLink, redirectTo) {
 }
 
 export default async function handler(req, res) {
+  applyPartnerAuthSecurityHeaders(res);
+
   if (req.method !== "POST") return res.status(405).end("Method Not Allowed");
+
+  if (!assertSameSiteRequest(req)) {
+    await authFailureDelay(400);
+    return res.status(403).json({
+      success: false,
+      code: "FORBIDDEN_ORIGIN",
+      message: "來源不受信任，請由官方夥伴登入頁重新操作",
+    });
+  }
 
   const email = normalizeEmail(req.body?.email);
   if (!email || !email.includes("@")) {
