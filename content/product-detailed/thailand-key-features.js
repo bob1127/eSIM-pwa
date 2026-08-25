@@ -145,6 +145,23 @@ export function dtacRealFutureTotalKeyFeatures() {
   );
 }
 
+/** DTAC / REAL FUTURE 吃到飽（漫遊香港 IP） */
+export function dtacRealFutureUnlimitedKeyFeatures() {
+  return pack(
+    [
+      "本方案在泰國走 DTAC 與 Real Future（TrueMove）網路，出網為香港 IP，適合預算敏感、需要整天連線的旅客。",
+      "**基本介紹與特色**",
+      "**市場地位：** DTAC 與 Real Future（TrueMove）雙網互補。",
+      "**覆蓋範圍：** 曼谷與主要旅遊城市。",
+      "**網路速度：** 不限流量吃到飽（FUP）。",
+      "**數據路由：** 香港 IP 漫遊（APN cmlink）。",
+      "**本站方案：** 吃到飽；支援熱點與 ChatGPT／TikTok／Gemini。",
+      "**使用注意：** 建議抵達泰國後再啟用。",
+    ],
+    "都會區測速常見可到數十 Mbps（視訊號與擁塞而定）。FUP 吃到飽不會鎖死固定 Mbps，繁忙時段可能變慢。僅供參考。",
+  );
+}
+
 export default {
   truemoveHKeyFeatures,
   trueDtacKeyFeatures,
@@ -152,6 +169,7 @@ export default {
   aisDailyKeyFeatures,
   dtacDailyKeyFeatures,
   dtacRealFutureDailyKeyFeatures,
+  dtacRealFutureUnlimitedKeyFeatures,
   trueLocalTotalKeyFeatures,
   dtacRealFutureTotalKeyFeatures,
 };

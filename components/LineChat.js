@@ -11,7 +11,7 @@ export default function LineChat() {
   return (
     <div
       className="ml-10  line-it-chat border w-[400px] border-red-500"
-      data-acc="@391huutså"
+      data-acc="@593gvyzn"
       data-chat-title="聯絡我們"
       data-chat-subtitle="即時回覆"
       data-env="REAL"

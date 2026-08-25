@@ -66,7 +66,7 @@ export default function RefundPolicyPage() {
             <br />
             <strong>非會員：</strong>請先{" "}
             <a
-              href="https://line.me/R/ti/p/@391huuts"
+              href="https://line.me/R/ti/p/@593gvyzn"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sky-600 font-bold hover:underline"
@@ -153,7 +153,7 @@ export default function RefundPolicyPage() {
           <li>
             <strong>非會員：</strong>請先{" "}
             <a
-              href="https://line.me/R/ti/p/@391huuts"
+              href="https://line.me/R/ti/p/@593gvyzn"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sky-600 font-bold hover:underline"

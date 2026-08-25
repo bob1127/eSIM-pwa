@@ -12,6 +12,7 @@ import {
   buildWelcomeFollowMessage,
   buildMemberBindMessage,
   buildIccidUsageFlexMessage,
+  buildOffHoursAiGuideMessage,
   isBindKeyword,
   getLineMessagingConfig,
   isLineBotConfigured,
@@ -21,6 +22,7 @@ import {
   enableLineTrafficAlertForLineUser,
   upsertLineTrafficAlert,
 } from "../../../lib/lineTrafficAlert";
+import { isSupportBusinessHours } from "../../../lib/supportHours";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -235,6 +237,11 @@ async function handleTextMessage(event) {
     ]);
     return;
   }
+
+  // 非關鍵字一般訊息：非營業時間引導至網站／PWA 智慧客服
+  if (!isSupportBusinessHours()) {
+    await replyLineMessage(replyToken, buildOffHoursAiGuideMessage());
+  }
 }
 
 export default async function handler(req, res) {
@@ -281,7 +288,15 @@ export default async function handler(req, res) {
           event.source?.displayName,
         );
         if (event.replyToken) {
-          await replyLineMessage(event.replyToken, buildWelcomeFollowMessage());
+          const welcome = buildWelcomeFollowMessage();
+          if (!isSupportBusinessHours()) {
+            await replyLineMessage(event.replyToken, [
+              ...(Array.isArray(welcome) ? welcome : [welcome]),
+              buildOffHoursAiGuideMessage(),
+            ]);
+          } else {
+            await replyLineMessage(event.replyToken, welcome);
+          }
         }
         continue;
       }

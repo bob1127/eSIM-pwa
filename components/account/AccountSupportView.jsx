@@ -575,7 +575,7 @@ export default function AccountSupportView({
                     className="font-black text-base leading-snug"
                     style={{ color: UI.dark }}
                   >
-                    早上 09:00 – 晚上 11:00
+                    早上 09:00 – 晚上 12:00
                   </p>
                   <p className="text-[11px] mt-1" style={{ color: UI.soft }}>
                     人工客服時段

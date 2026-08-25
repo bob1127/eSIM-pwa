@@ -27,32 +27,6 @@ const VuckoScroll = dynamic(() => import("@/components/CodegridScroll"), {
   ssr: false,
 });
 
-// 輔助組件：快速連結按鈕
-function QuickLinkButton({ text, active = false, link = "#" }) {
-  return (
-    <a href={link} className="group block">
-      <div className="flex justify-center lg:justify-end items-center">
-        <div
-          className={`py-2 lg:py-2 flex items-center px-5 rounded-[30px] w-full lg:w-auto shadow-sm transition-all duration-200 ${
-            active ? "bg-white" : "bg-white lg:bg-transparent lg:hover:bg-white"
-          }`}
-        >
-          <div
-            className={`w-[8px] h-[8px] rounded-full shrink-0 transition-all duration-300 ${
-              active
-                ? "bg-[#2d7ee7]"
-                : "bg-[#2d7ee7] lg:hidden lg:group-hover:block"
-            }`}
-          ></div>
-          <div className="ml-3 tracking-widest font-bold text-[14px] text-slate-700 group-hover:text-[#147AD7]">
-            {text}
-          </div>
-        </div>
-      </div>
-    </a>
-  );
-}
-
 const CHECK_ESIM_SUPPORT_IMAGES = [
   "/images/check-esim-support/support-01.png",
   "/images/check-esim-support/support-02.png",
@@ -713,8 +687,8 @@ export default function Home() {
             </div>
 
             <div className="border-t lg:border-t-0 w-full flex justify-around pt-6 md:pt-10 lg:pt-0">
-              <div className="flex flex-col lg:flex-row w-full lg:w-[80%] mx-auto gap-6 lg:gap-0">
-                <div className="w-full lg:w-[80] flex items-start flex-col text-center lg:text-left">
+              <div className="flex flex-col w-full lg:w-[80%] mx-auto">
+                <div className="w-full flex items-start flex-col text-center lg:text-left">
                   <div>
                     <h3 className="text-2xl mb-4 lg:text-3xl font-bold leading-snug">
                       請確保您的手機
@@ -728,40 +702,30 @@ export default function Home() {
                     >
                       如何查看手機是否支援eSIM
                     </a>
-                    <p className="mt-4 leading-relaxed max-w-[600px] text-stone-900 text-sm lg:text-base">
+                    <p className="mt-4 leading-relaxed max-w-[600px] text-stone-900 text-sm lg:text-base mx-auto lg:mx-0">
                       在購買前，請務必確認您的裝置支援 eSIM
                       功能且未被電信商鎖定（Sim-Lock Free）。 目前市面上新款
                       iPhone （XR/XS 以後機型）及多數 Android 旗艦機種皆已支援。
                     </p>
                   </div>
-                  <div className="check-esim-img flex gap-2 sm:gap-3 mt-6 w-full ">
+                  <div className="check-esim-img grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 mt-6 w-full">
                     {CHECK_ESIM_SUPPORT_IMAGES.map((src) => (
                       <button
                         key={src}
                         type="button"
                         onClick={() => setImageLightbox(src)}
-                        className="relative flex-1 aspect-[4/5] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0A6CD0] rounded-lg overflow-hidden"
+                        className="relative w-full aspect-[4/5] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0A6CD0] rounded-lg overflow-hidden"
                         aria-label={`放大檢視：${getImageAlt(src)}`}
                       >
                         <Image
                           src={src}
                           alt={getImageAlt(src)}
                           fill
-                          sizes="(max-width: 1424px) 40vw, 560px"
+                          sizes="(max-width: 1024px) 33vw, 280px"
                           className="object-cover"
                         />
                       </button>
                     ))}
-                  </div>
-                </div>
-                <div className="w-full px-0 md:px-5 lg:w-[20%]">
-                  <div className="flex flex-col gap-3">
-                    <QuickLinkButton text="查看支援裝置列表" active />
-                    <QuickLinkButton text="產品相關政策及規範" />
-                    <QuickLinkButton
-                      text="蝦皮訂單編號快速兌換"
-                      link="/shopee-qrcode"
-                    />
                   </div>
                 </div>
               </div>

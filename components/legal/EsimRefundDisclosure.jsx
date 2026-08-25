@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import MaterialIcon from "@/components/MaterialIcon";
 
-const LINE_OA_URL = "https://line.me/R/ti/p/@391huuts";
+const LINE_OA_URL =
+  process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn";
 
 const ROAMING_ITEMS = [
   {

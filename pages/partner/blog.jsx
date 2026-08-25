@@ -108,7 +108,7 @@ export default function PartnerBlogAdminPage() {
   const [assigningId, setAssigningId] = useState(null);
   const [mobileActionPost, setMobileActionPost] = useState(null);
 
-  const lineOaId = process.env.NEXT_PUBLIC_LINE_OA_ID || "@391huuts";
+  const lineOaId = process.env.NEXT_PUBLIC_LINE_OA_ID || "@593gvyzn";
   const applyMessage = [
     "【申請開通】自訂文章加值",
     `夥伴名稱：${partner?.name || "（未填）"}`,

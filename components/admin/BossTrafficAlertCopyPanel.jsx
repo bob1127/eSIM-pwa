@@ -320,46 +320,89 @@ export default function BossTrafficAlertCopyPanel() {
     }
   };
 
-  const sendWebPushTest = async () => {
+  const showLocalTestNotification = async (webPush) => {
+    let localShown = false;
+    let localHint = "";
+    try {
+      if (
+        typeof window !== "undefined" &&
+        "serviceWorker" in navigator &&
+        Notification.permission === "granted" &&
+        webPush
+      ) {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification(webPush.title || "流量提醒測試", {
+          body: webPush.body || "Web Push 測試",
+          icon: "/images/Logo/icon-192.png",
+          badge: "/images/Logo/icon-192.png",
+          tag: "jeko-boss-traffic-test-local",
+          renotify: true,
+          requireInteraction: true,
+          data: { url: webPush.url || "/data-query/" },
+        });
+        localShown = true;
+      } else if (Notification.permission !== "granted") {
+        localHint = "通知權限未允許";
+      }
+    } catch (localErr) {
+      localHint = localErr?.message || "本機顯示失敗";
+    }
+    return { localShown, localHint };
+  };
+
+  const sendWebPushTest = async ({ sendAll = false } = {}) => {
+    if (sendAll) {
+      const ok = window.confirm(
+        "確定對最近最多 40 筆 Web Push 訂閱發送流量提醒測試？\n（並行發送；失效訂閱會清除；單筆逾時約 8 秒，不會再整頁卡住）",
+      );
+      if (!ok) return;
+    }
+
     setWebPushTesting(true);
     setToast("");
     setWebPushTestResult(null);
+
+    const controller = new AbortController();
+    const abortMs = sendAll ? 90_000 : 30_000;
+    const abortTimer = setTimeout(() => controller.abort(), abortMs);
+
     try {
       const data = await bossFetch("/api/admin/traffic-alert-web-push-test", {
         method: "POST",
+        signal: controller.signal,
         body: JSON.stringify({
-          subscriptionId: webPushTestSubId.trim() || undefined,
+          sendAll: sendAll || undefined,
+          subscriptionId: sendAll
+            ? undefined
+            : webPushTestSubId.trim() || undefined,
           sku: "South Korea-Promo-unlimited-5-A0",
           remainingMb: 180,
           totalMb: 1024,
         }),
       });
 
-      let localShown = false;
-      let localHint = "";
-      try {
-        if (
-          typeof window !== "undefined" &&
-          "serviceWorker" in navigator &&
-          Notification.permission === "granted" &&
-          data.webPush
-        ) {
-          const reg = await navigator.serviceWorker.ready;
-          await reg.showNotification(data.webPush.title || "流量提醒測試", {
-            body: data.webPush.body || "Web Push 測試",
-            icon: "/images/Logo/icon-192.png",
-            badge: "/images/Logo/icon-192.png",
-            tag: "jeko-boss-traffic-test-local",
-            renotify: true,
-            requireInteraction: true,
-            data: { url: data.webPush.url || "/data-query/" },
-          });
-          localShown = true;
-        } else if (Notification.permission !== "granted") {
-          localHint = "通知權限未允許";
-        }
-      } catch (localErr) {
-        localHint = localErr?.message || "本機顯示失敗";
+      const { localShown, localHint } = await showLocalTestNotification(
+        data.webPush,
+      );
+
+      if (data.sendAll) {
+        const msg = `全部發送完成：成功 ${data.sent}/${data.total}，失敗 ${data.failed}${
+          data.timedOut ? `，逾時 ${data.timedOut}` : ""
+        }，已清除失效 ${data.removed}${
+          localShown ? "；本機已彈出通知" : ""
+        }`;
+        setWebPushTestResult({
+          ok: true,
+          message: msg,
+          localShown,
+          localHint,
+          title: data.webPush?.title,
+          body: data.webPush?.body,
+        });
+        setToast(msg);
+        setToastType("good");
+        if (data.removed > 0) loadWebPushSubs();
+        return;
       }
 
       const msg = localShown
@@ -376,16 +419,23 @@ export default function BossTrafficAlertCopyPanel() {
       setToast(`Web Push 測試已送出${data.label ? ` → ${data.label}` : ""}`);
       setToastType("good");
     } catch (err) {
+      const aborted =
+        err?.name === "AbortError" ||
+        String(err?.message || "").toLowerCase().includes("abort");
+      const message = aborted
+        ? `請求逾時（${Math.round(abortMs / 1000)} 秒）。請重新整理後改選「本機」單筆發送，或再試全部發送。`
+        : err.message || "Web Push 測試推播失敗";
       setWebPushTestResult({
         ok: false,
-        message: err.message || "Web Push 測試推播失敗",
+        message,
       });
-      setToast(err.message || "Web Push 測試推播失敗");
+      setToast(message);
       setToastType("bad");
       if (String(err.message || "").includes("已失效")) {
         loadWebPushSubs();
       }
     } finally {
+      clearTimeout(abortTimer);
       setWebPushTesting(false);
     }
   };
@@ -755,16 +805,26 @@ export default function BossTrafficAlertCopyPanel() {
             尚無 Web Push 訂閱紀錄。請先按「開啟流量提醒設定」。
           </p>
         )}
-        <button
-          type="button"
-          disabled={
-            webPushTesting || !webPushVapidOk || !webPushTestSubId.trim()
-          }
-          onClick={sendWebPushTest}
-          className="rounded-full bg-[#1a56db] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1648b0] disabled:opacity-40"
-        >
-          {webPushTesting ? "發送中…" : "③ 發送 Web Push 測試推播"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={
+              webPushTesting || !webPushVapidOk || !webPushTestSubId.trim()
+            }
+            onClick={() => sendWebPushTest()}
+            className="rounded-full bg-[#1a56db] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1648b0] disabled:opacity-40"
+          >
+            {webPushTesting ? "發送中…" : "③ 發送 Web Push 測試推播"}
+          </button>
+          <button
+            type="button"
+            disabled={webPushTesting || !webPushVapidOk}
+            onClick={() => sendWebPushTest({ sendAll: true })}
+            className="rounded-full border border-[#1a56db] bg-white px-5 py-2.5 text-sm font-bold text-[#1a56db] hover:bg-[#1a56db]/5 disabled:opacity-40"
+          >
+            {webPushTesting ? "發送中…" : "全部發送"}
+          </button>
+        </div>
         {webPushTestResult ? (
           <div
             className={`rounded-xl px-3 py-3 text-xs leading-relaxed ${

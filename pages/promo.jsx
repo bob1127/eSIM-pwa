@@ -6,7 +6,7 @@ import PromoLotteryMachine from "@/components/promo/PromoLotteryMachine";
 import PromoWelcomeRules from "@/components/promo/PromoWelcomeRules";
 
 const LINE_OA =
-  process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@391huuts";
+  process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn";
 
 export default function PromoPage() {
   return (

@@ -1,8 +1,9 @@
 /**
  * GET/POST /api/admin/traffic-alert-web-push-test
- * Boss：送一則「流量偏低提醒」Web Push 到指定訂閱（不寫入 last_alert_at）
+ * Boss：送一則「流量偏低提醒」Web Push（不寫入 last_alert_at）
  *
- * Body: { subscriptionId?, sku?, remainingMb?, totalMb? }
+ * Body: { subscriptionId?, sendAll?, sku?, remainingMb?, totalMb? }
+ * sendAll: true → 發給最近 N 筆 push_subscriptions（並行＋單筆逾時，避免卡死）
  */
 import { requireMedusaAdminFromRequest } from "../../../lib/medusaAdminAuth";
 import { getSupabaseAdminServer } from "../../../lib/supabaseAdminServer";
@@ -11,10 +12,51 @@ import { buildLowTrafficWebPayload } from "../../../lib/trafficAlertCopy";
 import { resolveTrafficUpsellOffers } from "../../../lib/trafficUpsellLink";
 import { sendTrafficWebPush } from "../../../lib/trafficMonitor";
 
+/** 全部發送：最多處理筆數（避免一次掃全表卡住） */
+const SEND_ALL_LIMIT = 40;
+/** 並行數 */
+const SEND_ALL_CONCURRENCY = 5;
+/** 單筆推播逾時（失效 endpoint 常會掛很久） */
+const SEND_PUSH_TIMEOUT_MS = 8000;
+
 function isVapidConfigured() {
   return !!(
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY
   );
+}
+
+async function mapPool(items, concurrency, worker) {
+  const list = items || [];
+  const limit = Math.max(1, Math.min(concurrency || 1, list.length || 1));
+  const results = new Array(list.length);
+  let next = 0;
+
+  async function run() {
+    while (next < list.length) {
+      const i = next++;
+      results[i] = await worker(list[i], i);
+    }
+  }
+
+  await Promise.all(Array.from({ length: limit }, () => run()));
+  return results;
+}
+
+function withTimeout(promise, ms) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      resolve({ ok: false, error: `timeout ${ms}ms`, timeout: true });
+    }, ms);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        resolve({ ok: false, error: err?.message || "push error" });
+      });
+  });
 }
 
 function shortEndpoint(endpoint) {
@@ -111,13 +153,14 @@ export default async function handler(req, res) {
   }
 
   const body = req.body || {};
+  const sendAll = body.sendAll === true || body.sendAll === "true";
   const subscriptionId = String(
     body.subscriptionId ||
       process.env.TRAFFIC_ALERT_WEB_PUSH_TEST_SUBSCRIPTION_ID ||
       "",
   ).trim();
 
-  if (!subscriptionId) {
+  if (!sendAll && !subscriptionId) {
     try {
       const supabase = getSupabaseAdminServer();
       const { data } = await supabase
@@ -168,6 +211,82 @@ export default async function handler(req, res) {
 
   try {
     const supabase = getSupabaseAdminServer();
+    const payload = await buildLowTrafficWebPayload(target);
+
+    let webPush = null;
+    try {
+      webPush = JSON.parse(payload);
+    } catch {
+      webPush = null;
+    }
+
+    if (sendAll) {
+      const { data: subs, error } = await supabase
+        .from("push_subscriptions")
+        .select("id, endpoint, p256dh, auth, product_label, guest_email")
+        .order("created_at", { ascending: false })
+        .limit(SEND_ALL_LIMIT);
+
+      if (error) throw error;
+      if (!subs?.length) {
+        return res.status(200).json({
+          ok: true,
+          sendAll: true,
+          total: 0,
+          sent: 0,
+          failed: 0,
+          removed: 0,
+          timedOut: 0,
+          limit: SEND_ALL_LIMIT,
+          upsellOffers,
+          webPush,
+          checkedAt,
+          message: "無 Web Push 訂閱",
+        });
+      }
+
+      const results = await mapPool(
+        subs,
+        SEND_ALL_CONCURRENCY,
+        async (sub) => {
+          if (!sub?.endpoint) return { status: "failed", id: sub?.id };
+          const pushResult = await withTimeout(
+            sendTrafficWebPush(sub, payload),
+            SEND_PUSH_TIMEOUT_MS,
+          );
+          if (pushResult.ok) return { status: "sent", id: sub.id };
+          if (pushResult.gone) return { status: "gone", id: sub.id };
+          if (pushResult.timeout) return { status: "timeout", id: sub.id };
+          return { status: "failed", id: sub.id };
+        },
+      );
+
+      const goneIds = results
+        .filter((r) => r?.status === "gone" && r.id)
+        .map((r) => r.id);
+      const sent = results.filter((r) => r?.status === "sent").length;
+      const failed = results.filter((r) => r?.status === "failed").length;
+      const timedOut = results.filter((r) => r?.status === "timeout").length;
+
+      if (goneIds.length) {
+        await supabase.from("push_subscriptions").delete().in("id", goneIds);
+      }
+
+      return res.status(200).json({
+        ok: true,
+        sendAll: true,
+        total: subs.length,
+        sent,
+        failed,
+        timedOut,
+        removed: goneIds.length,
+        limit: SEND_ALL_LIMIT,
+        upsellOffers,
+        webPush,
+        checkedAt,
+      });
+    }
+
     const { data: sub, error } = await supabase
       .from("push_subscriptions")
       .select("id, endpoint, p256dh, auth, product_label, guest_email")
@@ -182,7 +301,6 @@ export default async function handler(req, res) {
       });
     }
 
-    const payload = await buildLowTrafficWebPayload(target);
     const pushResult = await sendTrafficWebPush(sub, payload);
 
     if (pushResult.gone) {
@@ -204,13 +322,6 @@ export default async function handler(req, res) {
       });
     }
 
-    let webPush = null;
-    try {
-      webPush = JSON.parse(payload);
-    } catch {
-      webPush = null;
-    }
-
     return res.status(200).json({
       ok: true,
       subscriptionId,
@@ -222,7 +333,8 @@ export default async function handler(req, res) {
   } catch (err) {
     return res.status(500).json({
       error: err?.message || "Web Push 推播失敗",
-      subscriptionId,
+      subscriptionId: sendAll ? undefined : subscriptionId,
+      sendAll: sendAll || undefined,
     });
   }
 }

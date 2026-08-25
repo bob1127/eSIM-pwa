@@ -157,20 +157,29 @@ const HEADLINE_FROM_INDEX = 2;
 const slides = [
   {
     image: "/images/Hero-banner-01.png",
-    imageMobile: "/images/hero-banner-mobile.png",
+    imageTablet: "/images/Hero-banner-01-loptap.png",
+    imageMobile: "/images/Hero-banner-01-mobile.png",
   },
-  { image: "/images/九州.png" },
-
+  {
+    image: "/images/九州.png",
+    imageTablet: "/images/banner04-loptap.png",
+    imageMobile: "/images/banner04-mobile.png",
+  },
   { image: "/images/location/fcc7e825-9136-4c9d-8312-3309fe189b4c.png" },
   { image: "/images/location/korea-02.png" },
   { image: "/images/location/thailand-01.png" },
 ];
 
 function HeroSlideImage({ slide }) {
-  if (slide.imageMobile) {
+  if (slide.imageMobile || slide.imageTablet) {
     return (
       <picture>
-        <source media="(max-width: 767px)" srcSet={slide.imageMobile} />
+        {slide.imageMobile ? (
+          <source media="(max-width: 767px)" srcSet={slide.imageMobile} />
+        ) : null}
+        {slide.imageTablet ? (
+          <source media="(max-width: 1023px)" srcSet={slide.imageTablet} />
+        ) : null}
         <img src={slide.image} alt="Hero Banner" />
       </picture>
     );

@@ -83,7 +83,10 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
     }
   };
 
-  const oaUrl = status?.oaUrl || "https://line.me/R/ti/p/@391huuts";
+  const oaUrl =
+    status?.oaUrl ||
+    process.env.NEXT_PUBLIC_LINE_OA_URL ||
+    "https://line.me/R/ti/p/@593gvyzn";
 
   const lineGuideButton = (
     <JekoAnimatedCtaButton

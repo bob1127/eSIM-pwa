@@ -781,6 +781,59 @@ function MegaMenu({ mega, visible }) {
   );
 }
 
+const PARTNER_ESIM_MENU_KEY = "partner-esim";
+
+/** 夥伴賣場：eSIM 方案下方選單（國家列表） */
+function PartnerEsimDropdown({ homeHref, countries = [], visible }) {
+  if (!visible) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.12 }}
+      className="w-full bg-white border-t border-slate-200 shadow-[0_12px_32px_rgba(15,23,42,0.08)]"
+    >
+      <div className={`${CONTAINER} py-5 sm:py-6`}>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <p className="text-[11px] font-black tracking-[0.14em] text-slate-400 uppercase">
+            eSIM 方案
+          </p>
+          <Link
+            href={`${homeHref}#plans`}
+            className="text-[12px] font-bold text-[#1E4AD1] hover:underline"
+          >
+            查看全部方案 →
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1">
+          <Link
+            href={`${homeHref}#plans`}
+            className="rounded-lg px-3 py-2.5 text-[13px] font-black text-slate-900 bg-slate-50 hover:bg-[#EEF3FF] hover:text-[#1E4AD1] transition-colors"
+          >
+            全部方案
+          </Link>
+          {countries.map((item) => (
+            <Link
+              key={item.key}
+              href={item.href}
+              className="rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-700 hover:bg-[#EEF3FF] hover:text-[#1E4AD1] transition-colors"
+            >
+              {item.label}
+              {item.count != null ? (
+                <span className="ml-1 text-[11px] font-semibold text-slate-400">
+                  {item.count}
+                </span>
+              ) : null}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // ── 主元件 ─────────────────────────────────────────────────────────
 export default function ShopNavbar({
   cartCount: cartCountProp = 0,
@@ -901,27 +954,33 @@ export default function ShopNavbar({
           >
             {isPartnerNav ? (
               <nav
-                className={`${forceMobileNav ? "hidden" : "hidden md:flex"} items-center gap-3 lg:gap-4 text-[11px] font-medium tracking-wide min-w-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
+                className={`${forceMobileNav ? "hidden" : "hidden md:flex"} items-center gap-3 lg:gap-4 text-[11px] font-medium tracking-wide min-w-0`}
                 aria-label="商品分類"
               >
                 <span className="shrink-0 text-slate-400">商品分類</span>
-                <Link
-                  href={`${homeHref}#plans`}
-                  className="shrink-0 font-bold text-slate-800 hover:text-slate-900"
+                <div
+                  className="relative shrink-0"
+                  onMouseEnter={() => showMenu(PARTNER_ESIM_MENU_KEY)}
+                  onMouseLeave={scheduleHide}
                 >
-                  全部方案
-                </Link>
-                {navItems.map((item) => (
-                  <Link
-                    key={item.key}
-                    href={item.href}
-                    className="shrink-0 hover:text-slate-900 transition-colors"
-                    onMouseEnter={() => item.mega && showMenu(item.key)}
-                    onMouseLeave={scheduleHide}
+                  <button
+                    type="button"
+                    className={`inline-flex items-center gap-1 font-bold transition-colors ${
+                      activeKey === PARTNER_ESIM_MENU_KEY
+                        ? "text-[#1E4AD1]"
+                        : "text-slate-800 hover:text-[#1E4AD1]"
+                    }`}
+                    aria-expanded={activeKey === PARTNER_ESIM_MENU_KEY}
+                    aria-haspopup="true"
                   >
-                    {item.label}
-                  </Link>
-                ))}
+                    eSIM 方案
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform ${
+                        activeKey === PARTNER_ESIM_MENU_KEY ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
               </nav>
             ) : utilLinks.length ? (
               <nav
@@ -989,35 +1048,56 @@ export default function ShopNavbar({
 
               <nav className={`${forceMobileNav ? "hidden" : "hidden lg:flex"} items-center h-full flex-1 min-w-0`}>
                 {isPartnerNav ? (
-                  <Link
-                    href={`${homeHref}#plans`}
-                    className="relative h-full flex items-center px-2.5 xl:px-3 text-[13px] font-black text-[#1E4AD1] whitespace-nowrap"
-                  >
-                    全部方案
-                  </Link>
-                ) : null}
-                {navItems.map((item) => (
                   <div
-                    key={item.key}
                     className="relative h-full flex items-center"
-                    onMouseEnter={() => item.mega && showMenu(item.key)}
+                    onMouseEnter={() => showMenu(PARTNER_ESIM_MENU_KEY)}
                     onMouseLeave={scheduleHide}
                   >
-                    <Link
-                      href={item.href}
-                      className={`relative h-full flex items-center px-2.5 xl:px-3 text-[13px] font-medium transition-colors whitespace-nowrap ${
-                        activeKey === item.key
-                          ? "text-slate-900"
-                          : "text-slate-700 hover:text-slate-900"
+                    <button
+                      type="button"
+                      className={`relative h-full flex items-center gap-1 px-2.5 xl:px-3 text-[13px] font-black whitespace-nowrap transition-colors ${
+                        activeKey === PARTNER_ESIM_MENU_KEY
+                          ? "text-[#1E4AD1]"
+                          : "text-slate-800 hover:text-[#1E4AD1]"
                       }`}
+                      aria-expanded={activeKey === PARTNER_ESIM_MENU_KEY}
+                      aria-haspopup="true"
                     >
-                      {item.label}
-                      {activeKey === item.key && (
-                        <span className="absolute bottom-0 left-2 right-2 h-[2.5px] bg-black rounded-sm" />
-                      )}
-                    </Link>
+                      eSIM 方案
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 transition-transform ${
+                          activeKey === PARTNER_ESIM_MENU_KEY ? "rotate-180" : ""
+                        }`}
+                      />
+                      {activeKey === PARTNER_ESIM_MENU_KEY ? (
+                        <span className="absolute bottom-0 left-2 right-2 h-[2.5px] bg-[#1E4AD1] rounded-sm" />
+                      ) : null}
+                    </button>
                   </div>
-                ))}
+                ) : (
+                  navItems.map((item) => (
+                    <div
+                      key={item.key}
+                      className="relative h-full flex items-center"
+                      onMouseEnter={() => item.mega && showMenu(item.key)}
+                      onMouseLeave={scheduleHide}
+                    >
+                      <Link
+                        href={item.href}
+                        className={`relative h-full flex items-center px-2.5 xl:px-3 text-[13px] font-medium transition-colors whitespace-nowrap ${
+                          activeKey === item.key
+                            ? "text-slate-900"
+                            : "text-slate-700 hover:text-slate-900"
+                        }`}
+                      >
+                        {item.label}
+                        {activeKey === item.key && (
+                          <span className="absolute bottom-0 left-2 right-2 h-[2.5px] bg-black rounded-sm" />
+                        )}
+                      </Link>
+                    </div>
+                  ))
+                )}
               </nav>
 
               {!isPartnerNav ? (
@@ -1207,8 +1287,28 @@ export default function ShopNavbar({
         </div>
       </header>
 
-      {/* ── Mega Dropdown：fixed 滿版，內容對齊 CONTAINER ── */}
+      {/* ── Mega / 夥伴 eSIM 下方選單 ── */}
       <AnimatePresence>
+        {isPartnerNav && activeKey === PARTNER_ESIM_MENU_KEY ? (
+          <div
+            key={PARTNER_ESIM_MENU_KEY}
+            style={{
+              position: "fixed",
+              top: headerBottom,
+              left: 0,
+              right: 0,
+              zIndex: 8100,
+            }}
+            onMouseEnter={() => showMenu(PARTNER_ESIM_MENU_KEY)}
+            onMouseLeave={scheduleHide}
+          >
+            <PartnerEsimDropdown
+              homeHref={homeHref}
+              countries={navItems}
+              visible
+            />
+          </div>
+        ) : null}
         {navItems.filter((i) => i.mega).map((item) =>
           activeKey === item.key ? (
             <div
@@ -1267,88 +1367,126 @@ export default function ShopNavbar({
               </div>
               <nav className="flex-1 py-2 overflow-y-auto">
                 {isPartnerNav ? (
-                  <p className="px-4 pt-2 pb-1 text-[10px] font-black tracking-[0.14em] text-[#1E4AD1]">
-                    商品分類
-                  </p>
-                ) : null}
-                {isPartnerNav ? (
-                  <Link
-                    href={`${homeHref}#plans`}
-                    onClick={() => setMobileOpen(false)}
-                    className="block px-4 py-2.5 text-[14px] font-black text-[#1E4AD1] hover:bg-slate-50"
-                  >
-                    全部方案
-                  </Link>
-                ) : null}
-                {navItems.map((item) => (
-                  <div key={item.key}>
-                    <div
-                      className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 cursor-pointer"
-                      onClick={() =>
-                        item.mega
-                          ? setMobileExpanded(
-                              mobileExpanded === item.key ? null : item.key,
-                            )
-                          : setMobileOpen(false)
-                      }
-                    >
-                      <Link
-                        href={item.href}
-                        onClick={(e) => item.mega && e.preventDefault()}
-                        className="text-[14px] text-slate-800 font-medium"
+                  <>
+                    <p className="px-4 pt-2 pb-1 text-[10px] font-black tracking-[0.14em] text-[#1E4AD1]">
+                      商品分類
+                    </p>
+                    <div>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between px-4 py-2.5 hover:bg-slate-50"
+                        onClick={() =>
+                          setMobileExpanded(
+                            mobileExpanded === PARTNER_ESIM_MENU_KEY
+                              ? null
+                              : PARTNER_ESIM_MENU_KEY,
+                          )
+                        }
+                        aria-expanded={mobileExpanded === PARTNER_ESIM_MENU_KEY}
                       >
-                        {item.label}
-                      </Link>
-                      {item.mega &&
-                        (mobileExpanded === item.key ? (
+                        <span className="text-[14px] font-black text-[#1E4AD1]">
+                          eSIM 方案
+                        </span>
+                        {mobileExpanded === PARTNER_ESIM_MENU_KEY ? (
                           <ChevronUp className="w-4 h-4 text-slate-400" />
                         ) : (
                           <ChevronDown className="w-4 h-4 text-slate-400" />
-                        ))}
-                    </div>
-                    {item.mega && mobileExpanded === item.key && (
-                      <div className="bg-slate-50 px-5 py-2 border-y border-slate-100 space-y-0.5">
-                        {item.mega.sections.flatMap((sec) =>
-                          sec.children
-                            ? sec.children.map((c) => (
-                                <Link
-                                  key={c.href}
-                                  href={c.href}
-                                  onClick={() => setMobileOpen(false)}
-                                  className="block py-1.5 text-[13px] text-slate-500 hover:text-slate-900"
-                                >
-                                  {c.label}
-                                </Link>
-                              ))
-                            : [
-                                <Link
-                                  key={sec.href || sec.key}
-                                  href={sec.href || "#"}
-                                  onClick={() => setMobileOpen(false)}
-                                  className="block py-1.5 text-[13px] text-slate-500 hover:text-slate-900"
-                                >
-                                  {sec.label}
-                                </Link>,
-                              ],
                         )}
+                      </button>
+                      {mobileExpanded === PARTNER_ESIM_MENU_KEY ? (
+                        <div className="bg-slate-50 px-5 py-2 border-y border-slate-100 space-y-0.5">
+                          <Link
+                            href={`${homeHref}#plans`}
+                            onClick={() => setMobileOpen(false)}
+                            className="block py-1.5 text-[13px] font-bold text-slate-800 hover:text-[#1E4AD1]"
+                          >
+                            全部方案
+                          </Link>
+                          {navItems.map((item) => (
+                            <Link
+                              key={item.key}
+                              href={item.href}
+                              onClick={() => setMobileOpen(false)}
+                              className="block py-1.5 text-[13px] text-slate-500 hover:text-slate-900"
+                            >
+                              {item.label}
+                            </Link>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </>
+                ) : (
+                  navItems.map((item) => (
+                    <div key={item.key}>
+                      <div
+                        className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 cursor-pointer"
+                        onClick={() =>
+                          item.mega
+                            ? setMobileExpanded(
+                                mobileExpanded === item.key ? null : item.key,
+                              )
+                            : setMobileOpen(false)
+                        }
+                      >
                         <Link
-                          href={item.mega.shopAllHref}
-                          onClick={() => setMobileOpen(false)}
-                          className="block mt-2 text-center text-[12px] font-bold bg-black text-white py-2"
+                          href={item.href}
+                          onClick={(e) => item.mega && e.preventDefault()}
+                          className="text-[14px] text-slate-800 font-medium"
                         >
-                          {item.mega.shopAllLabel}
+                          {item.label}
                         </Link>
+                        {item.mega &&
+                          (mobileExpanded === item.key ? (
+                            <ChevronUp className="w-4 h-4 text-slate-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-slate-400" />
+                          ))}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {item.mega && mobileExpanded === item.key && (
+                        <div className="bg-slate-50 px-5 py-2 border-y border-slate-100 space-y-0.5">
+                          {item.mega.sections.flatMap((sec) =>
+                            sec.children
+                              ? sec.children.map((c) => (
+                                  <Link
+                                    key={c.href}
+                                    href={c.href}
+                                    onClick={() => setMobileOpen(false)}
+                                    className="block py-1.5 text-[13px] text-slate-500 hover:text-slate-900"
+                                  >
+                                    {c.label}
+                                  </Link>
+                                ))
+                              : [
+                                  <Link
+                                    key={sec.href || sec.key}
+                                    href={sec.href || "#"}
+                                    onClick={() => setMobileOpen(false)}
+                                    className="block py-1.5 text-[13px] text-slate-500 hover:text-slate-900"
+                                  >
+                                    {sec.label}
+                                  </Link>,
+                                ],
+                          )}
+                          <Link
+                            href={item.mega.shopAllHref}
+                            onClick={() => setMobileOpen(false)}
+                            className="block mt-2 text-center text-[12px] font-bold bg-black text-white py-2"
+                          >
+                            {item.mega.shopAllLabel}
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
                 <div className="border-t border-slate-100 mt-2 pt-2">
                   {isPartnerNav ? (
                     <p className="px-4 pt-1 pb-1 text-[10px] font-black tracking-[0.14em] text-slate-400">
                       本店服務
                     </p>
                   ) : null}
-                  {secondaryItems.map((item) => (
+                  {(isPartnerNav ? utilLinks : secondaryItems).map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}

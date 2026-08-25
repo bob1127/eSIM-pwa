@@ -17,7 +17,7 @@ const supabaseAdmin = createClient(
 
 const LINE_OA_URL =
   process.env.NEXT_PUBLIC_LINE_OA_URL ||
-  "https://line.me/R/ti/p/@391huuts";
+  "https://line.me/R/ti/p/@593gvyzn";
 
 async function resolveLineUserId(req, res) {
   const session = await getServerSession(req, res, authOptions);

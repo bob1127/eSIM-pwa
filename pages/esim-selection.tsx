@@ -101,6 +101,18 @@ type CountryConfig = {
   coversMultiOnly?: boolean;
   /** 名稱前綴／關鍵字命中時，一併納入的區域碼（如 ASIA） */
   includeRegionCodes?: string[];
+  /**
+   * 純單國：location 只能是該國一碼
+   * 多個純單國聯集（如留學生專案：美日澳英加韓）
+   */
+  matchPureCountries?: string[];
+  /**
+   * 與 matchPureCountries 併用：額外允許的精確 location 集合
+   * （如高天數納入美加 ["US","CA"]）
+   */
+  matchLocationSets?: string[][];
+  /** 選中時預設天數篩選：ALL | SHORT | MID | LONG | XLONG | XXLONG */
+  defaultDayRange?: "ALL" | "SHORT" | "MID" | "LONG" | "XLONG" | "XXLONG";
   /** 選中時預設依成本由低到高 */
   defaultSortByCost?: boolean;
   /** 只掃方案名稱／SKU（禁止掃整包 JSON，避免 Hong Kong Time 誤傷） */
@@ -119,6 +131,184 @@ type CountryConfig = {
 
 // --- 1. 國家設定檔 ---
 const COUNTRIES: Record<string, CountryConfig> = {
+  /**
+   * 高天數方案：純單國（美日澳英加韓）＋美加跨國
+   * 預設篩「特長 60天+」，天數由長到短。
+   * 主力：韓／英吃到飽 90、加／美加每日 90、美總量 FUP 60。
+   */
+  HIGH_DAY: {
+    emoji: "📅",
+    name: "高天數方案 (60天+ 主力)",
+    pure: false,
+    codes: ["HIGH_DAY", "LONG_STAY"],
+    matchPureCountries: ["US", "JP", "AU", "GB", "CA", "KR"],
+    matchLocationSets: [["US", "CA"]],
+    namePrefixes: [
+      "USA-",
+      "USA ",
+      "United States-",
+      "United States ",
+      "United States of America-",
+      "America-",
+      "US,CA-",
+      "US,CA ",
+      "US&Canada-",
+      "US&Canada ",
+      "USA&Canada-",
+      "USA&Canada ",
+      "Japan-",
+      "Japan ",
+      "Japan(",
+      "Australia-",
+      "Australia ",
+      "Australia(",
+      "UK-",
+      "UK ",
+      "United Kingdom-",
+      "United Kingdom ",
+      "United-Kingdom-",
+      "United-Kingdom ",
+      "UnitedKingdom-",
+      "Britain-",
+      "Great Britain-",
+      "England-",
+      "Canada-",
+      "Canada ",
+      "Korea-",
+      "Korea ",
+      "Korea(",
+      "South Korea-",
+      "South Korea ",
+      "South Korea(",
+    ],
+    includeSkuIncludes: [
+      "United States of America-",
+      "United States-",
+      "USA-",
+      "US,CA-",
+      "US&Canada-",
+      "USA&Canada-",
+      "Japan-",
+      "Japan(",
+      "Australia-",
+      "United Kingdom-",
+      "United-Kingdom-",
+      "UK-",
+      "Canada-",
+      "South Korea-",
+      "South Korea(",
+      "Korea-",
+    ],
+    exclude: [
+      "GLOBAL",
+      "WORLD",
+      "ASIA",
+      "EUROPE",
+      "EU ",
+      "MEXICO",
+      "美加墨",
+      "北美",
+      "US,CA,MX",
+      "USA,CA,MX",
+      "JAPAN/KOREA",
+      "JAPAN&KOREA",
+      "JAPAN-KOREA",
+      "JAPAN KOREA",
+      "日韓",
+      "AU,NZ",
+      "AU&NZ",
+      "NEW ZEALAND",
+      "紐澳",
+      "澳紐",
+    ],
+    defaultDayRange: "XXLONG",
+  },
+  /**
+   * 留學生專案：美國／日本／澳洲／英國／加拿大／韓國（純單國）
+   * 預設篩「超長期 30天+」。美加跨國請改選「高天數方案」。
+   */
+  STUDENT: {
+    emoji: "🎓",
+    name: "留學生專案 (美日澳英加韓)",
+    pure: false,
+    codes: ["STUDENT", "STUDY_ABROAD"],
+    matchPureCountries: ["US", "JP", "AU", "GB", "CA", "KR"],
+    namePrefixes: [
+      "USA-",
+      "USA ",
+      "United States-",
+      "United States ",
+      "United States of America-",
+      "America-",
+      "Japan-",
+      "Japan ",
+      "Japan(",
+      "Australia-",
+      "Australia ",
+      "Australia(",
+      "UK-",
+      "UK ",
+      "United Kingdom-",
+      "United Kingdom ",
+      "United-Kingdom-",
+      "United-Kingdom ",
+      "UnitedKingdom-",
+      "Britain-",
+      "Great Britain-",
+      "England-",
+      "Canada-",
+      "Canada ",
+      "Korea-",
+      "Korea ",
+      "Korea(",
+      "South Korea-",
+      "South Korea ",
+      "South Korea(",
+    ],
+    includeSkuIncludes: [
+      "United States of America-",
+      "United States-",
+      "USA-",
+      "Japan-",
+      "Japan(",
+      "Australia-",
+      "United Kingdom-",
+      "United-Kingdom-",
+      "UK-",
+      "Canada-",
+      "South Korea-",
+      "South Korea(",
+      "Korea-",
+    ],
+    // 排除全球／區域包與跨國組合（美加、日韓、紐澳另選）
+    exclude: [
+      "GLOBAL",
+      "WORLD",
+      "ASIA",
+      "EUROPE",
+      "EU ",
+      "MEXICO",
+      "美加墨",
+      "北美",
+      "USA&CANADA",
+      "USA-CANADA",
+      "US&CANADA",
+      "US-CANADA",
+      "US,CA",
+      "USA,CA",
+      "JAPAN/KOREA",
+      "JAPAN&KOREA",
+      "JAPAN-KOREA",
+      "JAPAN KOREA",
+      "日韓",
+      "AU,NZ",
+      "AU&NZ",
+      "NEW ZEALAND",
+      "紐澳",
+      "澳紐",
+    ],
+    defaultDayRange: "XLONG",
+  },
   JP: {
     emoji: "🇯🇵",
     name: "日本 (純日)",
@@ -181,6 +371,24 @@ const COUNTRIES: Record<string, CountryConfig> = {
     ],
     defaultSortByCost: true,
     exclude: ["GLOBAL", "EUROPE", "EU ", "WORLD"],
+  },
+  /**
+   * 批發目錄沒有 Thailand-*-unlimited 的獨立 DTAC 單國品項（純泰吃到飽僅 TRUE／Truemove）。
+   * 改抓新馬泰多國 unlimited，供選品比價（泰段 networks 多為 TRUE；非 Medusa 上架）。
+   */
+  TH_UNLIMITED_MULTI: {
+    emoji: "🇹🇭📶",
+    name: "泰國吃到飽 (新馬泰多國)",
+    pure: false,
+    defaultSortByCost: true,
+    codes: ["TH_UNLIMITED_MULTI", "TH_DTAC_MULTI"],
+    includeSkuIncludes: [
+      "Singapore&Malaysia&Thailand -unlimited",
+      "Singapore&Malaysia&Thailand-unlimited",
+      "Singapore-Malaysia-Thailand-unlimited",
+      "Singapore/Malaysia/Thailand-unlimited",
+    ],
+    exclude: ["GLOBAL", "EUROPE", "EU ", "WORLD", "ASIA"],
   },
   CN: {
     emoji: "🇨🇳",
@@ -870,6 +1078,49 @@ function planMatchesCountry(
   const extraSkuHit = (config.includeSkuIncludes || []).some((s) =>
     hayIncludesSku(hayForExclude, s),
   );
+
+  // ── 多純單國聯集（留學生／高天數）＋可選跨國 locationSets ──
+  if (config.matchPureCountries?.length || config.matchLocationSets?.length) {
+    const want = new Set(
+      normalizeAliasCodes(config.matchPureCountries || []),
+    );
+    if (want.has("GB") || want.has("UK")) {
+      want.add("GB");
+      want.add("UK");
+    }
+    if (want.has("US") || want.has("USA")) {
+      want.add("US");
+      want.add("USA");
+    }
+    const pureHit =
+      want.size > 0 &&
+      uniqueTokens.length === 1 &&
+      want.has(uniqueTokens[0]);
+    const extraSets: string[][] = [];
+    if (config.locationSet?.length) {
+      extraSets.push(normalizeAliasCodes(config.locationSet));
+    }
+    for (const set of config.matchLocationSets || []) {
+      extraSets.push(normalizeAliasCodes(set));
+    }
+    for (const set of config.locationSets || []) {
+      extraSets.push(normalizeAliasCodes(set));
+    }
+    const setHit = extraSets.some(
+      (set) =>
+        sameTokenSet(uniqueTokens, set) || sameTokenSet(tokens, set),
+    );
+    if (pureHit || setHit || prefixHit || extraSkuHit) {
+      if (config.exclude?.length) {
+        const hitEx = config.exclude.some((ex) =>
+          hayForExclude.includes(String(ex).toUpperCase()),
+        );
+        if (hitEx) return false;
+      }
+      return true;
+    }
+    return false;
+  }
 
   // 單國 SKU 或加掛 SKU（Europe-43 / Europe 43 countries）— exclude 之前就過
   if (uniqueIsThisCountry || prefixHit || extraSkuHit) {
@@ -1832,7 +2083,20 @@ export default function GlobalPlanScanner() {
     setFilterThrottle("ALL");
     setFilterEkyc("ALL");
     const cfg = COUNTRIES[selectedCountry];
+    if (cfg?.defaultDayRange) {
+      setFilterDayRange(cfg.defaultDayRange);
+    } else {
+      setFilterDayRange("ALL");
+    }
     if (cfg?.defaultSortByCost) {
+      setSortStack([{ key: "PRICE", order: "ASC" }]);
+    } else if (
+      cfg?.defaultDayRange === "XLONG" ||
+      cfg?.defaultDayRange === "XXLONG"
+    ) {
+      // 高天數／留學生：先看天數由長到短
+      setSortStack([{ key: "DAY", order: "DESC" }]);
+    } else {
       setSortStack([{ key: "PRICE", order: "ASC" }]);
     }
   }, [selectedCountry]);
@@ -1853,6 +2117,10 @@ export default function GlobalPlanScanner() {
         result = result.filter((p) => p.dayInt > 5 && p.dayInt <= 10);
       if (filterDayRange === "LONG")
         result = result.filter((p) => p.dayInt > 10);
+      if (filterDayRange === "XLONG")
+        result = result.filter((p) => p.dayInt >= 30);
+      if (filterDayRange === "XXLONG")
+        result = result.filter((p) => p.dayInt >= 60);
       if (filterType === "DAILY")
         result = result.filter((p) => p.planCategory === "DAILY");
       if (filterType === "TOTAL")
@@ -2062,9 +2330,35 @@ export default function GlobalPlanScanner() {
                     ))}
                   </select>
                 </div>
+                {selectedCountry === "HIGH_DAY" && (
+                  <p className="text-xs text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1 max-w-lg">
+                    高天數：純單國（美日澳英加韓）＋美加。預設「特長
+                    60天+」、天數由長到短。主力含韓／英吃到飽
+                    90、加／美加每日 90、美總量 FUP 60。日／澳最長多半
+                    30 天→請改篩「超長期 30天+」才看得到。
+                  </p>
+                )}
+                {selectedCountry === "STUDENT" && (
+                  <p className="text-xs text-violet-900 bg-violet-50 border border-violet-200 rounded-md px-2 py-1 max-w-lg">
+                    留學生專案：僅美／日／澳／英／加／韓純單國（不含美加）。預設「超長期
+                    30天+」。要美加 90 天請改選「📅 高天數方案」。
+                  </p>
+                )}
                 {selectedCountry === "TH_CP" && (
                   <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-md">
                     抓取涵蓋泰國的多國／星馬泰／亞太方案，預設依成本由低到高（通常比純泰更省）
+                  </p>
+                )}
+                {selectedCountry === "TH" && (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-md">
+                    純泰吃到飽目錄無獨立 DTAC 單國品項（多為 TRUE／Truemove）。要比新馬泰多國
+                    unlimited，請改選「🇹🇭📶 泰國吃到飽 (新馬泰多國)」
+                  </p>
+                )}
+                {selectedCountry === "TH_UNLIMITED_MULTI" && (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-md">
+                    單國無 DTAC 吃到飽 → 改抓 Singapore&amp;Malaysia&amp;Thailand-unlimited（新馬泰一卡）。請再篩「♾️
+                    吃到飽」；預設依成本排序比 CP。泰段電信多為 TRUE 網。
                   </p>
                 )}
                 {selectedCountry === "GB" && (
@@ -2396,6 +2690,8 @@ export default function GlobalPlanScanner() {
                 <option value="SHORT">短期 (1-5天)</option>
                 <option value="MID">中期 (6-10天)</option>
                 <option value="LONG">長期 (11天+)</option>
+                <option value="XLONG">🎓 超長期 (30天+)</option>
+                <option value="XXLONG">📅 特長 (60天+)</option>
               </select>
 
               <select

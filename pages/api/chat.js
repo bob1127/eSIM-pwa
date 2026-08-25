@@ -10,6 +10,7 @@ import {
 } from "../../lib/chatSecurity";
 import { fetchProductKnowledge, fetchProductCards } from "../../lib/chatProducts";
 import { fetchArticleKnowledgeByQuery } from "../../lib/chatArticles";
+import { fetchFaqKnowledgeByQuery } from "../../lib/chatFaqKnowledge";
 import { fetchWebKnowledgeByQuery } from "../../lib/chatWebSearch";
 import {
   fetchAffiliateKnowledge,
@@ -17,6 +18,7 @@ import {
 } from "../../lib/chatAffiliate";
 import { fetchShopKnowledge, fetchShopCards } from "../../lib/chatShop";
 import { fetchNetworkCoverageKnowledge } from "../../lib/chatNetworkCoverage";
+import { SUPPORT_HOURS_LABEL } from "../../lib/supportHours";
 
 export const config = {
   api: {
@@ -37,10 +39,11 @@ const BASE_SYSTEM_PROMPT = `你是 Jeko eSIM 的專屬 AI 旅行小幫手【J寶
    B. 【原生 eSIM 收訊／熱點涵蓋】→ 日本／韓國／中國／泰國／越南收訊、覆蓋、電信商熱點圖；必須依此作答並可附列出的地圖網址
    C. 【Jeko 商城推薦｜/shop】→ 充電配件、旅行用品、3C 周邊；引導點聊天室卡片加入購物車或購買
    D. 【Jeko 聯盟推薦｜Klook／KKday】→ 僅當使用者明確提到住宿／門票／交通票券／活動／Klook／KKday 等關鍵詞，且知識庫有列出對應商品時才推薦；必須使用「購買連結」。沒有對應關鍵詞時禁止主動推聯盟商品
-   E. 【Jeko官網WP知識】→ 有強相關摘錄／FAQ 時，優先依此作答並附官網閱讀連結
-   F. 【網路資料】→ 僅當官網／聯盟／商城皆無強相關、且有提供網路來源時，才可依來源摘要作答並附來源網址
-   G. 若以上都沒有可用依據：明確說尚無法確認；禁止憑印象列出飯店或票券名單
-   H. 有商城或聯盟推薦時，回答結尾可簡短引導點卡片（Jeko 商城／合作夥伴）
+   E. 【人工審核 FAQ 知識庫】→ 後台整理的 Q&A，有命中時優先依此作答
+   F. 【Jeko官網WP知識】→ 有強相關摘錄／FAQ 時，優先依此作答並附官網閱讀連結
+   G. 【網路資料】→ 僅當官網／聯盟／商城／FAQ 皆無強相關、且有提供網路來源時，才可依來源摘要作答並附來源網址
+   H. 若以上都沒有可用依據：明確說尚無法確認；禁止憑印象列出飯店或票券名單
+   I. 有商城或聯盟推薦時，回答結尾可簡短引導點卡片（Jeko 商城／合作夥伴）
 3. 專業優先：針對旅行問題提供具體建議（如：日本通關提 Visit Japan Web 的 QR Code）。
 4. 若使用者提供截圖，先描述你看到的關鍵畫面（設定頁、錯誤訊息、訊號、QR 等），再逐步說明如何排除。目前不支援影片判讀；若對方只提到影片，請引導改傳截圖，或於人工客服時段改傳官方 LINE。
 5. 【導購語氣｜極重要｜先幫再說】
@@ -470,7 +473,7 @@ export default async function handler(req, res) {
     if (isVideo) {
       return res.status(400).json({
         error:
-          "目前僅支援截圖判讀。請改傳錯誤畫面或設定頁截圖；若需傳影片，請於人工客服時段（每日 09:00–23:00）透過官方 LINE 聯繫。🌼",
+          `目前僅支援截圖判讀。請改傳錯誤畫面或設定頁截圖；若需傳影片，請於人工客服時段（${SUPPORT_HOURS_LABEL}）透過官方 LINE 聯繫。🌼`,
       });
     }
     const useVision = Boolean(mediaPayload && isImage);
@@ -500,6 +503,7 @@ export default async function handler(req, res) {
     const [
       productKnowledge,
       articleResult,
+      faqResult,
       productCards,
       affiliateKnowledge,
       affiliateCards,
@@ -508,6 +512,7 @@ export default async function handler(req, res) {
     ] = await Promise.all([
       fetchProductKnowledge(msgText),
       fetchArticleKnowledgeByQuery(msgText),
+      fetchFaqKnowledgeByQuery(msgText),
       fetchProductCards(msgText),
       // eSIM 規劃／推薦：不要帶入商城與聯盟，避免推到充電器、JR PASS 等
       esimOnly ? Promise.resolve("") : Promise.resolve(fetchAffiliateKnowledge(msgText)),
@@ -520,7 +525,11 @@ export default async function handler(req, res) {
       typeof articleResult === "string"
         ? articleResult
         : articleResult?.text || "";
-    const strongCoverage = Boolean(articleResult?.strongCoverage);
+    const faqKnowledge =
+      typeof faqResult === "string" ? faqResult : faqResult?.text || "";
+    const strongFaq = Boolean(faqResult?.strongCoverage);
+    const strongCoverage =
+      Boolean(articleResult?.strongCoverage) || strongFaq;
     const hasAffiliate = Boolean(affiliateCards?.length);
     const hasShop = Boolean(shopCards?.length);
     const hasProductCards = Boolean(productCards?.length);
@@ -562,6 +571,7 @@ export default async function handler(req, res) {
 
     const systemPrompt = [
       BASE_SYSTEM_PROMPT,
+      faqKnowledge,
       productKnowledge,
       coverageKnowledge,
       esimOnly ? "" : shopKnowledge,
@@ -569,6 +579,9 @@ export default async function handler(req, res) {
       // eSIM 專問時文章可留作安裝／注意事項，但仍以商品庫為主
       articleKnowledge,
       webKnowledge,
+      strongFaq
+        ? "【本次來源｜人工 FAQ】已命中後台 FAQ 知識庫；請優先依【人工審核 FAQ 知識庫】作答，可改寫語氣但勿改變事實。"
+        : "",
       hasCoverageKb
         ? "【收訊／熱點｜必須遵守】若使用者問收訊、覆蓋、熱點圖或電信商訊號，優先依【原生 eSIM 收訊／熱點涵蓋】回答，並附上該國／該電信商列出的地圖連結；可提醒實際以商品標示電信商為準。"
         : "",
@@ -637,6 +650,7 @@ export default async function handler(req, res) {
       shopCards: Array.isArray(shopCards) ? shopCards : [],
       knowledge: {
         siteStrong: strongCoverage,
+        faqUsed: Boolean(faqKnowledge),
         coverageUsed: hasCoverageKb,
         affiliateUsed: hasAffiliate,
         shopUsed: hasShop,

@@ -1,5 +1,5 @@
 /**
- * 建立／更新「香港 eSIM 總量型」— CSL / SmarTone（SG IP）— 利潤 60%
+ * 建立／更新「香港 eSIM 總量型」— 3HK（馬來西亞 IP）— 利潤 60%
  *
  * 用法：
  *   HKD_TO_TWD=4.5 node scripts/create-hongkong-total-product.mjs --rebuild
@@ -44,7 +44,7 @@ const EMAIL = process.env.MEDUSA_ADMIN_EMAIL || "script@esim.local";
 const PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "ScriptImport2026!";
 
 const HANDLE = "hongkong-total-esim";
-const TELECOM = "CSL / SmarTone";
+const TELECOM = "3HK";
 const PROFIT = 60;
 const DATA_ORDER = ["1GB", "2GB", "3GB", "5GB", "10GB", "20GB", "30GB", "50GB"];
 const CATEGORY_ID = "pcat_01KZJNBWGZ6FH1B2DRGNFMNMT3";
@@ -195,14 +195,14 @@ function toVariant(row) {
       rule_desc: row.rule_desc || "",
       speed_desc: row.speed_desc || "",
       throttle_kind: row.throttle_kind || "128kbps",
-      ip: "SG",
+      ip: "MY",
       attributes: {
         days: row.day,
         data: row.data_amount,
         data_amount: row.data_amount,
         telecom: TELECOM,
-        network: "CSL / SmarTone 4G/5G 雙電信",
-        ip_type: "新加坡IP",
+        network: "3HK 4G/5G",
+        ip_type: "馬來西亞IP",
         route_type: "漫遊",
         hotspot: true,
         gpt: true,
@@ -234,18 +234,18 @@ async function upsertProduct(token, rows) {
     plan_kind: "total",
     hot_sale_telecoms: [TELECOM],
     carrier_profit_by_carrier: { [TELECOM]: PROFIT },
-    seo_title: "香港 eSIM 總量型｜CSL / SmarTone｜Jeko eSIM",
+    seo_title: "香港 eSIM 總量型｜3HK｜Jeko eSIM",
     seo_description:
-      "香港總量型 eSIM：CSL／SmarTone 雙網，依天數與總流量選購，高速用完後降速約 128kbps，支援熱點與 TikTok／ChatGPT。",
-    seo_keywords: "香港eSIM,總量型,CSL,SmarTone,旅遊eSIM,Jeko eSIM",
+      "香港總量型 eSIM：3HK，依天數與總流量選購，高速用完後降速約 128kbps，支援熱點與 TikTok／ChatGPT。",
+    seo_keywords: "香港eSIM,總量型,3HK,旅遊eSIM,Jeko eSIM",
     subtitle_by_carrier: {
-      [TELECOM]: "總量型・CSL / SmarTone 雙網・新加坡 IP・用完降速 128kbps",
+      [TELECOM]: "總量型・3HK・馬來西亞 IP・用完降速 128kbps",
     },
     carrier_specs_by_carrier: {
       [TELECOM]: {
-        ip_type: "新加坡IP",
+        ip_type: "馬來西亞IP",
         route_type: "漫遊",
-        network: "CSL / SmarTone 4G/5G 雙電信",
+        network: "3HK 4G/5G",
         speed_rule: "總量高速用完後降速至約 128 kbps",
         apps: "熱點分享,ChatGPT,TikTok,Gemini",
         apn: "e-ideas",
@@ -264,18 +264,18 @@ async function upsertProduct(token, rows) {
     overview_notices_by_carrier: {
       [TELECOM]: {
         fup_notice:
-          "依所選方案提供總量高速流量（1GB～50GB）。用完後降速至約 128 kbps 可持續使用。CSL／SmarTone 雙網，新加坡 IP 漫遊。支援熱點、TikTok 與 ChatGPT。",
+          "依所選方案提供總量高速流量（1GB～50GB）。用完後降速至約 128 kbps 可持續使用。3HK，馬來西亞 IP 漫遊。支援熱點、TikTok 與 ChatGPT。",
         activation_notice: "建議抵達香港後再安裝／啟用 eSIM",
       },
     },
   };
 
   const payloadBase = {
-    title: "香港 eSIM 總量型  CSL / SmarTone",
-    subtitle: "CSL / SmarTone 雙網・總量流量型・高速用完後約 128kbps",
+    title: "香港 eSIM 總量型  3HK",
+    subtitle: "3HK・總量流量型・高速用完後約 128kbps",
     handle: HANDLE,
     description:
-      "香港 eSIM 總量型，走 CSL／SmarTone 雙網漫遊（新加坡 IP）。依天數與總流量選購，用完後降速約 128kbps 可持續使用，支援熱點與 TikTok／ChatGPT／Gemini。",
+      "香港 eSIM 總量型，走 3HK漫遊（馬來西亞 IP）。依天數與總流量選購，用完後降速約 128kbps 可持續使用，支援熱點與 TikTok／ChatGPT／Gemini。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,

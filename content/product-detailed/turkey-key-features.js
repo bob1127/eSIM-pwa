@@ -1,5 +1,6 @@
 /**
- * 土耳其吃到飽／總量／每日型 — Avea / Vodafone
+ * 土耳其 — 重點特色（AI 摘要風）
+ * 電信：AVEA TURKEY / VODAFONE TURKEY +
  */
 
 function pack(bullets, actual_experience = "") {
@@ -8,90 +9,74 @@ function pack(bullets, actual_experience = "") {
 
 export const TR_TELECOM_AVEA = "AVEA TURKEY / VODAFONE TURKEY +";
 
-const TR_CARRIER_INTRO =
-  "Avea（現為 Türk Telekom 行動網）與 Vodafone Turkey 是土耳其主要電信。伊斯坦堡歐亞兩岸、安卡拉、伊茲密爾、安塔利亞與棉花堡、卡帕多奇亞等觀光路線 4G／5G 覆蓋較完整；海岸公路與偏遠地區會下降。抵達即可上網、免換實體 SIM。";
-
 const EXP_UNLIM_10 =
-  "伊斯坦堡、安卡拉、伊茲密爾、安塔利亞等都會區 4G／5G 測速常見可到數十 Mbps；卡帕多奇亞、海岸公路與偏遠地區會下降。每日 1GB 高速用完後限速約 10Mbps 可持續使用——導航、傳訊、社群通常沒問題，高畫質影音與熱點會變慢。僅供參考。";
+  "伊斯坦堡、安卡拉、伊茲密爾、安塔利亞等都會區 4G／5G 測速常見可到數十 Mbps；卡帕多奇亞、海岸公路與偏遠地區會下降。每日 1GB 高速用完後限速約 10Mbps 可持續使用。僅供參考。";
+const EXP_128 =
+  "高速額度內：都會區測速常見可到數十 Mbps。用完後約 128kbps——傳訊／輕量網頁勉強可以，影音與熱點會明顯困難。僅供參考。";
 
 export function trAveaUnlimited10MbpsKeyFeatures() {
   return pack(
     [
-      "本方案為 **土耳其** 吃到飽 eSIM，覆蓋伊斯坦堡與主要觀光路線。",
-      TR_CARRIER_INTRO,
-      "**為什麼選擇 AVEA／Vodafone 10Mbps 吃到飽？**",
-      "**Avea／Vodafone Turkey 4G／5G**：伊斯坦堡、安卡拉、伊茲密爾、安塔利亞、棉花堡等熱門行程較穩。",
-      "**每日 1GB 高速後約 10Mbps**：高速額度隔日重置；用完後限速約 10Mbps 可持續上網（非斷網）。",
-      "**天數彈性**：1～10、15、20、25、30 天可選。",
-      "**支援熱點與常用 App**：熱點分享；支援 ChatGPT、TikTok、Gemini。",
-      "**安裝提醒**：建議抵達土耳其後再啟用 eSIM。",
+      "本方案為土耳其吃到飽 eSIM，走 Avea／Vodafone Turkey，出網為英國／波蘭 IP。",
+      "**基本介紹與特色**",
+      "**市場地位：** Avea（Türk Telekom）與 Vodafone Turkey 為當地主要電信。",
+      "**覆蓋範圍：** 伊斯坦堡、安卡拉、伊茲密爾、安塔利亞、棉花堡、卡帕多奇亞等較穩；偏遠會下降。",
+      "**網路速度：** 每日約 1GB 高速後維持約 10Mbps 無限流量。",
+      "**數據路由：** 英國／波蘭 IP 漫遊。",
+      "**本站方案：** 吃到飽；天數可選 1～10、15、20、25、30 天。",
+      "**旅遊便利：** 支援熱點與 ChatGPT／TikTok／Gemini。建議抵達後再啟用。",
     ],
     EXP_UNLIM_10,
   );
 }
 
 export function trUnlimitedKeyFeaturesByCarrier() {
-  return {
-    [TR_TELECOM_AVEA]: trAveaUnlimited10MbpsKeyFeatures(),
-  };
+  return { [TR_TELECOM_AVEA]: trAveaUnlimited10MbpsKeyFeatures() };
 }
-
-const EXP_TOTAL =
-  "高速額度內：伊斯坦堡、安卡拉、伊茲密爾、安塔利亞等都會區 4G／5G 測速常見可到數十 Mbps。高速用完後降速約 128kbps 可持續使用——傳訊／輕量網頁勉強可以，影音與熱點會明顯困難。請依總量額度規劃用量。僅供參考。";
 
 export function trAveaTotalKeyFeatures() {
   return pack(
     [
-      "本方案為 **土耳其** 總量型 eSIM，覆蓋伊斯坦堡與主要觀光路線。",
-      TR_CARRIER_INTRO,
-      "**為什麼選擇 AVEA／Vodafone 總量型？**",
-      "**Avea／Vodafone Turkey 4G／5G**：伊斯坦堡、安卡拉、伊茲密爾、安塔利亞、棉花堡等熱門行程較穩。",
-      "**總量高速後約 128kbps**：可選 1GB／3GB／5GB／10GB／20GB／30GB／50GB；高速用完後降速可持續使用。",
-      "**天數彈性**：3、5、7、10、15、20、25、30 天（視流量組合）。",
-      "**支援熱點與常用 App**：熱點分享；支援 ChatGPT、TikTok、Gemini。",
-      "**安裝提醒**：建議抵達土耳其後再啟用 eSIM。",
+      "本方案為土耳其總量型 eSIM，走 Avea／Vodafone Turkey。",
+      "**基本介紹與特色**",
+      "**市場地位：** Avea／Vodafone Turkey 主流覆蓋。",
+      "**覆蓋範圍：** 伊斯坦堡與主要觀光路線。",
+      "**網路速度：** 可選 1GB～50GB；高速用完後約 128kbps 續航。",
+      "**數據路由：** 英國／波蘭 IP 漫遊。",
+      "**本站方案：** 總量型；支援熱點與 ChatGPT／TikTok／Gemini。",
+      "**使用注意：** 建議抵達後再啟用。",
     ],
-    EXP_TOTAL,
+    EXP_128,
   );
 }
 
 export function trTotalKeyFeaturesByCarrier() {
-  return {
-    [TR_TELECOM_AVEA]: trAveaTotalKeyFeatures(),
-  };
+  return { [TR_TELECOM_AVEA]: trAveaTotalKeyFeatures() };
 }
-
-const EXP_DAILY =
-  "每日高速額度內：伊斯坦堡、安卡拉、伊茲密爾、安塔利亞等都會區 4G／5G 測速常見可到數十 Mbps。額度用完後降速約 128kbps，隔日重置——傳訊／輕量網頁勉強可以，影音與熱點會明顯困難。僅供參考。";
 
 export function trAveaDailyKeyFeatures() {
   return pack(
     [
-      "本方案為 **土耳其** 每日型 eSIM，覆蓋伊斯坦堡與主要觀光路線。",
-      TR_CARRIER_INTRO,
-      "**為什麼選擇 AVEA／Vodafone 每日型？**",
-      "**Avea／Vodafone Turkey 4G／5G**：伊斯坦堡、安卡拉、伊茲密爾、安塔利亞、棉花堡等熱門行程較穩。",
-      "**每日高速後約 128kbps**：可選每日 500MB／1GB／2GB／3GB；高速用完後降速可持續使用，隔日重置。",
-      "**天數彈性**：1～10、15、20、25、30 天（視流量組合）。",
-      "**支援熱點與常用 App**：熱點分享；支援 ChatGPT、TikTok、Gemini。",
-      "**安裝提醒**：建議抵達土耳其後再啟用 eSIM。",
+      "本方案為土耳其每日型 eSIM，走 Avea／Vodafone Turkey。",
+      "**基本介紹與特色**",
+      "**市場地位：** Avea／Vodafone Turkey 主流覆蓋。",
+      "**覆蓋範圍：** 伊斯坦堡與主要觀光路線。",
+      "**網路速度：** 可選每日 500MB／1GB／2GB／3GB；用完後約 128kbps（每日重置）。",
+      "**數據路由：** 英國／波蘭 IP 漫遊。",
+      "**本站方案：** 每日型；支援熱點與 ChatGPT／TikTok／Gemini。",
+      "**使用注意：** 建議抵達後再啟用。",
     ],
-    EXP_DAILY,
+    EXP_128,
   );
 }
 
 export function trDailyKeyFeaturesByCarrier() {
-  return {
-    [TR_TELECOM_AVEA]: trAveaDailyKeyFeatures(),
-  };
+  return { [TR_TELECOM_AVEA]: trAveaDailyKeyFeatures() };
 }
 
 export default {
   TR_TELECOM_AVEA,
-  trAveaUnlimited10MbpsKeyFeatures,
   trUnlimitedKeyFeaturesByCarrier,
-  trAveaTotalKeyFeatures,
   trTotalKeyFeaturesByCarrier,
-  trAveaDailyKeyFeatures,
   trDailyKeyFeaturesByCarrier,
 };

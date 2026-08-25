@@ -125,6 +125,16 @@ export default function AdminChatLogsPage() {
                 <span className="ml-1">・最早：{oldest.slice(0, 10)}</span>
               )}
             </p>
+            <p className="mt-1 text-sm text-stone-500">
+              常見問題可整理到{" "}
+              <a
+                href="/admin/ai-faq/"
+                className="text-[#0A6CD0] font-bold underline"
+              >
+                FAQ 知識庫
+              </a>
+              ，讓 J寶 越用越準。
+            </p>
           </div>
           <button
             onClick={handleExport}
@@ -205,6 +215,7 @@ export default function AdminChatLogsPage() {
                   <th className="text-left px-4 py-2.5 text-slate-500 font-semibold w-[80px]">模型</th>
                   <th className="text-left px-4 py-2.5 text-slate-500 font-semibold">內容</th>
                   <th className="text-left px-4 py-2.5 text-slate-500 font-semibold w-[90px]">Session</th>
+                  <th className="text-left px-4 py-2.5 text-slate-500 font-semibold w-[88px]">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -242,6 +253,18 @@ export default function AdminChatLogsPage() {
                       </td>
                       <td className="px-4 py-2.5 text-slate-400 text-xs font-mono truncate max-w-[90px]">
                         {(log.session_id || "").slice(0, 8)}…
+                      </td>
+                      <td className="px-4 py-2.5">
+                        {log.role === "user" ? (
+                          <a
+                            href={`/admin/ai-faq/?fromUserLog=${log.id}`}
+                            className="text-[11px] font-bold text-[#0A6CD0] hover:underline whitespace-nowrap"
+                          >
+                            加入 FAQ
+                          </a>
+                        ) : (
+                          <span className="text-slate-300 text-[11px]">—</span>
+                        )}
                       </td>
                     </tr>
                   );

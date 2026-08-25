@@ -9,6 +9,7 @@
     "lint": "next lint",
     "sync:medusa-products": "node scripts/sync-medusa-products.mjs --backend https://esim-backend-eight.vercel.app",
     "backup:db": "node scripts/backup-supabase-db.mjs",
+    "seed:ai-faq": "node scripts/seed-ai-faq.mjs",
     "export": "next build && next export && next-image-export-optimizer"
   },
   "dependencies": {

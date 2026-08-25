@@ -130,7 +130,7 @@ const Navbar = () => {
           ></Image>
         </a>
         <a
-          href="https://line.me/R/ti/p/@391huuts"
+          href="https://line.me/R/ti/p/@593gvyzn"
           className="flex justify-center items-center mr-3 "
         >
           <Image

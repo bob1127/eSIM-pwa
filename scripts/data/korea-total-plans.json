@@ -1,7 +1,7 @@
 {
   "source": "api/esim/list",
   "fetched_at": "2026-08-03T06:30:05.757Z",
-  "note": "tc: South Korea(T+C)-Total* 128kbps（排除 terminate）；skt: South Korea-Total*-B0 用完斷網。利潤雙切換60%/SKT50%",
+  "note": "tc: South Korea(T+C)-Total* 128kbps（排除 terminate）雙網；skt: South Korea-Total*-B0 用完斷網、商品變體標示 SKT 單網（與雙切換區隔）。live API B0 可能列出 SKT+LGU+，前台／Medusa 以單電信 SKT 變體為準。",
   "count_tc": 48,
   "count_skt": 38,
   "count": 86,
@@ -1384,5 +1384,6 @@
       "speed_rule": "流量用完即斷網",
       "throttle_kind": "terminate"
     }
-  ]
+  ],
+  "verified_at": "2026-08-25T03:00:42.129Z"
 }

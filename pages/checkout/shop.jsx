@@ -286,7 +286,7 @@ export default function ShopCheckoutPage() {
   const [needLineFriend, setNeedLineFriend] = useState(false);
   const [needLogin, setNeedLogin] = useState(false);
   const [lineOaUrl, setLineOaUrl] = useState(
-    process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@391huuts",
+    process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn",
   );
   const [welcomeHint, setWelcomeHint] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);

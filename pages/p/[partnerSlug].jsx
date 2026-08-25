@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import PartnerShopLayout from "@/components/Shop/PartnerShopLayout";
 import { usePartnerStoreOwner } from "@/components/Shop/PartnerHomepageEditor";
@@ -26,6 +26,99 @@ import JekoAnimatedCtaButton, {
 import PartnerStoreCategoryTabs from "@/components/Shop/PartnerStoreCategoryTabs";
 
 const CONTAINER = "max-w-[1680px] mx-auto px-6 lg:px-10";
+
+/** 商品網格欄數對齊 Tailwind：2 / md:4 / lg:5 / xl:6；預設顯示兩排 */
+const PRODUCT_GRID_ROWS = 2;
+
+function getPartnerProductPageSize(width) {
+  const w = Number(width) || 0;
+  if (w >= 1280) return 6 * PRODUCT_GRID_ROWS;
+  if (w >= 1024) return 5 * PRODUCT_GRID_ROWS;
+  if (w >= 768) return 4 * PRODUCT_GRID_ROWS;
+  return 2 * PRODUCT_GRID_ROWS;
+}
+
+function usePartnerProductPageSize() {
+  const [pageSize, setPageSize] = useState(4);
+  useEffect(() => {
+    const update = () => setPageSize(getPartnerProductPageSize(window.innerWidth));
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return pageSize;
+}
+
+function PartnerProductPagination({ page, totalPages, onChange }) {
+  if (totalPages <= 1) return null;
+
+  const nums = (() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const items = [1];
+    const left = Math.max(2, page - 1);
+    const right = Math.min(totalPages - 1, page + 1);
+    if (left > 2) items.push("…");
+    for (let i = left; i <= right; i += 1) items.push(i);
+    if (right < totalPages - 1) items.push("…");
+    items.push(totalPages);
+    return items;
+  })();
+
+  const square =
+    "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold transition-colors";
+
+  return (
+    <nav
+      className="mt-8 flex flex-wrap items-center justify-center gap-1.5"
+      aria-label="商品分頁"
+    >
+      <button
+        type="button"
+        disabled={page <= 1}
+        onClick={() => onChange(page - 1)}
+        aria-label="上一頁"
+        className={`${square} border-slate-300 bg-white text-slate-700 hover:border-[#0071EB] hover:bg-[#0071EB] hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-slate-300 disabled:hover:bg-white disabled:hover:text-slate-700`}
+      >
+        ‹
+      </button>
+      {nums.map((item, i) =>
+        item === "…" ? (
+          <span
+            key={`e-${i}`}
+            className={`${square} border-transparent text-slate-400`}
+          >
+            …
+          </span>
+        ) : (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onChange(item)}
+            aria-current={item === page ? "page" : undefined}
+            className={`${square} ${
+              item === page
+                ? "border-[#0071EB] bg-[#0071EB] text-white"
+                : "border-slate-200 bg-white text-slate-700 hover:border-[#0071EB] hover:text-[#0071EB]"
+            }`}
+          >
+            {item}
+          </button>
+        ),
+      )}
+      <button
+        type="button"
+        disabled={page >= totalPages}
+        onClick={() => onChange(page + 1)}
+        aria-label="下一頁"
+        className={`${square} border-slate-300 bg-white text-slate-700 hover:border-[#0071EB] hover:bg-[#0071EB] hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-slate-300 disabled:hover:bg-white disabled:hover:text-slate-700`}
+      >
+        ›
+      </button>
+    </nav>
+  );
+}
 
 function ProductCard({ product, domain }) {
   const href = partnerProductPath(domain, product);
@@ -144,6 +237,30 @@ export default function PartnerStorefront({ store, products }) {
   const list = filterProductsByCountry(products || [], countryKey);
   const totalProductCount = (products || []).length;
 
+  const pageSize = usePartnerProductPageSize();
+  const [productPage, setProductPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+  const safePage = Math.min(Math.max(1, productPage), totalPages);
+  const pageItems = list.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
+  );
+
+  useEffect(() => {
+    setProductPage(1);
+  }, [countryKey, pageSize]);
+
+  const goProductPage = (next) => {
+    const p = Math.min(Math.max(1, next), totalPages);
+    setProductPage(p);
+    if (typeof document !== "undefined") {
+      document.getElementById("plans")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  };
+
   const hero = display.hero;
 
   return (
@@ -240,11 +357,18 @@ export default function PartnerStorefront({ store, products }) {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-2.5 lg:gap-3">
-            {list.map((p) => (
-              <ProductCard key={String(p.id)} product={p} domain={domain} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-2.5 lg:gap-3">
+              {pageItems.map((p) => (
+                <ProductCard key={String(p.id)} product={p} domain={domain} />
+              ))}
+            </div>
+            <PartnerProductPagination
+              page={safePage}
+              totalPages={totalPages}
+              onChange={goProductPage}
+            />
+          </>
         )}
       </section>
 

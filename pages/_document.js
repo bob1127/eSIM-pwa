@@ -26,9 +26,20 @@ export default function Document() {
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Roboto:wght@300;400;500;700;900&display=swap"
           rel="stylesheet"
         />
+        {/* display=block：字型未就緒時先空白，避免出現 install_mobile 等代號文字 */}
+        <link
+          rel="preload"
+          as="style"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+        />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){function r(){document.documentElement.classList.add("material-icons-ready")}if(document.fonts&&document.fonts.load){document.fonts.load('24px "Material Symbols Outlined"').then(r).catch(r)}else{r()}setTimeout(r,2500)})();`,
+          }}
         />
       </Head>
       <body>

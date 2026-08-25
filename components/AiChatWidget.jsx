@@ -32,6 +32,7 @@ import {
   isSupportBusinessHours,
   SUPPORT_HOURS_LABEL,
 } from "../lib/supportHours";
+import { PRESET_ANSWERS, QUICK_QUESTIONS } from "../lib/aiChatPresets";
 import { useAuth } from "../hooks/useAuth";
 import AffiliateChatOffers from "./affiliate/AffiliateChatOffers";
 import ShopChatOffers from "./Shop/ShopChatOffers";
@@ -532,36 +533,6 @@ function closeAiChatForMobileProductNav(href) {
   }
   forceChatUiClosed();
 }
-
-const PRESET_ANSWERS = {
-  "怎麼安裝 eSIM？": `安裝步驟：\n1. Email 接收 QR Code。\n2. 手機設定 > 行動服務 > 加入 eSIM。\n3. 掃描 QR Code 即可。\n教學：${SITE}/operation-shopee/`,
-  "我的手機支援嗎？": `請檢查：\n- iPhone：設定 > 一般 > 關於本機，查看是否有 EID。\n- Android：撥號輸入 *#06# 查看 EID。\n清單：${SITE}/compatibility`,
-  "日本推薦哪一款？": `首選「KDDI/SoftBank 原生卡」，低延遲、速度快！\n購買：${SITE}/product/japan/`,
-  "韓國有吃到飽嗎？": `有的！「韓國純日用吃到飽」方案不降速。\n詳情：${SITE}/product/korea/`,
-};
-
-/** 快捷關鍵字（含 eSIM／商城／住宿票券／文章）；無 preset 的會走 AI＋推薦卡） */
-const QUICK_QUESTIONS = [
-  // eSIM
-  "怎麼安裝 eSIM？",
-  "我的手機支援嗎？",
-  "日本推薦哪一款？",
-  "韓國有吃到飽嗎？",
-  "歐洲 eSIM 怎麼選？",
-  // 住宿／門票／交通（聯盟卡）
-  "大阪推薦飯店",
-  "環球影城門票",
-  "韓國交通票券",
-  "東京迪士尼門票",
-  // 商城
-  "出國要帶什麼充電器",
-  "推薦旅行收納包",
-  "有沒有萬用轉接頭",
-  // 旅遊文章／規定
-  "中國大陸登機行動電源規定",
-  "日本通關要注意什麼",
-  "出國前要準備什麼",
-];
 
 const PLAN_DESTINATIONS = [
   "日本",
@@ -1114,6 +1085,17 @@ export default function AiChatWidget() {
         } catch {
           /* ignore */
         }
+        try {
+          const params = new URLSearchParams(window.location.search);
+          if (
+            params.get("openChat") === "1" ||
+            params.get("jeko_chat") === "1"
+          ) {
+            shouldOpen = true;
+          }
+        } catch {
+          /* ignore */
+        }
         // 手機全螢幕：進入商品頁時不要自動打開 J寶
         if (
           shouldOpen &&
@@ -1134,6 +1116,21 @@ export default function AiChatWidget() {
         }
         if (saved.pendingMedia?.kind === "image") {
           setPendingMedia(saved.pendingMedia);
+        }
+      } else {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          if (
+            params.get("openChat") === "1" ||
+            params.get("jeko_chat") === "1"
+          ) {
+            const blockMobileProduct =
+              isMobileChatViewport() &&
+              isProductPagePath(window.location.pathname);
+            if (!blockMobileProduct) setIsOpen(true);
+          }
+        } catch {
+          /* ignore */
         }
       }
       setChatHydrated(true);
@@ -1493,6 +1490,8 @@ export default function AiChatWidget() {
       typeof options.displayContent === "string" && options.displayContent.trim()
         ? options.displayContent.trim()
         : trimmed || "（已上傳截圖）";
+    const fromQuickButton = Boolean(options.fromQuickButton);
+    const userLogProvider = fromQuickButton ? "quick" : null;
 
     stickToBottomRef.current = true;
 
@@ -1571,7 +1570,7 @@ export default function AiChatWidget() {
           shopCards: data.shopCards?.length ? data.shopCards : null,
         },
       ]);
-      // 儲存 user + ai 兩則紀錄
+      // 儲存 user + ai 兩則紀錄（快捷按鈕標記 quick，掃描 FAQ 時略過）
       persistChatLog({
         sessionId: sessionIdRef.current,
         userId: user?.id || null,
@@ -1580,8 +1579,13 @@ export default function AiChatWidget() {
           {
             role: "user",
             content: displayContent,
+            provider: userLogProvider,
           },
-          { role: "ai", content: aiReply, provider: data.provider || null },
+          {
+            role: "ai",
+            content: aiReply,
+            provider: fromQuickButton ? "quick" : data.provider || null,
+          },
         ],
       });
     } catch (error) {
@@ -2075,7 +2079,7 @@ export default function AiChatWidget() {
                     type="button"
                     onClick={() => {
                       setShowPlanForm(false);
-                      processChat(q);
+                      processChat(q, null, { fromQuickButton: true });
                     }}
                     disabled={isLoading}
                     className="whitespace-nowrap px-3.5 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[12px] font-bold hover:bg-blue-600 hover:text-white transition-all disabled:opacity-50"

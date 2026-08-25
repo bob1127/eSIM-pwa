@@ -445,33 +445,66 @@ const CARRIER_INFO_MAP = {
     },
     summaryPrefix: "CSL / China Telecom HK",
   },
-  "CSL / SmarTone（總量型）": {
+  "CUCC / China Telecom + CSL + CTM": {
     badges: [
+      { text: "CUCC", type: "5G" },
+      { text: "China Telecom", type: "5G" },
       { text: "CSL", type: "5G" },
-      { text: "SmarTone", type: "5G" },
+      { text: "CTM", type: "5G" },
     ],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "約 10 Mbps 無限流量吃到飽。",
+      note: "注意：新加坡 IP 漫遊，建議抵達後再安裝 eSIM。",
+    },
+    summaryPrefix: "CUCC / China Telecom + CSL + CTM",
+  },
+  "3HK": {
+    badges: [{ text: "3HK", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "高速用完後降速至約 128 kbps，可持續使用。",
+      note: "注意：馬來西亞 IP 漫遊，建議抵達後再安裝 eSIM。",
+    },
+    summaryPrefix: "3HK",
+  },
+  // 舊鍵（相容）
+  "CSL / SmarTone（總量型）": {
+    badges: [{ text: "3HK", type: "5G" }],
     marketingBox: {
       bgColor: "bg-cyan-50",
       borderColor: "border-cyan-100",
       policyTitle: "公平使用政策 (FUP):",
       policyDesc: "總量高速用完後降速至約 128 kbps，可持續使用。",
-      note: "注意：新加坡 IP 漫遊，建議抵達後再安裝 eSIM。",
+      note: "注意：馬來西亞 IP 漫遊，建議抵達後再安裝 eSIM。",
     },
-    summaryPrefix: "CSL / SmarTone（總量型）",
+    summaryPrefix: "3HK",
   },
   "CSL / SmarTone（每日型）": {
-    badges: [
-      { text: "CSL", type: "5G" },
-      { text: "SmarTone", type: "5G" },
-    ],
+    badges: [{ text: "3HK", type: "5G" }],
     marketingBox: {
       bgColor: "bg-cyan-50",
       borderColor: "border-cyan-100",
       policyTitle: "公平使用政策 (FUP):",
       policyDesc: "每日高速用完後降速至約 128 kbps，可持續使用。",
-      note: "注意：新加坡 IP 漫遊，建議抵達後再安裝 eSIM。",
+      note: "注意：馬來西亞 IP 漫遊，建議抵達後再安裝 eSIM。",
     },
-    summaryPrefix: "CSL / SmarTone（每日型）",
+    summaryPrefix: "3HK",
+  },
+  "CSL / SmarTone": {
+    badges: [{ text: "3HK", type: "5G" }],
+    marketingBox: {
+      bgColor: "bg-cyan-50",
+      borderColor: "border-cyan-100",
+      policyTitle: "公平使用政策 (FUP):",
+      policyDesc: "高速用完後降速至約 128 kbps，可持續使用。",
+      note: "注意：馬來西亞 IP 漫遊，建議抵達後再安裝 eSIM。",
+    },
+    summaryPrefix: "3HK",
   },
   Vinaphone: {
     badges: [{ text: "Vinaphone", type: "5G" }],
@@ -867,6 +900,20 @@ function CarrierSpeedChips({ chips }) {
       ))}
     </span>
   );
+}
+
+/** 重點特色：區塊小標（如 **基本介紹與特色**）— 不加圓點 */
+function isKeyFeatureHeading(line) {
+  const s = String(line || "").trim();
+  return /^\*\*[^*：:]+\*\*：?$/.test(s) || /^\*\*基本介紹與特色\*\*$/.test(s);
+}
+
+/** 重點特色：開頭摘要段（無「**標籤：**」）— 不加圓點 */
+function isKeyFeatureLead(line, index) {
+  if (index !== 0) return false;
+  const s = String(line || "").trim();
+  if (isKeyFeatureHeading(s)) return false;
+  return !/\*\*[^*]+：\*\*/.test(s) && !/\*\*[^*]+：/.test(s);
 }
 
 function FeatureBulletText({ children, className = "" }) {
@@ -1690,6 +1737,7 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
     [displayedFaq],
   );
   const faqHasSectionHead = sanitizedFaqHtml.includes("jeko-section-head");
+  const usageHasSectionHead = sanitizedUsageHtml.includes("jeko-section-head");
   const detailedHasSelfTitle =
     sanitizedDisplayHtml.includes("jeko-sum-plan") ||
     sanitizedDisplayHtml.includes("jeko-track-plan") ||
@@ -1911,14 +1959,18 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
             animate={{ opacity: 1 }}
           >
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <MaterialIcon
-                  name="tips_and_updates"
-                  size={24}
-                  className="text-[#2B59C3]"
-                />
-                使用介紹
-              </h3>
+              {!usageHasSectionHead ? (
+                <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                  <MaterialIcon
+                    name="tips_and_updates"
+                    size={24}
+                    className="text-[#2B59C3]"
+                  />
+                  使用介紹
+                </h3>
+              ) : (
+                <div />
+              )}
               {adminChecked && isAdmin && (
                 <button
                   type="button"
@@ -3426,7 +3478,7 @@ export default function ProductPage({
           />
 
           <div className="bg-white">
-            <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-16 lg:pb-20">
+            <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-8 lg:pb-10">
               {isPartnerShell ? (
                 <nav className="text-xs text-slate-400 mb-3 tracking-wide flex items-center gap-1.5 flex-wrap">
                   <a
@@ -4356,19 +4408,39 @@ export default function ProductPage({
                           >
                             <ul className="space-y-2.5 text-sm text-slate-600 leading-relaxed">
                               {introBullets.length > 0 ? (
-                                introBullets.map((line, i) => (
-                                  <li
-                                    key={i}
-                                    className="flex gap-2 items-start list-none"
-                                  >
-                                    <span className="text-[#00befa] shrink-0 mt-0.5">
-                                      •
-                                    </span>
-                                    <FeatureBulletText className="flex-1 min-w-0">
-                                      {line}
-                                    </FeatureBulletText>
-                                  </li>
-                                ))
+                                introBullets.map((line, i) => {
+                                  const heading = isKeyFeatureHeading(line);
+                                  const lead = isKeyFeatureLead(line, i);
+                                  if (heading || lead) {
+                                    return (
+                                      <li
+                                        key={i}
+                                        className={`list-none ${
+                                          heading
+                                            ? "pt-1 text-[15px] font-bold text-slate-900"
+                                            : "text-[13px] sm:text-sm text-slate-600 leading-relaxed pb-1"
+                                        }`}
+                                      >
+                                        <FeatureBulletText className="min-w-0">
+                                          {line}
+                                        </FeatureBulletText>
+                                      </li>
+                                    );
+                                  }
+                                  return (
+                                    <li
+                                      key={i}
+                                      className="flex gap-2 items-start list-none"
+                                    >
+                                      <span className="text-[#00befa] shrink-0 mt-0.5">
+                                        •
+                                      </span>
+                                      <FeatureBulletText className="flex-1 min-w-0">
+                                        {line}
+                                      </FeatureBulletText>
+                                    </li>
+                                  );
+                                })
                               ) : (
                                 <li className="text-gray-400 text-sm list-none">
                                   {carrierName && carrierName !== "default"
@@ -4792,7 +4864,11 @@ export default function ProductPage({
                   }
                 />
               ) : null}
+            </div>
+          </div>
 
+          <div className="bg-[#DFE0E5]">
+            <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-4 pb-16 lg:pb-20">
               <ProductTabs
                 product={product}
                 selectedCarrier={carrierName}
