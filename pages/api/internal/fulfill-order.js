@@ -33,8 +33,19 @@ const SUBSCRIBE_MAX_ATTEMPTS = 3;
 const DETAIL_POLL_INTERVAL_MS = 2_500;
 const DETAIL_POLL_MAX_MS = 90_000;
 
+// 發貨含供應商輪詢，Vercel 預設 10～60s 會 FUNCTION_INVOCATION_FAILED
+export const config = {
+  maxDuration: 300,
+};
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function profileFieldNonEmpty(val) {
+  if (val == null || val === "") return false;
+  if (Array.isArray(val)) return val.some((x) => String(x || "").trim());
+  return Boolean(String(val).trim());
 }
 
 function detailHasProfile(detailResult) {
@@ -47,14 +58,16 @@ function detailHasProfile(detailResult) {
   return rows.some(
     (row) =>
       row &&
-      (row.qrcode ||
-        row.qr_code ||
-        row.lpa ||
-        row.LPA ||
-        row.iccid ||
-        row.ICCID ||
-        row.smdp_address ||
-        row.smdp),
+      (profileFieldNonEmpty(row.qrcode) ||
+        profileFieldNonEmpty(row.qr_code) ||
+        profileFieldNonEmpty(row.lpa) ||
+        profileFieldNonEmpty(row.lpa_str) ||
+        profileFieldNonEmpty(row.LPA) ||
+        profileFieldNonEmpty(row.iccid) ||
+        profileFieldNonEmpty(row.ICCID) ||
+        profileFieldNonEmpty(row.device_ids) ||
+        profileFieldNonEmpty(row.smdp_address) ||
+        profileFieldNonEmpty(row.smdp)),
   );
 }
 
@@ -62,10 +75,32 @@ function isDetailStillProcessing(detail) {
   const msg = String(detail?.msg || "").toLowerCase();
   const status = String(detail?.result?.status || "").toLowerCase();
   if (msg.includes("processing") || status.includes("process")) return true;
-  if (detail?.code === 1 && detail?.result && !detailHasProfile(detail.result)) {
+  // 供應商有時先回 completed + 空 QR／LPA，需繼續輪詢
+  if (detail?.code === 1 && detail?.result && !detailHasUsableActivation(detail.result)) {
     return true;
   }
   return false;
+}
+
+/** 可否實際安裝（僅有 ICCID 不夠） */
+function detailHasUsableActivation(detailResult) {
+  if (!detailResult || typeof detailResult !== "object") return false;
+  const rows = Array.isArray(detailResult)
+    ? detailResult
+    : Array.isArray(detailResult.list)
+      ? detailResult.list
+      : [detailResult];
+  return rows.some(
+    (row) =>
+      row &&
+      (profileFieldNonEmpty(row.qrcode) ||
+        profileFieldNonEmpty(row.qr_code) ||
+        profileFieldNonEmpty(row.lpa) ||
+        profileFieldNonEmpty(row.lpa_str) ||
+        profileFieldNonEmpty(row.LPA) ||
+        profileFieldNonEmpty(row.smdp_address) ||
+        profileFieldNonEmpty(row.smdp)),
+  );
 }
 
 function isRetryableError(err) {
@@ -287,7 +322,7 @@ export default async function handler(req, res) {
             );
 
             detail = detailRes.data;
-            if (detail?.code === 1 && detailHasProfile(detail.result)) {
+            if (detail?.code === 1 && detailHasUsableActivation(detail.result)) {
               break;
             }
             if (detail?.code === 1 && isDetailStillProcessing(detail)) {
@@ -302,9 +337,9 @@ export default async function handler(req, res) {
             throw new Error(`獲取 QR Code 失敗: ${JSON.stringify(detail)}`);
           }
 
-          if (!detail || !detailHasProfile(detail.result)) {
+          if (!detail || !detailHasUsableActivation(detail.result)) {
             throw new Error(
-              `獲取 QR Code 逾時（topup ${topup_id} 仍 Processing）: ${JSON.stringify(detail)}`,
+              `獲取 QR Code 逾時（topup ${topup_id} 仍無 LPA／QR）: ${JSON.stringify(detail)}`,
             );
           }
 
@@ -316,16 +351,23 @@ export default async function handler(req, res) {
 
           for (const row of detailRows) {
             if (
-              !row?.qrcode &&
-              !row?.qr_code &&
-              !row?.lpa &&
-              !row?.iccid &&
-              !detail.result?.qrcode
+              !profileFieldNonEmpty(row?.qrcode) &&
+              !profileFieldNonEmpty(row?.qr_code) &&
+              !profileFieldNonEmpty(row?.lpa) &&
+              !profileFieldNonEmpty(row?.lpa_str) &&
+              !profileFieldNonEmpty(row?.iccid) &&
+              !profileFieldNonEmpty(row?.device_ids) &&
+              !profileFieldNonEmpty(detail.result?.qrcode)
             ) {
               continue;
             }
             const rowWithQr =
-              row.qrcode || row.qr_code || row.lpa || row.iccid
+              profileFieldNonEmpty(row.qrcode) ||
+              profileFieldNonEmpty(row.qr_code) ||
+              profileFieldNonEmpty(row.lpa) ||
+              profileFieldNonEmpty(row.lpa_str) ||
+              profileFieldNonEmpty(row.iccid) ||
+              profileFieldNonEmpty(row.device_ids)
                 ? row
                 : detail.result;
             const profile = await buildEsimProfileFromTopupDetail({

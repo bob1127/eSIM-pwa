@@ -96,6 +96,14 @@ export default async function handler(req, res) {
         supabaseUserId = user.id;
         // Supabase 使用者若曾綁定 LINE，metadata.line_id 可一併帶入查單
         if (userMetadata?.line_id) lineUserId = String(userMetadata.line_id);
+        else if (userMetadata?.line_user_id) {
+          lineUserId = String(userMetadata.line_user_id);
+        } else if (
+          typeof userEmail === "string" &&
+          /@line-login\.com$/i.test(userEmail)
+        ) {
+          lineUserId = userEmail.replace(/@line-login\.com$/i, "");
+        }
       }
     }
 

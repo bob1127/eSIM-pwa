@@ -229,14 +229,23 @@ const CheckoutForm = ({
 
   // 結帳身分「蓋章」：把登入身分帶進訂單 metadata，讓會員中心可依
   // line_user_id / supabase_user_id 對回本人訂單（不必猜要用哪個帳號登入）。
-  // 目前只有 LINE 一個 NextAuth provider，故 session.user.id 即 LINE user id。
+  // LINE → Supabase 橋接後，NextAuth session 可能已空，改從 user_metadata.line_id
+  // 或虛擬信箱還原 LINE user id。
   const buildCheckoutIdentity = () => {
-    const lineUserId = session?.user?.id || null;
+    const fromSession = session?.user?.id || null;
+    const fromMeta =
+      supabaseUser?.user_metadata?.line_id ||
+      supabaseUser?.user_metadata?.line_user_id ||
+      null;
+    const fromSyntheticEmail = isLineSyntheticEmail(supabaseUser?.email)
+      ? String(supabaseUser.email).replace(/@line-login\.com$/i, "")
+      : null;
+    const lineUserId = fromSession || fromMeta || fromSyntheticEmail || null;
     const supabaseUserId = supabaseUser?.id || null;
-    const authProvider = supabaseUserId
-      ? "supabase"
-      : lineUserId
-        ? "line"
+    const authProvider = lineUserId
+      ? "line"
+      : supabaseUserId
+        ? "supabase"
         : "guest";
     return { lineUserId, supabaseUserId, authProvider };
   };
