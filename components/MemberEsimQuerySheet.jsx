@@ -6,6 +6,14 @@ import MaterialIcon from "@/components/MaterialIcon";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { useAuth } from "@/hooks/useAuth";
 import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
+import { detectDeviceLabel } from "@/lib/deviceDetect";
+import { pickInstallUrlForOs } from "@/lib/esimInstallLinks";
+import { inferEsimInstalled } from "@/lib/esimInstallStatus";
+import { getPushEndpoint } from "@/lib/pushBind";
+import { subscribeToPush } from "@/lib/pushSubscribe";
+import { detectPushSupport, getBrowserContext } from "@/lib/pushSupport";
+import AppInstallGuideModal from "@/components/AppInstallGuideModal";
+import { usePWAInstall } from "@/components/usePWAInstall";
 import { cn } from "@/lib/utils";
 
 const TrafficUsageCharts = dynamic(
@@ -27,18 +35,30 @@ export const QUERY_DEMO_ESIMS = [
     orderId: "order_DEMO_TH",
     productName: "【測試】泰國 eSIM 8日 3GB",
     iccid: "8946200100000000001",
+    iosInstallUrl:
+      "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=DEMO",
+    androidInstallUrl:
+      "https://esimsetup.android.com/esim_qrcode_provisioning?carddata=DEMO",
   },
   {
     topupId: "Topup-DEMO-JP-5D",
     orderId: "order_DEMO_JP",
     productName: "【測試】日本 eSIM 5日 吃到飽",
     iccid: "8946200100000000002",
+    iosInstallUrl:
+      "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=DEMO2",
+    androidInstallUrl:
+      "https://esimsetup.android.com/esim_qrcode_provisioning?carddata=DEMO2",
   },
   {
     topupId: "Topup-DEMO-KR-7D",
     orderId: "order_DEMO_KR",
     productName: "【測試】韓國 eSIM 7日 5GB",
     iccid: "8946200100000000003",
+    iosInstallUrl:
+      "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=DEMO3",
+    androidInstallUrl:
+      "https://esimsetup.android.com/esim_qrcode_provisioning?carddata=DEMO3",
   },
 ];
 
@@ -47,15 +67,17 @@ export const QUERY_DEMO_USAGE = {
     remainingMb: 1280,
     totalMb: 3072,
     usedMb: 1792,
+    status: "In use",
     expiresAt: "2026-09-01",
     productName: "【測試】泰國 eSIM 8日 3GB",
     iccid: "8946200100000000001",
     note: "假資料預覽",
   },
   "Topup-DEMO-JP-5D": {
-    remainingMb: 420,
+    remainingMb: 1024,
     totalMb: 1024,
-    usedMb: 604,
+    usedMb: 0,
+    status: "Unused",
     expiresAt: "2026-08-28",
     productName: "【測試】日本 eSIM 5日 吃到飽",
     iccid: "8946200100000000002",
@@ -65,6 +87,7 @@ export const QUERY_DEMO_USAGE = {
     remainingMb: 180,
     totalMb: 5120,
     usedMb: 4940,
+    status: "Activated",
     expiresAt: "2026-09-05",
     productName: "【測試】韓國 eSIM 7日 5GB",
     iccid: "8946200100000000003",
@@ -73,29 +96,105 @@ export const QUERY_DEMO_USAGE = {
 };
 
 function shortName(name = "") {
-  const s = String(name).replace(/^【.*?】/, "").trim();
+  const s = String(name)
+    .replace(/^【.*?】/, "")
+    .trim();
   return s.length > 14 ? `${s.slice(0, 14)}…` : s || "eSIM";
 }
 
 function statusTone(result) {
   const pct = usagePercent(result?.remainingMb, result?.totalMb);
-  if (pct == null) return { label: "點擊查詢", tone: "slate" };
+  if (pct == null) return null;
   if (pct <= 15) return { label: "流量偏低", tone: "amber" };
   if (pct <= 40) return { label: "用量正常", tone: "blue" };
   return { label: "剩餘充足", tone: "mint" };
 }
 
+function openEsimInstall(esim, deviceOs) {
+  const url = pickInstallUrlForOs(deviceOs, esim);
+  if (url) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return true;
+  }
+  if (esim?.iosInstallUrl || esim?.androidInstallUrl) {
+    alert("請用手機開啟本頁再點「安裝 eSIM」；電腦請至會員訂單掃描 QR Code。");
+    return false;
+  }
+  alert("此方案尚無一鍵安裝連結，請至會員中心訂單掃描 QR Code 安裝。");
+  return false;
+}
+
+/** 白圓 icon + 下方標籤；成功＝藍底白 icon */
+function CircleAction({
+  icon,
+  label,
+  onClick,
+  disabled = false,
+  title,
+  staticOnly = false,
+  active = false,
+  loading = false,
+}) {
+  const circleClass = cn(
+    "flex h-10 w-10 items-center justify-center rounded-full transition",
+    active
+      ? "bg-[#1e8fff] shadow-[0_4px_12px_-4px_rgba(30,143,255,0.7)]"
+      : "bg-white shadow-[0_1px_3px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.04]",
+  );
+  const iconClass = cn(
+    active ? "text-white" : "text-slate-900",
+    loading && "animate-spin",
+  );
+
+  const body = (
+    <>
+      <span className={circleClass}>
+        <MaterialIcon
+          name={loading ? "progress_activity" : icon}
+          size={20}
+          className={iconClass}
+        />
+      </span>
+      <span className="mt-1 max-w-[4.2rem] text-center text-[10px] font-bold leading-tight text-slate-800">
+        {label}
+      </span>
+    </>
+  );
+
+  if (staticOnly) {
+    return (
+      <div
+        className="shrink-0 inline-flex flex-col items-center justify-start px-0.5"
+        title={title || label}
+      >
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || loading}
+      title={title || label}
+      className="shrink-0 inline-flex flex-col items-center justify-start px-0.5 disabled:opacity-50 transition active:scale-[0.97]"
+    >
+      {body}
+    </button>
+  );
+}
+
 /**
- * 登入會員：可查詢 eSIM 列表 + 點擊查流量／圖表
+ * 登入會員：可查詢 eSIM 列表 + 點擊查流量／安裝／開啟提醒
  * demoMode：本機假資料，不需登入、不打 API
- * onOpenTrafficAlert(esim)：切到流量提醒並預選此方案
  */
 export default function MemberEsimQuerySheet({
   className = "",
   demoMode = false,
-  onOpenTrafficAlert,
 }) {
   const { authReady, isLoggedIn, token } = useAuth();
+  const { isStandalone, isInstallable, deviceType } = usePWAInstall();
   const [esims, setEsims] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState("");
@@ -103,13 +202,67 @@ export default function MemberEsimQuerySheet({
   const [results, setResults] = useState({});
   const [queryingId, setQueryingId] = useState(null);
   const [queryError, setQueryError] = useState("");
+  const [deviceOs, setDeviceOs] = useState("other");
+  const [boundTopupId, setBoundTopupId] = useState(null);
+  const [alertBusyId, setAlertBusyId] = useState(null);
+  const [installOpenedIds, setInstallOpenedIds] = useState(() => new Set());
+  const [showAppInstallGuide, setShowAppInstallGuide] = useState(false);
+  const [iosNeedsPwa, setIosNeedsPwa] = useState(false);
   const autoQueriedRef = useRef(false);
+
+  const refreshIosPwaGate = useCallback(() => {
+    const ctx = getBrowserContext();
+    // iPhone／iPad 未以主畫面 App 開啟 → 先引導安裝 PWA，再顯示開啟提醒
+    setIosNeedsPwa(Boolean(ctx.isIOS && !ctx.isStandalone && !isStandalone));
+  }, [isStandalone]);
+
+  useEffect(() => {
+    setDeviceOs(detectDeviceLabel().os);
+    refreshIosPwaGate();
+  }, [refreshIosPwaGate]);
+
+  useEffect(() => {
+    refreshIosPwaGate();
+    const onVis = () => {
+      if (document.visibilityState === "visible") refreshIosPwaGate();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", refreshIosPwaGate);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", refreshIosPwaGate);
+    };
+  }, [refreshIosPwaGate]);
 
   const authHeaders = useCallback(() => {
     const h = {};
     if (token) h.Authorization = `Bearer ${token}`;
     return h;
   }, [token]);
+
+  const refreshBoundAlert = useCallback(async () => {
+    if (demoMode) return;
+    try {
+      const endpoint = await getPushEndpoint();
+      if (!endpoint) {
+        setBoundTopupId(null);
+        return;
+      }
+      const res = await fetch(
+        `/api/push/bind-status?endpoint=${encodeURIComponent(endpoint)}`,
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBoundTopupId(null);
+        return;
+      }
+      const topup =
+        data.bound && data.topupId != null ? String(data.topupId) : null;
+      setBoundTopupId(topup);
+    } catch {
+      setBoundTopupId(null);
+    }
+  }, [demoMode]);
 
   const loadEsims = useCallback(async () => {
     if (demoMode) {
@@ -144,13 +297,14 @@ export default function MemberEsimQuerySheet({
         }
         return list[0]?.topupId || list[0]?.iccid || null;
       });
+      await refreshBoundAlert();
     } catch (e) {
       setListError(e.message || "載入失敗");
       setEsims([]);
     } finally {
       setLoadingList(false);
     }
-  }, [isLoggedIn, authHeaders, demoMode]);
+  }, [isLoggedIn, authHeaders, demoMode, refreshBoundAlert]);
 
   const queryUsage = useCallback(
     async (esim) => {
@@ -201,6 +355,100 @@ export default function MemberEsimQuerySheet({
     [authHeaders, demoMode],
   );
 
+  const enableTrafficAlert = useCallback(
+    async (esim) => {
+      const key = esim.topupId || esim.iccid;
+      if (!key || alertBusyId) return;
+
+      if (demoMode) {
+        setAlertBusyId(key);
+        await new Promise((r) => setTimeout(r, 600));
+        setBoundTopupId(String(key));
+        setAlertBusyId(null);
+        return;
+      }
+
+      if (!isLoggedIn) {
+        alert("請先登入會員後再開啟流量提醒。");
+        return;
+      }
+
+      setAlertBusyId(key);
+      setQueryError("");
+      try {
+        const ctx = getBrowserContext();
+        if (ctx.isIOS && !ctx.isStandalone) {
+          setShowAppInstallGuide(true);
+          return;
+        }
+
+        const support = await detectPushSupport();
+        if (!support.supported) {
+          throw new Error(
+            support.hint ||
+              "此裝置暫不支援通知，請改用 Chrome，或將本站加入主畫面。",
+          );
+        }
+
+        if (
+          typeof Notification !== "undefined" &&
+          Notification.permission === "denied"
+        ) {
+          throw new Error("通知已被封鎖。請到瀏覽器設定允許通知後再試。");
+        }
+
+        await subscribeToPush({ token });
+        const endpoint = await getPushEndpoint();
+        if (!endpoint) {
+          throw new Error("無法取得推播訂閱，請允許通知後再試。");
+        }
+
+        const headers = {
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        };
+        const body = { endpoint };
+        if (esim.topupId && !String(esim.topupId).startsWith("iccid:")) {
+          body.topupId = esim.topupId;
+          body.bindMethod = "member_order";
+          if (esim.iccid) body.iccid = esim.iccid;
+        } else if (esim.iccid) {
+          body.iccid = esim.iccid;
+        } else {
+          throw new Error("此方案缺少 topup 或 ICCID，無法開啟提醒");
+        }
+
+        const res = await fetch("/api/push/bind-esim", {
+          method: "POST",
+          headers,
+          credentials: "include",
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || data.hint || "開啟提醒失敗");
+        }
+        setBoundTopupId(String(data.topupId || key));
+      } catch (e) {
+        setQueryError(e.message || "開啟提醒失敗");
+      } finally {
+        setAlertBusyId(null);
+      }
+    },
+    [alertBusyId, demoMode, isLoggedIn, token, authHeaders],
+  );
+
+  const handleInstallClick = useCallback(
+    (esim) => {
+      const key = esim.topupId || esim.iccid;
+      const ok = openEsimInstall(esim, deviceOs);
+      if (ok && key) {
+        setInstallOpenedIds((prev) => new Set(prev).add(String(key)));
+      }
+    },
+    [deviceOs],
+  );
+
   useEffect(() => {
     if (demoMode) {
       loadEsims();
@@ -212,6 +460,7 @@ export default function MemberEsimQuerySheet({
       setEsims([]);
       setResults({});
       setSelectedId(null);
+      setBoundTopupId(null);
       setLoadingList(false);
       return;
     }
@@ -243,6 +492,8 @@ export default function MemberEsimQuerySheet({
     selectedResult?.remainingMb,
     selectedResult?.totalMb,
   );
+  const installOsLabel =
+    deviceOs === "ios" ? "iOS" : deviceOs === "android" ? "Android" : null;
 
   if (!demoMode && !authReady) {
     return (
@@ -274,9 +525,6 @@ export default function MemberEsimQuerySheet({
 
       <div className="relative bg-[#EEF2F8] px-4 pt-4 pb-3 sm:px-5">
         <div className="flex items-center justify-between mb-3 px-1">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
-            Usage map
-          </p>
           <button
             type="button"
             onClick={loadEsims}
@@ -298,9 +546,11 @@ export default function MemberEsimQuerySheet({
                 size={36}
                 className="text-slate-300 mb-2"
               />
-              <p className="text-sm font-bold text-slate-700">尚無可查詢 eSIM</p>
+              <p className="text-sm font-bold text-slate-700">
+                尚無可查詢 eSIM
+              </p>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                本站訂單開通後會顯示於此。也可下方用 ICCID 手動查詢。
+                本站訂單開通後會顯示於此。
               </p>
             </div>
           ) : (
@@ -370,19 +620,29 @@ export default function MemberEsimQuerySheet({
               />
               {esims.map((esim, i) => {
                 const id = esim.topupId || esim.iccid;
+                const idStr = String(id || "");
                 const active = id === selectedId;
                 const r = results[id];
                 const tone = statusTone(r);
                 const remaining =
                   r?.remainingMb != null ? formatMb(r.remainingMb) : null;
                 const isQuerying = queryingId === id;
+                const queriedOk = Boolean(r);
+                const installed = inferEsimInstalled(r);
+                const installSuccess =
+                  installed === true || installOpenedIds.has(idStr);
+                const alertOn =
+                  boundTopupId != null &&
+                  (String(boundTopupId) === idStr ||
+                    String(boundTopupId) === String(esim.topupId || ""));
+                const alertLoading = alertBusyId === id;
                 const dotColor = i === 0 ? "#1e8fff" : "#22c55e";
 
                 return (
                   <div
                     key={id || i}
                     className={cn(
-                      "relative w-full rounded-2xl border px-3.5 py-3.5 transition flex items-center gap-2.5 sm:gap-3",
+                      "relative w-full rounded-2xl border px-3.5 py-3 transition flex items-center gap-2 sm:gap-3",
                       active
                         ? "border-[#1e8fff] bg-[#F7FAFF] shadow-[0_8px_24px_-16px_rgba(30,74,209,0.45)]"
                         : "border-slate-200 bg-white hover:border-slate-300",
@@ -390,7 +650,7 @@ export default function MemberEsimQuerySheet({
                   >
                     <button
                       type="button"
-                      onClick={() => queryUsage(esim)}
+                      onClick={() => setSelectedId(id)}
                       className="relative flex min-w-0 flex-1 items-center gap-3 text-left"
                     >
                       <span
@@ -407,47 +667,69 @@ export default function MemberEsimQuerySheet({
                             : remaining
                               ? `剩餘 ${remaining}${r?.expiresAt ? ` · 效期 ${r.expiresAt}` : ""}`
                               : esim.iccid
-                                ? `ICCID …${String(esim.iccid).slice(-6)} · 點擊查詢`
-                                : "點擊查詢目前流量"}
+                                ? `ICCID …${String(esim.iccid).slice(-6)}`
+                                : "選擇後點右側查詢流量"}
                         </p>
+                        {tone ? (
+                          <span
+                            className={cn(
+                              "mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold",
+                              tone.tone === "amber" &&
+                                "bg-amber-100 text-amber-800",
+                              tone.tone === "mint" &&
+                                "bg-emerald-100 text-emerald-700",
+                              tone.tone === "blue" &&
+                                "bg-[#EAF0FB] text-[#1e4ad1]",
+                            )}
+                          >
+                            {tone.label}
+                          </span>
+                        ) : null}
                       </div>
-                      <span
-                        className={cn(
-                          "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
-                          tone.tone === "amber" &&
-                            "bg-amber-100 text-amber-800",
-                          tone.tone === "mint" &&
-                            "bg-emerald-100 text-emerald-700",
-                          tone.tone === "blue" &&
-                            "bg-[#EAF0FB] text-[#1e4ad1]",
-                          tone.tone === "slate" &&
-                            "bg-slate-100 text-slate-500",
-                        )}
-                      >
-                        {isQuerying ? "…" : tone.label}
-                      </span>
                     </button>
-                    {typeof onOpenTrafficAlert === "function" ? (
-                      <button
-                        type="button"
-                        onClick={() => onOpenTrafficAlert(esim)}
-                        className="shrink-0 inline-flex max-w-[4.5rem] sm:max-w-none flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 rounded-xl border border-[#1e4ad1]/25 bg-[#EAF0FB] px-2 py-1.5 text-[10px] font-bold leading-tight text-[#1e4ad1] hover:bg-[#dce6f8] transition"
-                        title="開啟此方案的流量提醒"
-                      >
-                        <MaterialIcon
-                          name="notifications_active"
-                          size={14}
-                          className="shrink-0"
-                        />
-                        <span className="text-center">開啟提醒</span>
-                      </button>
-                    ) : (
-                      <MaterialIcon
-                        name="chevron_right"
-                        size={20}
-                        className="text-slate-300 shrink-0"
+
+                    <div className="shrink-0 flex items-start gap-1.5 sm:gap-2">
+                      <CircleAction
+                        icon="add"
+                        label="查詢流量"
+                        loading={isQuerying}
+                        active={queriedOk && !isQuerying}
+                        disabled={isQuerying}
+                        onClick={() => queryUsage(esim)}
                       />
-                    )}
+
+                      <CircleAction
+                        icon={installSuccess ? "check" : "sim_card_download"}
+                        label="安裝 eSIM"
+                        active={installSuccess}
+                        title={
+                          installSuccess
+                            ? "已安裝／已開啟安裝"
+                            : installOsLabel
+                              ? `一鍵安裝（${installOsLabel}）`
+                              : "一鍵安裝 eSIM"
+                        }
+                        onClick={() => handleInstallClick(esim)}
+                      />
+
+                      {iosNeedsPwa ? (
+                        <CircleAction
+                          icon="install_mobile"
+                          label="安裝 App"
+                          title="先加入主畫面，再開啟流量提醒"
+                          onClick={() => setShowAppInstallGuide(true)}
+                        />
+                      ) : (
+                        <CircleAction
+                          icon="notifications_active"
+                          label="開啟提醒"
+                          loading={alertLoading}
+                          active={alertOn && !alertLoading}
+                          disabled={Boolean(alertBusyId)}
+                          onClick={() => enableTrafficAlert(esim)}
+                        />
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -482,22 +764,21 @@ export default function MemberEsimQuerySheet({
                 {queryError}
               </p>
             )}
-
-            <button
-              type="button"
-              disabled={!selected || Boolean(queryingId)}
-              onClick={() => selected && queryUsage(selected)}
-              className="mt-5 w-full rounded-2xl bg-[#1e8fff] hover:bg-[#1780e8] disabled:opacity-50 text-white font-black text-[15px] py-3.5 shadow-[0_10px_28px_-12px_rgba(30,143,255,0.7)] transition"
-            >
-              {queryingId
-                ? "查詢中…"
-                : selectedResult
-                  ? "重新查詢流量"
-                  : "查詢目前流量"}
-            </button>
           </>
         )}
       </div>
+
+      <AppInstallGuideModal
+        open={showAppInstallGuide}
+        onClose={() => {
+          setShowAppInstallGuide(false);
+          refreshIosPwaGate();
+        }}
+        showOneClickInstall={isInstallable}
+        platform={
+          deviceType === "ios" || deviceType === "mac" ? deviceType : null
+        }
+      />
     </div>
   );
 }

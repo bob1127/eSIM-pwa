@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import EsimFutureTrendsSection from "../components/EsimFutureTrendsSection";
 import CooperationInfoModal from "../components/cooperation/CooperationInfoModal";
+import PartnerVendorsSection from "../components/PartnerVendorsSection";
 import Copy from "@/components/MaskText";
 import JekoPillButton from "@/components/ui/JekoPillButton";
 
@@ -1037,25 +1038,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* =========================================
-          合作夥伴 Banner（Logo 跑馬燈暫不顯示，之後再加入）
-      ========================================= */}
-      <section className="relative w-full bg-white pb-20 pt-10 z-20 border-t border-slate-200">
-        <div className="mx-auto max-w-[1100px] w-[92%] flex flex-col items-center text-center">
-          <div className="w-full flex items-center justify-center gap-4 mb-3">
-            <div className="flex-grow h-px bg-slate-200"></div>
-            <h3 className="text-[18px] md:text-[22px] font-black text-[#1E4AD1] tracking-wider whitespace-nowrap">
-              合作夥伴與廠商
-            </h3>
-            <div className="flex-grow h-px bg-slate-200"></div>
-          </div>
-
-          <p className="text-xs md:text-sm text-[#5B7382] font-medium max-w-[640px] leading-relaxed">
-            ※歡迎旅遊業者、飯店民宿、KOL／部落客與自由接案者加入——可選「專屬連結」分享官網同價分潤，或開「專屬商店」自訂風格、自動
-            選品一鍵開通；客服、行銷與 SEO 皆由我們支援。
-          </p>
-        </div>
-      </section>
+      <PartnerVendorsSection className="z-20 border-t border-slate-100" />
 
       {/* Tailwind 自訂形狀用的 style */}
       <style jsx global>{`

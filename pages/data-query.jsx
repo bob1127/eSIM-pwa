@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Layout from "./Layout";
 import MaterialIcon from "@/components/MaterialIcon";
 import { motion, AnimatePresence } from "framer-motion";
-import PushNotificationSection from "@/components/PushNotificationSection";
 import MemberEsimQuerySheet from "@/components/MemberEsimQuerySheet";
 import { DATA_PLANS, USAGE_ROWS } from "@/lib/dataUsageTable";
 import { ICCID_STORAGE_KEY, normalizeIccid } from "@/lib/pushBind";
@@ -23,28 +22,12 @@ const TABS = [
     sub: "輸入 ICCID，立刻掌握剩餘流量。",
   },
   {
-    id: "alert",
-    label: "流量提醒",
-    short: "提醒",
-    icon: "notifications_active",
-    headline: "開啟流量提醒",
-    sub: "流量偏低時自動推播或 LINE 通知。",
-  },
-  {
-    id: "topup",
-    label: "流量充值",
-    short: "充值",
-    icon: "bolt",
-    headline: "流量即將用盡？",
-    sub: "無需重買 eSIM，一鍵恢復上網。",
-  },
-  {
     id: "guide",
     label: "使用教學",
     short: "教學",
     icon: "menu_book",
-    headline: "四步驟搞懂用量與提醒",
-    sub: "從查詢、通知到省流量技巧。",
+    headline: "三步驟搞懂用量與提醒",
+    sub: "從查詢到開啟流量通知。",
   },
 ];
 
@@ -66,17 +49,9 @@ const HOW_IT_WORKS = [
   {
     step: "03",
     title: "開啟流量通知",
-    desc: "一鍵開啟推播。剩餘流量偏低時，系統會自動提醒您。",
-    tab: "alert",
+    desc: "在查詢用量列表點「開啟提醒」，流量偏低時會自動推播通知。",
+    tab: "query",
     tint: "bg-[#EAF0FB]",
-  },
-  {
-    step: "04",
-    title: "一鍵恢復流量",
-    desc: "流量即將用盡時，無需重買 eSIM，直接充值即可恢復上網。",
-    tab: "topup",
-    comingSoon: true,
-    tint: "bg-[#EEF1F6]",
   },
 ];
 
@@ -427,34 +402,8 @@ export default function DataQueryPage() {
   const [queryLoading, setQueryLoading] = useState(false);
   const [usageResult, setUsageResult] = useState(null);
   const [queryError, setQueryError] = useState("");
-  /** 從查詢用量「開啟提醒」帶入流量提醒 tab */
-  const [preferBindEsim, setPreferBindEsim] = useState(null);
-  /** 從商品頁／?setup=traffic 進來：直接開選綁層 */
-  const [preferOpenBindLayer, setPreferOpenBindLayer] = useState(false);
 
   const loginHref = useMemo(() => buildLoginUrl("/data-query/"), []);
-
-  const handleOpenTrafficAlert = useCallback((esim) => {
-    if (!esim) return;
-    setPreferBindEsim({
-      topupId: esim.topupId || null,
-      productName: esim.productName || null,
-      iccid: esim.iccid || null,
-      orderId: esim.orderId || null,
-    });
-    setActiveTab("alert");
-    if (typeof window !== "undefined") {
-      window.setTimeout(() => {
-        document
-          .getElementById("push-notification-section")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 160);
-    }
-  }, []);
-
-  const clearPreferBindEsim = useCallback(() => {
-    setPreferBindEsim(null);
-  }, []);
 
   const activeMeta = TABS.find((t) => t.id === activeTab) || TABS[0];
   const todayLabel = useMemo(() => {
@@ -483,13 +432,17 @@ export default function DataQueryPage() {
         setIccid(normalized);
         localStorage.setItem(ICCID_STORAGE_KEY, normalized);
         navigator.clipboard?.writeText(normalized).catch(() => {});
-        setActiveTab("query");
       }
     }
 
+    // 舊連結 ?setup=traffic → 留在查詢用量，直接操作「開啟提醒」
     if (params.get("setup") === "traffic") {
-      setActiveTab("alert");
-      setPreferOpenBindLayer(true);
+      setActiveTab("query");
+      window.setTimeout(() => {
+        document
+          .getElementById("query-section")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 200);
     }
   }, []);
 
@@ -530,9 +483,6 @@ export default function DataQueryPage() {
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1e4ad1] mb-1">
-                  Data Center
-                </p>
                 <h1 className="text-[clamp(2rem,6vw,2.75rem)] font-black tracking-tight leading-none text-slate-900">
                   你好
                 </h1>
@@ -567,11 +517,6 @@ export default function DataQueryPage() {
                     )}
                   >
                     {tab.label}
-                    {tab.id === "topup" ? (
-                      <span className="ml-1.5 align-middle text-[10px] font-bold text-amber-700 bg-amber-100 rounded-full px-1.5 py-0.5">
-                        即將
-                      </span>
-                    ) : null}
                   </button>
                 );
               })}
@@ -590,101 +535,87 @@ export default function DataQueryPage() {
               {activeTab === "query" && (
                 <div id="query-section" className="scroll-mt-28 space-y-4">
                   {authReady && isLoggedIn ? (
-                    <MemberEsimQuerySheet
-                      onOpenTrafficAlert={handleOpenTrafficAlert}
-                    />
+                    <MemberEsimQuerySheet />
                   ) : null}
 
-                  <div
-                    className={cn(CARD, "bg-[#1e8fff] p-5 sm:p-7 text-white")}
-                  >
-                    <div className="flex flex-wrap items-center gap-2 mb-4">
-                      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">
-                        ICCID
-                      </span>
-                      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">
-                        {isLoggedIn ? "手動查詢" : "即時查詢"}
-                      </span>
-                      <span className="ml-auto text-[12px] font-medium text-white/80">
-                        約 30 分延遲
-                      </span>
-                    </div>
-
-                    <div className="flex items-start gap-3 mb-5">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
-                        <MaterialIcon name="sim_card" size={22} />
-                      </div>
-                      <div className="min-w-0">
-                        <h2 className="text-xl font-black text-white tracking-tight">
-                          {isLoggedIn
-                            ? "用 ICCID 手動查詢"
-                            : activeMeta.headline}
-                        </h2>
-                        <p className="text-sm text-white/85 mt-0.5">
-                          {isLoggedIn
-                            ? "非本站購買、或清單沒有的方案，可貼上 ICCID 查詢。"
-                            : activeMeta.sub}
-                        </p>
-                      </div>
-                    </div>
-
-                    <form onSubmit={handleSearch} className="space-y-3">
-                      <div className="flex items-center rounded-2xl border border-white/30 bg-white px-4 py-3.5 shadow-sm focus-within:ring-2 focus-within:ring-white/40">
-                        <MaterialIcon
-                          name="description"
-                          size={20}
-                          className="shrink-0 mr-3 text-slate-400"
-                        />
-                        <input
-                          type="text"
-                          value={iccid}
-                          onChange={(e) => setIccid(e.target.value)}
-                          placeholder="輸入 ICCID（19～20 碼）"
-                          className="flex-1 bg-transparent border-none outline-none text-sm font-semibold min-w-0 text-slate-800 placeholder:text-slate-400"
-                        />
+                  {!isLoggedIn ? (
+                    <div
+                      className={cn(CARD, "bg-[#1e8fff] p-5 sm:p-7 text-white")}
+                    >
+                      <div className="flex flex-wrap items-center gap-2 mb-4">
+                        <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">
+                          ICCID
+                        </span>
+                        <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">
+                          即時查詢
+                        </span>
+                        <span className="ml-auto text-[12px] font-medium text-white/80">
+                          約 30 分延遲
+                        </span>
                       </div>
 
-                      {isLoggedIn ? (
-                        <button
-                          type="submit"
-                          disabled={queryLoading}
-                          className="w-full inline-flex items-center justify-center rounded-2xl bg-[#1e4ad1] px-4 py-3.5 text-sm font-bold text-white shadow-sm disabled:opacity-60"
-                        >
-                          {queryLoading ? "查詢中…" : "立即查詢"}
-                        </button>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-2 gap-2.5">
-                            <Link
-                              href={loginHref}
-                              className="inline-flex items-center justify-center rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-[#1e4ad1] border border-white shadow-sm"
-                            >
-                              登入會員
-                            </Link>
-                            <button
-                              type="submit"
-                              disabled={queryLoading}
-                              className="inline-flex items-center justify-center rounded-2xl bg-[#1e4ad1] px-4 py-3.5 text-sm font-bold text-white shadow-sm disabled:opacity-60"
-                            >
-                              {queryLoading ? "查詢中…" : "立即查詢"}
-                            </button>
-                          </div>
-                          <p className="text-center text-[12px] text-white/80 leading-snug">
-                            登入後留在本頁，一鍵查看您的 eSIM 流量
+                      <div className="flex items-start gap-3 mb-5">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
+                          <MaterialIcon name="sim_card" size={22} />
+                        </div>
+                        <div className="min-w-0">
+                          <h2 className="text-xl font-black text-white tracking-tight">
+                            {activeMeta.headline}
+                          </h2>
+                          <p className="text-sm text-white/85 mt-0.5">
+                            {activeMeta.sub}
                           </p>
-                        </>
+                        </div>
+                      </div>
+
+                      <form onSubmit={handleSearch} className="space-y-3">
+                        <div className="flex items-center rounded-2xl border border-white/30 bg-white px-4 py-3.5 shadow-sm focus-within:ring-2 focus-within:ring-white/40">
+                          <MaterialIcon
+                            name="description"
+                            size={20}
+                            className="shrink-0 mr-3 text-slate-400"
+                          />
+                          <input
+                            type="text"
+                            value={iccid}
+                            onChange={(e) => setIccid(e.target.value)}
+                            placeholder="輸入 ICCID（19～20 碼）"
+                            className="flex-1 bg-transparent border-none outline-none text-sm font-semibold min-w-0 text-slate-800 placeholder:text-slate-400"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <Link
+                            href={loginHref}
+                            className="inline-flex items-center justify-center rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-[#1e4ad1] border border-white shadow-sm"
+                          >
+                            登入會員
+                          </Link>
+                          <button
+                            type="submit"
+                            disabled={queryLoading}
+                            className="inline-flex items-center justify-center rounded-2xl bg-[#1e4ad1] px-4 py-3.5 text-sm font-bold text-white shadow-sm disabled:opacity-60"
+                          >
+                            {queryLoading ? "查詢中…" : "立即查詢"}
+                          </button>
+                        </div>
+                        <p className="text-center text-[12px] text-white/80 leading-snug">
+                          登入後留在本頁，一鍵查看您的 eSIM 流量
+                        </p>
+                      </form>
+
+                      {queryError && (
+                        <p className="mt-4 text-sm flex items-center gap-1.5 font-semibold text-white bg-rose-600/90 rounded-xl px-3 py-2">
+                          <MaterialIcon name="error" size={16} />
+                          {queryError}
+                        </p>
                       )}
-                    </form>
+                    </div>
+                  ) : null}
 
-                    {queryError && (
-                      <p className="mt-4 text-sm flex items-center gap-1.5 font-semibold text-white bg-rose-600/90 rounded-xl px-3 py-2">
-                        <MaterialIcon name="error" size={16} />
-                        {queryError}
-                      </p>
-                    )}
-                  </div>
-
-                  <UsageResultSheet usageResult={usageResult} />
+                  {!isLoggedIn ? (
+                    <UsageResultSheet usageResult={usageResult} />
+                  ) : null}
 
                   <div className={cn(CARD, "bg-white p-5 sm:p-6")}>
                     <div className="flex items-center justify-between mb-3">
@@ -718,113 +649,6 @@ export default function DataQueryPage() {
                       常見問題
                       <MaterialIcon name="arrow_forward" size={16} />
                     </Link>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "alert" && (
-                <div
-                  id="push-notification-section"
-                  className="scroll-mt-28 space-y-4"
-                >
-                  <div
-                    className={cn(CARD, "bg-[#1e8fff] p-5 sm:p-7 text-white")}
-                  >
-                    <SheetHandle light />
-                    <div className="flex flex-wrap items-center gap-2 mb-4">
-                      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">
-                        Push
-                      </span>
-                      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-[#1e4ad1]">
-                        LINE
-                      </span>
-                      <span className="rounded-full bg-[#1e4ad1] px-2.5 py-1 text-[11px] font-bold text-white">
-                        推薦開啟
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-3 mb-2">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
-                        <MaterialIcon name="notifications_active" size={22} />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-black text-white tracking-tight">
-                          {activeMeta.headline}
-                        </h2>
-                        <p className="text-sm text-white/85 mt-0.5">
-                          {activeMeta.sub}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={cn(CARD, "bg-white p-4 sm:p-6 overflow-hidden")}
-                  >
-                    <PushNotificationSection
-                      onIccidBound={(boundIccid) => setIccid(boundIccid)}
-                      initialIccid={iccid}
-                      variant="banner"
-                      preferBindEsim={preferBindEsim}
-                      onPreferBindHandled={clearPreferBindEsim}
-                      preferOpenBindLayer={preferOpenBindLayer}
-                      onPreferOpenBindHandled={() =>
-                        setPreferOpenBindLayer(false)
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "topup" && (
-                <div className={cn(CARD, "bg-[#EEF1F6] p-5 sm:p-7")}>
-                  <SheetHandle />
-                  <div className="flex flex-wrap items-center gap-2 mb-4">
-                    <StatusPill tone="amber">即將上線</StatusPill>
-                  </div>
-                  <div className="flex items-start gap-3 mb-5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1e8fff] text-white">
-                      <MaterialIcon name="bolt" size={22} />
-                    </div>
-                    <div>
-                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                        {activeMeta.headline}
-                      </h2>
-                      <p className="text-sm text-slate-600 mt-1 max-w-md leading-relaxed">
-                        無需重新購買 eSIM，一鍵恢復原有流量，出國上網不中斷。
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[22px] overflow-hidden relative aspect-[16/9] mb-5 bg-slate-200">
-                    <div
-                      className="absolute inset-0 bg-cover bg-[70%_20%]"
-                      style={{
-                        backgroundImage:
-                          "url('/images/7bf7a01a-6740-4390-800c-566683623985.png')",
-                      }}
-                      aria-hidden
-                    />
-                    <div
-                      className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent"
-                      aria-hidden
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("alert")}
-                      className="rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-[#1e4ad1] border border-[#1e4ad1]/35"
-                    >
-                      先開提醒
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => alert("此功能即將上線")}
-                      className="rounded-2xl bg-[#1e4ad1] px-4 py-3.5 text-sm font-bold text-white"
-                    >
-                      前往充值方案
-                    </button>
                   </div>
                 </div>
               )}
