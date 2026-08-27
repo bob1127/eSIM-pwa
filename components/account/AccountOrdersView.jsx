@@ -5,6 +5,9 @@ import Link from "next/link";
 import AccountIcon from "@/components/account/AccountIcon";
 import MaterialIcon from "@/components/MaterialIcon";
 import RefundRequestModal from "@/components/refund/RefundRequestModal";
+import RefundBlockedModal, {
+  refundBlockedFromApi,
+} from "@/components/refund/RefundBlockedModal";
 import OrderRefundDetailModal from "@/components/refund/OrderRefundDetailModal";
 import { useCart } from "@/components/context/CartContext";
 import {
@@ -24,6 +27,10 @@ import {
   refundColumnLabel,
   orderItemSummary,
 } from "@/lib/refundPolicy";
+import {
+  runRefundPrecheck,
+  enrichOrderFromPrecheck,
+} from "@/lib/refundPrecheckClient";
 import {
   AccountPageWrap,
   AccountBadge,
@@ -572,7 +579,31 @@ function OrderDetailView({
   const buyAgain = useBuyAgain(order);
 
   const [refundOrder, setRefundOrder] = useState(null);
+  const [refundPrecheck, setRefundPrecheck] = useState(null);
+  const [refundBlocked, setRefundBlocked] = useState(null);
+  const [refundChecking, setRefundChecking] = useState(false);
   const [refundDetailOrder, setRefundDetailOrder] = useState(null);
+
+  const beginRefund = async (target) => {
+    if (!target || refundChecking) return;
+    setRefundChecking(true);
+    try {
+      const data = await runRefundPrecheck(target, getAuthHeaders);
+      if (!data.ok) {
+        setRefundBlocked(refundBlockedFromApi(data));
+        return;
+      }
+      setRefundPrecheck(data);
+      setRefundOrder(enrichOrderFromPrecheck(target, data));
+    } catch (e) {
+      setRefundBlocked({
+        title: "無法檢查退款資格",
+        message: e.message || "請稍後再試",
+      });
+    } finally {
+      setRefundChecking(false);
+    }
+  };
 
   const items = parseOrderLineItems(order);
 
@@ -631,10 +662,13 @@ function OrderDetailView({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {eligibility.canApply ? (
-            <SecondaryBtn onClick={() => setRefundOrder(order)}>
+          {eligibility.canApply || eligibility.code === "NATIVE_ESIM" ? (
+            <SecondaryBtn
+              onClick={() => beginRefund(order)}
+              disabled={refundChecking}
+            >
               <AccountIcon name="undo" size={16} />
-              申請退款
+              {refundChecking ? "檢查中…" : "申請退款"}
             </SecondaryBtn>
           ) : null}
           {qrs.length > 0 ? (
@@ -648,7 +682,7 @@ function OrderDetailView({
               QR Code
             </SecondaryBtn>
           ) : null}
-          <ShopifyDropdown label="更多操作" items={moreItems} />
+          <ShopifyDropdown variant="account" label="更多操作" items={moreItems} />
         </div>
       </div>
 
@@ -1170,13 +1204,14 @@ function OrderDetailView({
                   查詢流量
                 </SecondaryBtn>
               ) : null}
-              {eligibility.canApply ? (
+              {eligibility.canApply || eligibility.code === "NATIVE_ESIM" ? (
                 <SecondaryBtn
-                  onClick={() => setRefundOrder(order)}
+                  onClick={() => beginRefund(order)}
                   className="w-full"
+                  disabled={refundChecking}
                 >
                   <AccountIcon name="undo" size={16} />
-                  申請退款
+                  {refundChecking ? "檢查中…" : "申請退款"}
                 </SecondaryBtn>
               ) : null}
               <PrimaryBtn onClick={buyAgain} className="w-full">
@@ -1213,16 +1248,39 @@ function OrderDetailView({
         <OrderRefundDetailModal
           order={refundDetailOrder}
           onClose={() => setRefundDetailOrder(null)}
-          onReapply={(o) => setRefundOrder(o)}
+          onReapply={(o) => {
+            setRefundDetailOrder(null);
+            beginRefund(o);
+          }}
+        />
+      )}
+      {refundBlocked && (
+        <RefundBlockedModal
+          title={refundBlocked.title}
+          message={refundBlocked.message}
+          footnote={refundBlocked.footnote}
+          showLineCta={refundBlocked.showLineCta}
+          lineUrl={refundBlocked.lineUrl}
+          onClose={() => setRefundBlocked(null)}
         />
       )}
       {refundOrder && (
         <RefundRequestModal
           order={refundOrder}
-          onClose={() => setRefundOrder(null)}
+          precheck={refundPrecheck}
+          onClose={() => {
+            setRefundOrder(null);
+            setRefundPrecheck(null);
+          }}
           onSuccess={() => {
             setRefundOrder(null);
+            setRefundPrecheck(null);
             onRefresh?.();
+          }}
+          onBlocked={(payload) => {
+            setRefundOrder(null);
+            setRefundPrecheck(null);
+            setRefundBlocked(payload);
           }}
           getAuthHeaders={getAuthHeaders}
         />
@@ -1249,9 +1307,33 @@ export default function AccountOrdersView({
   const [page, setPage] = useState(1);
   const [qrOrder, setQrOrder] = useState(null);
   const [refundOrder, setRefundOrder] = useState(null);
+  const [refundPrecheck, setRefundPrecheck] = useState(null);
+  const [refundBlocked, setRefundBlocked] = useState(null);
+  const [refundChecking, setRefundChecking] = useState(false);
   const [refundDetailOrder, setRefundDetailOrder] = useState(null);
   const [pendingOrder, setPendingOrder] = useState(null);
   const [detailOrder, setDetailOrder] = useState(initialDetailOrder || null);
+
+  const beginRefund = async (target) => {
+    if (!target || refundChecking) return;
+    setRefundChecking(true);
+    try {
+      const data = await runRefundPrecheck(target, getAuthHeaders);
+      if (!data.ok) {
+        setRefundBlocked(refundBlockedFromApi(data));
+        return;
+      }
+      setRefundPrecheck(data);
+      setRefundOrder(enrichOrderFromPrecheck(target, data));
+    } catch (e) {
+      setRefundBlocked({
+        title: "無法檢查退款資格",
+        message: e.message || "請稍後再試",
+      });
+    } finally {
+      setRefundChecking(false);
+    }
+  };
 
   useEffect(() => {
     if (initialDetailOrder) setDetailOrder(initialDetailOrder);
@@ -1453,7 +1535,7 @@ export default function AccountOrdersView({
             <AccountIcon name="download" size={16} />
             匯出 CSV
           </SecondaryBtn>
-          <ShopifyDropdown label="更多操作" items={moreMenu} />
+          <ShopifyDropdown variant="account" label="更多操作" items={moreMenu} />
         </div>
       </div>
 
@@ -1999,16 +2081,39 @@ export default function AccountOrdersView({
         <OrderRefundDetailModal
           order={refundDetailOrder}
           onClose={() => setRefundDetailOrder(null)}
-          onReapply={(o) => setRefundOrder(o)}
+          onReapply={(o) => {
+            setRefundDetailOrder(null);
+            beginRefund(o);
+          }}
+        />
+      )}
+      {refundBlocked && (
+        <RefundBlockedModal
+          title={refundBlocked.title}
+          message={refundBlocked.message}
+          footnote={refundBlocked.footnote}
+          showLineCta={refundBlocked.showLineCta}
+          lineUrl={refundBlocked.lineUrl}
+          onClose={() => setRefundBlocked(null)}
         />
       )}
       {refundOrder && (
         <RefundRequestModal
           order={refundOrder}
-          onClose={() => setRefundOrder(null)}
+          precheck={refundPrecheck}
+          onClose={() => {
+            setRefundOrder(null);
+            setRefundPrecheck(null);
+          }}
           onSuccess={() => {
             setRefundOrder(null);
+            setRefundPrecheck(null);
             onRefresh?.();
+          }}
+          onBlocked={(payload) => {
+            setRefundOrder(null);
+            setRefundPrecheck(null);
+            setRefundBlocked(payload);
           }}
           getAuthHeaders={getAuthHeaders}
         />

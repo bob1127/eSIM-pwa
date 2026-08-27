@@ -123,6 +123,7 @@ import {
   parseHotSaleTelecoms,
   isHotSaleTelecom,
 } from "../../../lib/productHotSale";
+import { isNativeIpPlan } from "../../../lib/isNativeIpPlan";
 import {
   resolveProductOptionQuery,
   sanitizeProductQueryForUrl,
@@ -200,7 +201,7 @@ function DataEstimatorCta({ onClick, className = "" }) {
     <button
       type="button"
       onClick={onClick}
-      className={`mt-4 w-full text-left rounded-full border border-[#E3E7EE] bg-[#F1F3F7] px-5 py-3 sm:px-6 sm:py-4 shadow-sm hover:bg-[#E8EBEF] hover:border-[#D0D5DE] transition-colors group ${className}`}
+      className={`mt-4 w-full text-left rounded-2xl sm:rounded-full border border-[#E3E7EE] bg-[#F1F3F7] px-4 py-3.5 sm:px-6 sm:py-4 shadow-sm hover:bg-[#E8EBEF] hover:border-[#D0D5DE] transition-colors group ${className}`}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -208,15 +209,15 @@ function DataEstimatorCta({ onClick, className = "" }) {
             <MaterialIcon
               name="calculate"
               size={18}
-              className="text-[#5B6570] shrink-0 hidden sm:inline-flex"
+              className="text-[#5B6570] shrink-0"
             />
             還不確定流量嗎？
           </p>
-          <p className="hidden sm:block text-xs text-[#5B6570] mt-1 leading-relaxed">
+          <p className="text-[11px] sm:text-xs text-[#5B6570] mt-1 leading-relaxed">
             依每日使用習慣估算建議方案，一鍵套用或比較同地區 eSIM。
           </p>
         </div>
-        <span className="hidden sm:inline-flex shrink-0 items-center gap-1 text-sm font-bold text-[#1E4AD1] group-hover:underline">
+        <span className="inline-flex shrink-0 items-center gap-0.5 sm:gap-1 text-xs sm:text-sm font-bold text-[#1E4AD1] group-hover:underline whitespace-nowrap">
           開啟試算
           <MaterialIcon
             name="arrow_forward"
@@ -2471,18 +2472,33 @@ export async function getStaticProps({ params }) {
     const hotSaleTelecoms = parseHotSaleTelecoms(
       product.metadata?.hot_sale_telecoms,
     );
-    const comparablePlans = formattedVariations.map((v) => ({
-      ...v,
-      productId: product.id,
-      productSlug: product.handle,
-      productName: product.title || "",
-      productLabel: "",
-      productKind: "other",
-      isCurrentProduct: true,
-      categoryHandle: categoryHandle || "",
-      hotSaleTelecoms,
-      isHotSale: isHotSaleTelecom(hotSaleTelecoms, v.attributes?.telecom || ""),
-    }));
+    const comparablePlans = formattedVariations.map((v) => {
+      const telecom = v.attributes?.telecom || "";
+      const carrierSpecs = product.metadata?.carrier_specs_by_carrier || {};
+      const carrierSpec = carrierSpecs[telecom] || null;
+      const isNativeIp = isNativeIpPlan(
+        { ...v, productName: product.title || "", carrierSpec },
+        {
+          ...(product.metadata || {}),
+          name: product.title,
+          carrier_specs_by_carrier: carrierSpecs,
+        },
+      );
+      return {
+        ...v,
+        productId: product.id,
+        productSlug: product.handle,
+        productName: product.title || "",
+        productLabel: "",
+        productKind: "other",
+        isCurrentProduct: true,
+        categoryHandle: categoryHandle || "",
+        hotSaleTelecoms,
+        carrierSpec,
+        isNativeIp,
+        isHotSale: isNativeIp,
+      };
+    });
 
     const reviewAggregate = await fetchProductReviewAggregate(product.id, {
       sampleLimit: 8,
@@ -2677,10 +2693,71 @@ export default function ProductPage({
         dataAmounts: amounts,
       });
 
-      if (Object.keys(initialAttrs).length === 0) {
-        const firstTelecom = carriers[0];
-        if (firstTelecom) initialAttrs.telecom = firstTelecom;
-        if (amounts[0]) initialAttrs.data_amount = amounts[0];
+      // 網址只帶部分規格時補齊缺項；多電信商時優先選「與已解析規格能配對到變體」的電信商
+      if (!initialAttrs.telecom && carriers.length) {
+        const preferred =
+          carriers.find((tel) =>
+            variations.some((v) => {
+              const opts = getVariationOptionAttrs(v);
+              if (String(opts.telecom || "") !== String(tel)) return false;
+              if (
+                initialAttrs.days != null &&
+                initialAttrs.days !== "" &&
+                String(opts.days ?? "") !== String(initialAttrs.days)
+              ) {
+                return false;
+              }
+              if (
+                initialAttrs.data_amount != null &&
+                initialAttrs.data_amount !== "" &&
+                String(opts.data_amount ?? "") !==
+                  String(initialAttrs.data_amount)
+              ) {
+                return false;
+              }
+              return true;
+            }),
+          ) || carriers[0];
+        initialAttrs.telecom = preferred;
+      }
+      if (!initialAttrs.days && daysList[0]) {
+        const daysForTelecom = [
+          ...new Set(
+            variations
+              .filter(
+                (v) =>
+                  String(getVariationOptionAttrs(v).telecom || "") ===
+                  String(initialAttrs.telecom || ""),
+              )
+              .map((v) => getVariationOptionAttrs(v).days)
+              .filter(Boolean),
+          ),
+        ];
+        initialAttrs.days = daysForTelecom[0] || daysList[0];
+      }
+      if (!initialAttrs.data_amount && amounts[0]) {
+        const amountsForSelection = sortUniqueDataAmountLabels(
+          variations
+            .filter((v) => {
+              const opts = getVariationOptionAttrs(v);
+              if (
+                initialAttrs.telecom &&
+                String(opts.telecom || "") !== String(initialAttrs.telecom)
+              ) {
+                return false;
+              }
+              if (
+                initialAttrs.days != null &&
+                initialAttrs.days !== "" &&
+                String(opts.days ?? "") !== String(initialAttrs.days)
+              ) {
+                return false;
+              }
+              return true;
+            })
+            .map((v) => getVariationOptionAttrs(v).data_amount),
+        );
+        initialAttrs.data_amount = amountsForSelection[0] || amounts[0];
       }
 
       setSelectedAttributes(initialAttrs);

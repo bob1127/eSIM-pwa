@@ -5,16 +5,13 @@ import {
   ArcElement,
   Tooltip,
   Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
 } from "chart.js";
-import { Doughnut, Bar } from "react-chartjs-2";
+import { Doughnut } from "react-chartjs-2";
 import AccountIcon from "@/components/account/AccountIcon";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { formatMb } from "@/lib/esimUsageFormat";
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const NAVY = "#1E4AD1";
 const BLUE = "#0071EB";
@@ -60,43 +57,6 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
       }
     : null;
 
-  const barRemainItems = esims.filter(
-    (e) => resultFor(e, results)?.remainingMb != null,
-  );
-  const useRemainBars = barRemainItems.length > 0;
-  const barItems = useRemainBars
-    ? barRemainItems
-    : esims.filter((e) => {
-        const row = resultFor(e, results);
-        return row?.usedMb != null && Number.isFinite(Number(row.usedMb));
-      });
-  const barLabels = barItems.map((e) =>
-    e.productName?.length > 8
-      ? `${e.productName.slice(0, 8)}…`
-      : e.productName || "eSIM",
-  );
-  const barValues = barItems.map((e) => {
-    const row = resultFor(e, results);
-    if (useRemainBars) return Number(row.remainingMb);
-    return Number(row.usedMb);
-  });
-
-  const barData =
-    barLabels.length > 0
-      ? {
-          labels: barLabels,
-          datasets: [
-            {
-              label: useRemainBars ? "剩餘 MB" : "已用 MB",
-              data: barValues,
-              backgroundColor: BLUE,
-              borderRadius: 4,
-              maxBarThickness: 36,
-            },
-          ],
-        }
-      : null;
-
   if (loading) {
     return (
       <div className="h-48 flex items-center justify-center">
@@ -110,8 +70,8 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
   }
 
   return (
-    <div className="space-y-5">
-      <div className="bg-white border border-slate-200 p-4">
+    <div className="space-y-4">
+      <div>
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-black text-[#1E4AD1] flex items-center gap-1.5">
             <AccountIcon name="donut_large" size={18} />
@@ -256,38 +216,6 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
             />
             點「查詢流量」後顯示用量圖表
           </div>
-        )}
-      </div>
-
-      <div className="bg-white border border-slate-200 p-4">
-        <h4 className="text-sm font-black text-[#1E4AD1] flex items-center gap-1.5 mb-3">
-          <AccountIcon name="bar_chart" size={18} />
-          {useRemainBars ? "各方案剩餘比較" : "各方案已用比較"}
-        </h4>
-        {barData ? (
-          <div className="h-40">
-            <Bar
-              data={barData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                  x: {
-                    grid: { display: false },
-                    ticks: { font: { size: 10 } },
-                  },
-                  y: { beginAtZero: true, ticks: { font: { size: 10 } } },
-                },
-              }}
-            />
-          </div>
-        ) : (
-          <p className="text-xs text-slate-400 text-center py-6 leading-relaxed px-2">
-            {queried
-              ? "尚無可比較的用量數值。查詢後有已用／剩餘的方案會出現在此。"
-              : "查詢流量後可在此比較各方案"}
-          </p>
         )}
       </div>
     </div>

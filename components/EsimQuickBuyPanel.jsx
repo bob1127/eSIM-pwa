@@ -316,8 +316,10 @@ function StackPage({ direction, children, className = "" }) {
         backfaceVisibility: "hidden",
         WebkitBackfaceVisibility: "hidden",
         boxShadow: " -8px 0 16px rgba(0,0,0,0.06)",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
       }}
-      className={`overflow-y-auto overscroll-contain ${className}`}
+      className={`overflow-y-auto overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${className}`}
     >
       {children}
     </motion.div>

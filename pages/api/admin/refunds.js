@@ -1,5 +1,13 @@
 import { requireMedusaAdminFromRequest } from "../../../lib/medusaAdminAuth";
 import { getSupabaseAdmin } from "../../../lib/refundAuth";
+import {
+  buildRefundRiskContext,
+  scoreRefundRisk,
+  riskFlagLabel,
+} from "../../../lib/refundAbuse";
+import { extractEsimsFromOrders } from "../../../lib/esimOrderExtract";
+import { inferEsimInstalled } from "../../../lib/esimInstallStatus";
+import { queryEsimUsage } from "../../../lib/esimUsageService";
 
 export default async function handler(req, res) {
   const admin = await requireMedusaAdminFromRequest(req);
@@ -20,7 +28,9 @@ export default async function handler(req, res) {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (status !== "all") {
+    if (status === "high_risk") {
+      query = query.eq("status", "pending");
+    } else if (status !== "all") {
       query = query.eq("status", status);
     }
 
@@ -34,15 +44,32 @@ export default async function handler(req, res) {
     if (orderIds.length) {
       const { data: orders } = await supabaseAdmin
         .from("orders")
-        .select("id, total_amount, customer_email, item_details, created_at, status, partner_id, store_id")
+        .select(
+          "id, total_amount, customer_email, item_details, created_at, status, partner_id, store_id, qrcode_data, esim_activation_status",
+        )
         .in("id", orderIds);
       ordersMap = Object.fromEntries((orders || []).map((o) => [o.id, o]));
     }
 
-    const enriched = (requests || []).map((r) => ({
+    let enriched = (requests || []).map((r) => ({
       ...r,
       order: ordersMap[r.order_id] || null,
     }));
+
+    const riskCtx = await buildRefundRiskContext(supabaseAdmin, enriched);
+    enriched = enriched.map((r) => {
+      const risk = scoreRefundRisk(r, riskCtx);
+      return {
+        ...r,
+        ...risk,
+        riskFlagLabels: (risk.riskFlags || []).map(riskFlagLabel),
+      };
+    });
+
+    if (status === "high_risk") {
+      enriched = enriched.filter((r) => r.isHighRisk);
+      enriched.sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0));
+    }
 
     return res.status(200).json({ requests: enriched });
   }
@@ -72,13 +99,54 @@ export default async function handler(req, res) {
     const now = new Date().toISOString();
     const reviewer = admin.email || admin.id || "admin";
 
+    // 核准前：未開通全額退款再向供應商查一次用量（已有人工狀態則仍以人工為準，但阻擋明確已使用）
+    let liveActivation = esim_activation_status || request.esim_activation_status || null;
+    if (action === "approve" && request.request_type === "full_refund") {
+      try {
+        const { data: orderRow } = await supabaseAdmin
+          .from("orders")
+          .select("id, item_details, qrcode_data, esim_activation_status")
+          .eq("id", request.order_id)
+          .maybeSingle();
+        if (orderRow) {
+          const esims = extractEsimsFromOrders([orderRow]);
+          const first = esims[0];
+          let topupId = first?.missingTopupId ? null : first?.topupId || null;
+          let iccid = first?.iccid || null;
+          if (topupId && String(topupId).startsWith("iccid:")) {
+            if (!iccid) iccid = String(topupId).replace(/^iccid:/, "");
+            topupId = null;
+          }
+          if (topupId || iccid) {
+            const usage = await queryEsimUsage({ topupId, iccid });
+            const installed = inferEsimInstalled(
+              usage?.ok ? usage.data || usage : usage,
+            );
+            if (installed === true) {
+              return res.status(400).json({
+                error:
+                  "供應商查詢顯示此 eSIM 已開通／已使用，無法以「未開通」核准退款。請改駁回或改為售後爭議流程。",
+                code: "SUPPLIER_ACTIVATED",
+                supplierActivated: true,
+              });
+            }
+            if (installed === false) {
+              liveActivation = "not_activated";
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("[admin/refunds] supplier recheck", e?.message || e);
+      }
+    }
+
     if (action === "approve") {
       const { error: reqErr } = await supabaseAdmin
         .from("refund_requests")
         .update({
           status: "approved",
           admin_note: admin_note?.trim() || null,
-          esim_activation_status: esim_activation_status || request.esim_activation_status,
+          esim_activation_status: liveActivation || request.esim_activation_status,
           reviewed_at: now,
           reviewed_by: reviewer,
           updated_at: now,
@@ -89,16 +157,16 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: reqErr.message });
       }
 
-    await supabaseAdmin
-      .from("orders")
-      .update({
-        status: "refunded",
-        refunded_at: now,
-        esim_activation_status: esim_activation_status || "unknown",
-        partner_profit: 0,
-        updated_at: now,
-      })
-      .eq("id", request.order_id);
+      await supabaseAdmin
+        .from("orders")
+        .update({
+          status: "refunded",
+          refunded_at: now,
+          esim_activation_status: liveActivation || "unknown",
+          partner_profit: 0,
+          updated_at: now,
+        })
+        .eq("id", request.order_id);
 
       return res.status(200).json({ success: true, status: "approved" });
     }
@@ -108,7 +176,7 @@ export default async function handler(req, res) {
       .update({
         status: "rejected",
         admin_note: admin_note?.trim() || "未符合退換貨政策",
-        esim_activation_status: esim_activation_status || request.esim_activation_status,
+        esim_activation_status: liveActivation || request.esim_activation_status,
         reviewed_at: now,
         reviewed_by: reviewer,
         updated_at: now,

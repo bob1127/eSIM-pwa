@@ -106,6 +106,7 @@ import {
   is5MbpsDataAmount,
   formatDataAmountMain,
 } from "@/lib/dataAmountLabel";
+import { isNativeIpPlan } from "@/lib/isNativeIpPlan";
 
 export { is5MbpsDataAmount, formatDataAmountMain };
 
@@ -123,7 +124,7 @@ function formatTelecomShort(telecom) {
  * - 總量型：總流量 ≥ 建議總量
  * - 每日型：每日流量 ≥ 建議每日用量（不可拿「每日500MB」去對「總量 103GB」）
  * - 吃到飽：高用量優先
- * - 先篩符合邏輯者，再優先 HOT SALE 電信商（最推薦）
+ * - 先篩符合邏輯者，再優先「原生 IP」方案（建議卡僅原生標 HOT SALE）
  */
 export function recommendProductVariants(
   variations = [],
@@ -159,14 +160,15 @@ export function recommendProductVariants(
             ? cap.dailyGb * days
             : cap.totalGbFactor;
 
-      const isHotSale =
-        v.isHotSale === true ||
-        (Array.isArray(v.hotSaleTelecoms) &&
-          v.hotSaleTelecoms.some(
-            (t) =>
-              String(t).trim().toLowerCase() ===
-              String(telecom).trim().toLowerCase(),
-          ));
+      const isNativeIp =
+        v.isNativeIp === true ||
+        isNativeIpPlan(v, {
+          name: v.productName,
+          carrier_specs_by_carrier: v.carrierSpec
+            ? { [telecom]: v.carrierSpec }
+            : undefined,
+          is_native: v.isNativeIp,
+        });
 
       return {
         variant: v,
@@ -174,10 +176,12 @@ export function recommendProductVariants(
         kind: cap.kind,
         dailyGb: cap.dailyGb,
         totalGb,
-        gb: totalGb, // 顯示／舊欄位相容：以「有效總量」為準
+        gb: totalGb,
         dataLabel,
         telecom,
-        isHotSale,
+        isNativeIp,
+        // 建議卡徽章：僅原生 IP
+        isHotSale: isNativeIp,
         price: Number(v.price) || 0,
         title: v.title || `${telecom} · ${days}天 · ${dataLabel}`,
         productSlug: v.productSlug || "",
@@ -194,7 +198,6 @@ export function recommendProductVariants(
     if (requireDay && item.days < daysNeed) return false;
     if (item.kind === "unlimited") return true;
     if (item.kind === "daily") {
-      // 每日型必須每天都夠用，不能只比總量
       return item.dailyGb + 1e-9 >= dailyNeed;
     }
     return item.totalGb + 1e-9 >= gbNeed;
@@ -211,7 +214,6 @@ export function recommendProductVariants(
     } else if (item.kind === "daily") {
       const dailyExtra = item.dailyGb - dailyNeed;
       score += dailyExtra * 20;
-      // 每日型在高用量場景通常不如吃到飽／大總量
       if (heavyUsage) score += 80;
     } else {
       const totalExtra = item.totalGb - gbNeed;
@@ -221,16 +223,15 @@ export function recommendProductVariants(
 
     if (preferredTelecom && item.telecom === preferredTelecom) score -= 40;
     if (preferCurrentProduct && item.isCurrentProduct) score -= 15;
-    // 符合邏輯後，HOT SALE 電信大幅優先（分數愈低愈前面）
-    if (item.isHotSale) score -= 200;
+    // 原生 IP 優先（對應建議卡 HOT SALE）
+    if (item.isNativeIp) score -= 200;
     score += item.price * 0.0015;
     return score;
   };
 
   const rankSort = (a, b) => {
     if (a.score !== b.score) return a.score - b.score;
-    // 同分時仍優先 HOT SALE
-    if (a.isHotSale !== b.isHotSale) return a.isHotSale ? -1 : 1;
+    if (a.isNativeIp !== b.isNativeIp) return a.isNativeIp ? -1 : 1;
     return a.price - b.price;
   };
 
@@ -270,7 +271,7 @@ export function recommendProductVariants(
         }
         let score = dayPenalty + gap + item.price * 0.001;
         if (preferCurrentProduct && item.isCurrentProduct) score -= 10;
-        if (item.isHotSale) score -= 200;
+        if (item.isNativeIp) score -= 200;
         return { ...item, score, undersized: true };
       })
       .sort(rankSort)
@@ -735,62 +736,79 @@ export default function DataEstimatorModal({
                         </p>
                       ) : (
                         <div className="space-y-2.5">
-                          {recommendations.map((item) => (
-                            <button
-                              key={
-                                item.variant?.id ||
-                                `${item.productSlug}-${item.telecom}-${item.days}-${item.dataLabel}`
-                              }
-                              type="button"
-                              onClick={() => handlePick(item)}
-                              className="w-full flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left shadow-sm hover:border-[#2d62cc] hover:shadow-md transition-all group"
-                            >
-                              <MiniSimIcon />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {item.isBestMatch ? (
-                                    <span className="text-[10px] font-bold text-slate-700">
-                                      最推薦
-                                    </span>
-                                  ) : null}
-                                  {item.isHotSale ? (
-                                    <span className="inline-flex items-center rounded-full bg-[#8B0000] px-2 py-0.5 text-[10px] font-bold text-white tracking-wide shrink-0">
-                                      HOT SALE
-                                    </span>
-                                  ) : null}
-                                  {item.productLabel ? (
-                                    <span className="text-[10px] font-bold text-slate-700">
-                                      {item.isCurrentProduct
-                                        ? `本商品 · ${item.productLabel}`
-                                        : item.productLabel}
-                                    </span>
-                                  ) : null}
-                                  <p className="text-sm font-bold text-slate-900 truncate">
-                                    {item.days}天 ·{" "}
-                                    {item.gb === Number.POSITIVE_INFINITY
-                                      ? "吃到飽"
-                                      : item.dataLabel}
+                          {recommendations.map((item) => {
+                            const dataText =
+                              item.gb === Number.POSITIVE_INFINITY
+                                ? "吃到飽"
+                                : item.dataLabel;
+                            const kindLabel =
+                              item.productLabel ||
+                              (item.productKind === "unlimited"
+                                ? "吃到飽"
+                                : item.productKind === "total"
+                                  ? "總量型"
+                                  : item.productKind === "daily"
+                                    ? "每日型"
+                                    : "");
+                            return (
+                              <button
+                                key={
+                                  item.variant?.id ||
+                                  `${item.productSlug}-${item.telecom}-${item.days}-${item.dataLabel}`
+                                }
+                                type="button"
+                                onClick={() => handlePick(item)}
+                                className="w-full flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left shadow-sm hover:border-[#2d62cc] hover:shadow-md transition-all group"
+                              >
+                                <MiniSimIcon />
+                                <div className="flex-1 min-w-0 space-y-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {item.isNativeIp ? (
+                                      <span className="inline-flex items-center rounded-full bg-[#8B0000] px-2 py-0.5 text-[10px] font-bold text-white tracking-wide shrink-0">
+                                        原生IP
+                                      </span>
+                                    ) : null}
+                                    {item.isNativeIp ? (
+                                      <span className="inline-flex items-center rounded-full bg-[#b91c1c] px-2 py-0.5 text-[10px] font-bold text-white tracking-wide shrink-0">
+                                        HOT SALE
+                                      </span>
+                                    ) : null}
+                                    {item.isBestMatch ? (
+                                      <span className="inline-flex items-center rounded-full bg-[#E8EEFB] px-2 py-0.5 text-[10px] font-bold text-[#1E4AD1] shrink-0">
+                                        最推薦
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <p className="text-sm font-bold text-slate-900 leading-snug">
+                                    {[
+                                      item.isCurrentProduct ? "本商品" : null,
+                                      kindLabel || null,
+                                      `${item.days}天`,
+                                      dataText,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  </p>
+                                  <p className="text-xs text-slate-500 truncate leading-snug">
+                                    {formatTelecomShort(item.telecom)}
+                                    {!item.isCurrentProduct && item.productName
+                                      ? ` · ${item.productName}`
+                                      : ""}
                                   </p>
                                 </div>
-                                <p className="text-xs text-slate-500 mt-0.5 truncate">
-                                  {formatTelecomShort(item.telecom)}
-                                  {!item.isCurrentProduct && item.productName
-                                    ? ` · ${item.productName}`
-                                    : ""}
-                                </p>
-                              </div>
-                              <div className="text-right shrink-0">
-                                <p className="text-base font-bold text-slate-900 tabular-nums">
-                                  NT${item.price.toLocaleString()}
-                                </p>
-                                <p className="text-[11px] text-[#2d62cc] font-semibold group-hover:underline">
-                                  {item.isCurrentProduct
-                                    ? "選此方案 →"
-                                    : "另開選購 →"}
-                                </p>
-                              </div>
-                            </button>
-                          ))}
+                                <div className="text-right shrink-0 pt-0.5">
+                                  <p className="text-base font-bold text-slate-900 tabular-nums">
+                                    NT${item.price.toLocaleString()}
+                                  </p>
+                                  <p className="text-[11px] text-[#2d62cc] font-semibold group-hover:underline">
+                                    {item.isCurrentProduct
+                                      ? "選此方案 →"
+                                      : "另開選購 →"}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

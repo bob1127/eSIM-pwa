@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import AccountIcon from "@/components/account/AccountIcon";
 import AccountMemberSearch from "@/components/account/AccountMemberSearch";
+import AccountAnnouncementBar from "@/components/account/AccountAnnouncementBar";
 import {
   ACCOUNT_UI,
   ACCOUNT_THEME,
@@ -13,6 +14,7 @@ import {
 } from "@/lib/accountUi";
 import { formatMemberEmailDisplay } from "@/lib/lineAuth";
 import { ShopifyDropdown } from "@/components/partner/ShopifyControls";
+import Image from "next/image";
 
 /** 相容舊程式：色票改為 Shopify 灰階；特殊色留給徽章／圖示 */
 export const ACCENT = {
@@ -34,23 +36,23 @@ export function getMemberRoleLabel(userRole, partnerData) {
       ? "認證分潤連結"
       : "認證商店";
   }
-  return "一般會員";
+  return "一般用戶";
 }
 
 const breadcrumbMap = {
-  dashboard: ["會員中心", "首頁總覽"],
-  orders: ["會員中心", "我的 eSIM 訂單"],
-  traffic: ["會員中心", "查詢流量"],
-  follows: ["會員中心", "追蹤創作者"],
-  settings: ["會員中心", "帳號設定"],
-  support: ["會員中心", "安裝與支援"],
-  admin_dashboard: ["會員中心", "系統總控"],
-  partner_dashboard: ["會員中心", "店鋪管理"],
+  dashboard: ["帳戶中心", "首頁總覽"],
+  orders: ["帳戶中心", "我的 eSIM 訂單"],
+  traffic: ["帳戶中心", "查詢流量"],
+  follows: ["帳戶中心", "追蹤創作者"],
+  settings: ["帳戶中心", "帳號設定"],
+  support: ["帳戶中心", "安裝與支援"],
+  admin_dashboard: ["帳戶中心", "系統總控"],
+  partner_dashboard: ["帳戶中心", "店鋪管理"],
 };
 
 /** Shopify 風會員殼：黑頂欄／白側欄／淺灰畫布 */
 export default function AccountShell({
-  title = "會員中心",
+  title = "帳戶中心",
   user,
   userRole,
   partnerData = null,
@@ -63,14 +65,14 @@ export default function AccountShell({
   children,
   /** 夥伴商店：回賣場／品牌文案 */
   homeHref = "/",
-  brandLabel = "Jeko 會員",
+  brandLabel = "Jeko",
   shopCtaLabel = "返回商城",
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const roleLabel = getMemberRoleLabel(userRole, partnerData);
-  const crumbs = breadcrumbMap[activeTab] || ["會員中心", title];
+  const crumbs = breadcrumbMap[activeTab] || ["帳戶中心", title];
   const initials = (user?.name || "U").trim().slice(0, 1).toUpperCase();
 
   const renderNavItem = (item) => {
@@ -119,7 +121,7 @@ export default function AccountShell({
           <span
             className="min-w-[18px] h-[18px] px-1 text-white text-[10px] font-black flex items-center justify-center"
             style={{
-              backgroundColor: SHOPIFY_BADGE.critical.dot,
+              backgroundColor: "#1E4AD1",
               borderRadius: ACCOUNT_UI.radiusSm,
             }}
           >
@@ -136,13 +138,22 @@ export default function AccountShell({
         className="px-3 py-3"
         style={{ borderBottom: `1px solid ${SHOPIFY_UI.sidebarBorder}` }}
       >
-        <div className="flex items-center gap-2 px-1.5 py-1.5 rounded-md">
-          <div
-            className="w-6 h-6 rounded flex items-center justify-center text-white text-[11px] font-black shrink-0"
-            style={{ backgroundColor: SHOPIFY_UI.chromeBg }}
-          >
-            J
-          </div>
+        <div className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-md">
+          {user?.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.image}
+              alt=""
+              className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-slate-200"
+            />
+          ) : (
+            <span
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[12px] font-black shrink-0"
+              style={{ backgroundColor: SHOPIFY_UI.accentBg }}
+            >
+              {initials}
+            </span>
+          )}
           <div className="min-w-0 flex-1">
             <p
               className="text-sm font-bold truncate"
@@ -188,14 +199,22 @@ export default function AccountShell({
       className={`min-h-[100dvh] flex flex-col font-sans ${ACCOUNT_UI.pagePt}`}
       style={{ backgroundColor: ACCOUNT_THEME.wash }}
     >
-      {/* 黑頂欄 */}
+      <AccountAnnouncementBar />
+
+      {/* 頂欄：對齊夥伴後台淺色 chrome，內容寬度限制 */}
       <header
-        className="min-h-14 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 shrink-0 z-20 relative pt-[env(safe-area-inset-top)]"
-        style={{ backgroundColor: SHOPIFY_UI.chromeBg }}
+        className="min-h-14 shrink-0 z-20 relative pt-[env(safe-area-inset-top)] border-b"
+        style={{
+          backgroundColor: SHOPIFY_UI.chromeBg,
+          borderColor: SHOPIFY_UI.chromeBorder,
+        }}
       >
+        <div
+          className={`h-14 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 ${ACCOUNT_UI.contentMax}`}
+        >
         <button
           type="button"
-          className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-full text-white/90 hover:bg-white/10"
+          className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 hover:bg-slate-100"
           onClick={() => setMobileOpen(true)}
           aria-label="開啟選單"
         >
@@ -205,16 +224,27 @@ export default function AccountShell({
         <Link
           href={homeHref || "/"}
           className="flex items-center gap-2 shrink-0"
+          aria-label="Jeko 首頁"
         >
-          <div className="w-7 h-7 rounded-md bg-white flex items-center justify-center">
-            <AccountIcon name="sim_card" size={16} className="text-[#1a1a1a]" />
-          </div>
-          <span className="text-white font-black text-sm tracking-tight hidden sm:inline">
-            {brandLabel || "Jeko 會員"}
+          <span className="inline-flex h-8 items-center rounded-md px-0.5 py-1">
+            <Image
+              src="/images/Logo/logo-no-bg.png"
+              alt="Jeko"
+              width={72}
+              height={28}
+              className="h-6 w-auto object-contain"
+              priority
+            />
+          </span>
+          <span
+            className="font-black text-sm tracking-tight hidden lg:inline"
+            style={{ color: SHOPIFY_UI.textPrimary }}
+          >
+            {brandLabel || "Jeko"}
           </span>
         </Link>
 
-        <div className="flex-1 min-w-0 max-w-xl mx-2 sm:mx-auto">
+        <div className="flex-1 min-w-0 max-w-sm mx-2 sm:mx-auto">
           <AccountMemberSearch
             navItems={navItems}
             orders={orders}
@@ -229,14 +259,14 @@ export default function AccountShell({
           <Link
             href="/contact"
             title="聯絡客服"
-            className="hidden md:inline-flex items-center justify-center w-9 h-9 rounded-full text-white/90 hover:bg-white/10 transition"
+            className="hidden md:inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 hover:bg-slate-100 transition"
           >
             <AccountIcon name="mail_outline" size={18} />
           </Link>
           <Link
             href="/faq"
             title="使用指南"
-            className="hidden md:inline-flex items-center justify-center w-9 h-9 rounded-full text-white/90 hover:bg-white/10 transition"
+            className="hidden md:inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 hover:bg-slate-100 transition"
           >
             <AccountIcon name="help_outline" size={18} />
           </Link>
@@ -245,7 +275,7 @@ export default function AccountShell({
             <button
               type="button"
               onClick={() => setUserMenuOpen((v) => !v)}
-              className="flex items-center gap-1 pl-0.5 pr-1.5 sm:pr-2 h-9 rounded-full hover:bg-white/10 transition"
+              className="flex items-center gap-1 pl-0.5 pr-1.5 sm:pr-2 h-9 rounded-lg hover:bg-slate-100 transition"
             >
               {user?.image ? (
                 <img
@@ -256,18 +286,21 @@ export default function AccountShell({
               ) : (
                 <span
                   className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-black shrink-0"
-                  style={{ backgroundColor: SHOPIFY_UI.link }}
+                  style={{ backgroundColor: SHOPIFY_UI.accentBg }}
                 >
                   {initials}
                 </span>
               )}
-              <span className="text-white text-xs font-bold hidden md:inline max-w-[100px] truncate">
+              <span
+                className="text-xs font-bold hidden md:inline max-w-[100px] truncate"
+                style={{ color: SHOPIFY_UI.textPrimary }}
+              >
                 {user?.name || "會員"}
               </span>
               <AccountIcon
                 name="expand_more"
                 size={16}
-                className="text-white/70 hidden md:inline"
+                className="text-slate-400 hidden md:inline"
               />
             </button>
 
@@ -326,19 +359,23 @@ export default function AccountShell({
                   <button
                     type="button"
                     onClick={() => {
-                      onLogout();
+                      const ok =
+                        typeof window !== "undefined" &&
+                        window.confirm("確定要登出嗎？");
+                      if (!ok) return;
                       setUserMenuOpen(false);
+                      onLogout();
                     }}
-                    className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2 hover:bg-[#fed3d1]/40"
-                    style={{ color: SHOPIFY_BADGE.critical.dot }}
+                    className="w-full text-left px-3 py-2.5 text-sm font-semibold flex items-center gap-2 text-red-600 hover:bg-red-50"
                   >
-                    <AccountIcon name="logout" size={16} />
+                    <AccountIcon name="logout" size={16} color="#DC2626" />
                     登出
                   </button>
                 </div>
               </>
             )}
           </div>
+        </div>
         </div>
       </header>
 

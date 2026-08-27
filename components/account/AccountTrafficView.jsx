@@ -12,8 +12,14 @@ import {
   isStandalonePWA,
 } from "@/lib/pushSupport";
 import PushNotificationSection from "@/components/PushNotificationSection";
+import PushLineAlertSection from "@/components/PushLineAlertSection";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import IosPwaPushGuide from "@/components/IosPwaPushGuide";
+import { getPushEndpoint } from "@/lib/pushBind";
+import {
+  broadcastPushNotifyState,
+  subscribePushNotifySync,
+} from "@/lib/pushNotifySync";
 import {
   AccountPageWrap,
   AccountBadge,
@@ -68,7 +74,28 @@ function orderShortId(id) {
   return String(id || "").slice(0, 8).toUpperCase();
 }
 
-function statusMeta(r) {
+/** 吃到飽／不限流量：無固定額度，狀態固定顯示「剩餘充足」 */
+function isUnlimitedEsim(esim, r) {
+  const name = String(esim?.productName || r?.productName || "");
+  if (/吃到飽|unlimited|不限流量|不限速吃到飽|無限流量/i.test(name)) {
+    return true;
+  }
+  // 已查到已用、但無剩餘／總量 → 視為無額度方案
+  if (
+    r &&
+    r.usedMb != null &&
+    r.remainingMb == null &&
+    r.totalMb == null
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function statusMeta(r, esim) {
+  if (isUnlimitedEsim(esim, r)) {
+    return { label: "剩餘充足", tone: "success" };
+  }
   if (!r) return { label: "未查詢", tone: "neutral" };
   const pct = usagePercent(r.remainingMb, r.totalMb);
   if (pct == null) {
@@ -153,14 +180,109 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
   const [selectedId, setSelectedId] = useState(null);
   const [pushSupport, setPushSupport] = useState(null);
   const [standalone, setStandalone] = useState(false);
-  const [showPush, setShowPush] = useState(false);
   const [iosHintOpen, setIosHintOpen] = useState(true);
-  const pushRef = useRef(null);
+  const [bindModalOpen, setBindModalOpen] = useState(false);
+  const [preferOpenBind, setPreferOpenBind] = useState(false);
+  const [monitorBound, setMonitorBound] = useState(false);
+  const [boundTopupId, setBoundTopupId] = useState(null);
+  const [monitorChecking, setMonitorChecking] = useState(true);
 
   useEffect(() => {
     setStandalone(isStandalonePWA());
     detectPushSupport().then(setPushSupport);
   }, []);
+
+  const refreshMonitorStatus = useCallback(async () => {
+    setMonitorChecking(true);
+    try {
+      const endpoint = await getPushEndpoint();
+      if (!endpoint) {
+        setMonitorBound(false);
+        setBoundTopupId(null);
+        broadcastPushNotifyState({
+          on: false,
+          topupId: null,
+          source: "account-traffic",
+        });
+        return;
+      }
+      const res = await fetch(
+        `/api/push/bind-status?endpoint=${encodeURIComponent(endpoint)}`,
+      );
+      const data = await res.json();
+      const bound = Boolean(data.bound);
+      const topup = data.topupId || null;
+      setMonitorBound(bound);
+      setBoundTopupId(topup);
+      broadcastPushNotifyState({
+        on: true,
+        topupId: bound ? topup : null,
+        source: "account-traffic",
+      });
+    } catch {
+      setMonitorBound(false);
+      setBoundTopupId(null);
+    } finally {
+      setMonitorChecking(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshMonitorStatus();
+    const onVis = () => {
+      if (document.visibilityState === "visible") refreshMonitorStatus();
+    };
+    window.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", refreshMonitorStatus);
+    return () => {
+      window.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", refreshMonitorStatus);
+    };
+  }, [refreshMonitorStatus]);
+
+  // 與底部「我的 eSIM」主選單流量開關雙向同步
+  useEffect(() => {
+    return subscribePushNotifySync((detail) => {
+      if (detail?.source === "account-traffic") return;
+      if (Object.prototype.hasOwnProperty.call(detail || {}, "on")) {
+        if (!detail.on) {
+          setMonitorBound(false);
+          setBoundTopupId(null);
+          return;
+        }
+      }
+      if (Object.prototype.hasOwnProperty.call(detail || {}, "topupId")) {
+        const topup = detail.topupId;
+        setBoundTopupId(topup);
+        setMonitorBound(Boolean(topup));
+        return;
+      }
+      if (detail?.on === true) {
+        refreshMonitorStatus();
+      }
+    });
+  }, [refreshMonitorStatus]);
+
+  const selectedEsim = useMemo(
+    () =>
+      esims.find((e) => String(e.topupId) === String(selectedId)) ||
+      esims[0] ||
+      null,
+    [esims, selectedId],
+  );
+
+  const openMonitorBind = () => {
+    if (monitorBound) return;
+    setPreferOpenBind(true);
+    setBindModalOpen(true);
+  };
+
+  // 綁定完成後關閉彈窗，不再顯示通行證大卡
+  useEffect(() => {
+    if (!bindModalOpen || !monitorBound) return;
+    setBindModalOpen(false);
+    setPreferOpenBind(false);
+  }, [bindModalOpen, monitorBound]);
 
   useEffect(() => {
     if (esims.length && !selectedId) setSelectedId(esims[0].topupId);
@@ -328,7 +450,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
             <AccountIcon name="bolt" size={16} />
             查最新一筆
           </PrimaryBtn>
-          <ShopifyDropdown label="更多操作" items={moreMenu} />
+          <ShopifyDropdown variant="account" label="更多操作" items={moreMenu} />
         </div>
       </div>
 
@@ -458,7 +580,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
             <ul>
               {esims.map((esim) => {
                 const r = results[esim.topupId];
-                const badge = statusMeta(r);
+                const badge = statusMeta(r, esim);
                 const pct = r ? usagePercent(r.remainingMb, r.totalMb) : null;
                 const isSelected = selectedId === esim.topupId;
                 const isLoading = loadingId === esim.topupId;
@@ -664,6 +786,29 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
               selectedId={selectedId}
               loading={chartLoading}
             />
+
+            <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+              <p className="text-sm font-bold text-slate-900">流量監控提醒</p>
+              <button
+                type="button"
+                disabled={monitorChecking || monitorBound}
+                onClick={openMonitorBind}
+                className={`w-full rounded-lg text-sm font-bold py-3 px-4 transition ${
+                  monitorBound
+                    ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                    : "bg-[#1E4AD1] hover:bg-[#1639a8] text-white disabled:opacity-60"
+                }`}
+              >
+                {monitorChecking
+                  ? "確認中…"
+                  : monitorBound
+                    ? "已開啟流量監控提醒"
+                    : "開啟流量監控提醒"}
+              </button>
+              <PushLineAlertSection
+                boundTopupId={boundTopupId || selectedEsim?.topupId}
+              />
+            </div>
           </Card>
 
           <NavyPanel title="手動 ICCID" icon="dialpad">
@@ -712,15 +857,11 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
               </SecondaryBtn>
               <SecondaryBtn
                 className="w-full"
-                onClick={() => {
-                  setShowPush(true);
-                  setTimeout(() => {
-                    pushRef.current?.scrollIntoView({ behavior: "smooth" });
-                  }, 50);
-                }}
+                disabled={monitorChecking || monitorBound}
+                onClick={openMonitorBind}
               >
                 <AccountIcon name="notifications_active" size={16} />
-                推播提醒
+                {monitorBound ? "已開提醒" : "推播提醒"}
               </SecondaryBtn>
               <SecondaryBtn href="/data-query" className="w-full">
                 <AccountIcon name="help_outline" size={16} />
@@ -731,39 +872,74 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
         </aside>
       </div>
 
-      {/* 推播區 */}
-      <div ref={pushRef} className="mt-4">
-        <NavyPanel
-          title="流量偏低推播提醒"
-          icon="notifications_active"
-          action={
-            <button
-              type="button"
-              onClick={() => setShowPush((v) => !v)}
-              className="text-xs font-bold hover:underline"
-              style={{ color: UI.dark }}
-            >
-              {showPush ? "收合" : "展開設定"}
-            </button>
-          }
+      {bindModalOpen ? (
+        <div
+          className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/45 backdrop-blur-[2px]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="traffic-bind-modal-title"
+          onClick={() => {
+            setBindModalOpen(false);
+            setPreferOpenBind(false);
+            refreshMonitorStatus();
+          }}
         >
-          {showPush ? (
-            <>
-              <p className="text-sm mb-4 leading-relaxed" style={{ color: UI.mid }}>
-                開啟後系統會在剩餘流量偏低時推播通知（瀏覽器 + 可選 LINE）。
-                {showPwaHint
-                  ? " iPhone 請先將本站加入主畫面，再開啟推播。"
-                  : " 會員可自動綁定最新 eSIM 訂單；LINE 登入者可額外開啟官方 LINE 推播。"}
-              </p>
-              <PushNotificationSection />
-            </>
-          ) : (
-            <p className="text-sm" style={{ color: UI.soft }}>
-              點「展開設定」以開啟推播提醒
-            </p>
-          )}
-        </NavyPanel>
-      </div>
+          <div
+            className="w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-[22px] sm:rounded-[22px] bg-white shadow-2xl border border-slate-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 bg-white">
+              <h3
+                id="traffic-bind-modal-title"
+                className="text-sm font-black text-slate-900"
+              >
+                {monitorBound ? "流量監控提醒" : "請綁定 eSIM 開啟監控"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setBindModalOpen(false);
+                  setPreferOpenBind(false);
+                  refreshMonitorStatus();
+                }}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+                aria-label="關閉"
+              >
+                <AccountIcon name="close" size={18} />
+              </button>
+            </div>
+            <div className="p-4">
+              {!monitorBound ? (
+                <p className="text-xs text-slate-500 mb-3 leading-relaxed">
+                  一次只能監控一張 eSIM。請先開啟推播並選擇要綁定的方案，剩餘流量偏低時會自動通知您。
+                </p>
+              ) : null}
+              <PushNotificationSection
+                hideLineAlert
+                hidePassCard
+                preferBindEsim={
+                  preferOpenBind && selectedEsim
+                    ? {
+                        topupId: selectedEsim.topupId,
+                        productName: selectedEsim.productName,
+                        iccid: selectedEsim.iccid,
+                        orderId: selectedEsim.orderId,
+                      }
+                    : null
+                }
+                preferOpenBindLayer={preferOpenBind}
+                onPreferBindHandled={() => {}}
+                onPreferOpenBindHandled={() => setPreferOpenBind(false)}
+                onIccidBound={() => {
+                  refreshMonitorStatus();
+                  setBindModalOpen(false);
+                  setPreferOpenBind(false);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AccountPageWrap>
   );
 }

@@ -108,10 +108,6 @@ export default function TrafficAlertPassCard({
   usageLoading = false,
   className = "",
   onOpenBind,
-  onUnbind,
-  unbinding = false,
-  secondaryLeft = null,
-  secondaryRight = null,
 }) {
   const title = isBound
     ? productName ||
@@ -332,33 +328,6 @@ export default function TrafficAlertPassCard({
           </p>
         </div>
       </div>
-
-      <div className="mt-3 rounded-2xl border border-[#D6E2F7] bg-[#EAF0FB] px-4 py-3">
-        <p className="text-[12px] font-bold text-[#1e4ad1] leading-relaxed">
-          一次只能綁定一張 eSIM 做流量提醒。
-          {isBound
-            ? " 目前已綁定上方方案；若要換卡請先取消綁定或進入選單改綁。"
-            : " 請點上方卡片進入選單，勾選一張後再綁定。"}
-        </p>
-      </div>
-
-      {isBound && onUnbind ? (
-        <button
-          type="button"
-          disabled={unbinding}
-          onClick={onUnbind}
-          className="mt-3 w-full rounded-full border border-slate-300 bg-white py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition"
-        >
-          {unbinding ? "取消中…" : "取消綁定"}
-        </button>
-      ) : null}
-
-      {(secondaryLeft || secondaryRight) && (
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          {secondaryLeft}
-          {secondaryRight}
-        </div>
-      )}
     </div>
   );
 }

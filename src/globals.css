@@ -1369,11 +1369,24 @@ img {
 .product-content-wrapper {
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
   color: #334155;
   line-height: 1.7;
   font-family: 'Roboto', 'Noto Sans TC', -apple-system, BlinkMacSystemFont,
     "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.product-content-wrapper img,
+.product-content-wrapper video,
+.product-content-wrapper iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+.product-content-wrapper table {
+  max-width: 100%;
 }
 
 /* 方案詳情 — 雙欄資訊卡（藍底白字標題） */
@@ -1474,26 +1487,37 @@ img {
 
 .product-content-wrapper .jeko-usage {
   width: 100%;
+  max-width: 100%;
 }
 
 /* 使用介紹 — 優勢卡片格（白卡／藍標題，適配 #DFE0E5 底） */
+.product-content-wrapper .jeko-adv-head {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
 .product-content-wrapper .jeko-adv-head h3 {
+  margin: 0;
   font-size: 1.5rem;
   font-weight: 800;
   color: #1e293b;
   letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
 .product-content-wrapper .jeko-adv-head p {
-  margin-top: 0.5rem;
+  margin: 0.5rem auto 0;
+  max-width: 36rem;
   font-size: 0.9375rem;
   color: #64748b;
+  line-height: 1.6;
 }
 
 .product-content-wrapper .jeko-adv-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.25rem;
+  width: 100%;
 }
 
 .product-content-wrapper .jeko-adv-card {
@@ -1526,6 +1550,7 @@ img {
 
 .product-content-wrapper .jeko-adv-body {
   min-width: 0;
+  flex: 1;
 }
 
 .product-content-wrapper .jeko-adv-title {
@@ -1543,23 +1568,55 @@ img {
   line-height: 1.65;
 }
 
+/* !important：覆蓋 Medusa 舊 HTML 內聯 grid（否則手機仍強制三欄） */
 @media (max-width: 1024px) {
   .product-content-wrapper .jeko-adv-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
   }
 }
 
 @media (max-width: 640px) {
   .product-content-wrapper .jeko-adv-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: 0.875rem !important;
+  }
+
+  .product-content-wrapper .jeko-adv-head {
+    margin-bottom: 1.25rem;
   }
 
   .product-content-wrapper .jeko-adv-head h3 {
     font-size: 1.25rem;
   }
 
+  .product-content-wrapper .jeko-adv-head p {
+    font-size: 0.875rem;
+    padding: 0 0.25rem;
+  }
+
   .product-content-wrapper .jeko-adv-card {
-    padding: 1.25rem 1.1rem;
+    padding: 1.1rem 1rem;
+    gap: 0.875rem;
+    border-radius: 14px;
+  }
+
+  .product-content-wrapper .jeko-adv-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 10px;
+  }
+
+  .product-content-wrapper .jeko-adv-icon .material-symbols-outlined {
+    font-size: 1.4rem;
+  }
+
+  .product-content-wrapper .jeko-adv-title {
+    font-size: 1rem;
+  }
+
+  .product-content-wrapper .jeko-adv-desc {
+    font-size: 0.8125rem;
   }
 }
 
@@ -1783,10 +1840,10 @@ img {
 
 @media (max-width: 1024px) {
   .product-content-wrapper .jeko-steps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
   .product-content-wrapper .jeko-benefits {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
@@ -1794,10 +1851,20 @@ img {
   .product-content-wrapper .jeko-steps,
   .product-content-wrapper .jeko-benefits,
   .product-content-wrapper .jeko-checklist-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
   .product-content-wrapper .jeko-section-head h3 {
     font-size: 1.375rem;
+  }
+  .product-content-wrapper .jeko-step-card {
+    padding: 1.25rem 1rem;
+  }
+  .product-content-wrapper .jeko-checklist-body {
+    padding: 1.1rem 1rem;
+  }
+  .product-content-wrapper .jeko-checklist-bar {
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
   }
 }
 

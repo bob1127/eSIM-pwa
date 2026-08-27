@@ -21,6 +21,7 @@ import {
 } from "@/lib/pushNotifySync";
 import { detectDeviceLabel } from "@/lib/deviceDetect";
 import {
+  parseLpaString,
   pickInstallUrlForOs,
   resolveInstallUrls,
 } from "@/lib/esimInstallLinks";
@@ -140,6 +141,23 @@ export function extractQrPlansFromOrders(orders = []) {
         order.total_amount ??
         null;
       const install = resolveInstallUrls(item);
+      const lpa = install.lpa || item.lpa || null;
+      const parsedLpa = parseLpaString(lpa) || parseLpaString(item.androidCode);
+      const smdp =
+        item.smdp ||
+        item.smdp_address ||
+        parsedLpa?.smdp ||
+        null;
+      const activationCode =
+        item.activationCode ||
+        item.activation_code ||
+        parsedLpa?.activationCode ||
+        null;
+      const androidCode =
+        item.androidCode ||
+        (smdp && activationCode ? `LPA:1$${smdp}$${activationCode}` : null) ||
+        lpa ||
+        null;
       plans.push({
         id: `${order.id}-${topupId || iccid || idx}`,
         name,
@@ -150,7 +168,10 @@ export function extractQrPlansFromOrders(orders = []) {
         orderId: order.id,
         orderDate: order.created_at,
         status: order.status,
-        lpa: install.lpa || item.lpa || null,
+        lpa,
+        smdp,
+        activationCode,
+        androidCode,
         iosInstallUrl: install.iosInstallUrl,
         androidInstallUrl: install.androidInstallUrl,
       });
@@ -214,6 +235,114 @@ function LoginGate() {
       <JekoPillButton href={buildLoginUrl()} size="sm" className="mt-5 max-w-xs mx-auto">
         登入／加入會員
       </JekoPillButton>
+    </div>
+  );
+}
+
+async function copyTextToClipboard(text) {
+  const value = String(text || "").trim();
+  if (!value) return false;
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+/** 詳細資訊 accordion（預設關閉）＋一鍵複製 */
+function EsimDetailAccordion({ plan }) {
+  const [open, setOpen] = useState(false);
+  const [copiedKey, setCopiedKey] = useState("");
+
+  const rows = useMemo(() => {
+    if (!plan) return [];
+    const smdp = String(plan.smdp || "").trim();
+    const code = String(plan.activationCode || "").trim();
+    const lpa =
+      String(plan.lpa || "").trim() ||
+      (smdp && code ? `LPA:1$${smdp}$${code}` : "");
+    const android =
+      String(plan.androidCode || "").trim() || lpa;
+    return [
+      { key: "iccid", label: "ICCID", value: plan.iccid },
+      { key: "smdp", label: "SM-DP+ 位址", value: smdp },
+      { key: "code", label: "激活碼", value: code },
+      { key: "android", label: "Android 激活碼", value: android },
+      { key: "lpa", label: "完整 LPA", value: lpa },
+    ].filter((r) => String(r.value || "").trim());
+  }, [plan]);
+
+  if (!rows.length) return null;
+
+  const onCopy = async (row) => {
+    const ok = await copyTextToClipboard(row.value);
+    if (!ok) {
+      alert("複製失敗，請長按文字手動複製。");
+      return;
+    }
+    setCopiedKey(row.key);
+    window.setTimeout(() => {
+      setCopiedKey((k) => (k === row.key ? "" : k));
+    }, 1600);
+  };
+
+  return (
+    <div className="w-full max-w-sm mt-3 rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-left"
+        aria-expanded={open}
+      >
+        <span className="text-[13px] font-bold text-slate-800">詳細資訊</span>
+        <MaterialIcon
+          name="expand_more"
+          size={20}
+          className={`text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open ? (
+        <div className="border-t border-slate-100 px-3 pb-3 pt-1 space-y-2">
+          {rows.map((row) => (
+            <div
+              key={row.key}
+              className="flex items-start gap-2 rounded-lg bg-slate-50 px-2.5 py-2"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold text-slate-500 tracking-wide">
+                  {row.label}
+                </p>
+                <p className="mt-0.5 text-[11px] font-mono text-slate-800 break-all leading-snug">
+                  {row.value}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onCopy(row)}
+                className="shrink-0 mt-0.5 inline-flex items-center gap-0.5 rounded-md border border-[#1E4AD1]/30 bg-white px-2 py-1 text-[10px] font-bold text-[#1E4AD1]"
+                aria-label={`複製${row.label}`}
+              >
+                <MaterialIcon name="content_copy" size={12} />
+                {copiedKey === row.key ? "已複製" : "複製"}
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -480,6 +609,12 @@ function QrPanel({
                 className="w-full h-full object-contain"
               />
             </div>
+            {p.iccid ? (
+              <p className="mt-2 text-[11px] text-slate-500 font-mono">
+                iccid: {p.iccid}
+              </p>
+            ) : null}
+            <EsimDetailAccordion plan={p} />
             <PlanUsageBlock
               plan={p}
               usageMap={usageMap}
@@ -506,7 +641,7 @@ function MemberPanel({ userName, email, onAccount }) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[15px] font-bold text-gray-900 truncate">
-            {userName || "Jeko 會員"}
+            {userName || "Jeko"}
           </p>
           <p className="text-[12px] text-gray-500 truncate mt-0.5">
             {email || "已登入"}
@@ -952,8 +1087,15 @@ export default function EsimBottomSheet() {
       await subscribeToPush({ token });
 
       setTrafficOn(true);
-      await refreshBindStatus();
-      broadcastPushNotifyState({ on: true, source: "esim-bottom-sheet" });
+      const bindData = await refreshBindStatus();
+      broadcastPushNotifyState({
+        on: true,
+        topupId:
+          bindData?.bound && bindData?.topupId != null
+            ? String(bindData.topupId)
+            : null,
+        source: "esim-bottom-sheet",
+      });
 
       // 與 data-query 一致：訂閱後在此頁手動選綁（不 silent auto-bind）
       const shouldOfferPwa =
@@ -1016,7 +1158,11 @@ export default function EsimBottomSheet() {
 
       setBoundTopupId(null);
       setTrafficOn(false);
-      broadcastPushNotifyState({ on: false, source: "esim-bottom-sheet" });
+      broadcastPushNotifyState({
+        on: false,
+        topupId: null,
+        source: "esim-bottom-sheet",
+      });
       alert("已關閉流量通知。");
     } catch (err) {
       alert(err?.message || "關閉失敗，請再試一次");
@@ -1057,6 +1203,11 @@ export default function EsimBottomSheet() {
             throw new Error(data.error || "取消綁定失敗");
           }
           setBoundTopupId(null);
+          broadcastPushNotifyState({
+            on: true,
+            topupId: null,
+            source: "esim-bottom-sheet",
+          });
           alert(`已關閉「${label}」的流量綁定。`);
           return;
         }
@@ -1078,7 +1229,13 @@ export default function EsimBottomSheet() {
         if (!res.ok) {
           throw new Error(data.error || data.hint || "綁定失敗");
         }
-        setBoundTopupId(String(plan.topupId));
+        const nextId = String(data.topupId || plan.topupId);
+        setBoundTopupId(nextId);
+        broadcastPushNotifyState({
+          on: true,
+          topupId: nextId,
+          source: "esim-bottom-sheet",
+        });
         alert(
           `已綁定「${label}」。\n流量偏低時會推播提醒您（一次僅監控一張）。`,
         );
@@ -1104,29 +1261,38 @@ export default function EsimBottomSheet() {
     enableTrafficAlert();
   }, [authReady, isLoggedIn, isGuest, trafficOn, trafficBusy, enableTrafficAlert]);
 
-  // 進頁靜默檢查：iPhone 未裝 App 不算已開
+  // 進頁靜默檢查：以 bind-status／訂閱為準，與會員中心「查詢流量」同步
   useEffect(() => {
     if (!authReady || !isLoggedIn) return;
     let cancelled = false;
     (async () => {
       try {
-        const ctx = getBrowserContext();
-        if (ctx.isIOS && !ctx.isStandalone) {
-          if (!cancelled) {
+        const endpoint = await getPushEndpoint();
+        if (cancelled) return;
+
+        if (!endpoint) {
+          const ctx = getBrowserContext();
+          // iPhone 未裝 App 且無訂閱 → 顯示未開
+          if (ctx.isIOS && !ctx.isStandalone) {
             setTrafficOn(false);
             setBoundTopupId(null);
           }
           return;
         }
-        const endpoint = await getPushEndpoint();
-        if (!endpoint || cancelled) return;
-        if (
-          typeof Notification !== "undefined" &&
-          Notification.permission === "granted"
-        ) {
+
+        const permissionOk =
+          typeof Notification === "undefined" ||
+          Notification.permission === "granted";
+
+        if (permissionOk) {
           setTrafficOn(true);
           if (!cancelled) await refreshBindStatus();
+          return;
         }
+
+        // 有 endpoint 但權限被關：仍嘗試讀綁定，UI 顯示未開推播
+        setTrafficOn(false);
+        if (!cancelled) await refreshBindStatus();
       } catch {
         /* ignore */
       }
@@ -1136,18 +1302,37 @@ export default function EsimBottomSheet() {
     };
   }, [authReady, isLoggedIn, isStandalone, refreshBindStatus]);
 
-  // 與首頁「推播通知」雙向同步
+  // 與 data-query／首頁推播雙向同步（含綁定 topup）
   useEffect(() => {
     return subscribePushNotifySync((detail) => {
       if (detail?.source === "esim-bottom-sheet") return;
-      if (detail?.on) {
-        setTrafficOn(true);
-        refreshBindStatus();
-      } else {
-        setTrafficOn(false);
-        setBoundTopupId(null);
+      if (Object.prototype.hasOwnProperty.call(detail || {}, "on")) {
+        if (detail.on) {
+          setTrafficOn(true);
+          refreshBindStatus();
+        } else {
+          setTrafficOn(false);
+          setBoundTopupId(null);
+        }
+      }
+      if (Object.prototype.hasOwnProperty.call(detail || {}, "topupId")) {
+        setBoundTopupId(detail.topupId);
+        if (detail.topupId) setTrafficOn(true);
       }
     });
+  }, [refreshBindStatus]);
+
+  // 切回分頁時重抓綁定（與 data-query 對齊）
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === "visible") refreshBindStatus();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onVis);
+    };
   }, [refreshBindStatus]);
 
   const trafficButtonLabel = (() => {
@@ -1519,14 +1704,24 @@ export default function EsimBottomSheet() {
                         一鍵安裝 eSIM
                       </JekoPillButton>
                     )}
-                    <TrafficNotifyToggle
-                      size="bar"
-                      on={trafficOn}
-                      busy={trafficBusy}
-                      onClick={toggleTrafficAlert}
-                      aria-label={trafficButtonLabel}
-                      className="flex-1 min-w-0 basis-0 w-full"
-                    />
+                    <div className="flex-1 min-w-0 basis-0 flex items-center justify-between gap-2 rounded-full border border-slate-200 bg-white px-3 min-h-[42px]">
+                      <span className="text-[12px] font-bold text-slate-800 leading-tight truncate">
+                        {trafficBusy
+                          ? "處理中…"
+                          : trafficOn
+                            ? "已開啟流量提醒"
+                            : needsAppleInstall
+                              ? "先安裝再通知"
+                              : "流量提醒"}
+                      </span>
+                      <TrafficNotifyToggle
+                        size="md"
+                        on={trafficOn}
+                        busy={trafficBusy}
+                        onClick={toggleTrafficAlert}
+                        aria-label={trafficButtonLabel}
+                      />
+                    </div>
                   </div>
                   <p className="text-[10px] font-bold text-slate-500 text-center leading-tight">
                     {!plans.length

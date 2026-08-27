@@ -38,7 +38,7 @@ export default function PartnerStoreMemberAccount({ store }) {
   const domain = store?.domain || "";
   const homeHref = domain ? `/p/${domain}/` : "/";
   const accountPath = domain ? `/p/${domain}/account/` : "/account";
-  const storeName = store?.store_name || "會員中心";
+  const storeName = store?.store_name || "帳戶中心";
 
   const setActiveTab = (tab, orderToOpen) => {
     setActiveTabRaw(tab);
@@ -237,7 +237,7 @@ export default function PartnerStoreMemberAccount({ store }) {
 
   return (
     <AccountShell
-      title={pageTitles[activeTab] || "會員中心"}
+      title={pageTitles[activeTab] || "帳戶中心"}
       user={user}
       userRole={userRole}
       partnerData={null}
@@ -248,7 +248,7 @@ export default function PartnerStoreMemberAccount({ store }) {
       orderBadge={orders.length}
       orders={orders}
       homeHref={homeHref}
-      brandLabel={`${storeName} 會員`}
+      brandLabel={storeName}
       shopCtaLabel="返回賣場"
     >
       <AnimatePresence mode="wait">

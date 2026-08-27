@@ -78,6 +78,8 @@ function PillButton({
 export default function PushMemberEsimBind({
   esims = [],
   onBound,
+  onUnbind,
+  unbinding = false,
   onManualIccid,
   onBack,
   boundTopupId = null,
@@ -128,7 +130,7 @@ export default function PushMemberEsimBind({
     setLoading(true);
     try {
       if (boundTopupId && selected === boundTopupId) {
-        throw new Error("此方案已綁定監控中。若要換卡，請先回上一層取消綁定。");
+        throw new Error("此方案已綁定監控中。若要換卡，請先取消綁定。");
       }
 
       if (demoMode) {
@@ -280,6 +282,17 @@ export default function PushMemberEsimBind({
             ? "此方案已綁定"
             : "綁定所選 eSIM"}
       </PillButton>
+
+      {boundTopupId && onUnbind ? (
+        <button
+          type="button"
+          disabled={unbinding || loading}
+          onClick={onUnbind}
+          className="mt-3 w-full rounded-full border border-slate-300 bg-white py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition"
+        >
+          {unbinding ? "取消中…" : "取消綁定"}
+        </button>
+      ) : null}
 
       {onManualIccid ? (
         <button

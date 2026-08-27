@@ -94,6 +94,20 @@ export default function RefundPolicyPage() {
           <strong>退款時程：</strong>審核通過後約 7～14 個工作天入帳（依发卡銀行而異）。
           金流手續費（約 2.8%）依法規及金流合約可能無法全額退回，剩餘款項將退還予您。
         </p>
+        <p className="mt-4">
+          <strong>防濫用與惡意行為：</strong>
+          同一顧客（含同一 Email／同一 LINE 帳號關聯身分）於近 30
+          日內已核准退款達平台設定次數上限者，線上退款申請將暫時關閉，須改由{" "}
+          <a
+            href="https://line.me/R/ti/p/@593gvyzn"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sky-600 font-bold hover:underline"
+          >
+            官方 LINE
+          </a>{" "}
+          人工審核。若經認定有惡意重複下單退款、虛偽陳述開通狀態、或以不正手段損害平台權益，本平台得拒絕退款、暫停或永久停用帳號／購買權限，並依法保留求償權利。
+        </p>
       </LegalSection>
 
       <LegalSection title="三、原生 eSIM">

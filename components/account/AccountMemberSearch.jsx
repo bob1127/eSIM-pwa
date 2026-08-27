@@ -203,7 +203,7 @@ export default function AccountMemberSearch({
       <AccountIcon
         name="search"
         size={16}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-[1]"
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-[1]"
       />
       <input
         ref={inputRef}
@@ -215,12 +215,17 @@ export default function AccountMemberSearch({
         }}
         onFocus={() => query.trim() && setOpen(true)}
         onKeyDown={onKeyDown}
-        placeholder="搜尋訂單、流量、會員功能…"
+        placeholder="搜尋：訂單、流量、功能…"
         autoComplete="off"
         aria-autocomplete="list"
         aria-controls={listId}
         aria-expanded={showPanel}
-        className="w-full h-8 rounded-md bg-white/10 focus:bg-white text-white focus:text-[#1a1a1a] placeholder:text-gray-400 text-xs pl-8 pr-8 outline-none transition [&::-webkit-search-cancel-button]:appearance-none"
+        style={{
+          backgroundColor: "#ffffff",
+          borderColor: "#cbd5e1",
+          color: "#0f172a",
+        }}
+        className="w-full h-9 rounded-lg border text-xs pl-9 pr-8 outline-none transition placeholder:text-slate-400 focus:border-[#1E4AD1] focus:ring-2 focus:ring-[#1E4AD1]/15 [&::-webkit-search-cancel-button]:appearance-none"
       />
       {query ? (
         <button
@@ -231,7 +236,7 @@ export default function AccountMemberSearch({
             close();
             inputRef.current?.focus();
           }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
         >
           <AccountIcon name="close" size={14} />
         </button>
@@ -245,7 +250,7 @@ export default function AccountMemberSearch({
         >
           {empty ? (
             <p className="px-3 py-3 text-xs text-slate-500">
-              會員中心找不到「{query.trim()}」
+              找不到「{query.trim()}」
             </p>
           ) : null}
           <ul className="py-1 divide-y divide-slate-50">

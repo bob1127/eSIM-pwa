@@ -269,7 +269,7 @@ export default function AccountSupportView({
             <AccountIcon name="menu_book" size={16} />
             開啟適合我的教學
           </PrimaryBtn>
-          <ShopifyDropdown label="更多操作" items={moreMenu} />
+          <ShopifyDropdown variant="account" label="更多操作" items={moreMenu} />
         </div>
       </div>
 

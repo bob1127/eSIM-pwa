@@ -3,7 +3,11 @@
 import { useState } from "react";
 import MaterialIcon from "@/components/MaterialIcon";
 import PartnerButton from "@/components/partner/ui/PartnerButton";
-import { partnerDropdownTriggerClass } from "@/components/partner/partnerDropdownStyles";
+import {
+  partnerDropdownTriggerClass,
+  accountDropdownTriggerClass,
+  ACCOUNT_DROPDOWN_TRIGGER_STYLE,
+} from "@/components/partner/partnerDropdownStyles";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,8 +119,11 @@ export function ShopifyDropdown({
   disabled = false,
   align = "right",
   primary = false,
+  /** partner＝後台樣式；account＝對齊會員頁 SecondaryBtn */
+  variant = "partner",
   menuLabel,
   showItemIcons = false,
+  className,
 }) {
   const [open, setOpen] = useState(false);
   const radioMode = isRadioMenu(items);
@@ -129,15 +136,32 @@ export function ShopifyDropdown({
     setOpen(false);
   };
 
+  const triggerClass =
+    variant === "account"
+      ? accountDropdownTriggerClass({ className })
+      : partnerDropdownTriggerClass({ primary, className });
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
         disabled={disabled}
-        className={partnerDropdownTriggerClass({ primary })}
+        className={triggerClass}
+        style={variant === "account" ? ACCOUNT_DROPDOWN_TRIGGER_STYLE : undefined}
       >
-        {icon ? <MaterialIcon name={icon} size={16} className="text-slate-500" /> : null}
+        {icon ? (
+          <MaterialIcon
+            name={icon}
+            size={16}
+            className={variant === "account" ? "text-[#303030]" : "text-slate-500"}
+          />
+        ) : null}
         <span>{label}</span>
-        <ChevronDownIcon className="size-4 opacity-60" />
+        <ChevronDownIcon
+          className={cn(
+            "size-4",
+            variant === "account" ? "opacity-70" : "opacity-60",
+          )}
+        />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent

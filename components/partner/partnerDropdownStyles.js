@@ -13,3 +13,21 @@ export function partnerDropdownTriggerClass({ primary = false, className } = {})
     className,
   );
 }
+
+/** 會員頁下拉觸發鈕 — 對齊 SecondaryBtn（我的訂單／編輯資料） */
+export function accountDropdownTriggerClass({ className } = {}) {
+  return cn(
+    "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold transition-all",
+    "border border-[#8a8a8a] bg-[#fafafa] text-[#303030]",
+    "hover:bg-[#f0f0f0]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4AD1]/25",
+    "disabled:pointer-events-none disabled:opacity-40",
+    "data-popup-open:bg-[#f0f0f0]",
+    className,
+  );
+}
+
+/** 與 SecondaryBtn 相同圓角（inline，避免 Base UI 預設蓋掉） */
+export const ACCOUNT_DROPDOWN_TRIGGER_STYLE = {
+  borderRadius: "0.5rem",
+};

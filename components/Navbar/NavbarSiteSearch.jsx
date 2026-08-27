@@ -396,9 +396,17 @@ export default function NavbarSiteSearch({
       </button>
 
       {!isPartner && open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-[70] w-[min(92vw,360px)] rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
+        <div
+          className={cn(
+            "z-[70] rounded-xl border border-slate-200 bg-white p-3 shadow-xl",
+            // 桌面：對齊搜尋 icon
+            "absolute right-0 top-[calc(100%+8px)] w-[min(92vw,360px)]",
+            // 手機：相對視窗水平置中，避免錨在右側 icon 造成偏左跑版
+            "max-sm:fixed max-sm:left-1/2 max-sm:right-auto max-sm:top-[calc(env(safe-area-inset-top,0px)+4.75rem)] max-sm:w-[min(calc(100vw-2rem),360px)] max-sm:-translate-x-1/2",
+          )}
+        >
           <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-0">
               <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
                 ref={inputRef}

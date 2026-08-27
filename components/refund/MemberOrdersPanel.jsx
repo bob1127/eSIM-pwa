@@ -3,11 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import RefundRequestModal from "./RefundRequestModal";
+import RefundBlockedModal, {
+  refundBlockedFromApi,
+} from "./RefundBlockedModal";
 import {
   getRefundEligibility,
   refundStatusLabel,
   orderItemSummary,
 } from "@/lib/refundPolicy";
+import {
+  runRefundPrecheck,
+  enrichOrderFromPrecheck,
+} from "@/lib/refundPrecheckClient";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 function getEsimQRCodes(order) {
@@ -91,15 +98,42 @@ function formatDate(dateString) {
 function OrderCard({ order, onRefresh, getAuthHeaders }) {
   const [expanded, setExpanded] = useState(false);
   const [refundOrder, setRefundOrder] = useState(null);
+  const [refundPrecheck, setRefundPrecheck] = useState(null);
+  const [refundBlocked, setRefundBlocked] = useState(null);
+  const [refundChecking, setRefundChecking] = useState(false);
   const qrs = getEsimQRCodes(order);
   const eligibility = getRefundEligibility(order);
   const refundBadge = refundStatusLabel(order);
   const status = orderStatusBadge(order.status);
   const latest = order.refund_requests?.[0];
 
+  const beginRefund = async () => {
+    if (refundChecking) return;
+    setRefundChecking(true);
+    try {
+      const data = await runRefundPrecheck(order, getAuthHeaders);
+      if (!data.ok) {
+        setRefundBlocked(refundBlockedFromApi(data));
+        return;
+      }
+      setRefundPrecheck(data);
+      setRefundOrder(enrichOrderFromPrecheck(order, data));
+    } catch (e) {
+      setRefundBlocked({
+        title: "無法檢查退款資格",
+        message: e.message || "請稍後再試",
+      });
+    } finally {
+      setRefundChecking(false);
+    }
+  };
+
   const handleRefundSuccess = () => {
     onRefresh?.();
   };
+
+  const showRefundBtn =
+    eligibility.canApply || eligibility.code === "NATIVE_ESIM";
 
   return (
     <>
@@ -179,13 +213,18 @@ function OrderCard({ order, onRefresh, getAuthHeaders }) {
             )}
 
             <div className="flex flex-wrap gap-2 pt-1">
-              {eligibility.canApply && (
+              {showRefundBtn && (
                 <button
                   type="button"
-                  onClick={() => setRefundOrder(order)}
-                  className="px-4 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800"
+                  onClick={beginRefund}
+                  disabled={refundChecking}
+                  className="px-4 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 disabled:opacity-50"
                 >
-                  {eligibility.label}
+                  {refundChecking
+                    ? "檢查中…"
+                    : eligibility.code === "NATIVE_ESIM"
+                      ? "申請退款"
+                      : eligibility.label}
                 </button>
               )}
               {!eligibility.canApply && eligibility.code === "EXPIRED" && (
@@ -208,11 +247,30 @@ function OrderCard({ order, onRefresh, getAuthHeaders }) {
         )}
       </div>
 
+      {refundBlocked && (
+        <RefundBlockedModal
+          title={refundBlocked.title}
+          message={refundBlocked.message}
+          footnote={refundBlocked.footnote}
+          showLineCta={refundBlocked.showLineCta}
+          lineUrl={refundBlocked.lineUrl}
+          onClose={() => setRefundBlocked(null)}
+        />
+      )}
       {refundOrder && (
         <RefundRequestModal
           order={refundOrder}
-          onClose={() => setRefundOrder(null)}
+          precheck={refundPrecheck}
+          onClose={() => {
+            setRefundOrder(null);
+            setRefundPrecheck(null);
+          }}
           onSuccess={handleRefundSuccess}
+          onBlocked={(payload) => {
+            setRefundOrder(null);
+            setRefundPrecheck(null);
+            setRefundBlocked(payload);
+          }}
           getAuthHeaders={getAuthHeaders}
         />
       )}

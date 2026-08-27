@@ -12,6 +12,10 @@ import { inferEsimInstalled } from "@/lib/esimInstallStatus";
 import { getPushEndpoint } from "@/lib/pushBind";
 import { subscribeToPush } from "@/lib/pushSubscribe";
 import { detectPushSupport, getBrowserContext } from "@/lib/pushSupport";
+import {
+  broadcastPushNotifyState,
+  subscribePushNotifySync,
+} from "@/lib/pushNotifySync";
 import AppInstallGuideModal from "@/components/AppInstallGuideModal";
 import { usePWAInstall } from "@/components/usePWAInstall";
 import { cn } from "@/lib/utils";
@@ -660,6 +664,11 @@ export default function MemberEsimQuerySheet({
           );
         }
         setBoundTopupId(String(data.topupId || key));
+        broadcastPushNotifyState({
+          on: true,
+          topupId: String(data.topupId || key),
+          source: "member-esim-query",
+        });
       } catch (e) {
         setQueryError(e.message || "開啟提醒失敗");
       } finally {
@@ -755,6 +764,36 @@ export default function MemberEsimQuerySheet({
     }
     loadEsims();
   }, [authReady, isLoggedIn, loadEsims, demoMode]);
+
+  // 與主 tab（我的 eSIM）流量綁定雙向同步
+  useEffect(() => {
+    if (demoMode) return undefined;
+    return subscribePushNotifySync((detail) => {
+      if (detail?.source === "member-esim-query") return;
+      if (Object.prototype.hasOwnProperty.call(detail || {}, "topupId")) {
+        setBoundTopupId(detail.topupId);
+        return;
+      }
+      if (detail?.on === false) {
+        setBoundTopupId(null);
+        return;
+      }
+      refreshBoundAlert();
+    });
+  }, [demoMode, refreshBoundAlert]);
+
+  useEffect(() => {
+    if (demoMode || !isLoggedIn) return undefined;
+    const onVis = () => {
+      if (document.visibilityState === "visible") refreshBoundAlert();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onVis);
+    };
+  }, [demoMode, isLoggedIn, refreshBoundAlert]);
 
   useEffect(() => {
     if (loadingList || !esims.length || !selectedId) return;

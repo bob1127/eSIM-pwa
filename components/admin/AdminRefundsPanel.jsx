@@ -87,6 +87,7 @@ export default function AdminRefundsPanel() {
       <div className="flex flex-wrap gap-2">
         {[
           { id: "pending", label: "待審核" },
+          { id: "high_risk", label: "高風險" },
           { id: "approved", label: "已核准" },
           { id: "rejected", label: "已駁回" },
           { id: "all", label: "全部" },
@@ -97,7 +98,9 @@ export default function AdminRefundsPanel() {
             onClick={() => setFilter(tab.id)}
             className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
               filter === tab.id
-                ? "bg-[#1a56db] text-white"
+                ? tab.id === "high_risk"
+                  ? "bg-amber-600 text-white"
+                  : "bg-[#1a56db] text-white"
                 : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -110,7 +113,9 @@ export default function AdminRefundsPanel() {
         {loading ? (
           <LoadingIndicator layout="center" label="載入中…" className="p-8" />
         ) : !requests.length ? (
-          <p className="p-8 text-center text-slate-400">目前沒有退款申請</p>
+          <p className="p-8 text-center text-slate-400">
+            {filter === "high_risk" ? "目前沒有高風險待審申請" : "目前沒有退款申請"}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[900px]">
@@ -120,6 +125,7 @@ export default function AdminRefundsPanel() {
                   <th className="px-4 py-3">訂單</th>
                   <th className="px-4 py-3">類型</th>
                   <th className="px-4 py-3">原因</th>
+                  <th className="px-4 py-3">風險</th>
                   <th className="px-4 py-3">金額</th>
                   <th className="px-4 py-3">狀態</th>
                   <th className="px-4 py-3">操作</th>
@@ -127,7 +133,12 @@ export default function AdminRefundsPanel() {
               </thead>
               <tbody className="divide-y divide-slate-50 text-sm">
                 {requests.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50/80">
+                  <tr
+                    key={r.id}
+                    className={`hover:bg-slate-50/80 ${
+                      r.isHighRisk ? "bg-amber-50/60" : ""
+                    }`}
+                  >
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
                       {new Date(r.created_at).toLocaleString("zh-TW")}
                     </td>
@@ -141,6 +152,20 @@ export default function AdminRefundsPanel() {
                       {r.request_type === "full_refund" ? "未開通退款" : "售後爭議"}
                     </td>
                     <td className="px-4 py-3 text-slate-600">{reasonLabel(r.reason_type)}</td>
+                    <td className="px-4 py-3">
+                      {r.isHighRisk ? (
+                        <div className="space-y-1">
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
+                            高風險 {r.riskScore}
+                          </span>
+                          <p className="text-[10px] text-amber-800 leading-snug max-w-[140px]">
+                            {(r.riskFlagLabels || []).join("、")}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-mono">
                       NT$ {formatNTD(r.order?.total_amount)}
                     </td>
@@ -195,6 +220,16 @@ export default function AdminRefundsPanel() {
               </button>
             </div>
             <div className="p-5 space-y-4 text-sm">
+              {detail.isHighRisk ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-900">
+                  <p className="font-bold text-xs uppercase tracking-wide mb-1">
+                    高風險標記（分數 {detail.riskScore}）
+                  </p>
+                  <p className="text-sm">
+                    {(detail.riskFlagLabels || []).join("、") || "請人工詳核"}
+                  </p>
+                </div>
+              ) : null}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-slate-50 rounded-xl p-3">
                   <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">申請類型</p>

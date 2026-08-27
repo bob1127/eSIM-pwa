@@ -12,11 +12,12 @@ import GuestPushBindForm from "./GuestPushBindForm";
 import IosPwaPushGuide from "./IosPwaPushGuide";
 import MaterialIcon from "./MaterialIcon";
 import BindSuccessSheet from "@/components/line/BindSuccessSheet";
-import TrafficAlertPassCard, {
-  TrafficAlertPassWidget,
-} from "@/components/TrafficAlertPassCard";
+import TrafficAlertPassCard from "@/components/TrafficAlertPassCard";
 import { detectPushSupport } from "../lib/pushSupport";
 import { getPushEndpoint, ICCID_STORAGE_KEY } from "../lib/pushBind";
+import {
+  broadcastPushNotifyState,
+} from "@/lib/pushNotifySync";
 import { useAuth } from "../hooks/useAuth";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { QuarterRing } from "@/components/ui/QuarterRing";
@@ -224,6 +225,10 @@ export default function PushNotificationSection({
   /** 從 ?setup=traffic／商品頁進來：訂閱後或已訂閱時打開選綁層 */
   preferOpenBindLayer = false,
   onPreferOpenBindHandled = null,
+  /** 綁定彈窗等場景：不顯示 LINE 區塊（LINE 另在側欄） */
+  hideLineAlert = false,
+  /** 綁定彈窗：不顯示通行證大卡（綁定完成由外層關閉即可） */
+  hidePassCard = false,
 }) {
   const { token, isLoggedIn, isGuest, authReady } = useAuth();
   const [mode, setMode] = useState("button");
@@ -323,8 +328,13 @@ export default function PushNotificationSection({
       setBoundInfo(data);
       if (data.iccid) {
         localStorage.setItem(ICCID_STORAGE_KEY, data.iccid);
-        onIccidBound?.(data.iccid);
       }
+      broadcastPushNotifyState({
+        on: true,
+        topupId: data.topupId || null,
+        source: "push-notification-section",
+      });
+      onIccidBound?.(data.iccid || data.topupId || true);
       if (celebrate) setShowBindSuccess(true);
     },
     [onIccidBound],
@@ -433,7 +443,7 @@ export default function PushNotificationSection({
     const openBind =
       Boolean(focusBindEsim) ||
       (Array.isArray(esims) && esims.length > 0);
-    setAlertLayer(openBind ? "bind" : "pass");
+    setAlertLayer(openBind || hidePassCard ? "bind" : "pass");
   };
 
   const handleBound = (data) => {
@@ -486,6 +496,11 @@ export default function PushNotificationSection({
       setBindPhase("unbound");
       setBoundInfo(null);
       setAlertLayer("pass");
+      broadcastPushNotifyState({
+        on: true,
+        topupId: null,
+        source: "push-notification-section",
+      });
       try {
         localStorage.removeItem(ICCID_STORAGE_KEY);
       } catch {
@@ -669,6 +684,7 @@ export default function PushNotificationSection({
 
   const isBoundPhase = vBindPhase === "bound";
   const showPassLayer =
+    !hidePassCard &&
     !vIsGuest &&
     (vBindPhase === "bound" || vBindPhase === "unbound") &&
     !vAutoBinding &&
@@ -677,7 +693,7 @@ export default function PushNotificationSection({
     !vIsGuest &&
     (vBindPhase === "bound" || vBindPhase === "unbound") &&
     !vAutoBinding &&
-    alertLayer === "bind" &&
+    (alertLayer === "bind" || (hidePassCard && alertLayer === "pass" && vBindPhase === "unbound")) &&
     vIsMember &&
     vMemberEsimsForBind.length > 0 &&
     !vShowManualIccid;
@@ -710,36 +726,10 @@ export default function PushNotificationSection({
           setAlertLayer("manual");
         }
       }}
-      onUnbind={isBoundPhase ? handleUnbind : undefined}
-      unbinding={unbinding}
-      secondaryLeft={
-        <TrafficAlertPassWidget
-          href="/data-query/#query-section"
-          icon={<MaterialIcon name="query_stats" size={20} />}
-          title="完整用量查詢"
-          subtitle="切換到查詢用量"
-        />
-      }
-      secondaryRight={
-        <TrafficAlertPassWidget
-          onClick={() => {
-            if (vMemberEsims.length > 0) {
-              setShowManualIccid(false);
-              setAlertLayer("bind");
-            } else {
-              setAlertLayer("manual");
-              setShowManualIccid(true);
-            }
-          }}
-          icon={<MaterialIcon name="link" size={20} />}
-          title={isBoundPhase ? "更換監控方案" : "選擇監控方案"}
-          subtitle="進入綁定選單"
-        />
-      }
     />
   );
 
-  const bindSuccessModal = (
+  const bindSuccessModal = hidePassCard ? null : (
     <BindSuccessSheet
       open={showBindSuccess}
       title="綁定成功"
@@ -760,6 +750,8 @@ export default function PushNotificationSection({
       boundTopupId={vBoundInfo?.topupId || null}
       initialSelectedTopupId={focusBindEsim?.topupId || null}
       onBound={handleBound}
+      onUnbind={isBoundPhase ? handleUnbind : undefined}
+      unbinding={unbinding}
       onBack={() => setAlertLayer("pass")}
       onManualIccid={() => {
         setShowManualIccid(true);
@@ -1034,9 +1026,6 @@ export default function PushNotificationSection({
                 {showPassLayer ? boundPassCard : null}
                 {bindPanel}
                 {manualBindPanel}
-                {showPassLayer ? (
-                  <PushLineAlertSection boundTopupId={vBoundInfo?.topupId} />
-                ) : null}
               </div>
             )}
           </div>
@@ -1056,7 +1045,9 @@ export default function PushNotificationSection({
                   先點「開啟流量提醒」允許通知；完成後會出現通行證，點進去即可選擇一張
                   eSIM 綁定（一次僅一張）。
                 </p>
-                <PushLineAlertSection boundTopupId={vBoundInfo?.topupId} />
+                {!hideLineAlert ? (
+                  <PushLineAlertSection boundTopupId={vBoundInfo?.topupId} />
+                ) : null}
               </div>
             )}
         </div>
@@ -1111,7 +1102,7 @@ export default function PushNotificationSection({
                 正在從您的訂單自動綁定 eSIM…
               </p>
             )}
-            {(showPassLayer || vBindPhase === "needs_subscribe") && (
+            {vBindPhase === "needs_subscribe" && !hideLineAlert && (
               <PushLineAlertSection boundTopupId={vBoundInfo?.topupId} />
             )}
           </>

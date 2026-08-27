@@ -197,11 +197,14 @@ export default async function handler(req, res) {
     }
 
     // 🚀 6. 合併去重（跨系統 id 不重疊；同系統以 id 去重）
+    // 已取消訂單不進會員中心列表（本機／未付款殘單取消後也不佔用儀表板）
     const seen = new Set();
     const merged = [];
     for (const o of [...medusaNormalized, ...supabaseNormalized]) {
       const key = String(o.id);
       if (seen.has(key)) continue;
+      const st = String(o?.status || "").toLowerCase();
+      if (st === "cancelled" || st === "canceled") continue;
       seen.add(key);
       merged.push(o);
     }

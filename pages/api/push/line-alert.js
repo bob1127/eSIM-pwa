@@ -8,7 +8,14 @@ import {
 } from "./_memberAuth";
 import { findOwnedEsim } from "../../../lib/esimOrderExtract";
 import { getPublicSiteUrl } from "../../../lib/siteUrl";
-import { resolveLineUserIdFromMemberLink } from "../../../lib/lineTrafficAlert";
+import {
+  resolveLineUserIdFromMemberLink,
+  upsertLineTrafficAlert,
+} from "../../../lib/lineTrafficAlert";
+import {
+  isLineOaFriend,
+  LINE_OA_URL as SHARED_LINE_OA_URL,
+} from "../../../lib/lineOaFriends";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -16,9 +23,7 @@ const supabaseAdmin = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 );
 
-const LINE_OA_URL =
-  process.env.NEXT_PUBLIC_LINE_OA_URL ||
-  "https://line.me/R/ti/p/@593gvyzn";
+const LINE_OA_URL = SHARED_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn";
 
 async function resolveLineUserId(req, res) {
   const session = await getServerSession(req, res, authOptions);
@@ -29,15 +34,31 @@ async function resolveLineUserId(req, res) {
   return resolveLineUserIdFromMemberLink(supabaseAdmin, member.email);
 }
 
-async function isLineFriend(lineUserId) {
-  if (!lineUserId) return false;
+/**
+ * 好友判定：明確退追才擋；無 DB 列時再打 live API，失敗仍不硬擋開啟
+ * （Login／Messaging 不同頻道時 profile 會 404，但使用者其實已加好友）
+ */
+async function getFriendFlag(lineUserId) {
+  if (!lineUserId) return { isFriend: false, needsAddFriend: true };
+
   const { data } = await supabaseAdmin
     .from("line_oa_friends")
     .select("unfollowed_at")
     .eq("line_user_id", lineUserId)
     .maybeSingle();
-  if (!data) return null; // unknown — table may not exist yet
-  return !data.unfollowed_at;
+
+  if (data?.unfollowed_at) {
+    return { isFriend: false, needsAddFriend: true };
+  }
+  if (data && !data.unfollowed_at) {
+    return { isFriend: true, needsAddFriend: false };
+  }
+
+  const live = await isLineOaFriend(supabaseAdmin, lineUserId);
+  return {
+    isFriend: live,
+    needsAddFriend: false,
+  };
 }
 
 /**
@@ -48,17 +69,19 @@ export default async function handler(req, res) {
   const lineUserId = await resolveLineUserId(req, res);
   const member = await resolveMemberEmail(req, res);
   const oaUrl = LINE_OA_URL;
+  const oaQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&margin=12&data=${encodeURIComponent(oaUrl)}`;
 
   if (req.method === "GET") {
     if (!lineUserId) {
       return res.status(200).json({
         isLineLogin: false,
         oaUrl,
+        oaQrUrl,
         hint: "使用 LINE 登入後可開啟 LINE 推播提醒",
       });
     }
 
-    const friend = await isLineFriend(lineUserId);
+    const friend = await getFriendFlag(lineUserId);
 
     const { data: lineAlert } = await supabaseAdmin
       .from("line_traffic_alerts")
@@ -87,12 +110,13 @@ export default async function handler(req, res) {
       isLineLogin: true,
       lineUserId,
       oaUrl,
-      isFriend: friend,
+      oaQrUrl,
+      isFriend: friend.isFriend,
       enabled: !!(lineAlert?.monitor_enabled || pushLineEnabled),
       topupId: lineAlert?.topup_id || null,
       productName: lineAlert?.product_label || null,
       iccid: lineAlert?.iccid || null,
-      needsAddFriend: friend === false,
+      needsAddFriend: friend.needsAddFriend,
     });
   }
 
@@ -105,6 +129,8 @@ export default async function handler(req, res) {
     return res.status(401).json({
       error: "請使用 LINE 登入",
       hint: "LINE 推播需以 LINE 帳號登入本站",
+      oaUrl,
+      oaQrUrl,
     });
   }
 
@@ -130,15 +156,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "action 需為 enable 或 disable" });
   }
 
-  const friend = await isLineFriend(lineUserId);
-  if (friend === false) {
+  const friend = await getFriendFlag(lineUserId);
+  if (friend.needsAddFriend) {
     return res.status(400).json({
       error: "請先加入 Jeko 官方 LINE 好友",
       oaUrl,
+      oaQrUrl,
       needsAddFriend: true,
     });
   }
-  // friend === null：資料表尚未建立或未追蹤，仍允許設定（Cron 推播時會再檢查）
 
   let target = null;
   if (topupId && member?.email) {
@@ -162,16 +188,17 @@ export default async function handler(req, res) {
     target = esims[0] || null;
   }
 
-  if (!target?.topupId) {
+  if (!target?.topupId && !target?.iccid) {
     const dataQueryUrl = `${getPublicSiteUrl()}/data-query`;
     return res.status(404).json({
       error: "找不到可監控的 eSIM 訂單",
       hint: `請先傳「一鍵綁定」連結 Google／FB 會員，或在官方 LINE 貼上 ICCID。也可至 ${dataQueryUrl} 查詢。`,
       dataQueryUrl,
+      oaUrl,
+      oaQrUrl,
     });
   }
 
-  const now = new Date().toISOString();
   const rawOrderId = String(target.orderId || "").trim();
   const orderIdUuid =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -179,31 +206,23 @@ export default async function handler(req, res) {
     )
       ? rawOrderId
       : null;
-  const row = {
+
+  const upsert = await upsertLineTrafficAlert(supabaseAdmin, {
     line_user_id: lineUserId,
-    topup_id: target.topupId,
+    topup_id: target.topupId || null,
     iccid: target.iccid || null,
-    product_label: target.productName,
+    product_label: target.productName || null,
     order_id: orderIdUuid,
     guest_email: member?.email || null,
-    monitor_enabled: true,
-    updated_at: now,
-  };
+  });
 
-  await supabaseAdmin
-    .from("line_traffic_alerts")
-    .update({ monitor_enabled: false, updated_at: now })
-    .eq("line_user_id", lineUserId);
-
-  const { error: insertErr } = await supabaseAdmin
-    .from("line_traffic_alerts")
-    .insert(row);
-
-  if (insertErr) {
+  if (!upsert.ok) {
     return res.status(500).json({
       error: "LINE 提醒設定失敗",
-      detail: insertErr.message,
-      hint: "請執行 supabase/migrations/20260621_traffic_monitor.sql",
+      detail: upsert.error,
+      hint: "請稍後再試；若持續失敗請聯絡客服",
+      oaUrl,
+      oaQrUrl,
     });
   }
 
@@ -218,8 +237,8 @@ export default async function handler(req, res) {
   return res.status(200).json({
     success: true,
     enabled: true,
-    topupId: target.topupId,
-    productName: target.productName,
-    message: `已開啟 LINE 流量提醒，監控「${target.productName}」`,
+    topupId: target.topupId || null,
+    productName: target.productName || upsert.productName,
+    message: `已開啟 LINE 流量提醒，監控「${target.productName || "eSIM"}」`,
   });
 }

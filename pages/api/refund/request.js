@@ -1,6 +1,7 @@
 import {
-  requireCustomerEmail,
+  resolveRefundMember,
   getSupabaseAdmin,
+  loadOwnedRefundOrder,
 } from "../../../lib/refundAuth";
 import {
   REFUND_FULL_DAYS,
@@ -10,7 +11,14 @@ import {
   daysSince,
   MAX_REFUND_IMAGES,
   isOrderEsimActivated,
+  isNativeEsimOrder,
+  NATIVE_ESIM_REFUND_MESSAGE,
 } from "../../../lib/refundPolicy";
+import { checkRefundAbuseLimit } from "../../../lib/refundAbuse";
+import { extractEsimsFromOrders } from "../../../lib/esimOrderExtract";
+import { inferEsimInstalled } from "../../../lib/esimInstallStatus";
+import { queryEsimUsage } from "../../../lib/esimUsageService";
+import { CONTACT_INFO } from "../../../lib/contactUi";
 
 const VALID_REASONS = {
   full_refund: REFUND_REASONS_FULL.map((r) => r.value),
@@ -24,15 +32,16 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "GET") {
-    const userEmail = await requireCustomerEmail(req, res);
-    if (!userEmail) {
+    const member = await resolveRefundMember(req, res);
+    if (!member?.email) {
       return res.status(401).json({ error: "請先登入" });
     }
 
+    const emails = member.emails || [member.email];
     const { data, error } = await supabaseAdmin
       .from("refund_requests")
       .select("*")
-      .eq("customer_email", userEmail)
+      .in("customer_email", emails)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -42,10 +51,12 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const userEmail = await requireCustomerEmail(req, res);
-    if (!userEmail) {
+    const member = await resolveRefundMember(req, res);
+    if (!member?.email) {
       return res.status(401).json({ error: "請先登入" });
     }
+    const userEmail = member.email;
+    const emails = member.emails || [userEmail];
 
     const {
       order_id,
@@ -71,17 +82,21 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "無效的退款原因" });
     }
 
-    const { data: order, error: orderErr } = await supabaseAdmin
-      .from("orders")
-      .select("*")
-      .eq("id", order_id)
-      .single();
-
-    if (orderErr || !order) {
-      return res.status(404).json({ error: "找不到訂單" });
-    }
-    if (order.customer_email !== userEmail) {
+    const loaded = await loadOwnedRefundOrder(
+      supabaseAdmin,
+      order_id,
+      emails,
+      member.lineUserId || null,
+    );
+    if (loaded.forbidden) {
       return res.status(403).json({ error: "無權限操作此訂單" });
+    }
+    const order = loaded.order;
+    if (!order) {
+      return res.status(404).json({
+        error: "找不到訂單",
+        hint: "主站 Medusa 訂單若尚未同步至退款資料庫，請稍後再試或聯絡客服",
+      });
     }
 
     const status = String(order.status || "").toLowerCase();
@@ -90,6 +105,27 @@ export default async function handler(req, res) {
     }
     if (status !== "completed") {
       return res.status(400).json({ error: "僅已完成付款的訂單可申請退款" });
+    }
+
+    if (isNativeEsimOrder(order)) {
+      return res.status(400).json({
+        error: NATIVE_ESIM_REFUND_MESSAGE,
+        code: "NATIVE_ESIM",
+      });
+    }
+
+    const abuse = await checkRefundAbuseLimit(supabaseAdmin, emails);
+    if (abuse.blocked) {
+      return res.status(403).json({
+        error: abuse.message,
+        code: abuse.code,
+        blocked: "abuse",
+        approvedCount: abuse.approvedCount,
+        days: abuse.days,
+        maxApproved: abuse.maxApproved,
+        lineUrl: CONTACT_INFO.lineUrl,
+        showLineCta: true,
+      });
     }
 
     const { data: existingPending } = await supabaseAdmin
@@ -103,12 +139,41 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "此訂單已有審核中的退款申請" });
     }
 
+    // 提交當下再向供應商查一次開通狀態（防呆）
+    let liveActivated = isOrderEsimActivated(order);
+    try {
+      const esims = extractEsimsFromOrders([order]);
+      const first = esims[0];
+      let topupId = first?.missingTopupId ? null : first?.topupId || null;
+      let iccid = first?.iccid || null;
+      if (topupId && String(topupId).startsWith("iccid:")) {
+        if (!iccid) iccid = String(topupId).replace(/^iccid:/, "");
+        topupId = null;
+      }
+      if (topupId || iccid) {
+        const usage = await queryEsimUsage({ topupId, iccid });
+        if (inferEsimInstalled(usage?.ok ? usage.data || usage : usage) === true) {
+          liveActivated = true;
+          await supabaseAdmin
+            .from("orders")
+            .update({
+              esim_activation_status: "activated",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", order_id);
+        }
+      }
+    } catch (e) {
+      console.warn("[refund/request] live activation check", e?.message || e);
+    }
+
     const age = daysSince(order.created_at);
 
     if (request_type === "full_refund") {
-      if (isOrderEsimActivated(order)) {
+      if (liveActivated) {
         return res.status(400).json({
-          error: "此 eSIM 已開通，請改用「售後爭議」並上傳舉證資料",
+          error: "系統偵測此 eSIM 已開通／已使用，請改用「售後爭議」並上傳舉證資料",
+          code: "ACTIVATED",
         });
       }
       if (age > REFUND_FULL_DAYS) {
@@ -152,10 +217,14 @@ export default async function handler(req, res) {
       reason_type,
       reason_note: reason_note?.trim() || null,
       device_model: device_model?.trim() || null,
-      activation_claim: activation_claim || null,
+      activation_claim:
+        request_type === "full_refund"
+          ? "not_activated"
+          : activation_claim || (liveActivated ? "activated" : null),
       image_urls: Array.isArray(image_urls) ? image_urls : [],
       status: "pending",
       agreed_terms_at: now,
+      esim_activation_status: liveActivated ? "activated" : "unused",
       created_at: now,
       updated_at: now,
     };

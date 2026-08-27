@@ -268,7 +268,7 @@ export default function AccountDashboardView({
               <AccountIcon name="qr_code_2" size={16} />
               我的訂單
             </SecondaryBtn>
-            <ShopifyDropdown label="更多操作" items={moreMenu} />
+            <ShopifyDropdown variant="account" label="更多操作" items={moreMenu} />
           </>
         }
       />
@@ -312,13 +312,14 @@ export default function AccountDashboardView({
               title="有效 eSIM"
               icon="sim_card"
               action={
-                <AccountBadge
-                  tone={completedOrders.length ? "success" : "neutral"}
+                <span
+                  className="text-sm font-bold"
+                  style={{ color: ACCOUNT_THEME.dark }}
                 >
                   {completedOrders.length
                     ? `${completedOrders.length} 張可使用`
                     : "尚無 eSIM"}
-                </AccountBadge>
+                </span>
               }
             >
               {completedOrders.length === 0 ? (
@@ -796,7 +797,7 @@ export default function AccountDashboardView({
                 >
                   <AccountBadge tone="info">新功能</AccountBadge>
                   <p style={{ color: ACCOUNT_THEME.dark }}>
-                    會員中心已支援一鍵查詢流量與圖表分析。
+                    帳戶中心已支援一鍵查詢流量與圖表分析。
                   </p>
                 </div>
                 <div

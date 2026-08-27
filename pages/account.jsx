@@ -585,7 +585,7 @@ export default function AccountPage() {
   return (
     <Layout hideNavbar>
       <AccountShell
-        title={pageTitles[activeTab] || "會員中心"}
+        title={pageTitles[activeTab] || "帳戶中心"}
         user={user}
         userRole={userRole}
         partnerData={partnerData}

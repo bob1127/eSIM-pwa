@@ -1,21 +1,24 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   REFUND_REASONS_FULL,
   REFUND_REASONS_DISPUTE,
-  ACTIVATION_CLAIMS,
   MAX_REFUND_IMAGES,
   getRefundEligibility,
 } from "@/lib/refundPolicy";
 import { ACCOUNT_UI } from "@/lib/accountUi";
+import { refundBlockedFromApi } from "./RefundBlockedModal";
 
 export default function RefundRequestModal({
   order,
   onClose,
   onSuccess,
+  onBlocked,
   getAuthHeaders,
+  /** precheck 結果：自動判開通 */
+  precheck = null,
 }) {
   const eligibility = getRefundEligibility(order);
   const isDispute = eligibility.requestType === "dispute";
@@ -23,7 +26,9 @@ export default function RefundRequestModal({
   const [reasonType, setReasonType] = useState("");
   const [reasonNote, setReasonNote] = useState("");
   const [deviceModel, setDeviceModel] = useState("");
-  const [activationClaim, setActivationClaim] = useState("not_activated");
+  const [activationClaim, setActivationClaim] = useState(
+    isDispute ? "activated" : "not_activated",
+  );
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
@@ -31,7 +36,12 @@ export default function RefundRequestModal({
   const [error, setError] = useState("");
   const fileRef = useRef(null);
 
+  useEffect(() => {
+    setActivationClaim(isDispute ? "activated" : "not_activated");
+  }, [isDispute, order?.id]);
+
   const reasons = isDispute ? REFUND_REASONS_DISPUTE : REFUND_REASONS_FULL;
+  const autoActivated = Boolean(precheck?.activated || isDispute);
 
   const handleFiles = (e) => {
     const picked = Array.from(e.target.files || []);
@@ -88,9 +98,6 @@ export default function RefundRequestModal({
         setError("請上傳至少 1 張設定或錯誤畫面截圖");
         return;
       }
-    } else if (activationClaim !== "not_activated") {
-      setError("未開通退款須確認尚未掃描 QR Code");
-      return;
     }
 
     setSubmitting(true);
@@ -121,7 +128,14 @@ export default function RefundRequestModal({
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "提交失敗");
+      if (!res.ok) {
+        if (data.blocked === "abuse" || data.code === "REFUND_ABUSE_LIMIT") {
+          onBlocked?.(refundBlockedFromApi(data));
+          onClose();
+          return;
+        }
+        throw new Error(data.error || "提交失敗");
+      }
 
       onSuccess?.(data.request);
       onClose();
@@ -156,54 +170,28 @@ export default function RefundRequestModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {!isDispute && (
-            <div className="space-y-2">
-              <p className="text-sm font-bold text-slate-700">開通狀態確認</p>
-              {ACTIVATION_CLAIMS.filter((c) => c.value === "not_activated").map(
-                (c) => (
-                  <label
-                    key={c.value}
-                    className="flex items-start gap-2 text-sm text-slate-600 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={activationClaim === "not_activated"}
-                      onChange={(e) =>
-                        setActivationClaim(
-                          e.target.checked ? "not_activated" : "",
-                        )
-                      }
-                      className="mt-0.5"
-                    />
-                    <span>{c.label}</span>
-                  </label>
-                ),
-              )}
-              <p className="text-xs text-slate-400 leading-relaxed">
-                提交後客服將向 API 供應商查詢 eSIM
-                是否已啟用；若已開通將駁回全額退款申請。
-              </p>
-            </div>
-          )}
+          <div
+            className={`rounded-sm border px-3 py-2.5 text-sm ${
+              autoActivated
+                ? "border-amber-200 bg-amber-50 text-amber-900"
+                : "border-emerald-200 bg-emerald-50 text-emerald-900"
+            }`}
+          >
+            <p className="font-bold text-[13px]">
+              {autoActivated
+                ? "系統判定：已開通／已使用"
+                : "系統判定：尚未開通"}
+            </p>
+            <p className="text-[12px] mt-1 leading-relaxed opacity-90">
+              {precheck?.message ||
+                (autoActivated
+                  ? "已依供應商用量自動切換為售後爭議表單，請上傳舉證。"
+                  : "已向供應商查核，目前無使用證據，可申請未開通全額退款。無需再勾選開通狀態。")}
+            </p>
+          </div>
 
           {isDispute && (
             <>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">
-                  開通狀態
-                </label>
-                <select
-                  value={activationClaim}
-                  onChange={(e) => setActivationClaim(e.target.value)}
-                  className="w-full border border-slate-200 rounded-sm px-3 py-2.5 text-sm"
-                >
-                  {ACTIVATION_CLAIMS.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">
                   手機型號 <span className="text-red-500">*</span>
@@ -266,8 +254,15 @@ export default function RefundRequestModal({
               </label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {imagePreviews.map((src, i) => (
-                  <div key={src} className="relative w-20 h-20 rounded-sm overflow-hidden border border-slate-200">
-                    <img src={src} alt="" className="w-full h-full object-cover" />
+                  <div
+                    key={src}
+                    className="relative w-20 h-20 rounded-sm overflow-hidden border border-slate-200"
+                  >
+                    <img
+                      src={src}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
                     <button
                       type="button"
                       onClick={() => removeImage(i)}
@@ -306,7 +301,8 @@ export default function RefundRequestModal({
             {isDispute ? (
               <>
                 <p>
-                  已開通 eSIM 原則不提供退款；本表單為售後爭議申請，將個案審核，<strong>不保證退款</strong>。
+                  已開通 eSIM 原則不提供退款；本表單為售後爭議申請，將個案審核，
+                  <strong>不保證退款</strong>。
                 </p>
                 <p>
                   請先配合客服排查（APN、數據漫遊等）；若 API
@@ -319,7 +315,10 @@ export default function RefundRequestModal({
                   須於購買後 7 日內、QR Code 未掃描且 eSIM
                   未啟用、無流量使用，方可全額退款。
                 </p>
-                <p>審核通過後約 7～14 個工作天退至原付款方式；金流手續費可能無法全額退回。</p>
+                <p>
+                  審核通過後約 7～14
+                  個工作天退至原付款方式；金流手續費可能無法全額退回。
+                </p>
               </>
             )}
             <Link
@@ -340,7 +339,11 @@ export default function RefundRequestModal({
             />
             <span>
               我已閱讀並同意{" "}
-              <Link href="/refund-policy" target="_blank" className="text-sky-600 font-bold hover:underline">
+              <Link
+                href="/refund-policy"
+                target="_blank"
+                className="text-sky-600 font-bold hover:underline"
+              >
                 退換貨政策
               </Link>
               ，且所填資料真實有效。
