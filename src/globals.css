@@ -376,19 +376,24 @@ section.section_article p{
   
 }
 
-/* 商品輪播：4:5 畫框 + 置中 contain（主圖／縮圖／燈箱一致） */
+/* 商品輪播：固定 4:5 畫框 + 置中 contain（主圖／縮圖／燈箱一致）
+ * 桌面若只設 max-height、寬度仍 100%，畫框會變扁（看起來比例跑掉）。
+ * 因此用 max-height 限高時，同步縮窄寬度以維持 4:5。 */
 .product-gallery-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
   max-height: none;
   background: #fff;
+  margin-inline: auto;
 }
 
-/* LINE in-app browser 對 vh 計算偏小，手機端不要用 vh 限高，避免輪播比例被壓扁 */
+/* LINE in-app／矮視窗：限高並等比縮寬，避免畫框被壓成橫向 */
 @media (min-width: 1024px) {
   .product-gallery-frame {
-    max-height: min(52vh, 460px);
+    --gallery-max-h: min(52vh, 460px);
+    max-height: var(--gallery-max-h);
+    width: min(100%, calc(var(--gallery-max-h) * 4 / 5));
   }
 }
 
@@ -402,6 +407,7 @@ section.section_article p{
   align-items: center;
   justify-content: center;
   height: 100%;
+  overflow: hidden;
 }
 
 .product-main-swiper .swiper-slide > button,
@@ -411,11 +417,24 @@ section.section_article p{
   justify-content: center;
   width: 100%;
   height: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
 .product-gallery-media {
-  object-fit: contain;
-  object-position: center;
+  object-fit: contain !important;
+  object-position: center center !important;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Next/Image fill：強制吃滿父層但不變形 */
+.product-gallery-frame img.product-gallery-media,
+.product-main-swiper img.product-gallery-media,
+.product-gallery-thumb img.product-gallery-media {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
 }
 
 .product-gallery-thumb {
@@ -1329,6 +1348,20 @@ img {
     box-shadow: none !important;
     --tw-ring-offset-shadow: 0 0 #0000 !important;
     --tw-ring-shadow: 0 0 #0000 !important;
+  }
+}
+
+/*
+ * iOS Safari：表單字級 < 16px 時 focus 會自動放大整頁。
+ * 用 !important 蓋過 Tailwind text-sm / text-xs 等。
+ * 不改 viewport maximum-scale，保留手動 pinch-zoom。
+ */
+@media screen and (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="color"]):not([type="hidden"]),
+  textarea,
+  select,
+  [contenteditable="true"] {
+    font-size: 16px !important;
   }
 }
 

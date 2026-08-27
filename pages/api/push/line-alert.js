@@ -3,9 +3,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
 import {
   resolveMemberEmail,
-  fetchMemberEsims,
+  expandMemberLookupEmails,
+  fetchMemberEsimsForIdentity,
 } from "./_memberAuth";
-import { userOwnsTopupId } from "../../../lib/esimOrderExtract";
+import { findOwnedEsim } from "../../../lib/esimOrderExtract";
 import { getPublicSiteUrl } from "../../../lib/siteUrl";
 import { resolveLineUserIdFromMemberLink } from "../../../lib/lineTrafficAlert";
 
@@ -141,13 +142,23 @@ export default async function handler(req, res) {
 
   let target = null;
   if (topupId && member?.email) {
-    const esims = await fetchMemberEsims(member.email);
-    if (!userOwnsTopupId(esims, topupId)) {
+    const emails = await expandMemberLookupEmails(member);
+    const esims = await fetchMemberEsimsForIdentity({
+      emails,
+      lineUserId: member.lineUserId || lineUserId || null,
+      supabaseUserId: member.userId || null,
+    });
+    target = findOwnedEsim(esims, topupId);
+    if (!target) {
       return res.status(403).json({ error: "此 eSIM 不屬於您的帳戶" });
     }
-    target = esims.find((e) => e.topupId === String(topupId));
   } else if (member?.email) {
-    const esims = await fetchMemberEsims(member.email);
+    const emails = await expandMemberLookupEmails(member);
+    const esims = await fetchMemberEsimsForIdentity({
+      emails,
+      lineUserId: member.lineUserId || lineUserId || null,
+      supabaseUserId: member.userId || null,
+    });
     target = esims[0] || null;
   }
 
@@ -161,12 +172,19 @@ export default async function handler(req, res) {
   }
 
   const now = new Date().toISOString();
+  const rawOrderId = String(target.orderId || "").trim();
+  const orderIdUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      rawOrderId,
+    )
+      ? rawOrderId
+      : null;
   const row = {
     line_user_id: lineUserId,
     topup_id: target.topupId,
     iccid: target.iccid || null,
     product_label: target.productName,
-    order_id: target.orderId || null,
+    order_id: orderIdUuid,
     guest_email: member?.email || null,
     monitor_enabled: true,
     updated_at: now,

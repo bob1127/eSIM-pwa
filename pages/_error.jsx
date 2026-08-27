@@ -10,7 +10,7 @@ function ErrorPage({ statusCode }) {
     return (
       <>
         <Head>
-          <title>404 Error Page | Jeko eSIM</title>
+          <title>找不到頁面｜Jeko eSIM</title>
           <meta name="robots" content="noindex" />
         </Head>
         <NotFoundPageView />

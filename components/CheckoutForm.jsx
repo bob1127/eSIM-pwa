@@ -56,12 +56,70 @@ const FloatingInput = ({
 // 🔥 終極防連點鎖（放在元件外部，確保全域絕對唯一，攔截零點幾秒內的雙重觸發）
 let isSubmittingLock = false;
 
+function getCheckoutValidationError({
+  formData,
+  cartId,
+  cartItems,
+  termsAccepted,
+  requireTerms,
+}) {
+  if (requireTerms && !termsAccepted) {
+    return "請勾選同意服務條款與退換貨政策後再結帳";
+  }
+
+  const email = String(formData?.email || "").trim();
+  const name = String(formData?.name || "").trim();
+  const phone = String(formData?.phone || "").trim();
+
+  if (!email || !name || !phone) {
+    return "請填寫 Email、姓名與手機號碼";
+  }
+
+  if (isLineSyntheticEmail(email)) {
+    return "請填寫真實 Email，以便寄送 eSIM QR 與訂單通知";
+  }
+
+  if (!cartId || !cartItems?.length) {
+    return "購物車為空或尚未與伺服器連線";
+  }
+
+  return null;
+}
+
+function focusCheckoutField({ formData, termsAccepted, requireTerms }) {
+  if (typeof document === "undefined") return;
+
+  if (requireTerms && !termsAccepted) {
+    document.getElementById("checkout-terms")?.focus();
+    document.getElementById("checkout-terms")?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+    return;
+  }
+
+  const email = String(formData?.email || "").trim();
+  const name = String(formData?.name || "").trim();
+  const phone = String(formData?.phone || "").trim();
+
+  const targetId = !email ? "email" : !name ? "name" : !phone ? "phone" : null;
+  if (!targetId) return;
+
+  document.getElementById(targetId)?.focus();
+  document.getElementById(targetId)?.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+  });
+}
+
 // 🌟 新增 hideSubmitButton 屬性；storeId 用於夥伴店統一結帳（帶入伺服器端定價覆寫）
 const CheckoutForm = ({
   onBack,
   onNext,
   hideSubmitButton = false,
   storeId = null,
+  requireTerms = false,
+  termsAccepted = true,
 }) => {
   const router = useRouter();
   const { esimItems, cartId } = useCart();
@@ -250,24 +308,33 @@ const CheckoutForm = ({
     return { lineUserId, supabaseUserId, authProvider };
   };
 
+  const getNormalizedFormData = () => ({
+    ...formData,
+    email: String(formData.email || "").trim(),
+    name: String(formData.name || "").trim(),
+    phone: String(formData.phone || "").trim(),
+  });
+
+  const assertCheckoutReady = (method = "newebpay") => {
+    const error = getCheckoutValidationError({
+      formData,
+      cartId,
+      cartItems,
+      termsAccepted,
+      requireTerms,
+    });
+    if (!error) return true;
+
+    setCheckoutBusy(false, method);
+    alert(error);
+    focusCheckoutField({ formData, termsAccepted, requireTerms });
+    return false;
+  };
+
   const startHostedCheckout = async ({ methods = [], paymentLabel = "藍新金流" } = {}) => {
-    if (!formData.email || !formData.name || !formData.phone) {
-      setCheckoutBusy(false, "newebpay");
-      alert("請填寫 Email、姓名與手機號碼");
-      return;
-    }
+    if (!assertCheckoutReady("newebpay")) return;
 
-    if (isLineSyntheticEmail(formData.email)) {
-      setCheckoutBusy(false, "newebpay");
-      alert("請填寫真實 Email，以便寄送 eSIM QR 與訂單通知");
-      return;
-    }
-
-    if (!cartId || cartItems.length === 0) {
-      setCheckoutBusy(false, "newebpay");
-      alert("購物車為空或尚未與伺服器連線");
-      return;
-    }
+    const normalizedForm = getNormalizedFormData();
 
     if (isSubmittingLock) {
       console.log("⏳ 系統處理中，已攔截重複點擊！");
@@ -291,7 +358,7 @@ const CheckoutForm = ({
         body: JSON.stringify({
           cartId: cartId,
           orderInfo: {
-            ...formData,
+            ...normalizedForm,
             customerId: memberInfo?.id || supabaseUser?.id || null,
             ...buildCheckoutIdentity(),
             ...(storeId ? { store_id: storeId } : {}),
@@ -337,7 +404,7 @@ const CheckoutForm = ({
         JSON.stringify({
           medusaOrderId: orderId,
           amount,
-          email: formData.email,
+          email: normalizedForm.email,
           startedAt: Date.now(),
         }),
       );
@@ -348,7 +415,7 @@ const CheckoutForm = ({
           orderId,
           amount,
           orderInfo: {
-            ...formData,
+            ...normalizedForm,
             ...buildCheckoutIdentity(),
             methods,
             payment_method: methods?.[0] || "CREDIT",
@@ -377,23 +444,9 @@ const CheckoutForm = ({
   };
 
   const handleLinePaySubmit = async () => {
-    if (!formData.email || !formData.name || !formData.phone) {
-      setCheckoutBusy(false, "linepay");
-      alert("請填寫 Email、姓名與手機號碼");
-      return;
-    }
+    if (!assertCheckoutReady("linepay")) return;
 
-    if (isLineSyntheticEmail(formData.email)) {
-      setCheckoutBusy(false, "linepay");
-      alert("請填寫真實 Email，以便寄送 eSIM QR 與訂單通知");
-      return;
-    }
-
-    if (!cartId || cartItems.length === 0) {
-      setCheckoutBusy(false, "linepay");
-      alert("購物車為空或尚未與伺服器連線");
-      return;
-    }
+    const normalizedForm = getNormalizedFormData();
 
     if (isSubmittingLock) {
       console.log("⏳ 系統處理中，已攔截重複點擊！");
@@ -414,7 +467,7 @@ const CheckoutForm = ({
         body: JSON.stringify({
           cartId,
           orderInfo: {
-            ...formData,
+            ...normalizedForm,
             customerId: memberInfo?.id || supabaseUser?.id || null,
             ...buildCheckoutIdentity(),
             ...(storeId ? { store_id: storeId } : {}),
@@ -425,7 +478,7 @@ const CheckoutForm = ({
       });
       const linepayData = await linepayRes.json();
       if (!linepayRes.ok || !linepayData?.success || !linepayData?.paymentUrl) {
-      if (linepayData?.code === "CART_COMPLETED") {
+        if (linepayData?.code === "CART_COMPLETED") {
           localStorage.removeItem("medusa_cart_id");
           alert(
             linepayData.message ||
@@ -462,10 +515,27 @@ const CheckoutForm = ({
     const onLinePay = () => {
       handleLinePaySubmit();
     };
+    const onNewebPay = () => {
+      void startHostedCheckout({
+        methods: ["CREDIT", "VACC", "WEBATM"],
+        paymentLabel: "藍新金流",
+      });
+    };
     window.addEventListener("esim-checkout-linepay", onLinePay);
-    return () => window.removeEventListener("esim-checkout-linepay", onLinePay);
+    window.addEventListener("esim-checkout-newebpay", onNewebPay);
+    return () => {
+      window.removeEventListener("esim-checkout-linepay", onLinePay);
+      window.removeEventListener("esim-checkout-newebpay", onNewebPay);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.name, formData.email, formData.phone]);
+  }, [
+    formData.name,
+    formData.email,
+    formData.phone,
+    termsAccepted,
+    requireTerms,
+    cartId,
+  ]);
 
   const loginHref = buildLoginUrl(
     typeof window !== "undefined"
@@ -481,7 +551,7 @@ const CheckoutForm = ({
       transition={{ duration: 0.5 }}
       className="font-sans w-full"
     >
-      <form id="checkout-form" onSubmit={handleSubmit}>
+      <form id="checkout-form" onSubmit={handleSubmit} noValidate>
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold text-gray-900">聯絡資訊</h2>

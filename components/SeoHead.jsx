@@ -38,6 +38,8 @@ export default function SeoHead({
   productAvailability,
   productCondition,
   productRetailerId,
+  productRatingValue,
+  productReviewCount,
 }) {
   const pageTitle = formatTitle(title);
   const metaDescription = description || "";
@@ -132,10 +134,12 @@ export default function SeoHead({
               content={String(productRetailerId)}
             />
           ) : null}
+          <meta property="product:brand" content={SITE_NAME} />
+          <meta property="og:availability" content="instock" />
           <meta name="twitter:label2" content="評價" />
           <meta
             name="twitter:data2"
-            content={`${PRODUCT_AGGREGATE_RATING.ratingValue} / 5`}
+            content={`${productRatingValue ?? PRODUCT_AGGREGATE_RATING.ratingValue} / 5（${productReviewCount ?? PRODUCT_AGGREGATE_RATING.reviewCount} 則）`}
           />
         </>
       )}

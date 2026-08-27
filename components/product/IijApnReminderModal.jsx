@@ -3,8 +3,7 @@
  */
 import { AnimatePresence, motion } from "framer-motion";
 import MaterialIcon from "../MaterialIcon";
-
-const ACCENT = "#0A6CD0";
+import { reminderUi } from "@/lib/purchaseReminderModalUi";
 export const IIJ_DOCOMO_APN = "vmobile.jp";
 
 export function isIijDocomoTelecom(telecom) {
@@ -18,7 +17,9 @@ export default function IijApnReminderModal({
   onClose,
   onContinuePurchase,
   purchaseAction = "cart",
+  squareCorners = false,
 }) {
+  const ui = reminderUi(squareCorners, "blue");
   const continueLabel =
     purchaseAction === "buy" ? "我知道了，繼續立即購買" : "我知道了，繼續加入購物車";
 
@@ -44,8 +45,11 @@ export default function IijApnReminderModal({
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-0 z-[11010] flex items-center justify-center p-4 pointer-events-none"
           >
-            <div className="pointer-events-auto w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-              <div className="px-5 py-4 md:px-6" style={{ background: ACCENT }}>
+            <div className={ui.shell}>
+              <div
+                className={ui.headerClass}
+                style={ui.headerStyle}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <h3
                     id="iij-apn-prompt-title"
@@ -69,11 +73,15 @@ export default function IijApnReminderModal({
               </div>
 
               <div className="px-5 py-4 md:px-6 space-y-4">
-                <div className="rounded-xl border border-[#0A6CD0]/20 bg-[#eef5fc] px-4 py-3.5">
+                <div className={ui.infoPanel}>
                   <p className="text-[12px] font-bold text-slate-500 tracking-wide">
                     APN 設定值
                   </p>
-                  <p className="mt-1 text-xl font-black text-[#0A6CD0] tracking-wide select-all">
+                  <p
+                    className={`mt-1 text-xl font-black tracking-wide select-all ${
+                      squareCorners ? "text-[#1E4AD1]" : "text-[#0A6CD0]"
+                    }`}
+                  >
                     {IIJ_DOCOMO_APN}
                   </p>
                   <p className="mt-2 text-[12px] text-slate-600 leading-relaxed">
@@ -100,16 +108,16 @@ export default function IijApnReminderModal({
                   <button
                     type="button"
                     onClick={onContinuePurchase}
-                    className="w-full h-11 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90"
-                    style={{ background: ACCENT }}
+                    className={ui.btnPrimary}
+                    style={ui.btnPrimaryStyle}
                   >
                     {continueLabel}
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="w-full h-11 rounded-xl text-sm font-bold border-2 transition-colors hover:bg-[#eef5fc]"
-                    style={{ borderColor: ACCENT, color: ACCENT }}
+                    className={ui.btnSecondary}
+                    style={ui.btnSecondaryStyle}
                   >
                     先不要，我再想想
                   </button>

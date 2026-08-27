@@ -35,30 +35,33 @@ export const QUERY_DEMO_ESIMS = [
     orderId: "order_DEMO_TH",
     productName: "【測試】泰國 eSIM 8日 3GB",
     iccid: "8946200100000000001",
+    lpa: "LPA:1$demo.smdp$DEMOCODE1",
     iosInstallUrl:
-      "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=DEMO",
+      "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=LPA%3A1%24demo.smdp%24DEMOCODE1",
     androidInstallUrl:
-      "https://esimsetup.android.com/esim_qrcode_provisioning?carddata=DEMO",
+      "https://esimsetup.android.com/esim_qrcode_provisioning?carddata=LPA%3A1%24demo.smdp%24DEMOCODE1",
   },
   {
     topupId: "Topup-DEMO-JP-5D",
     orderId: "order_DEMO_JP",
     productName: "【測試】日本 eSIM 5日 吃到飽",
     iccid: "8946200100000000002",
+    lpa: "LPA:1$demo.smdp$DEMOCODE2",
     iosInstallUrl:
-      "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=DEMO2",
+      "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=LPA%3A1%24demo.smdp%24DEMOCODE2",
     androidInstallUrl:
-      "https://esimsetup.android.com/esim_qrcode_provisioning?carddata=DEMO2",
+      "https://esimsetup.android.com/esim_qrcode_provisioning?carddata=LPA%3A1%24demo.smdp%24DEMOCODE2",
   },
   {
     topupId: "Topup-DEMO-KR-7D",
     orderId: "order_DEMO_KR",
     productName: "【測試】韓國 eSIM 7日 5GB",
     iccid: "8946200100000000003",
+    lpa: "LPA:1$demo.smdp$DEMOCODE3",
     iosInstallUrl:
-      "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=DEMO3",
+      "https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=LPA%3A1%24demo.smdp%24DEMOCODE3",
     androidInstallUrl:
-      "https://esimsetup.android.com/esim_qrcode_provisioning?carddata=DEMO3",
+      "https://esimsetup.android.com/esim_qrcode_provisioning?carddata=LPA%3A1%24demo.smdp%24DEMOCODE3",
   },
 ];
 
@@ -110,18 +113,205 @@ function statusTone(result) {
   return { label: "剩餘充足", tone: "mint" };
 }
 
+function isDesktopOs(os) {
+  return os !== "ios" && os !== "android";
+}
+
+/** 桌機掃描用 QR 圖：優先訂單圖檔，否則用 LPA／安裝連結產生 */
+function buildEsimQrImageUrl(esim) {
+  const existing = String(esim?.qrcodeUrl || "").trim();
+  if (
+    existing &&
+    (existing.startsWith("http") ||
+      existing.startsWith("data:") ||
+      existing.startsWith("/"))
+  ) {
+    return existing;
+  }
+  let payload = String(esim?.lpa || "").trim();
+  if (!payload) {
+    const fromUrl = String(
+      esim?.iosInstallUrl || esim?.androidInstallUrl || "",
+    );
+    const m = fromUrl.match(/carddata=([^&]+)/i);
+    if (m?.[1]) {
+      try {
+        payload = decodeURIComponent(m[1]);
+      } catch {
+        payload = m[1];
+      }
+    }
+  }
+  if (!payload) return "";
+  return `https://api.qrserver.com/v1/create-qr-code/?size=280x280&ecc=M&margin=12&data=${encodeURIComponent(payload)}`;
+}
+
 function openEsimInstall(esim, deviceOs) {
+  if (isDesktopOs(deviceOs)) {
+    return { ok: false, reason: "show_qr" };
+  }
   const url = pickInstallUrlForOs(deviceOs, esim);
   if (url) {
     window.open(url, "_blank", "noopener,noreferrer");
-    return true;
+    return { ok: true };
   }
-  if (esim?.iosInstallUrl || esim?.androidInstallUrl) {
-    alert("請用手機開啟本頁再點「安裝 eSIM」；電腦請至會員訂單掃描 QR Code。");
-    return false;
+  if (
+    esim?.iosInstallUrl ||
+    esim?.androidInstallUrl ||
+    esim?.lpa ||
+    esim?.qrcodeUrl
+  ) {
+    return { ok: false, reason: "show_qr" };
   }
-  alert("此方案尚無一鍵安裝連結，請至會員中心訂單掃描 QR Code 安裝。");
-  return false;
+  return { ok: false, reason: "missing" };
+}
+
+function EsimInstallQrModal({ esim, onClose, onConfirmCheck }) {
+  if (!esim) return null;
+  const qrSrc = buildEsimQrImageUrl(esim);
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/45 backdrop-blur-[2px]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="esim-install-qr-title"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-[24px] bg-white shadow-2xl border border-slate-200 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <h3
+            id="esim-install-qr-title"
+            className="text-sm font-black text-slate-900"
+          >
+            安裝 eSIM
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100"
+            aria-label="關閉"
+          >
+            <MaterialIcon name="close" size={18} />
+          </button>
+        </div>
+        <div className="px-5 py-5 text-center space-y-3">
+          <p className="text-sm font-bold text-slate-900">請用裝置掃描安裝</p>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            用手機相機或「設定 → 行動數據／SIM」掃描下方 QR Code。安裝完成後點「我已安裝，重新查詢」確認狀態。
+          </p>
+          {qrSrc ? (
+            <img
+              src={qrSrc}
+              alt="eSIM 安裝 QR Code"
+              className="mx-auto w-56 h-56 object-contain rounded-2xl border border-slate-200 bg-white select-none"
+              draggable={false}
+            />
+          ) : (
+            <p className="py-10 text-sm text-slate-400">
+              尚無可顯示的 QR Code，請至會員訂單查看或聯絡客服。
+            </p>
+          )}
+          {esim.productName ? (
+            <p className="text-xs font-semibold text-slate-700 line-clamp-2">
+              {esim.productName}
+            </p>
+          ) : null}
+          {esim.iccid ? (
+            <p className="text-[10px] font-mono text-slate-400 break-all">
+              ICCID {esim.iccid}
+            </p>
+          ) : null}
+        </div>
+        <div className="px-5 pb-5 space-y-2">
+          <button
+            type="button"
+            onClick={() => onConfirmCheck?.(esim)}
+            className="w-full rounded-2xl bg-[#1e4ad1] text-white text-sm font-bold py-3 hover:bg-[#1740b8] transition"
+          >
+            我已安裝，重新查詢
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-2xl border border-slate-200 text-slate-600 text-sm font-bold py-2.5 hover:bg-slate-50 transition"
+          >
+            稍後再說
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EsimNotInstalledModal({ esim, onClose, onInstall }) {
+  if (!esim) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/45 backdrop-blur-[2px]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="esim-not-installed-title"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-[24px] bg-white shadow-2xl border border-slate-200 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <h3
+            id="esim-not-installed-title"
+            className="text-sm font-black text-slate-900"
+          >
+            尚未安裝 eSIM
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100"
+            aria-label="關閉"
+          >
+            <MaterialIcon name="close" size={18} />
+          </button>
+        </div>
+        <div className="px-5 py-5 text-center space-y-3">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+            <MaterialIcon name="sim_card_alert" size={28} />
+          </div>
+          <p className="text-sm font-bold text-slate-900">
+            此 eSIM 目前尚未安裝或尚未啟用
+          </p>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            查詢結果顯示方案尚未開通。請先安裝到手機後再開啟行動數據／漫遊；安裝完成約
+            用量更新通常需間隔 30–60 分鐘後再查詢；手機顯示用量通常會略高於此數字。
+          </p>
+          {esim.productName ? (
+            <p className="text-xs font-semibold text-slate-700 line-clamp-2">
+              {esim.productName}
+            </p>
+          ) : null}
+        </div>
+        <div className="px-5 pb-5 space-y-2">
+          <button
+            type="button"
+            onClick={() => onInstall?.(esim)}
+            className="w-full rounded-2xl bg-[#1e4ad1] text-white text-sm font-bold py-3 hover:bg-[#1740b8] transition"
+          >
+            前往安裝 eSIM
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-2xl border border-slate-200 text-slate-600 text-sm font-bold py-2.5 hover:bg-slate-50 transition"
+          >
+            稍後再說
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** 白圓 icon + 下方標籤；成功＝藍底白 icon */
@@ -142,7 +332,8 @@ function CircleAction({
       : "bg-white shadow-[0_1px_3px_rgba(15,23,42,0.12)] ring-1 ring-black/[0.04]",
   );
   const iconClass = cn(
-    active ? "text-white" : "text-slate-900",
+    "leading-none",
+    active ? "!text-white" : "text-slate-900",
     loading && "animate-spin",
   );
 
@@ -152,10 +343,17 @@ function CircleAction({
         <MaterialIcon
           name={loading ? "progress_activity" : icon}
           size={20}
+          filled={active}
           className={iconClass}
+          style={active ? { color: "#fff" } : undefined}
         />
       </span>
-      <span className="mt-1 max-w-[4.2rem] text-center text-[10px] font-bold leading-tight text-slate-800">
+      <span
+        className={cn(
+          "mt-1 max-w-[4.2rem] text-center text-[10px] font-bold leading-tight",
+          active ? "text-[#1e8fff]" : "text-slate-800",
+        )}
+      >
         {label}
       </span>
     </>
@@ -205,7 +403,10 @@ export default function MemberEsimQuerySheet({
   const [deviceOs, setDeviceOs] = useState("other");
   const [boundTopupId, setBoundTopupId] = useState(null);
   const [alertBusyId, setAlertBusyId] = useState(null);
-  const [installOpenedIds, setInstallOpenedIds] = useState(() => new Set());
+  const [installQrEsim, setInstallQrEsim] = useState(null);
+  const [notInstalledEsim, setNotInstalledEsim] = useState(null);
+  /** 使用者主動點「查詢流量」的方案；自動查詢不標藍 */
+  const [manualQueryIds, setManualQueryIds] = useState(() => new Set());
   const [showAppInstallGuide, setShowAppInstallGuide] = useState(false);
   const [iosNeedsPwa, setIosNeedsPwa] = useState(false);
   const autoQueriedRef = useRef(false);
@@ -307,14 +508,16 @@ export default function MemberEsimQuerySheet({
   }, [isLoggedIn, authHeaders, demoMode, refreshBoundAlert]);
 
   const queryUsage = useCallback(
-    async (esim) => {
+    async (esim, opts = {}) => {
+      const { skipNotInstalledPopup = false } = opts;
       const key = esim.topupId || esim.iccid;
       if (!key) {
         setQueryError("此方案缺少查詢編號");
         return;
       }
-      setSelectedId(key);
-      setQueryingId(key);
+      const resultKey = String(key);
+      setSelectedId(resultKey);
+      setQueryingId(resultKey);
       setQueryError("");
       try {
         if (demoMode) {
@@ -322,7 +525,10 @@ export default function MemberEsimQuerySheet({
           const fake =
             QUERY_DEMO_USAGE[key] ||
             QUERY_DEMO_USAGE[QUERY_DEMO_ESIMS[0].topupId];
-          setResults((prev) => ({ ...prev, [key]: { ...fake } }));
+          setResults((prev) => ({ ...prev, [resultKey]: { ...fake } }));
+          if (!skipNotInstalledPopup && inferEsimInstalled(fake) === false) {
+            setNotInstalledEsim(esim);
+          }
           return;
         }
 
@@ -345,7 +551,28 @@ export default function MemberEsimQuerySheet({
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || data.detail || "查詢失敗");
-        setResults((prev) => ({ ...prev, [key]: data }));
+        setResults((prev) => ({ ...prev, [resultKey]: data }));
+        if (data.productName) {
+          setEsims((prev) =>
+            prev.map((row) => {
+              const rowKey = String(row.topupId || row.iccid || "");
+              if (rowKey !== resultKey) return row;
+              const nextName = String(data.productName || "").trim();
+              if (!nextName || nextName === row.productName) return row;
+              // 僅在查詢結果更具體（含天數／Mbps／每日）時覆寫列表名稱
+              if (
+                /日|每日|Mbps|GB|MB|吃到飽|無限/.test(nextName) ||
+                nextName.length >= String(row.productName || "").length
+              ) {
+                return { ...row, productName: nextName };
+              }
+              return row;
+            }),
+          );
+        }
+        if (!skipNotInstalledPopup && inferEsimInstalled(data) === false) {
+          setNotInstalledEsim(esim);
+        }
       } catch (e) {
         setQueryError(e.message || "查詢失敗");
       } finally {
@@ -426,7 +653,11 @@ export default function MemberEsimQuerySheet({
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(data.error || data.hint || "開啟提醒失敗");
+          throw new Error(
+            data.detail
+              ? `${data.error || "開啟提醒失敗"}：${data.detail}`
+              : data.error || data.hint || "開啟提醒失敗",
+          );
         }
         setBoundTopupId(String(data.topupId || key));
       } catch (e) {
@@ -438,15 +669,73 @@ export default function MemberEsimQuerySheet({
     [alertBusyId, demoMode, isLoggedIn, token, authHeaders],
   );
 
+  const handleQueryClick = useCallback(
+    (esim) => {
+      const key = esim?.topupId || esim?.iccid;
+      if (key) {
+        setManualQueryIds((prev) => new Set(prev).add(String(key)));
+      }
+      queryUsage(esim);
+    },
+    [queryUsage],
+  );
+
   const handleInstallClick = useCallback(
     (esim) => {
-      const key = esim.topupId || esim.iccid;
-      const ok = openEsimInstall(esim, deviceOs);
-      if (ok && key) {
-        setInstallOpenedIds((prev) => new Set(prev).add(String(key)));
+      const result = openEsimInstall(esim, deviceOs);
+      if (result.reason === "show_qr") {
+        setQueryError("");
+        setInstallQrEsim(esim);
+        return;
+      }
+      if (result.reason === "missing") {
+        setQueryError(
+          "此方案尚無可安裝的 QR／連結，請至會員中心訂單查看或聯絡客服。",
+        );
+        return;
+      }
+      // 手機一鍵安裝：僅開啟系統安裝頁，不標成已安裝；改查用量確認狀態
+      if (result.ok) {
+        setQueryError("");
+        queryUsage(esim);
       }
     },
-    [deviceOs],
+    [deviceOs, queryUsage],
+  );
+
+  const closeInstallQrModal = useCallback(() => {
+    setInstallQrEsim(null);
+  }, []);
+
+  const confirmInstallAndRecheck = useCallback(
+    (esim) => {
+      setInstallQrEsim(null);
+      // 主動確認安裝後的查詢：略過「未安裝」彈窗，避免連續彈兩次
+      if (esim) queryUsage(esim, { skipNotInstalledPopup: true });
+    },
+    [queryUsage],
+  );
+
+  const openInstallFromNotInstalledTip = useCallback(
+    (esim) => {
+      setNotInstalledEsim(null);
+      if (!esim) return;
+      const result = openEsimInstall(esim, deviceOs);
+      if (result.reason === "show_qr" || result.ok === false) {
+        if (result.reason === "missing") {
+          setQueryError(
+            "此方案尚無可安裝的 QR／連結，請至會員中心訂單查看或聯絡客服。",
+          );
+          return;
+        }
+        setInstallQrEsim(esim);
+        return;
+      }
+      if (result.ok) {
+        queryUsage(esim, { skipNotInstalledPopup: true });
+      }
+    },
+    [deviceOs, queryUsage],
   );
 
   useEffect(() => {
@@ -621,16 +910,18 @@ export default function MemberEsimQuerySheet({
               {esims.map((esim, i) => {
                 const id = esim.topupId || esim.iccid;
                 const idStr = String(id || "");
-                const active = id === selectedId;
-                const r = results[id];
+                const active = idStr === String(selectedId || "");
+                const r = results[idStr] ?? results[id];
                 const tone = statusTone(r);
                 const remaining =
                   r?.remainingMb != null ? formatMb(r.remainingMb) : null;
-                const isQuerying = queryingId === id;
+                const isQuerying = String(queryingId || "") === idStr;
                 const queriedOk = Boolean(r);
+                const queryActive =
+                  manualQueryIds.has(idStr) && queriedOk && !isQuerying;
                 const installed = inferEsimInstalled(r);
-                const installSuccess =
-                  installed === true || installOpenedIds.has(idStr);
+                // 僅在有實際用量／使用中證據時標「已開通」；勿用 active_time（未掃 QR 也可能有）
+                const installSuccess = installed === true;
                 const alertOn =
                   boundTopupId != null &&
                   (String(boundTopupId) === idStr ||
@@ -665,11 +956,27 @@ export default function MemberEsimQuerySheet({
                           {isQuerying
                             ? "查詢流量中…"
                             : remaining
-                              ? `剩餘 ${remaining}${r?.expiresAt ? ` · 效期 ${r.expiresAt}` : ""}`
-                              : esim.iccid
-                                ? `ICCID …${String(esim.iccid).slice(-6)}`
-                                : "選擇後點右側查詢流量"}
+                              ? `剩餘 ${remaining}${r?.expiresAt ? ` · 效期 ${String(r.expiresAt).slice(0, 10)}` : ""}`
+                              : queriedOk &&
+                                  r?.usedMb != null &&
+                                  Number(r.usedMb) > 0
+                                ? `已用 ${formatMb(r.usedMb)}${r?.expiresAt ? ` · 效期至 ${String(r.expiresAt).slice(0, 10)}` : ""}`
+                                : queriedOk && installSuccess
+                                  ? `使用中${r?.expiresAt ? ` · 效期至 ${String(r.expiresAt).slice(0, 10)}` : ""}`
+                                  : queriedOk && r?.status
+                                    ? `狀態 ${r.status}${esim.iccid ? ` · 訂單 …${String(esim.iccid).slice(-6)}` : ""}`
+                                    : esim.iccid
+                                      ? `訂單 ICCID …${String(esim.iccid).slice(-6)} · 點右側查流量`
+                                      : "選擇後點右側查詢流量"}
                         </p>
+                        {esim.iccid ? (
+                          <p className="text-[10px] font-mono text-slate-400 mt-0.5 truncate">
+                            訂單 ICCID …{String(esim.iccid).slice(-6)}
+                            {installSuccess
+                              ? " · 已偵測到用量"
+                              : " · 本機「關於本機」可能顯示不同設備 ICCID（正常）"}
+                          </p>
+                        ) : null}
                         {tone ? (
                           <span
                             className={cn(
@@ -692,22 +999,24 @@ export default function MemberEsimQuerySheet({
                       <CircleAction
                         icon="add"
                         label="查詢流量"
-                        loading={isQuerying}
-                        active={queriedOk && !isQuerying}
+                        loading={isQuerying && manualQueryIds.has(idStr)}
+                        active={queryActive}
                         disabled={isQuerying}
-                        onClick={() => queryUsage(esim)}
+                        onClick={() => handleQueryClick(esim)}
                       />
 
                       <CircleAction
                         icon={installSuccess ? "check" : "sim_card_download"}
-                        label="安裝 eSIM"
+                        label={installSuccess ? "使用中" : "安裝 eSIM"}
                         active={installSuccess}
                         title={
                           installSuccess
-                            ? "已安裝／已開啟安裝"
-                            : installOsLabel
-                              ? `一鍵安裝（${installOsLabel}）`
-                              : "一鍵安裝 eSIM"
+                            ? "供應商已偵測到用量，方案使用中"
+                            : isDesktopOs(deviceOs)
+                              ? "顯示安裝 QR Code"
+                              : installOsLabel
+                                ? `一鍵安裝（${installOsLabel}）`
+                                : "一鍵安裝 eSIM"
                         }
                         onClick={() => handleInstallClick(esim)}
                       />
@@ -721,8 +1030,8 @@ export default function MemberEsimQuerySheet({
                         />
                       ) : (
                         <CircleAction
-                          icon="notifications_active"
-                          label="開啟提醒"
+                          icon={alertOn ? "notifications" : "notifications_active"}
+                          label={alertOn ? "已開提醒" : "開啟提醒"}
                           loading={alertLoading}
                           active={alertOn && !alertLoading}
                           disabled={Boolean(alertBusyId)}
@@ -741,7 +1050,10 @@ export default function MemberEsimQuerySheet({
                   <MaterialIcon name="data_usage" size={14} />
                   {selectedResult.remainingMb != null
                     ? `剩餘 ${formatMb(selectedResult.remainingMb)}`
-                    : "暫無流量數值"}
+                    : selectedResult.usedMb != null &&
+                        Number(selectedResult.usedMb) > 0
+                      ? `已用 ${formatMb(selectedResult.usedMb)}`
+                      : "暫無用量（未使用或供應商尚未同步）"}
                 </span>
                 {pct != null && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-700">
@@ -749,10 +1061,44 @@ export default function MemberEsimQuerySheet({
                     剩餘 {pct}%
                   </span>
                 )}
+                {selectedResult.status && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-700">
+                    <MaterialIcon name="info" size={14} />
+                    {selectedResult.status}
+                  </span>
+                )}
+                {selectedResult.activatedAt &&
+                  selectedResult.source === "device_detail" && (
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-600"
+                      title="供應商系統時間，不代表本機已掃 QR 安裝"
+                    >
+                      <MaterialIcon name="schedule" size={14} />
+                      系統紀錄{" "}
+                      {String(selectedResult.activatedAt).slice(0, 16)}
+                    </span>
+                  )}
+                {(selectedResult.provisionedAt || selectedResult.createdAt) &&
+                  !(
+                    selectedResult.activatedAt &&
+                    selectedResult.source === "device_detail"
+                  ) && (
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-700"
+                      title="供應商開通／出貨時間，通常接近購買時間"
+                    >
+                      <MaterialIcon name="schedule" size={14} />
+                      出貨{" "}
+                      {String(
+                        selectedResult.provisionedAt ||
+                          selectedResult.createdAt,
+                      ).slice(0, 16)}
+                    </span>
+                  )}
                 {selectedResult.expiresAt && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-700">
                     <MaterialIcon name="event" size={14} />
-                    {selectedResult.expiresAt}
+                    {String(selectedResult.expiresAt).slice(0, 10)}
                   </span>
                 )}
               </div>
@@ -767,6 +1113,18 @@ export default function MemberEsimQuerySheet({
           </>
         )}
       </div>
+
+      <EsimNotInstalledModal
+        esim={notInstalledEsim}
+        onClose={() => setNotInstalledEsim(null)}
+        onInstall={openInstallFromNotInstalledTip}
+      />
+
+      <EsimInstallQrModal
+        esim={installQrEsim}
+        onClose={closeInstallQrModal}
+        onConfirmCheck={confirmInstallAndRecheck}
+      />
 
       <AppInstallGuideModal
         open={showAppInstallGuide}

@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import MaterialIcon from "@/components/MaterialIcon";
 import { supabase } from "@/lib/supabaseClient";
+import { PRODUCT_AGGREGATE_RATING } from "@/lib/productJsonLd";
 
 /**
- * 星級評論標籤：有真實已核准評價才顯示。
- * 搜尋用 4.9 仍走 JSON-LD，不在這裡寫死。
+ * 星級評論標籤。
+ * initialStats 來自 ISR（與 JSON-LD 同一套），確保搜尋可見內容與 schema 一致。
+ * 之後仍會用 Supabase 即時刷新；若商品尚無評價且 allowFallback，顯示全站 fallback 星級。
  */
 export default function ProductRatingBadge({
   productId,
@@ -16,8 +18,22 @@ export default function ProductRatingBadge({
   className = "",
   starColor = "text-amber-400",
   showLinkLabel = true,
+  /** { avg, count } 或 { ratingValue, reviewCount } */
+  initialStats = null,
+  allowFallback = true,
 }) {
-  const [stats, setStats] = useState(null);
+  const initialAvg = Number(
+    initialStats?.avg ?? initialStats?.ratingValue ?? 0,
+  );
+  const initialCount = Number(
+    initialStats?.count ?? initialStats?.reviewCount ?? 0,
+  );
+  const fromInitial =
+    initialCount > 0 && initialAvg > 0
+      ? { avg: initialAvg, count: initialCount }
+      : null;
+
+  const [stats, setStats] = useState(fromInitial);
 
   useEffect(() => {
     if (!productId) return undefined;
@@ -32,23 +48,37 @@ export default function ProductRatingBadge({
 
       if (cancelled) return;
       if (error) {
-        setStats({ count: 0, avg: 0 });
+        if (!fromInitial && allowFallback) {
+          setStats({
+            avg: PRODUCT_AGGREGATE_RATING.ratingValue,
+            count: PRODUCT_AGGREGATE_RATING.reviewCount,
+          });
+        }
         return;
       }
 
       const main = (data || []).filter((r) => !r.parent_id);
       const count = main.length;
+      if (count < 1) {
+        if (allowFallback) {
+          setStats({
+            avg: PRODUCT_AGGREGATE_RATING.ratingValue,
+            count: PRODUCT_AGGREGATE_RATING.reviewCount,
+          });
+        } else {
+          setStats({ count: 0, avg: 0 });
+        }
+        return;
+      }
       const avg =
-        count > 0
-          ? main.reduce((s, r) => s + (Number(r.rating) || 5), 0) / count
-          : 0;
+        main.reduce((s, r) => s + (Number(r.rating) || 5), 0) / count;
       setStats({ count, avg });
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [productId]);
+  }, [productId, allowFallback, initialAvg, initialCount]);
 
   if (!stats || stats.count < 1) return null;
 
@@ -58,7 +88,9 @@ export default function ProductRatingBadge({
   const textClass = size === "sm" ? "text-[11px] sm:text-xs" : "text-sm";
 
   const inner = (
-    <span className={`product-rating-badge inline-flex items-center gap-1.5 ${textClass}`}>
+    <span
+      className={`product-rating-badge inline-flex items-center gap-1.5 ${textClass}`}
+    >
       <span className={`inline-flex items-center gap-px ${starColor}`}>
         {[...Array(5)].map((_, i) => (
           <MaterialIcon

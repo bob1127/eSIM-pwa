@@ -3,7 +3,7 @@
 import { useCart } from "../components/context/CartContext";
 import Layout from "./Layout";
 import Link from "next/link";
-import SwiperCard from "../components/SwiperCarousel/AnotherProduct";
+import CartRelatedEsimCarousel from "../components/SwiperCarousel/AnotherProduct";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
@@ -65,7 +65,7 @@ function CartItemThumb({ item, size = "md" }) {
   const box =
     size === "sm"
       ? "w-14 h-14 rounded-lg"
-      : "w-full md:w-[150px] rounded-lg";
+      : "w-[88px] h-[88px] md:w-[150px] md:h-[150px] shrink-0 rounded-lg";
   const img = (
     <div
       className={`${box} flex-shrink-0 overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center`}
@@ -73,7 +73,7 @@ function CartItemThumb({ item, size = "md" }) {
       <img
         src={src}
         alt={item?.name || "商品"}
-        className="w-full h-full object-contain p-1"
+        className="h-full w-full object-contain p-1.5 md:p-2"
       />
     </div>
   );
@@ -117,6 +117,7 @@ const CartPage = () => {
     process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn",
   );
   const [welcomeHint, setWelcomeHint] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [paymentBusy, setPaymentBusy] = useState(null); // null | "linepay" | "newebpay"
 
   const payableTotal = Math.max(0, Number(displayTotal || 0) - Number(discount || 0));
@@ -602,11 +603,22 @@ const CartPage = () => {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-[#f9f9f9] min-h-screen pb-20"
+        className="bg-[#f9f9f9] pb-4"
       >
-        <div className="max-w-[1400px] mx-auto px-4 md:px-8 pt-8 md:pt-10">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8 pt-4 md:pt-10">
           {/* Stepper 區塊 */}
-          <Box sx={{ width: "100%", marginBottom: "3rem" }}>
+          <Box
+            sx={{
+              width: "100%",
+              mb: { xs: "1.25rem", md: "3rem" },
+              "& .MuiStepLabel-label": {
+                fontSize: { xs: "0.75rem", md: "0.875rem" },
+              },
+              "& .MuiStepIcon-root": {
+                fontSize: { xs: "1.25rem", md: "1.5rem" },
+              },
+            }}
+          >
             <Stepper activeStep={activeStep} alternativeLabel>
               {steps.map((label) => (
                 <Step key={label}>
@@ -627,10 +639,10 @@ const CartPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.5 }}
-                className="w-full bg-white p-8 rounded-2xl shadow-sm"
+                className="w-full bg-white p-4 md:p-8 rounded-2xl shadow-sm"
               >
-                <div className="mb-8">
-                  <h1 className="text-3xl font-bold text-gray-900">
+                <div className="mb-4 md:mb-8">
+                  <h1 className="text-xl md:text-3xl font-bold text-gray-900">
                     購物車 ({displayItems.length})
                   </h1>
                 </div>
@@ -647,23 +659,23 @@ const CartPage = () => {
                 ) : (
                   <div className="flex flex-col lg:flex-row gap-12">
                     {/* 左側：商品列表 */}
-                    <div className="w-full lg:w-[65%] space-y-8">
+                    <div className="w-full lg:w-[65%] space-y-4 md:space-y-8">
                       {displayItems.map((item, index) => (
                         <motion.div
                           key={`${item.id}-${item.color}-${item.size}`}
                           initial={{ opacity: 1 }}
                           exit={{ opacity: 0, height: 0 }}
-                          className={`flex flex-col md:flex-row gap-6 border-b border-gray-200 pb-8 ${
+                          className={`flex flex-row items-start gap-3 border border-slate-200/90 bg-white p-3 md:gap-6 md:border-0 md:border-b md:border-gray-200 md:bg-transparent md:p-0 md:pb-8 ${
                             removingIndex === index ? "opacity-50" : ""
                           }`}
                         >
-                          {/* 圖片區塊 */}
+                          {/* 圖片區塊 — 手機橫條左側小圖 */}
                           <CartItemThumb item={item} size="md" />
 
                           {/* 商品資訊區 */}
-                          <div className="flex-grow">
-                            <div className="flex justify-between items-start mb-2">
-                              <h2 className="text-lg font-bold text-gray-900">
+                          <div className="min-w-0 flex-grow">
+                            <div className="flex justify-between items-start gap-2 mb-1 md:mb-2">
+                              <h2 className="text-[13px] md:text-lg font-bold text-gray-900 leading-snug line-clamp-2">
                                 {getCartItemHref(item) ? (
                                   <Link
                                     href={getCartItemHref(item)}
@@ -675,16 +687,16 @@ const CartPage = () => {
                                   item.name
                                 )}
                               </h2>
-                              <p className="text-lg font-bold text-gray-900">
+                              <p className="shrink-0 text-[15px] md:text-lg font-black text-[#0071EB] tabular-nums">
                                 ${item.price}
                               </p>
                             </div>
 
-                            <p className="text-gray-500 text-sm mb-4">
+                            <p className="text-[11px] md:text-sm text-[#1E4AD1] font-medium mb-2 md:mb-4 line-clamp-2">
                               {item.specLabel || item.options || item.color}
                             </p>
 
-                            <div className="bg-[#f5f6f7] rounded-md p-4 mb-4">
+                            <div className="hidden md:block bg-[#f5f6f7] rounded-md p-4 mb-4">
                               <div className="flex items-start text-sm text-gray-800">
                                 <TruckIcon />
                                 <span>
@@ -693,7 +705,7 @@ const CartPage = () => {
                               </div>
                             </div>
 
-                            <div className="flex justify-between items-end mt-4">
+                            <div className="flex flex-wrap justify-between items-center gap-2 mt-2 md:mt-4 md:items-end">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-bold text-stone-900">
                                   數量：
@@ -793,6 +805,7 @@ const CartPage = () => {
                     </div>
                   </div>
                 )}
+
               </motion.div>
             )}
 
@@ -822,7 +835,12 @@ const CartPage = () => {
                   </div>
 
                   <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-200">
-                    <CheckoutForm onBack={handleBack} hideSubmitButton={true} />
+                    <CheckoutForm
+                      onBack={handleBack}
+                      hideSubmitButton={true}
+                      requireTerms
+                      termsAccepted={termsAccepted}
+                    />
                   </div>
                 </div>
 
@@ -1055,9 +1073,11 @@ const CartPage = () => {
                         {/* 同意條款 Checkbox */}
                         <label className="flex items-start gap-2 mb-6 cursor-pointer group">
                           <input
+                            id="checkout-terms"
                             type="checkbox"
+                            checked={termsAccepted}
+                            onChange={(e) => setTermsAccepted(e.target.checked)}
                             className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            required
                           />
                           <span className="text-xs text-gray-600 leading-tight">
                             我同意{" "}
@@ -1092,7 +1112,6 @@ const CartPage = () => {
                             tone="line"
                             disabled={Boolean(paymentBusy)}
                             onClick={() => {
-                              setPaymentBusy("linepay");
                               window.dispatchEvent(
                                 new CustomEvent("esim-checkout-linepay"),
                               );
@@ -1107,18 +1126,9 @@ const CartPage = () => {
                             variant="primary"
                             disabled={Boolean(paymentBusy)}
                             onClick={() => {
-                              setPaymentBusy("newebpay");
-                              const formElement =
-                                document.getElementById("checkout-form");
-                              if (
-                                formElement &&
-                                typeof formElement.requestSubmit === "function"
-                              ) {
-                                formElement.requestSubmit();
-                              } else {
-                                setPaymentBusy(null);
-                                alert("無法送出表單，請重新整理頁面後再試");
-                              }
+                              window.dispatchEvent(
+                                new CustomEvent("esim-checkout-newebpay"),
+                              );
                             }}
                           >
                             {paymentBusy === "newebpay"
@@ -1202,9 +1212,16 @@ const CartPage = () => {
           </AnimatePresence>
         </div>
 
-        <div className="max-w-[1400px] mx-auto mt-20 pt-10 border-t border-gray-200 px-4 md:px-8">
-          <SwiperCard />
-        </div>
+        {activeStep === 0 && displayItems.length > 0 ? (
+          <section
+            className="mt-6 border-t border-slate-200 bg-white py-8 md:py-10"
+            aria-label="購物車推薦方案"
+          >
+            <div className="mx-auto max-w-[1400px] px-4 md:px-8">
+              <CartRelatedEsimCarousel cartItems={displayItems} />
+            </div>
+          </section>
+        ) : null}
       </motion.div>
     </Layout>
   );

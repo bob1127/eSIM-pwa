@@ -1,9 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import {
   resolveMemberEmail,
-  fetchMemberEsims,
+  expandMemberLookupEmails,
+  fetchMemberEsimsForIdentity,
 } from "./_memberAuth";
-import { userOwnsTopupId } from "../../../lib/esimOrderExtract";
+import { findOwnedEsim } from "../../../lib/esimOrderExtract";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -53,7 +54,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const esims = await fetchMemberEsims(member.email);
+    const emails = await expandMemberLookupEmails(member);
+    const esims = await fetchMemberEsimsForIdentity({
+      emails,
+      lineUserId: member.lineUserId || null,
+      supabaseUserId: member.userId || null,
+    });
     if (!esims.length) {
       return res.status(404).json({
         error: "尚無可監控的本站 eSIM 訂單",
@@ -64,10 +70,10 @@ export default async function handler(req, res) {
 
     let target = null;
     if (topupId) {
-      if (!userOwnsTopupId(esims, topupId)) {
+      target = findOwnedEsim(esims, topupId);
+      if (!target) {
         return res.status(403).json({ error: "此 eSIM 不屬於您的帳戶" });
       }
-      target = esims.find((e) => e.topupId === String(topupId));
     } else {
       target = esims[0];
     }
@@ -77,12 +83,20 @@ export default async function handler(req, res) {
       guest_email: member.email,
       topup_id: target.topupId,
       product_label: target.productName,
-      order_id: target.orderId,
       bind_method: topupId ? "member_order" : "member_auto",
       iccid: target.iccid || undefined,
       iccid_bound_at: new Date().toISOString(),
       monitor_enabled: true,
     };
+    // order_id 欄位是 uuid；Medusa order_01… 不可寫入
+    const oid = String(target.orderId || "").trim();
+    if (
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        oid,
+      )
+    ) {
+      update.order_id = oid;
+    }
 
     if (member.lineUserId) {
       update.line_user_id = member.lineUserId;

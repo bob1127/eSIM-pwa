@@ -11,54 +11,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
 import { lineUserIdToEmail } from "@/lib/lineAuth";
 import { collectOrderLookupEmails } from "@/lib/memberIdentity";
-import { adaptMedusaOrders } from "@/lib/medusaMemberOrderAdapter";
-
-function getInternalSecret() {
-  return (
-    process.env.MEMBER_ORDERS_INTERNAL_SECRET ||
-    process.env.FULFILLMENT_INTERNAL_SECRET ||
-    process.env.PRODUCT_CONTENT_ADMIN_SECRET ||
-    ""
-  );
-}
-
-async function fetchMedusaMemberOrders({ emails, lineUserId, supabaseUserId }) {
-  const secret = getInternalSecret();
-  if (!secret) {
-    console.warn("[user-orders] 缺少內部密鑰，略過 Medusa 查單");
-    return [];
-  }
-
-  const qs = new URLSearchParams();
-  if (emails.length) qs.set("emails", emails.join(","));
-  if (lineUserId) qs.set("line_user_id", lineUserId);
-  if (supabaseUserId) qs.set("supabase_user_id", supabaseUserId);
-  if (Array.from(qs.keys()).length === 0) return [];
-
-  const base = (
-    process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
-  ).replace(/\/$/, "");
-  const pub = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
-
-  try {
-    const res = await fetch(`${base}/store/member-orders?${qs.toString()}`, {
-      method: "GET",
-      headers: {
-        "x-internal-secret": secret,
-        ...(pub ? { "x-publishable-api-key": pub } : {}),
-      },
-    });
-    if (!res.ok) {
-      console.error("[user-orders] Medusa 查單失敗:", res.status);
-      return [];
-    }
-    const data = await res.json().catch(() => ({}));
-    return adaptMedusaOrders(data.orders || []);
-  } catch (err) {
-    console.error("[user-orders] Medusa 查單例外:", err?.message || err);
-    return [];
-  }
-}
+import { fetchMedusaMemberOrders } from "@/lib/medusaMemberOrders";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -84,7 +37,7 @@ export default async function handler(req, res) {
       const supabaseClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        { global: { headers: { Authorization: `Bearer ${token}` } } }
+        { global: { headers: { Authorization: `Bearer ${token}` } } },
       );
       const {
         data: { user },
@@ -124,7 +77,7 @@ export default async function handler(req, res) {
     // Service Role 客戶端（查單 + 綁定 email 擴充都會用到）
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
     );
 
     // 🔗 擴充：把「已驗證綁定到本人 LINE 身分」的 email 併入查詢聯集。
@@ -176,7 +129,10 @@ export default async function handler(req, res) {
           }
         }
       } catch (e) {
-        console.warn("[user-orders] 讀取 LINE 綁定 email 失敗（略過）:", e?.message);
+        console.warn(
+          "[user-orders] 讀取 LINE 綁定 email 失敗（略過）:",
+          e?.message,
+        );
       }
     }
 
@@ -212,7 +168,7 @@ export default async function handler(req, res) {
       const { data: refunds, error: refundErr } = await supabaseAdmin
         .from("refund_requests")
         .select(
-          "id, order_id, status, request_type, reason_type, reason_note, admin_note, created_at, reviewed_at"
+          "id, order_id, status, request_type, reason_type, reason_note, admin_note, created_at, reviewed_at",
         )
         .in("order_id", orderIds)
         .order("created_at", { ascending: false });
@@ -253,7 +209,7 @@ export default async function handler(req, res) {
     merged.sort(
       (a, b) =>
         new Date(b.created_at || 0).getTime() -
-        new Date(a.created_at || 0).getTime()
+        new Date(a.created_at || 0).getTime(),
     );
 
     return res.status(200).json({ success: true, data: merged });

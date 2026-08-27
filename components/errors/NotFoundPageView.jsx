@@ -1,32 +1,24 @@
 import Link from "next/link";
-import Image from "next/image";
 
 /**
- * 404 頁（依設計稿：白底、404 ERROR PAGE、機器人插圖、uh-oh! Nothing here...）
+ * 簡潔 404：黑字 + 回官網
  */
 export default function NotFoundPageView({ showHomeLink = true }) {
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 sm:px-6 py-10 sm:py-16">
-      <div className="w-full max-w-[860px] mx-auto text-center">
-        <Image
-          src="/images/404-robot-illustration.png"
-          alt="404 Error Page — uh-oh! Nothing here..."
-          width={1200}
-          height={900}
-          priority
-          className="w-full h-auto mx-auto"
-          sizes="(max-width:860px) 100vw, 860px"
-        />
-
-        {showHomeLink ? (
-          <Link
-            href="/"
-            className="mt-6 sm:mt-8 inline-flex items-center justify-center min-h-11 px-6 text-sm font-bold text-[#666666] border border-[#E0E0E0] rounded-full hover:text-[#1E4AD1] hover:border-[#1E4AD1] transition-colors"
-          >
-            返回首頁
-          </Link>
-        ) : null}
-      </div>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 py-16 text-center text-black">
+      <p className="text-6xl sm:text-7xl font-semibold tracking-tight">404</p>
+      <h1 className="mt-6 text-lg sm:text-xl font-medium">找不到這個頁面</h1>
+      <p className="mt-3 text-sm sm:text-base text-black/70 max-w-sm leading-relaxed">
+        連結可能已失效，或頁面暫時無法載入。請返回官網繼續瀏覽。
+      </p>
+      {showHomeLink ? (
+        <Link
+          href="/"
+          className="mt-10 inline-flex items-center justify-center min-h-11 px-8 text-sm font-medium text-black border border-black hover:bg-black hover:text-white transition-colors"
+        >
+          回到官網
+        </Link>
+      ) : null}
     </div>
   );
 }

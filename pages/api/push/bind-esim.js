@@ -1,9 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import {
   resolveMemberEmail,
-  fetchMemberEsims,
+  expandMemberLookupEmails,
+  fetchMemberEsimsForIdentity,
 } from "./_memberAuth";
-import { userOwnsTopupId } from "../../../lib/esimOrderExtract";
+import { findOwnedEsim } from "../../../lib/esimOrderExtract";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -13,6 +14,29 @@ const supabaseAdmin = createClient(
 
 function normalizeIccid(value) {
   return String(value || "").replace(/\s+/g, "").trim();
+}
+
+/** push_subscriptions.order_id 是 uuid；Medusa id（order_01…）不可寫入 */
+function toPushOrderId(orderId) {
+  const raw = String(orderId || "").trim();
+  if (!raw) return null;
+  if (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      raw,
+    )
+  ) {
+    return raw;
+  }
+  return null;
+}
+
+async function loadMemberEsims(member) {
+  const emails = await expandMemberLookupEmails(member);
+  return fetchMemberEsimsForIdentity({
+    emails,
+    lineUserId: member.lineUserId || null,
+    supabaseUserId: member.userId || null,
+  });
 }
 
 export default async function handler(req, res) {
@@ -65,14 +89,15 @@ export default async function handler(req, res) {
     if (!member?.email) {
       return res.status(401).json({ error: "請先登入會員" });
     }
-    const esims = await fetchMemberEsims(member.email);
-    if (!userOwnsTopupId(esims, topupId)) {
+    const esims = await loadMemberEsims(member);
+    const target = findOwnedEsim(esims, topupId);
+    if (!target) {
       return res.status(403).json({ error: "此 eSIM 不屬於您的帳戶" });
     }
-    const target = esims.find((e) => e.topupId === String(topupId));
     update.topup_id = target.topupId;
     update.product_label = target.productName;
-    update.order_id = target.orderId;
+    const oid = toPushOrderId(target.orderId);
+    if (oid) update.order_id = oid;
     update.guest_email = member.email;
     update.bind_method = "member_order";
     if (target.iccid) update.iccid = target.iccid;

@@ -42,7 +42,7 @@ const HOW_IT_WORKS = [
   {
     step: "02",
     title: "查看剩餘流量",
-    desc: "顯示已用／剩餘流量與效期。數據更新可能有約 30 分鐘延遲。",
+    desc: "顯示已用／剩餘流量與效期。用量更新通常需間隔 30–60 分鐘。",
     tab: "query",
     tint: "bg-[#EEF1F6]",
   },
@@ -631,7 +631,7 @@ export default function DataQueryPage() {
                           size={16}
                           className="shrink-0 mt-0.5 text-slate-400"
                         />
-                        時間顯示為台灣時間；流量非即時，通常延遲 30 分鐘至數小時
+                        時間顯示為台灣時間；用量更新通常需間隔 30–60 分鐘；手機顯示用量通常會略高於此數字
                       </li>
                       <li className="flex gap-2">
                         <MaterialIcon

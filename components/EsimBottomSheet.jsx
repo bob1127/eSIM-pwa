@@ -10,8 +10,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { buildLoginUrl } from "@/lib/authRedirect";
 import { resolveMemberEmail } from "@/lib/memberIdentity";
 import { parseQrcodeData } from "@/lib/esimOrderExtract";
-import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
-import { normalizeIccid, getPushEndpoint } from "@/lib/pushBind";
+import { formatExpiryTaiwan } from "@/lib/esimUsageFormat";
+import { inferEsimInstalled } from "@/lib/esimInstallStatus";
+import { getPushEndpoint } from "@/lib/pushBind";
 import { subscribeToPush } from "@/lib/pushSubscribe";
 import { detectPushSupport, getBrowserContext } from "@/lib/pushSupport";
 import {
@@ -29,14 +30,19 @@ import MaterialIcon from "@/components/MaterialIcon";
 import JekoPillButton from "@/components/ui/JekoPillButton";
 import TrafficNotifyToggle from "@/components/ui/TrafficNotifyToggle";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
-import UsageRingPreview, {
-  USAGE_DEMO,
-} from "@/components/UsageRingPreview";
+import UsageRingPreview from "@/components/UsageRingPreview";
+import EsimQuickBuyPanel from "@/components/EsimQuickBuyPanel";
 
 const COLLAPSED_H = 118;
 /** 產品頁預設縮小：只留可上拉的橫槓 */
 export const COLLAPSED_H_PRODUCT = 32;
 const EXPANDED_VH = 78;
+/** 快速購買：接近滿版 */
+const EXPANDED_VH_BUY = 94;
+/** 高於主站 Navbar（z-1000～10050）與 ShopNavbar（z-8000～8901） */
+const SHEET_Z_BACKDROP = 10060;
+const SHEET_Z_PANEL = 10061;
+const SHEET_Z_DIALOG = 10070;
 
 /** 導覽主色：與 JekoPillButton 一致（#1E4AD1） */
 const JEKO_NAV_BLUE = "#1E4AD1";
@@ -48,15 +54,6 @@ const NAV_LIQUID_SPRING = {
 };
 
 /* ─── 扁平 SVG icons（無陰影）─── */
-const IconUsage = ({ className = "" }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M4 20V10" />
-    <path d="M10 20V4" />
-    <path d="M16 20v-8" />
-    <path d="M22 20V7" />
-  </svg>
-);
-
 const IconMember = ({ className = "" }) => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -97,10 +94,17 @@ function parseItemDetails(order) {
   return Array.isArray(items) ? items : [];
 }
 
-/** 從會員訂單抽出可顯示的 QR 方案（與 AccountOrdersView 同源） */
+/** 從會員訂單抽出可顯示的 QR 方案（與 AccountOrdersView 同源；依 topup／ICCID 精確去重） */
 export function extractQrPlansFromOrders(orders = []) {
   const plans = [];
-  for (const order of orders) {
+  const seen = new Set();
+
+  // 新單優先：先掃較新的訂單
+  const sorted = [...(orders || [])].sort(
+    (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0),
+  );
+
+  for (const order of sorted) {
     const items = parseItemDetails(order);
     const qrItems = parseQrcodeData(order.qrcode_data);
     qrItems.forEach((item, idx) => {
@@ -108,6 +112,22 @@ export function extractQrPlansFromOrders(orders = []) {
         .split(",")[0]
         .trim();
       if (!src) return;
+      const topupId = item.topupId || item.topup_id || null;
+      const iccid =
+        item.iccid ||
+        item.ICCID ||
+        (() => {
+          const m = String(src).match(/\/(\d{18,22})(?:\?|$)/);
+          return m ? m[1] : null;
+        })();
+      const dedupeKey = topupId
+        ? `topup:${String(topupId)}`
+        : iccid
+          ? `iccid:${String(iccid)}`
+          : `src:${src}`;
+      if (seen.has(dedupeKey)) return;
+      seen.add(dedupeKey);
+
       const name = item.productName || item.name || "eSIM 方案";
       const match =
         items.find((i) => i.name === name || i.productName === name) ||
@@ -121,11 +141,11 @@ export function extractQrPlansFromOrders(orders = []) {
         null;
       const install = resolveInstallUrls(item);
       plans.push({
-        id: `${order.id}-${item.topupId || item.topup_id || idx}`,
+        id: `${order.id}-${topupId || iccid || idx}`,
         name,
         src,
-        topupId: item.topupId || item.topup_id || null,
-        iccid: item.iccid || item.ICCID || null,
+        topupId,
+        iccid,
         price: price != null ? Number(price) : null,
         orderId: order.id,
         orderDate: order.created_at,
@@ -139,9 +159,46 @@ export function extractQrPlansFromOrders(orders = []) {
   return plans;
 }
 
-function formatPrice(n) {
-  if (n == null || Number.isNaN(Number(n))) return "—";
-  return `NT$ ${Number(n).toLocaleString("zh-TW")}`;
+function usageForPlan(plan, usageMap) {
+  if (!plan || !usageMap) return null;
+  if (plan.topupId && usageMap[plan.topupId]) return usageMap[plan.topupId];
+  if (plan.iccid && usageMap[plan.iccid]) return usageMap[plan.iccid];
+  return null;
+}
+
+/** 吃到飽／無固定額度：顯示「使用流量」而非「剩餘用量」 */
+function isUnlimitedStyleUsage(usage, planName) {
+  const rem = usage?.remainingMb;
+  const tot = usage?.totalMb;
+  if (rem != null && tot != null && Number(tot) > 0) return false;
+  const n = String(planName || usage?.productName || "");
+  if (/吃到飽|unlimited|不限流量|不限速吃到飽/i.test(n)) return true;
+  if (
+    usage &&
+    usage.usedMb != null &&
+    rem == null &&
+    tot == null
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** 僅在有「已使用」證據時顯示圖表（與一鍵安裝鈕判斷一致） */
+function UsageAwaitingInstallNotice({ expiresAt = null }) {
+  return (
+    <div className="rounded-2xl bg-slate-50 px-3 py-6 text-center ring-1 ring-slate-200/80">
+      <p className="text-[14px] font-bold text-slate-700">尚未安裝或尚未使用</p>
+      <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+        請先一鍵安裝或掃描上方 QR；產生用量後才會顯示流量圖表
+      </p>
+      {expiresAt ? (
+        <p className="mt-2 text-[11px] font-semibold text-slate-400">
+          效期至 {formatExpiryTaiwan(expiresAt)}
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 function LoginGate() {
@@ -152,7 +209,7 @@ function LoginGate() {
       </div>
       <p className="text-[15px] font-bold text-gray-900">請先登入會員</p>
       <p className="text-[12px] text-gray-500 mt-1.5 leading-relaxed">
-        登入後即可在此查看 QR Code、剩餘用量與方案資訊
+        登入後即可在此查看 QR Code、使用流量與方案資訊
       </p>
       <JekoPillButton href={buildLoginUrl()} size="sm" className="mt-5 max-w-xs mx-auto">
         登入／加入會員
@@ -190,24 +247,180 @@ function EsimBindSwitchRow({
   );
 }
 
+function RefreshUsageButton({ loading, onClick, className = "" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      title="更新用量"
+      aria-label="更新用量"
+      className={[
+        "inline-flex items-center gap-1 rounded-full border border-[#1E4AD1]/25 bg-white px-2.5 py-1",
+        "text-[11px] font-bold text-[#1E4AD1] shadow-sm",
+        "transition active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed",
+        "hover:bg-[#EFF6FC]",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <MaterialIcon
+        name="refresh"
+        size={14}
+        className={loading ? "animate-spin" : ""}
+      />
+      {loading ? "更新中" : "更新用量"}
+    </button>
+  );
+}
+
+function PlanPillTabs({ plans, activeIdx, onSelect, className = "" }) {
+  const pillRefs = useRef([]);
+
+  useEffect(() => {
+    const el = pillRefs.current[activeIdx];
+    el?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [activeIdx]);
+
+  if (!plans?.length || plans.length <= 1) return null;
+  return (
+    <div
+      className={`flex gap-2 overflow-x-auto px-4 pb-3 ${className}`}
+      style={{ scrollbarWidth: "none" }}
+    >
+      {plans.map((p, i) => (
+        <button
+          key={p.id}
+          ref={(el) => {
+            pillRefs.current[i] = el;
+          }}
+          type="button"
+          onClick={() => onSelect(i)}
+          aria-pressed={i === activeIdx}
+          className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-bold transition-colors ${
+            i === activeIdx
+              ? "border-[#1E4AD1] bg-[#1E4AD1] text-white"
+              : "border-gray-200 bg-white text-gray-600"
+          }`}
+        >
+          {p.name.length > 14 ? `${p.name.slice(0, 14)}…` : p.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PlanUsageBlock({
+  plan,
+  usageMap,
+  usageLoading,
+  onRefresh,
+  trafficOn,
+  boundTopupId,
+  bindBusy,
+  onToggleBind,
+}) {
+  const usage = usageForPlan(plan, usageMap);
+  const unlimitedStyle = isUnlimitedStyleUsage(usage, plan?.name);
+  const showUsageChart = inferEsimInstalled(usage) === true;
+
+  return (
+    <div className="mt-4 w-full bg-[#f7f8fa] rounded-2xl p-4">
+      <div className="flex items-start gap-2">
+        <p className="min-w-0 flex-1 text-[15px] font-bold text-gray-900 leading-snug">
+          {plan.name}
+        </p>
+        <RefreshUsageButton
+          loading={usageLoading}
+          onClick={() => onRefresh?.(plan)}
+          className="shrink-0 mt-0.5"
+        />
+      </div>
+      <div className="mt-3">
+        {usageLoading && (plan.topupId || plan.iccid) && !usage ? (
+          <p className="text-[13px] text-gray-400 text-center py-6">查詢中…</p>
+        ) : !showUsageChart ? (
+          <UsageAwaitingInstallNotice expiresAt={usage?.expiresAt || null} />
+        ) : usage?.remainingMb != null &&
+          usage?.totalMb != null &&
+          Number(usage.totalMb) > 0 &&
+          !unlimitedStyle ? (
+          <UsageRingPreview
+            remainingMb={Number(usage.remainingMb)}
+            totalMb={Number(usage.totalMb)}
+            usedMb={usage.usedMb}
+            expiresAt={usage.expiresAt || null}
+            dailyUsedMb={
+              Array.isArray(usage.dailyUsedMb) ? usage.dailyUsedMb : null
+            }
+            variant="quota"
+          />
+        ) : (
+          <UsageRingPreview
+            usedMb={usage?.usedMb != null ? Number(usage.usedMb) : 0}
+            expiresAt={usage?.expiresAt || null}
+            variant="muted"
+          />
+        )}
+      </div>
+      <EsimBindSwitchRow
+        plan={plan}
+        trafficOn={trafficOn}
+        boundTopupId={boundTopupId}
+        bindBusy={bindBusy}
+        onToggleBind={onToggleBind}
+      />
+    </div>
+  );
+}
+
 function QrPanel({
   plans,
   activeIdx,
   setActiveIdx,
   usageMap,
   usageLoading,
+  onRefresh,
   trafficOn,
   boundTopupId,
   bindBusy,
   onToggleBind,
 }) {
   const scrollerRef = useRef(null);
-  const plan = plans[activeIdx];
+  const scrollSyncRef = useRef(false);
+
+  const scrollToPlan = useCallback(
+    (idx, behavior = "smooth") => {
+      const el = scrollerRef.current;
+      if (!el || idx < 0 || idx >= plans.length) return;
+      const w = el.clientWidth;
+      if (w <= 0) return;
+      scrollSyncRef.current = true;
+      el.scrollTo({ left: idx * w, behavior });
+    },
+    [plans.length],
+  );
+
+  const selectPlan = useCallback(
+    (idx) => {
+      if (idx < 0 || idx >= plans.length) return;
+      scrollSyncRef.current = true;
+      setActiveIdx(idx);
+      requestAnimationFrame(() => scrollToPlan(idx));
+    },
+    [plans.length, scrollToPlan, setActiveIdx],
+  );
 
   const onScroll = () => {
     const el = scrollerRef.current;
     if (!el || !plans.length) return;
     const w = el.clientWidth;
+    if (w <= 0) return;
     const idx = Math.round(el.scrollLeft / w);
     if (idx !== activeIdx && idx >= 0 && idx < plans.length) {
       setActiveIdx(idx);
@@ -215,11 +428,12 @@ function QrPanel({
   };
 
   useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const w = el.clientWidth;
-    el.scrollTo({ left: activeIdx * w, behavior: "smooth" });
-  }, [activeIdx]);
+    if (scrollSyncRef.current) {
+      scrollSyncRef.current = false;
+      return;
+    }
+    scrollToPlan(activeIdx);
+  }, [activeIdx, scrollToPlan]);
 
   if (!plans.length) {
     return (
@@ -238,14 +452,15 @@ function QrPanel({
     );
   }
 
-  const usage = plan?.topupId ? usageMap[plan.topupId] : null;
-  const pct = usage
-    ? usagePercent(usage.remainingMb, usage.totalMb)
-    : null;
-
   return (
     <div className="pb-2">
-      {/* 橫向滑動 QR */}
+      <PlanPillTabs
+        plans={plans}
+        activeIdx={activeIdx}
+        onSelect={selectPlan}
+      />
+
+      {/* 橫向滑動：QR + 用量同一頁 */}
       <div
         ref={scrollerRef}
         onScroll={onScroll}
@@ -255,7 +470,7 @@ function QrPanel({
         {plans.map((p) => (
           <div
             key={p.id}
-            className="snap-center shrink-0 w-full flex flex-col items-center px-6"
+            className="snap-center shrink-0 w-full flex flex-col items-center px-4"
           >
             <div className="bg-white border border-gray-100 rounded-2xl p-3 w-[200px] h-[200px] flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -265,305 +480,18 @@ function QrPanel({
                 className="w-full h-full object-contain"
               />
             </div>
+            <PlanUsageBlock
+              plan={p}
+              usageMap={usageMap}
+              usageLoading={usageLoading}
+              onRefresh={onRefresh}
+              trafficOn={trafficOn}
+              boundTopupId={boundTopupId}
+              bindBusy={bindBusy}
+              onToggleBind={onToggleBind}
+            />
           </div>
         ))}
-      </div>
-
-      {plans.length > 1 && (
-        <div className="flex justify-center gap-1.5 mt-3">
-          {plans.map((p, i) => (
-            <button
-              key={p.id}
-              type="button"
-              aria-label={`方案 ${i + 1}`}
-              onClick={() => setActiveIdx(i)}
-              className={`rounded-full transition-all ${
-                i === activeIdx ? "w-4 h-1.5 bg-[#0A6CD0]" : "w-1.5 h-1.5 bg-gray-300"
-              }`}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* 方案資訊 */}
-      {plan && (
-        <div className="mx-4 mt-4 bg-[#f7f8fa] rounded-2xl p-4">
-          <p className="text-[15px] font-bold text-gray-900 leading-snug">
-            {plan.name}
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-[10px] text-gray-400 font-semibold tracking-wide">
-                價格
-              </p>
-              <p className="text-[15px] font-black text-gray-900 mt-0.5">
-                {formatPrice(plan.price)}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-400 font-semibold tracking-wide">
-                剩餘用量
-              </p>
-              {usageLoading && plan.topupId ? (
-                <p className="text-[13px] text-gray-400 mt-0.5">查詢中…</p>
-              ) : usage ? (
-                <p className="text-[15px] font-black text-gray-900 mt-0.5">
-                  {formatMb(usage.remainingMb) || "—"}
-                  {usage.totalMb != null && (
-                    <span className="text-[11px] font-medium text-gray-400">
-                      {" "}
-                      / {formatMb(usage.totalMb)}
-                    </span>
-                  )}
-                </p>
-              ) : (
-                <p className="text-[13px] text-gray-400 mt-0.5">尚無資料</p>
-              )}
-            </div>
-          </div>
-          {pct != null && (
-            <div className="mt-3">
-              <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-[#0A6CD0] transition-all"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <p className="text-[10px] text-gray-400 mt-1">剩餘 {Math.round(pct)}%</p>
-            </div>
-          )}
-          {plans.length > 1 && (
-            <p className="text-[11px] text-gray-400 mt-3 text-center">
-              ← 左右滑動切換方案（{activeIdx + 1}/{plans.length}）
-            </p>
-          )}
-          <EsimBindSwitchRow
-            plan={plan}
-            trafficOn={trafficOn}
-            boundTopupId={boundTopupId}
-            bindBusy={bindBusy}
-            onToggleBind={onToggleBind}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function UsagePanel({
-  isGuest,
-  plans,
-  activeIdx,
-  setActiveIdx,
-  usageMap,
-  usageLoading,
-  onRefresh,
-  guestUsage,
-  guestLoading,
-  onGuestQuery,
-  trafficOn,
-  boundTopupId,
-  bindBusy,
-  onToggleBind,
-}) {
-  const [iccid, setIccid] = useState("");
-  const [guestError, setGuestError] = useState("");
-
-  // ── 訪客：警示 + ICCID 輸入 ──
-  if (isGuest) {
-    const pct = guestUsage
-      ? usagePercent(guestUsage.remainingMb, guestUsage.totalMb)
-      : null;
-
-    const submitIccid = async () => {
-      const value = normalizeIccid(iccid);
-      if (!value || value.length < 18) {
-        setGuestError("請輸入有效的 ICCID（約 19～20 碼）");
-        return;
-      }
-      setGuestError("");
-      await onGuestQuery(value);
-    };
-
-    return (
-      <div className="px-4 pb-2">
-        <div className="rounded-2xl bg-amber-50 border border-amber-200 px-3.5 py-3 mb-3">
-          <p className="text-[13px] font-bold text-amber-800">尚未登入會員</p>
-          <p className="text-[11px] text-amber-700/90 mt-1 leading-relaxed">
-            未登入無法讀取訂單內的 eSIM。請輸入 ICCID 查詢剩餘流量，或登入會員一鍵查詢。
-          </p>
-        </div>
-
-        <div className="bg-[#f7f8fa] rounded-2xl p-4">
-          <label className="block text-[11px] font-bold text-gray-500 tracking-wide mb-1.5">
-            ICCID
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              inputMode="numeric"
-              value={iccid}
-              onChange={(e) => setIccid(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") submitIccid();
-              }}
-              placeholder="輸入 ICCID（19～20 碼）"
-              className="flex-1 min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-[14px] text-gray-900 outline-none focus:border-[#0A6CD0]"
-            />
-            <JekoPillButton
-              type="button"
-              size="sm"
-              fullWidth={false}
-              onClick={submitIccid}
-              disabled={guestLoading}
-              className="shrink-0 !w-auto px-4"
-            >
-              {guestLoading ? "查詢中" : "查流量"}
-            </JekoPillButton>
-          </div>
-          {guestError && (
-            <p className="mt-2 text-[12px] text-red-500 font-medium">{guestError}</p>
-          )}
-
-          {guestUsage && (
-            <div className="mt-4 text-center border-t border-gray-200 pt-4">
-              <p className="text-[11px] text-gray-400 font-semibold tracking-wide">
-                剩餘流量
-              </p>
-              <p className="text-[32px] font-black text-gray-900 leading-none mt-1">
-                {formatMb(guestUsage.remainingMb) || "—"}
-              </p>
-              {guestUsage.totalMb != null && (
-                <p className="text-[12px] text-gray-500 mt-2">
-                  總量 {formatMb(guestUsage.totalMb)}
-                  {pct != null && ` · 剩餘 ${Math.round(pct)}%`}
-                </p>
-              )}
-              {pct != null && (
-                <div className="mt-3 h-2 rounded-full bg-gray-200 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-[#0A6CD0]"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              )}
-              {guestUsage.productName && (
-                <p className="text-[12px] text-gray-600 mt-3 font-medium">
-                  {guestUsage.productName}
-                </p>
-              )}
-              {guestUsage.note && (
-                <p className="text-[10px] text-gray-400 mt-2">{guestUsage.note}</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        <JekoPillButton href={buildLoginUrl()} size="sm" className="mt-3">
-          登入／註冊會員
-        </JekoPillButton>
-      </div>
-    );
-  }
-
-  // ── 會員：方案列表 + 一鍵查剩餘流量 ──
-  const plan = plans[activeIdx];
-  const usage = plan?.topupId ? usageMap[plan.topupId] : null;
-  const hasUsageChart =
-    usage?.remainingMb != null &&
-    usage?.totalMb != null &&
-    Number(usage.totalMb) > 0;
-
-  if (!plans.length) {
-    return (
-      <div className="px-4 py-8 text-center">
-        <p className="text-[14px] font-bold text-gray-800">尚無可查詢的 eSIM</p>
-        <p className="text-[12px] text-gray-500 mt-1.5">
-          購買並啟用後即可一鍵查詢剩餘流量
-        </p>
-        <Link
-          href="/product"
-          className="inline-block mt-4 text-[13px] font-bold text-[#0284c7]"
-        >
-          去選購方案 →
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="px-4 pb-2">
-      {plans.length > 1 && (
-        <div
-          className="flex gap-2 overflow-x-auto pb-3"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {plans.map((p, i) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setActiveIdx(i)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold border transition-colors ${
-                i === activeIdx
-                  ? "bg-[#1E4AD1] text-white border-[#1E4AD1]"
-                  : "bg-white text-gray-600 border-gray-200"
-              }`}
-            >
-              {p.name.length > 14 ? `${p.name.slice(0, 14)}…` : p.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="bg-[#f7f8fa] rounded-2xl p-4">
-        <p className="text-[15px] font-bold text-gray-900 leading-snug">
-          {plan.name}
-        </p>
-        <p className="text-[12px] text-gray-500 mt-1">{formatPrice(plan.price)}</p>
-
-        <JekoPillButton
-          type="button"
-          size="sm"
-          className="mt-4"
-          onClick={() => onRefresh(plan)}
-          disabled={usageLoading}
-        >
-          {usageLoading ? "查詢中…" : "查詢剩餘流量"}
-        </JekoPillButton>
-
-        <div className="mt-4">
-          {usageLoading && !usage ? (
-            <p className="text-center text-[28px] font-black text-gray-300">…</p>
-          ) : hasUsageChart ? (
-            <UsageRingPreview
-              remainingMb={Number(usage.remainingMb)}
-              totalMb={Number(usage.totalMb)}
-              expiresAt={usage.expiresAt || null}
-              dailyUsedMb={USAGE_DEMO.dailyUsedMb}
-            />
-          ) : (
-            <>
-              {/* 尚無供應商用量時先用示意圖；查到真實數據後自動切換 */}
-              <UsageRingPreview
-                remainingMb={USAGE_DEMO.remainingMb}
-                totalMb={USAGE_DEMO.totalMb}
-                expiresAt={USAGE_DEMO.expiresAt}
-                dailyUsedMb={USAGE_DEMO.dailyUsedMb}
-              />
-              <p className="mt-2 text-center text-[11px] text-slate-400">
-                點上方「查詢剩餘流量」載入此 eSIM 即時用量
-              </p>
-            </>
-          )}
-        </div>
-
-        <EsimBindSwitchRow
-          plan={plan}
-          trafficOn={trafficOn}
-          boundTopupId={boundTopupId}
-          bindBusy={bindBusy}
-          onToggleBind={onToggleBind}
-        />
       </div>
     </div>
   );
@@ -732,7 +660,7 @@ export default function EsimBottomSheet() {
   const collapsedH = isProductRoute ? COLLAPSED_H_PRODUCT : COLLAPSED_H;
 
   const [expanded, setExpanded] = useState(false);
-  const [panel, setPanel] = useState("qr"); // qr | usage | install | promo | jbao
+  const [panel, setPanel] = useState("qr"); // qr | install | promo | buy | jbao
   const [dragY, setDragY] = useState(0);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   const startY = useRef(0);
@@ -743,8 +671,6 @@ export default function EsimBottomSheet() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [usageMap, setUsageMap] = useState({});
   const [usageLoading, setUsageLoading] = useState(false);
-  const [guestUsage, setGuestUsage] = useState(null);
-  const [guestLoading, setGuestLoading] = useState(false);
   const [trafficBusy, setTrafficBusy] = useState(false);
   const [trafficOn, setTrafficOn] = useState(false);
   const [boundTopupId, setBoundTopupId] = useState(null);
@@ -792,6 +718,7 @@ export default function EsimBottomSheet() {
 
   const queryUsage = useCallback(async (plan) => {
     if (!plan?.topupId && !plan?.iccid) return;
+    const key = plan.topupId || plan.iccid;
     setUsageLoading(true);
     try {
       const res = await fetch("/api/esim/usage", {
@@ -803,36 +730,13 @@ export default function EsimBottomSheet() {
         }),
       });
       const data = await res.json();
-      if (res.ok && plan.topupId) {
-        setUsageMap((prev) => ({ ...prev, [plan.topupId]: data }));
+      if (res.ok && key) {
+        setUsageMap((prev) => ({ ...prev, [key]: data }));
       }
     } catch {
       /* ignore */
     } finally {
       setUsageLoading(false);
-    }
-  }, []);
-
-  const queryGuestUsage = useCallback(async (iccid) => {
-    setGuestLoading(true);
-    setGuestUsage(null);
-    try {
-      const res = await fetch("/api/esim/usage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ iccid }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "查詢失敗");
-      setGuestUsage(data);
-    } catch (e) {
-      setGuestUsage({
-        remainingMb: null,
-        totalMb: null,
-        note: e.message || "查詢失敗，請確認 ICCID 是否正確",
-      });
-    } finally {
-      setGuestLoading(false);
     }
   }, []);
 
@@ -886,13 +790,12 @@ export default function EsimBottomSheet() {
     };
   }, [expanded, panel, isLoggedIn, token]);
 
-  // 會員進入用量頁：不自動查，等按按鈕（依需求）
-  // QR 切換時可預載用量（可選，保留輕量）
+  // QR 頁：預載目前方案用量（吃到飽會顯示已用；並可把安裝鈕改為已安裝）
   useEffect(() => {
     if (!expanded || !isLoggedIn) return;
     if (panel !== "qr") return;
     const plan = plans[activeIdx];
-    if (plan?.topupId && !usageMap[plan.topupId]) {
+    if (plan && (plan.topupId || plan.iccid) && !usageForPlan(plan, usageMap)) {
       queryUsage(plan);
     }
   }, [expanded, panel, activeIdx, plans, isLoggedIn, usageMap, queryUsage]);
@@ -908,6 +811,8 @@ export default function EsimBottomSheet() {
   }, []);
 
   const activePlan = plans[activeIdx] || null;
+  const activeUsage = usageForPlan(activePlan, usageMap);
+  const esimAlreadyInUse = inferEsimInstalled(activeUsage) === true;
   const esimInstallUrl = useMemo(
     () => (activePlan ? pickInstallUrlForOs(deviceOs, activePlan) : ""),
     [activePlan, deviceOs],
@@ -917,6 +822,7 @@ export default function EsimBottomSheet() {
   );
 
   const handleEsimOneClickInstall = useCallback(() => {
+    if (esimAlreadyInUse) return;
     if (esimInstallUrl) {
       window.open(esimInstallUrl, "_blank", "noopener,noreferrer");
       return;
@@ -928,7 +834,7 @@ export default function EsimBottomSheet() {
     }
     alert("此方案尚無一鍵安裝連結，請掃描上方 QR Code 安裝。");
     setPanel("qr");
-  }, [esimInstallUrl, hasEsimInstallLinks]);
+  }, [esimAlreadyInUse, esimInstallUrl, hasEsimInstallLinks]);
 
   const closeBindHint = useCallback(async () => {
     setShowBindHint(false);
@@ -1307,18 +1213,26 @@ export default function EsimBottomSheet() {
 
   const expandedPx =
     typeof window !== "undefined"
-      ? (window.innerHeight * EXPANDED_VH) / 100
+      ? (window.innerHeight *
+          (panel === "buy" ? EXPANDED_VH_BUY : EXPANDED_VH)) /
+        100
       : 560;
   const baseH = expanded ? expandedPx : collapsedH;
   const height = Math.max(collapsedH, baseH - dragY);
 
   const navItems = [
-    { id: "usage", label: "剩餘用量", Icon: IconUsage },
     {
       id: "promo",
       label: "優惠活動",
       Icon: (props) => (
-        <MaterialIcon name="local_activity" size={22} {...props} />
+        <MaterialIcon name="local_activity" size={20} {...props} />
+      ),
+    },
+    {
+      id: "buy",
+      label: "快速購買",
+      Icon: (props) => (
+        <MaterialIcon name="sim_card" size={20} {...props} />
       ),
     },
     { id: "qr", label: "QR Code", center: true, Icon: IconQr },
@@ -1327,7 +1241,7 @@ export default function EsimBottomSheet() {
       id: "jbao",
       label: "J寶客服",
       Icon: (props) => (
-        <MaterialIcon name="smart_toy" size={22} {...props} />
+        <MaterialIcon name="smart_toy" size={20} {...props} />
       ),
     },
   ];
@@ -1355,14 +1269,16 @@ export default function EsimBottomSheet() {
         <button
           type="button"
           aria-label="關閉面板"
-          className="fixed inset-0 z-[105] bg-black/35 md:hidden"
+          className="fixed inset-0 bg-black/35 md:hidden"
+          style={{ zIndex: SHEET_Z_BACKDROP }}
           onClick={() => setExpanded(false)}
         />
       )}
 
       <div
-        className="fixed bottom-0 left-0 right-0 z-[110] md:hidden"
+        className="fixed bottom-0 left-0 right-0 md:hidden"
         style={{
+          zIndex: SHEET_Z_PANEL,
           height,
           transition: dragging.current
             ? "none"
@@ -1445,9 +1361,9 @@ export default function EsimBottomSheet() {
 
           {/* 五格導覽 — 產品頁縮小時隱藏 */}
           {!miniCollapsed && (
-          <div className="shrink-0 px-3 pt-1 pb-2">
+          <div className="shrink-0 px-2 pt-1 pb-2">
             <LayoutGroup id="esim-sheet-nav">
-              <div className="grid grid-cols-5 items-end gap-1">
+              <div className="grid grid-cols-5 items-end gap-0.5">
                 {navItems.map((item) => {
                   const isActive = activeNavId === item.id;
                   const Icon = item.Icon;
@@ -1459,14 +1375,14 @@ export default function EsimBottomSheet() {
                         e.stopPropagation();
                         openPanel(item.id);
                       }}
-                      className={`relative flex flex-col items-center gap-1 ${
+                      className={`relative flex flex-col items-center gap-0.5 ${
                         item.center ? "-mt-1" : "py-1"
                       }`}
                       aria-current={isActive ? "page" : undefined}
                     >
                       <span
                         className={`relative z-0 flex items-center justify-center ${
-                          item.center ? "w-[52px] h-[52px]" : "w-10 h-10"
+                          item.center ? "w-[48px] h-[48px]" : "w-9 h-9"
                         }`}
                       >
                         {isActive && (
@@ -1496,7 +1412,7 @@ export default function EsimBottomSheet() {
                         </motion.span>
                       </span>
                       <motion.span
-                        className="text-[10px] font-semibold leading-tight"
+                        className="max-w-full truncate px-0.5 text-center text-[9px] font-semibold leading-tight"
                         animate={{
                           color: isActive ? JEKO_NAV_BLUE : "#6b7280",
                         }}
@@ -1514,13 +1430,19 @@ export default function EsimBottomSheet() {
 
           {/* 展開內容 */}
           {expanded && (
-            <div className="flex-1 overflow-y-auto overscroll-contain">
+            <div
+              className={
+                panel === "buy"
+                  ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+                  : "flex-1 overflow-y-auto overscroll-contain"
+              }
+            >
               {!authReady ||
               (isLoggedIn &&
                 ordersLoading &&
-                panel !== "usage" &&
                 panel !== "install" &&
-                panel !== "promo") ? (
+                panel !== "promo" &&
+                panel !== "buy") ? (
                 <LoadingIndicator layout="center" label="載入中…" className="py-10" />
               ) : panel === "promo" ? (
                 <PromoPanel
@@ -1530,23 +1452,10 @@ export default function EsimBottomSheet() {
                   coupons={promoCoupons}
                   onClose={() => setExpanded(false)}
                 />
-              ) : panel === "usage" ? (
-                <UsagePanel
-                  isGuest={isGuest}
-                  plans={plans}
-                  activeIdx={activeIdx}
-                  setActiveIdx={setActiveIdx}
-                  usageMap={usageMap}
-                  usageLoading={usageLoading}
-                  onRefresh={queryUsage}
-                  guestUsage={guestUsage}
-                  guestLoading={guestLoading}
-                  onGuestQuery={queryGuestUsage}
-                  trafficOn={trafficOn}
-                  boundTopupId={boundTopupId}
-                  bindBusy={bindBusy}
-                  onToggleBind={toggleEsimBind}
-                />
+              ) : panel === "buy" ? (
+                <div className="min-h-0 flex-1">
+                  <EsimQuickBuyPanel onCloseSheet={() => setExpanded(false)} />
+                </div>
               ) : isGuest ? (
                 <LoginGate />
               ) : panel === "qr" ? (
@@ -1556,6 +1465,7 @@ export default function EsimBottomSheet() {
                   setActiveIdx={setActiveIdx}
                   usageMap={usageMap}
                   usageLoading={usageLoading}
+                  onRefresh={queryUsage}
                   trafficOn={trafficOn}
                   boundTopupId={boundTopupId}
                   bindBusy={bindBusy}
@@ -1568,7 +1478,7 @@ export default function EsimBottomSheet() {
                 />
               ) : null}
 
-              {(panel === "qr" || panel === "usage") && isLoggedIn && (
+              {panel === "qr" && isLoggedIn && (
                 <div className="px-4 pb-8 pt-2 space-y-1.5">
                   <div className="flex items-stretch gap-2">
                     {!plans.length ? (
@@ -1579,6 +1489,16 @@ export default function EsimBottomSheet() {
                         onClick={() => setExpanded(false)}
                       >
                         購買 eSIM
+                      </JekoPillButton>
+                    ) : esimAlreadyInUse ? (
+                      <JekoPillButton
+                        type="button"
+                        size="sm"
+                        className="flex-1 min-w-0 basis-0 !min-h-[42px] !bg-slate-300 !text-slate-600 !shadow-none opacity-90 pointer-events-none"
+                        disabled
+                        title="此方案已有用量，無需再安裝"
+                      >
+                        已安裝／使用中
                       </JekoPillButton>
                     ) : esimInstallUrl ? (
                       <JekoPillButton
@@ -1618,13 +1538,15 @@ export default function EsimBottomSheet() {
                           ? "先安裝再開"
                           : "點右側開關開啟／關閉流量通知"
                       : [
-                          esimInstallUrl
-                            ? deviceOs === "ios"
-                              ? "左側一鍵安裝（iOS）"
-                              : "左側一鍵安裝（Android）"
-                            : hasEsimInstallLinks
-                              ? "請用手機開啟以一鍵安裝"
-                              : "請掃描上方 QR 安裝",
+                          esimAlreadyInUse
+                            ? "左側已安裝（無需再點）"
+                            : esimInstallUrl
+                              ? deviceOs === "ios"
+                                ? "左側一鍵安裝（iOS）"
+                                : "左側一鍵安裝（Android）"
+                              : hasEsimInstallLinks
+                                ? "請用手機開啟以一鍵安裝"
+                                : "請掃描上方 QR 安裝",
                           trafficOn
                             ? boundTopupId
                               ? "流量通知已開"
@@ -1641,7 +1563,8 @@ export default function EsimBottomSheet() {
 
       {showBindHint ? (
         <div
-          className="fixed inset-0 z-[130] flex items-center justify-center p-5 bg-black/40"
+          className="fixed inset-0 flex items-center justify-center p-5 bg-black/40"
+          style={{ zIndex: SHEET_Z_DIALOG }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="esim-bind-hint-title"

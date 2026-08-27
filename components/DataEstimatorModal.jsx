@@ -88,50 +88,19 @@ function suggestPlanGb(totalGb) {
  * - 每日型（每日500MB / 每日1GB）→ 以「每日 GB」計，總量 = 每日 × 天數
  * - 總量型（3GB / 10GB）→ 行程總量
  */
-export function parseDataCapacity(amount) {
-  const s = String(amount || "").trim();
-  if (!s) return null;
-  if (/吃到飽|無限|unlimited/i.test(s)) {
-    return {
-      kind: "unlimited",
-      dailyGb: Number.POSITIVE_INFINITY,
-      totalGbFactor: Number.POSITIVE_INFINITY,
-      label: s,
-    };
-  }
+import {
+  parseDataCapacity,
+  dataAmountSortKey,
+  compareDataAmountsAsc,
+  sortUniqueDataAmountLabels,
+} from "@/lib/dataAmountSort";
 
-  const isDaily = /每日|每天|per\s*day|\/\s*day|day\s*pass/i.test(s);
-  const num = parseFloat(s.replace(/[^\d.]/g, ""));
-  if (!Number.isFinite(num) || num <= 0) return null;
-
-  let gb = num;
-  const hasMb = /MB|ｍｂ|兆/i.test(s);
-  const hasGb = /GB|ｇｂ|吉/i.test(s);
-  if (hasMb && !hasGb) {
-    gb = num / 1024;
-  } else if (/TB|ｔｂ/i.test(s)) {
-    gb = num * 1024;
-  } else if (!hasGb && !hasMb && isDaily && num >= 100) {
-    // 常見寫法「每日500」多半是 MB
-    gb = num / 1024;
-  }
-
-  if (isDaily) {
-    return {
-      kind: "daily",
-      dailyGb: gb,
-      totalGbFactor: gb, // 乘天數後才是總量
-      label: s,
-    };
-  }
-
-  return {
-    kind: "total",
-    dailyGb: null,
-    totalGbFactor: gb,
-    label: s,
-  };
-}
+export {
+  parseDataCapacity,
+  dataAmountSortKey,
+  compareDataAmountsAsc,
+  sortUniqueDataAmountLabels,
+};
 
 import {
   is5MbpsDataAmount,
@@ -139,23 +108,6 @@ import {
 } from "@/lib/dataAmountLabel";
 
 export { is5MbpsDataAmount, formatDataAmountMain };
-
-/** 方案用量遞增排序鍵（MB→GB、每日型、總量型；吃到飽最後；同額 5Mbps 續航緊跟標準方案） */
-export function dataAmountSortKey(amount) {
-  const main = formatDataAmountMain(amount);
-  const cap = parseDataCapacity(main);
-  if (!cap) return Number.MAX_SAFE_INTEGER - 1;
-  const fiveBump = is5MbpsDataAmount(amount) ? 0.0001 : 0;
-  if (cap.kind === "unlimited") return Number.MAX_SAFE_INTEGER;
-  if (cap.kind === "daily") return cap.dailyGb + fiveBump;
-  return cap.totalGbFactor + fiveBump;
-}
-
-export function compareDataAmountsAsc(a, b) {
-  const diff = dataAmountSortKey(a) - dataAmountSortKey(b);
-  if (diff !== 0) return diff;
-  return String(a).localeCompare(String(b), "zh-Hant");
-}
 
 function formatTelecomShort(telecom) {
   const s = String(telecom || "").trim();

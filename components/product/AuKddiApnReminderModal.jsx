@@ -3,6 +3,7 @@
  */
 import { AnimatePresence, motion } from "framer-motion";
 import MaterialIcon from "../MaterialIcon";
+import { reminderUi } from "@/lib/purchaseReminderModalUi";
 
 const ACCENT = "#0A6CD0";
 
@@ -52,15 +53,10 @@ const APN_4G_FALLBACK = {
   ],
 };
 
-function ApnProfileCard({ profile, muted = false }) {
+function ApnProfileCard({ profile, muted = false, squareCorners = false }) {
+  const ui = reminderUi(squareCorners, "blue");
   return (
-    <div
-      className={`rounded-xl border px-3.5 py-3 ${
-        muted
-          ? "border-amber-200/80 bg-amber-50/80"
-          : "border-[#0A6CD0]/20 bg-[#eef5fc]"
-      }`}
-    >
+    <div className={muted ? ui.apnPanelMuted : ui.apnPanel}>
       <p
         className={`text-[11px] font-bold tracking-wide ${
           muted ? "text-amber-800/80" : "text-slate-500"
@@ -92,7 +88,9 @@ export default function AuKddiApnReminderModal({
   onClose,
   onContinuePurchase,
   purchaseAction = "cart",
+  squareCorners = false,
 }) {
+  const ui = reminderUi(squareCorners, "blue");
   const continueLabel =
     purchaseAction === "buy"
       ? "我知道了，繼續立即購買"
@@ -120,8 +118,10 @@ export default function AuKddiApnReminderModal({
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-0 z-[11010] flex items-center justify-center p-3 sm:p-4 pointer-events-none"
           >
-            <div className="pointer-events-auto w-full max-w-md max-h-[min(92vh,720px)] overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col">
-              <div className="shrink-0 px-5 py-4 md:px-6" style={{ background: ACCENT }}>
+            <div
+              className={`${ui.shell} max-h-[min(92vh,720px)] flex flex-col`}
+            >
+              <div className={ui.headerClass} style={ui.headerStyle}>
                 <div className="flex items-start justify-between gap-3">
                   <h3
                     id="au-apn-prompt-title"
@@ -146,9 +146,17 @@ export default function AuKddiApnReminderModal({
 
               <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 md:px-6 space-y-3">
                 {APN_PROFILES.map((profile) => (
-                  <ApnProfileCard key={profile.label} profile={profile} />
+                  <ApnProfileCard
+                    key={profile.label}
+                    profile={profile}
+                    squareCorners={squareCorners}
+                  />
                 ))}
-                <ApnProfileCard profile={APN_4G_FALLBACK} muted />
+                <ApnProfileCard
+                  profile={APN_4G_FALLBACK}
+                  muted
+                  squareCorners={squareCorners}
+                />
 
                 <ul className="space-y-2 text-[12px] text-gray-500 leading-relaxed pt-1">
                   <li className="flex gap-2">
@@ -177,20 +185,20 @@ export default function AuKddiApnReminderModal({
                 </ul>
               </div>
 
-              <div className="shrink-0 border-t border-slate-100 px-5 py-3.5 md:px-6 flex flex-col gap-2.5 bg-white">
+              <div className="shrink-0 border-t border-slate-200 px-5 py-3.5 md:px-6 flex flex-col gap-2.5 bg-white">
                 <button
                   type="button"
                   onClick={onContinuePurchase}
-                  className="w-full h-11 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90"
-                  style={{ background: ACCENT }}
+                  className={ui.btnPrimary}
+                  style={ui.btnPrimaryStyle}
                 >
                   {continueLabel}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full h-11 rounded-xl text-sm font-bold border-2 transition-colors hover:bg-[#eef5fc]"
-                  style={{ borderColor: ACCENT, color: ACCENT }}
+                  className={ui.btnSecondary}
+                  style={ui.btnSecondaryStyle}
                 >
                   先不要，我再想想
                 </button>

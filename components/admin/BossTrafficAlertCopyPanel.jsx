@@ -63,6 +63,9 @@ export default function BossTrafficAlertCopyPanel() {
   const [fupTitle, setFupTitle] = useState("");
   const [fupBody, setFupBody] = useState("");
   const [fupLineExtra, setFupLineExtra] = useState("");
+  const [expiryTitle, setExpiryTitle] = useState("");
+  const [expiryBody, setExpiryBody] = useState("");
+  const [expiryLineExtra, setExpiryLineExtra] = useState("");
   const [linkPath, setLinkPath] = useState("/data-query/");
   const [verifyResult, setVerifyResult] = useState(null);
   const [verifying, setVerifying] = useState(false);
@@ -89,6 +92,9 @@ export default function BossTrafficAlertCopyPanel() {
       setFupTitle(data.copy?.fupTitle || "");
       setFupBody(data.copy?.fupBody || "");
       setFupLineExtra(data.copy?.fupLineExtra || "");
+      setExpiryTitle(data.copy?.expiryTitle || "");
+      setExpiryBody(data.copy?.expiryBody || "");
+      setExpiryLineExtra(data.copy?.expiryLineExtra || "");
       setLinkPath(data.copy?.linkPath || "/data-query/");
     } catch (err) {
       setToast(err.message || "載入失敗");
@@ -193,6 +199,19 @@ export default function BossTrafficAlertCopyPanel() {
     [path, checkedAtSample],
   );
 
+  const expirySample = useMemo(
+    () => ({
+      productName: "【範例】台灣 eSIM · 2天 · 5Mbps 吃到飽",
+      used: "94 MB",
+      expiresAt: "2026-08-27 23:59",
+      hoursLeft: "13 小時",
+      checkedAt: checkedAtSample,
+      siteUrl: urlBase,
+      url: `${urlBase}${path}`,
+    }),
+    [path, checkedAtSample],
+  );
+
   const quotaPreview = useMemo(() => {
     const t = renderTpl(title, quotaSample);
     const b = renderTpl(body, quotaSample);
@@ -225,6 +244,22 @@ export default function BossTrafficAlertCopyPanel() {
     };
   }, [fupTitle, fupBody, fupLineExtra, fupSample]);
 
+  const expiryPreview = useMemo(() => {
+    const t = renderTpl(expiryTitle, expirySample);
+    const b = renderTpl(expiryBody, expirySample);
+    const extra = ensureTrafficCheckedAtLine(
+      renderTpl(expiryLineExtra, expirySample),
+      expirySample.checkedAt,
+    );
+    return {
+      title: t,
+      body: b,
+      line: [t, "", b, "", `👉 ${expirySample.url}`, extra || null]
+        .filter((l) => l != null && l !== "")
+        .join("\n"),
+    };
+  }, [expiryTitle, expiryBody, expiryLineExtra, expirySample]);
+
   const dirty = useMemo(() => {
     if (!meta?.copy) return false;
     const c = meta.copy;
@@ -235,6 +270,9 @@ export default function BossTrafficAlertCopyPanel() {
       fupTitle !== (c.fupTitle || "") ||
       fupBody !== (c.fupBody || "") ||
       fupLineExtra !== (c.fupLineExtra || "") ||
+      expiryTitle !== (c.expiryTitle || "") ||
+      expiryBody !== (c.expiryBody || "") ||
+      expiryLineExtra !== (c.expiryLineExtra || "") ||
       linkPath !== c.linkPath
     );
   }, [
@@ -245,6 +283,9 @@ export default function BossTrafficAlertCopyPanel() {
     fupTitle,
     fupBody,
     fupLineExtra,
+    expiryTitle,
+    expiryBody,
+    expiryLineExtra,
     linkPath,
   ]);
 
@@ -261,11 +302,14 @@ export default function BossTrafficAlertCopyPanel() {
           fupTitle,
           fupBody,
           fupLineExtra,
+          expiryTitle,
+          expiryBody,
+          expiryLineExtra,
           linkPath,
         }),
       });
       await load();
-      setToast("已儲存。系統會依方案類型自動選固定流量或吃到飽文案。");
+      setToast("已儲存。系統會依方案類型自動選固定流量、FUP 或使用期限文案。");
       setToastType("good");
     } catch (err) {
       setToast(err.message || "儲存失敗");
@@ -652,6 +696,72 @@ export default function BossTrafficAlertCopyPanel() {
             tone="line"
             label="LINE 預覽 · 吃到飽 FUP"
             line={fupPreview.line}
+          />
+        </div>
+      </div>
+
+      {/* 純吃到飽：使用期限 */}
+      <div className="rounded-2xl border border-violet-200 bg-violet-50/40 p-5 sm:p-6 shadow-sm space-y-4">
+        <h3 className="text-base font-black text-slate-900">
+          ③ 純吃到飽（無剩餘流量數值 → 提醒使用期限）
+        </h3>
+        <p className="text-[12px] text-slate-500 leading-relaxed">
+          例：台灣 5Mbps 吃到飽。用{" "}
+          <code className="text-[11px] bg-white px-1 rounded">
+            {"{{expiresAt}}"}
+          </code>
+          、
+          <code className="text-[11px] bg-white px-1 rounded">
+            {"{{hoursLeft}}"}
+          </code>
+          、
+          <code className="text-[11px] bg-white px-1 rounded">
+            {"{{used}}"}
+          </code>{" "}
+          動態帶入。預設效期剩餘{" "}
+          <code className="text-[11px] bg-white px-1 rounded">24</code>{" "}
+          小時內推播（環境變數 TRAFFIC_ALERT_EXPIRY_HOURS）。
+        </p>
+        <label className="block">
+          <span className="text-sm font-bold text-slate-700">標題</span>
+          <input
+            value={expiryTitle}
+            onChange={(e) => setExpiryTitle(e.target.value)}
+            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#1a56db]/25"
+            maxLength={80}
+          />
+        </label>
+        <label className="block">
+          <span className="text-sm font-bold text-slate-700">內文</span>
+          <textarea
+            value={expiryBody}
+            onChange={(e) => setExpiryBody(e.target.value)}
+            rows={3}
+            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#1a56db]/25 resize-y"
+            maxLength={500}
+          />
+        </label>
+        <label className="block">
+          <span className="text-sm font-bold text-slate-700">LINE 補充</span>
+          <textarea
+            value={expiryLineExtra}
+            onChange={(e) => setExpiryLineExtra(e.target.value)}
+            rows={2}
+            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/25 resize-y"
+            maxLength={300}
+          />
+        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PreviewCard
+            tone="push"
+            label="Web Push 預覽 · 使用期限"
+            title={expiryPreview.title}
+            body={expiryPreview.body}
+          />
+          <PreviewCard
+            tone="line"
+            label="LINE 預覽 · 使用期限"
+            line={expiryPreview.line}
           />
         </div>
       </div>

@@ -3,8 +3,7 @@
  */
 import { AnimatePresence, motion } from "framer-motion";
 import MaterialIcon from "../MaterialIcon";
-
-const ACCENT = "#0A6CD0";
+import { reminderUi } from "@/lib/purchaseReminderModalUi";
 
 export const SOFTBANK_APN = "plus.4g";
 export const SOFTBANK_APN_USER = "plus";
@@ -24,7 +23,9 @@ export default function SoftBankApnReminderModal({
   onClose,
   onContinuePurchase,
   purchaseAction = "cart",
+  squareCorners = false,
 }) {
+  const ui = reminderUi(squareCorners, "blue");
   const continueLabel =
     purchaseAction === "buy"
       ? "我知道了，繼續立即購買"
@@ -59,8 +60,8 @@ export default function SoftBankApnReminderModal({
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-0 z-[11010] flex items-center justify-center p-4 pointer-events-none"
           >
-            <div className="pointer-events-auto w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-              <div className="px-5 py-4 md:px-6" style={{ background: ACCENT }}>
+            <div className={ui.shell}>
+              <div className={ui.headerClass} style={ui.headerStyle}>
                 <div className="flex items-start justify-between gap-3">
                   <h3
                     id="softbank-apn-prompt-title"
@@ -84,7 +85,7 @@ export default function SoftBankApnReminderModal({
               </div>
 
               <div className="px-5 py-4 md:px-6 space-y-4">
-                <div className="rounded-xl border border-[#0A6CD0]/20 bg-[#eef5fc] px-4 py-3.5">
+                <div className={ui.infoPanel}>
                   <p className="text-[12px] font-bold text-slate-500 tracking-wide">
                     APN 設定值（需手動設定）
                   </p>
@@ -97,7 +98,11 @@ export default function SoftBankApnReminderModal({
                         <dt className="text-[12px] text-slate-500 shrink-0">
                           {r.k}
                         </dt>
-                        <dd className="text-[14px] font-bold text-[#0A6CD0] select-all text-right">
+                        <dd
+                          className={`text-[14px] font-bold select-all text-right ${
+                            squareCorners ? "text-[#1E4AD1]" : "text-[#0A6CD0]"
+                          }`}
+                        >
                           {r.v}
                         </dd>
                       </div>
@@ -127,16 +132,16 @@ export default function SoftBankApnReminderModal({
                   <button
                     type="button"
                     onClick={onContinuePurchase}
-                    className="w-full h-11 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90"
-                    style={{ background: ACCENT }}
+                    className={ui.btnPrimary}
+                    style={ui.btnPrimaryStyle}
                   >
                     {continueLabel}
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="w-full h-11 rounded-xl text-sm font-bold border-2 transition-colors hover:bg-[#eef5fc]"
-                    style={{ borderColor: ACCENT, color: ACCENT }}
+                    className={ui.btnSecondary}
+                    style={ui.btnSecondaryStyle}
                   >
                     先不要，我再想想
                   </button>

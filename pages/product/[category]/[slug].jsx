@@ -17,6 +17,7 @@ import {
   resolveProductCategoryBreadcrumbLabel,
   absoluteUrl,
 } from "../../../lib/seo.config";
+import { fetchProductReviewAggregate } from "../../../lib/productReviewAggregate";
 import {
   resolveOverviewNotices,
   parseOverviewNoticesByCarrier,
@@ -129,8 +130,8 @@ import {
 } from "../../../lib/telecomQueryAlias";
 import DataEstimatorModal, {
   getEstimatorDestinationLabel,
-  compareDataAmountsAsc,
 } from "@/components/DataEstimatorModal";
+import { sortUniqueDataAmountLabels } from "@/lib/dataAmountSort";
 import EsimCompatibilityModal from "@/components/EsimCompatibilityModal";
 import {
   is5MbpsDataAmount,
@@ -148,6 +149,8 @@ function ProductMediaSlide({
   className = "",
   priority = false,
 }) {
+  const fitClass = `${className} object-contain`.trim();
+
   if (item.type === "video") {
     return (
       <video
@@ -155,7 +158,8 @@ function ProductMediaSlide({
         controls
         playsInline
         preload="metadata"
-        className={className}
+        className={fitClass}
+        style={{ objectFit: "contain", maxWidth: "100%", maxHeight: "100%" }}
       />
     );
   }
@@ -167,7 +171,8 @@ function ProductMediaSlide({
         alt={item.alt || "商品圖片"}
         fill
         sizes="(max-width: 1024px) 100vw, 55vw"
-        className={className}
+        className={fitClass}
+        style={{ objectFit: "contain", objectPosition: "center" }}
         priority={priority}
         unoptimized={shouldBypassImageOptimization(item.src)}
       />
@@ -181,7 +186,8 @@ function ProductMediaSlide({
       width={1200}
       height={1200}
       sizes="(max-width: 1024px) 100vw, 55vw"
-      className={className}
+      className={fitClass}
+      style={{ objectFit: "contain", objectPosition: "center" }}
       priority={priority}
       unoptimized={shouldBypassImageOptimization(item.src)}
     />
@@ -2157,6 +2163,74 @@ const getMedusaHeaders = () => {
 const backendUrl =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * 首訪 ISR（fallback: blocking）時，Medusa 冷啟／逾時若直接 notFound，
+ * 會把「暫時失敗」快取成 404（revalidate 內訪客一直看到 404）。
+ * 暫時性錯誤改為 throw，讓下次請求重試；僅「確定沒有此商品」才 notFound。
+ */
+async function fetchMedusaProductByHandle(slug, headers) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      let regionId = "";
+      try {
+        const region = await fetchMedusaRegions();
+        if (region?.id) regionId = region.id;
+      } catch {
+        /* region 失敗仍可查商品 */
+      }
+
+      const query = new URLSearchParams({
+        handle: slug,
+        fields:
+          "+metadata,*variants,*variants.metadata,*variants.prices,*variants.calculated_price,*variants.options,*variants.options.option,*images,*categories",
+      });
+      if (regionId) query.set("region_id", regionId);
+
+      const prodRes = await fetch(
+        `${backendUrl}/store/products?${query.toString()}`,
+        {
+          headers,
+          signal: AbortSignal.timeout(20_000),
+        },
+      );
+
+      if (prodRes.status >= 500 || prodRes.status === 429) {
+        throw new Error(`Medusa temporarily unavailable (${prodRes.status})`);
+      }
+
+      let prodData = {};
+      try {
+        prodData = await prodRes.json();
+      } catch {
+        throw new Error("Medusa response is not JSON");
+      }
+
+      if (!prodRes.ok) {
+        // 明確查無／壞請求：視為 missing；其餘視為暫時失敗可重試
+        if (prodRes.status === 404 || prodRes.status === 400) {
+          return { missing: true };
+        }
+        throw new Error(`Medusa HTTP ${prodRes.status}`);
+      }
+
+      const product = prodData.products?.[0];
+      if (!product) return { missing: true };
+      return { product };
+    } catch (err) {
+      lastError = err;
+      if (attempt < 3) await sleep(450 * attempt);
+    }
+  }
+
+  throw lastError || new Error("Medusa product fetch failed after retries");
+}
+
 export async function getStaticPaths() {
   // Vercel／CI：不在 build 時預渲染全部 PDP（日本無限流量等變體極多會超時）。
   // fallback: blocking + revalidate → 首訪 ISR 生成 HTML，之後等同靜態頁。
@@ -2204,39 +2278,11 @@ export async function getStaticProps({ params }) {
     const { slug, category: categoryHandle } = params;
     const headers = getMedusaHeaders();
 
-    let regionId = "";
-    try {
-      const region = await fetchMedusaRegions();
-      if (region?.id) regionId = region.id;
-    } catch {
-      /* ignore */
-    }
-
-    const query = new URLSearchParams({
-      handle: slug,
-      fields:
-        "+metadata,*variants,*variants.metadata,*variants.prices,*variants.calculated_price,*variants.options,*variants.options.option,*images,*categories",
-    });
-    if (regionId) query.set("region_id", regionId);
-
-    const prodUrl = `${backendUrl}/store/products?${query.toString()}`;
-    const prodRes = await fetch(prodUrl, {
-      headers,
-      signal: AbortSignal.timeout(10_000),
-    });
-    const prodData = await prodRes.json();
-
-    if (!prodRes.ok) {
-      // 60 秒後允許重新嘗試：若是 Medusa 暫時無回應／逾時，
-      // 不應該把這次的失敗永久快取成 404（否則要等下次部署才會恢復）。
+    const fetched = await fetchMedusaProductByHandle(slug, headers);
+    if (fetched.missing) {
       return { notFound: true, revalidate: 60 };
     }
-
-    const product = prodData.products?.[0];
-
-    if (!product) {
-      return { notFound: true, revalidate: 60 };
-    }
+    const product = fetched.product;
 
     const rawKeyFeatures = product.metadata?.key_features_by_carrier;
     const parsedKeyFeatures = parseKeyFeaturesByCarrier(rawKeyFeatures) || {};
@@ -2438,17 +2484,23 @@ export async function getStaticProps({ params }) {
       isHotSale: isHotSaleTelecom(hotSaleTelecoms, v.attributes?.telecom || ""),
     }));
 
+    const reviewAggregate = await fetchProductReviewAggregate(product.id, {
+      sampleLimit: 8,
+    });
+
     return {
       props: {
         product: formattedProduct,
         variations: formattedVariations,
         comparablePlans,
+        reviewAggregate,
       },
       revalidate: 3600,
     };
   } catch (e) {
     console.error("Medusa getStaticProps error:", e);
-    return { notFound: true, revalidate: 60 };
+    // 勿把暫時失敗快取成 404；丟出後下次首訪會再跑 ISR
+    throw e;
   }
 }
 
@@ -2459,6 +2511,7 @@ export default function ProductPage({
   product: initialProduct,
   variations = [],
   comparablePlans = [],
+  reviewAggregate = null,
   /** "site" = 主站 Layout；"shop" = /shop Navbar+Footer（夥伴賣場） */
   shell = "site",
   store = null,
@@ -2614,13 +2667,9 @@ export default function ProductPage({
             .filter(Boolean),
         ),
       ];
-      const amounts = [
-        ...new Set(
-          variations
-            .map((v) => getVariationOptionAttrs(v).data_amount)
-            .filter(Boolean),
-        ),
-      ].sort(compareDataAmountsAsc);
+      const amounts = sortUniqueDataAmountLabels(
+        variations.map((v) => getVariationOptionAttrs(v).data_amount),
+      );
 
       const initialAttrs = resolveProductOptionQuery(router.query, {
         telecoms: carriers,
@@ -2767,14 +2816,36 @@ export default function ProductPage({
       filtered = filtered.filter(
         (v) => String(getVariationOptionAttrs(v).days) === String(currentDays),
       );
-    return [
-      ...new Set(
-        filtered
-          .map((v) => getVariationOptionAttrs(v).data_amount)
-          .filter(Boolean),
-      ),
-    ].sort(compareDataAmountsAsc);
+    return sortUniqueDataAmountLabels(
+      filtered.map((v) => getVariationOptionAttrs(v).data_amount),
+    );
   }, [variations, selectedAttributes["telecom"], selectedAttributes["days"]]);
+
+  // 切換電信／天數後：若目前 data_amount 不在可選列表，改選排序後第一個（避免價格配對錯亂）
+  useEffect(() => {
+    if (!router.isReady || !variations.length || !availableData.length) return;
+
+    const current = selectedAttributes.data_amount;
+    if (current && availableData.includes(current)) return;
+
+    const next = availableData[0];
+    if (!next || String(current) === String(next)) return;
+
+    const newAttrs = { ...selectedAttributes, data_amount: next };
+    setSelectedAttributes(newAttrs);
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: sanitizeProductQueryForUrl({
+          ...router.query,
+          data_amount: next,
+        }),
+      },
+      undefined,
+      { shallow: true },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableData, router.isReady, variations.length]);
 
   const handleAttributeSelect = (name, option) => {
     let newAttrs = { ...selectedAttributes, [name]: option };
@@ -3296,7 +3367,7 @@ export default function ProductPage({
     { ...product, subtitle: displaySubtitle || "" },
     currentVariation,
     router.query.category,
-    { variations },
+    { variations, reviewAggregate },
   );
 
   const breadcrumbCategorySlug = String(
@@ -3600,6 +3671,8 @@ export default function ProductPage({
                       spaceBetween={0}
                       centeredSlides={false}
                       watchOverflow
+                      observer
+                      observeParents
                       onSlideChange={(swiper) =>
                         setActiveSlide(swiper.realIndex)
                       }
@@ -3778,6 +3851,8 @@ export default function ProductPage({
                       href="#product-reviews"
                       className="mb-4"
                       starColor="text-[#3B9EFF]"
+                      initialStats={reviewAggregate}
+                      allowFallback
                     />
 
                     {introBullets[0] ? (
@@ -4328,6 +4403,8 @@ export default function ProductPage({
                       href="#product-reviews"
                       className="mb-5"
                       starColor="text-amber-400"
+                      initialStats={reviewAggregate}
+                      allowFallback
                     />
 
                     {/* 價格區 */}

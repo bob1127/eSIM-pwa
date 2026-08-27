@@ -9,6 +9,7 @@ import {
 } from "@/lib/adminAnalytics";
 import PartnerDetailPanel from "@/components/admin/PartnerDetailPanel";
 import BossPartnerOrdersView from "@/components/admin/BossPartnerOrdersView";
+import BossMainSiteSalesPanel from "@/components/admin/BossMainSiteSalesPanel";
 import OrderDetailModal from "@/components/partner/OrderDetailModal";
 import { reportOrderToPartnerShape } from "@/lib/adminOrderAdapter";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
@@ -143,6 +144,8 @@ function OrdersTable({ orders, statusBadge, onOpenPartner, onOpenOrder }) {
 }
 
 export default function BossSalesAnalyticsPanel() {
+  /** main = 主站 Medusa；partner = 夥伴商店／連結（Supabase） */
+  const [channel, setChannel] = useState("main");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [partners, setPartners] = useState([]);
@@ -160,6 +163,10 @@ export default function BossSalesAnalyticsPanel() {
   const [drilldownOrders, setDrilldownOrders] = useState([]);
 
   const load = useCallback(async () => {
+    if (channel !== "partner") {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -185,7 +192,7 @@ export default function BossSalesAnalyticsPanel() {
     } finally {
       setLoading(false);
     }
-  }, [partnerId, storeId, status, days]);
+  }, [channel, partnerId, storeId, status, days]);
 
   useEffect(() => {
     load();
@@ -365,6 +372,27 @@ export default function BossSalesAnalyticsPanel() {
 
   return (
     <div className="space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <BossSegmented
+          className="w-full sm:w-auto sm:min-w-[280px]"
+          options={[
+            ["main", "主站"],
+            ["partner", "夥伴商店／連結"],
+          ]}
+          value={channel}
+          onChange={setChannel}
+        />
+        <p className="text-[11px] text-slate-400">
+          {channel === "main"
+            ? "主站：Medusa 真實訂單 · 成本 = cost_price"
+            : "夥伴：Supabase 分潤訂單"}
+        </p>
+      </div>
+
+      {channel === "main" ? (
+        <BossMainSiteSalesPanel />
+      ) : (
+        <>
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
           <h3 className="text-base font-semibold text-slate-900">夥伴銷售分析</h3>
@@ -804,6 +832,8 @@ export default function BossSalesAnalyticsPanel() {
           onClose={() => setDetailOrder(null)}
           bossView
         />
+      )}
+        </>
       )}
     </div>
   );

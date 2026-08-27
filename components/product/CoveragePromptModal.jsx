@@ -4,6 +4,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import MaterialIcon from "../MaterialIcon";
 import { NETWORK_COVERAGE_ACCENT as ACCENT } from "@/lib/networkCoverageCountries";
+import { reminderUi } from "@/lib/purchaseReminderModalUi";
 
 const STORAGE_PREFIX = "jeko_coverage_ack:";
 
@@ -37,9 +38,11 @@ export default function CoveragePromptModal({
   onViewCoverage,
   onContinuePurchase,
   purchaseAction = "cart",
+  squareCorners = false,
 }) {
   if (!country) return null;
 
+  const ui = reminderUi(squareCorners, "blue");
   const continueLabel =
     purchaseAction === "buy" ? "不用，繼續立即購買" : "不用，繼續加入購物車";
   const imgSrc = country.heatmapImage
@@ -68,8 +71,14 @@ export default function CoveragePromptModal({
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-0 z-[11010] flex items-center justify-center p-4 pointer-events-none"
           >
-            <div className="pointer-events-auto w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-              <div className="px-5 py-4 md:px-6" style={{ background: ACCENT }}>
+            <div className={ui.shell}>
+              <div
+                className={ui.headerClass}
+                style={
+                  ui.headerStyle ??
+                  (squareCorners ? undefined : { background: ACCENT })
+                }
+              >
                 <div className="flex items-start justify-between gap-3">
                   <h3
                     id="coverage-prompt-title"
@@ -96,7 +105,7 @@ export default function CoveragePromptModal({
                   href={country.nperfUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block w-full overflow-hidden rounded-xl border border-gray-200 text-left transition hover:border-[#0A6CD0] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A6CD0]"
+                  className={ui.coverageLink}
                 >
                   {imgSrc ? (
                     <>
@@ -136,16 +145,24 @@ export default function CoveragePromptModal({
                   <button
                     type="button"
                     onClick={onViewCoverage}
-                    className="w-full h-11 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90"
-                    style={{ background: ACCENT }}
+                    className={ui.btnPrimary}
+                    style={
+                      ui.btnPrimaryStyle ??
+                      (squareCorners ? undefined : { background: ACCENT })
+                    }
                   >
                     先看涵蓋範圍
                   </button>
                   <button
                     type="button"
                     onClick={onContinuePurchase}
-                    className="w-full h-11 rounded-xl text-sm font-bold border-2 transition-colors hover:bg-[#eef5fc]"
-                    style={{ borderColor: ACCENT, color: ACCENT }}
+                    className={ui.btnSecondary}
+                    style={
+                      ui.btnSecondaryStyle ??
+                      (squareCorners
+                        ? undefined
+                        : { borderColor: ACCENT, color: ACCENT })
+                    }
                   >
                     {continueLabel}
                   </button>

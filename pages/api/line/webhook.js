@@ -23,6 +23,7 @@ import {
   upsertLineTrafficAlert,
 } from "../../../lib/lineTrafficAlert";
 import { isSupportBusinessHours } from "../../../lib/supportHours";
+import { buildLineFaqReplyMessage } from "../../../lib/lineFaqAutoReply";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -238,7 +239,17 @@ async function handleTextMessage(event) {
     return;
   }
 
-  // 非關鍵字一般訊息：非營業時間引導至網站／PWA 智慧客服
+  // FAQ 關鍵字自動回覆（CSV → lineFaqEntries.js，含顏文字 + 🌼🌻；Reply 不佔推播額度）
+  // 設 LINE_FAQ_WEBHOOK_DISABLED=1 可暫時關閉，改交給後台 AI／自動回應
+  if (process.env.LINE_FAQ_WEBHOOK_DISABLED !== "1") {
+    const faqMsg = buildLineFaqReplyMessage(text);
+    if (faqMsg) {
+      await replyLineMessage(replyToken, faqMsg);
+      return;
+    }
+  }
+
+  // 未命中 FAQ：非營業時間引導至網站／PWA 智慧客服；營業時間不回，留給後台 AI／人工
   if (!isSupportBusinessHours()) {
     await replyLineMessage(replyToken, buildOffHoursAiGuideMessage());
   }

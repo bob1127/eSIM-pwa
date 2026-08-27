@@ -3,6 +3,7 @@
  */
 import { AnimatePresence, motion } from "framer-motion";
 import MaterialIcon from "../MaterialIcon";
+import { reminderUi } from "@/lib/purchaseReminderModalUi";
 
 const ACCENT = "#0A6CD0";
 const WARN = "#b45309";
@@ -42,7 +43,9 @@ export default function DataExhaustReminderModal({
   onContinuePurchase,
   purchaseAction = "cart",
   dataLabel = "",
+  squareCorners = false,
 }) {
+  const ui = reminderUi(squareCorners, "warn");
   const continueLabel =
     purchaseAction === "buy"
       ? "我知道了，繼續立即購買"
@@ -70,8 +73,11 @@ export default function DataExhaustReminderModal({
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-0 z-[11010] flex items-center justify-center p-4 pointer-events-none"
           >
-            <div className="pointer-events-auto w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-              <div className="px-5 py-4 md:px-6" style={{ background: WARN }}>
+            <div className={ui.shell}>
+              <div
+                className={ui.headerClass}
+                style={ui.headerStyle ?? (squareCorners ? undefined : { background: WARN })}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <h3
                     id="data-exhaust-prompt-title"
@@ -94,12 +100,20 @@ export default function DataExhaustReminderModal({
               </div>
 
               <div className="px-5 py-4 md:px-6 space-y-4">
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5">
-                  <p className="text-[13px] font-bold text-amber-900">
+                <div className={ui.infoPanel}>
+                  <p
+                    className={`text-[13px] font-bold ${
+                      squareCorners ? "text-slate-800" : "text-amber-900"
+                    }`}
+                  >
                     用完即斷網
                     {dataLabel ? `｜目前選擇：${dataLabel}` : ""}
                   </p>
-                  <ul className="mt-2 space-y-1.5 text-[12px] text-amber-950/80 leading-relaxed">
+                  <ul
+                    className={`mt-2 space-y-1.5 text-[12px] leading-relaxed ${
+                      squareCorners ? "text-slate-600" : "text-amber-950/80"
+                    }`}
+                  >
                     <li>・總流量歸零後，地圖、傳訊、熱點都無法使用</li>
                     <li>・不會自動降速續用，需另購方案或改選「用完降速」類型</li>
                     <li>・建議依天數預留餘量，避免旅途中突然沒網</li>
@@ -111,7 +125,9 @@ export default function DataExhaustReminderModal({
                     <MaterialIcon
                       name="info"
                       size={16}
-                      className="shrink-0 text-[#0A6CD0] mt-0.5"
+                      className={`shrink-0 mt-0.5 ${
+                        squareCorners ? "text-slate-500" : "text-[#0A6CD0]"
+                      }`}
                     />
                     <span>
                       若希望用完後仍可低速上網，請改選標示「降速至約
@@ -124,16 +140,16 @@ export default function DataExhaustReminderModal({
                   <button
                     type="button"
                     onClick={onContinuePurchase}
-                    className="w-full h-11 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90"
-                    style={{ background: ACCENT }}
+                    className={ui.btnPrimary}
+                    style={ui.btnPrimaryStyle}
                   >
                     {continueLabel}
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="w-full h-11 rounded-xl text-sm font-bold border-2 transition-colors hover:bg-[#eef5fc]"
-                    style={{ borderColor: ACCENT, color: ACCENT }}
+                    className={ui.btnSecondary}
+                    style={ui.btnSecondaryStyle}
                   >
                     先不要，我再選其他方案
                   </button>

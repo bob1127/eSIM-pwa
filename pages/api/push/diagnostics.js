@@ -102,7 +102,7 @@ export default async function handler(req, res) {
   return res.status(200).json({
     ok: allOk,
     message: allOk
-      ? "推播串接就緒（Cron 每 10 分鐘檢查已綁定 eSIM；偏低冷卻約 8 小時）"
+      ? "推播串接就緒（Cron 每 10 分鐘檢查已綁定 eSIM；偏低冷卻約 12 小時，一天約 2 次）"
       : "部分項目未就緒，請執行 migration 或設定 env",
     checks,
     migrations: [

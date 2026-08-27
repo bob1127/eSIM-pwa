@@ -773,7 +773,7 @@ function PlanTripForm({ disabled = false, onCancel, onSubmit }) {
               onChange={(e) => setCustomDestination(e.target.value)}
               placeholder="例如：日本＋韓國，或填國家名"
               disabled={disabled}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
           )}
         </div>
@@ -1846,7 +1846,7 @@ export default function AiChatWidget() {
                     readOnly
                     value={handoffSummary}
                     rows={7}
-                    className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                    className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-base leading-relaxed text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                   />
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -2149,7 +2149,7 @@ export default function AiChatWidget() {
                       : "輸入問題或上傳截圖..."
                   }
                   aria-label="輸入訊息"
-                  className="flex-1 bg-transparent px-2 border-none outline-none focus:ring-0 text-sm text-slate-700"
+                  className="flex-1 bg-transparent px-2 border-none outline-none focus:ring-0 text-base text-slate-700"
                   disabled={isLoading}
                 />
                 <button
