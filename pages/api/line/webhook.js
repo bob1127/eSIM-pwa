@@ -16,6 +16,7 @@ import {
   isBindKeyword,
   getLineMessagingConfig,
   isLineBotConfigured,
+  pushLineMessage,
 } from "../../../lib/lineBot";
 import { getPublicSiteUrl } from "../../../lib/siteUrl";
 import {
@@ -118,6 +119,20 @@ async function enableLineTrafficAlert(lineUserId) {
   };
 }
 
+function isUserIdLookupKeyword(text) {
+  const raw = String(text || "").trim();
+  const t = raw.toLowerCase().replace(/\s+/g, "");
+  return (
+    t === "userid" ||
+    t === "lineuserid" ||
+    t === "查userid" ||
+    t === "查詢userid" ||
+    t === "查詢我的id" ||
+    t === "我的userid" ||
+    raw === "查詢我的ID"
+  );
+}
+
 async function handleTextMessage(event) {
   const text = event.message?.text || "";
   const replyToken = event.replyToken;
@@ -130,19 +145,18 @@ async function handleTextMessage(event) {
     return;
   }
 
-  const t = String(text).trim().toLowerCase();
-  if (
-    lineUserId &&
-    (t === "userid" ||
-      t === "line userid" ||
-      t === "查userid" ||
-      t === "查詢userid" ||
-      text.trim() === "查詢我的ID")
-  ) {
-    await replyLineMessage(replyToken, {
+  // 用 Push（不用 replyToken），避免 LINE OA「AI 聊天機器人」先吃掉 reply 導致無回覆
+  if (lineUserId && isUserIdLookupKeyword(text)) {
+    const msg = {
       type: "text",
       text: `您的 LINE userId（供 Boss 新訂單推播設定）：\n\n${lineUserId}\n\n請複製後填入 ORDER_NOTIFY_ADMIN_LINE_USER_IDS`,
-    });
+    };
+    try {
+      await pushLineMessage(lineUserId, msg);
+    } catch (pushErr) {
+      console.warn("[LINE Bot] userid push failed, try reply:", pushErr?.message);
+      if (replyToken) await replyLineMessage(replyToken, msg);
+    }
     return;
   }
 
