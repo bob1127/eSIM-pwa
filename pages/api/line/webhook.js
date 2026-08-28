@@ -130,6 +130,22 @@ async function handleTextMessage(event) {
     return;
   }
 
+  const t = String(text).trim().toLowerCase();
+  if (
+    lineUserId &&
+    (t === "userid" ||
+      t === "line userid" ||
+      t === "查userid" ||
+      t === "查詢userid" ||
+      text.trim() === "查詢我的ID")
+  ) {
+    await replyLineMessage(replyToken, {
+      type: "text",
+      text: `您的 LINE userId（供 Boss 新訂單推播設定）：\n\n${lineUserId}\n\n請複製後填入 ORDER_NOTIFY_ADMIN_LINE_USER_IDS`,
+    });
+    return;
+  }
+
   if (isAlertKeyword(text)) {
     if (!lineUserId) {
       await replyLineMessage(replyToken, {
