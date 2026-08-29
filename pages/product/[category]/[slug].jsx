@@ -138,7 +138,9 @@ import {
   is5MbpsDataAmount,
   formatDataAmountMain,
   getVariationOptionAttrs,
+  inferDefaultTelecomFromVariations,
 } from "@/lib/dataAmountLabel";
+import { hasCarrierContentMap } from "../../../lib/productCarrierMetaFallback";
 import { buildLoginUrl } from "@/lib/authRedirect";
 import { fetchMedusaRegions } from "@/lib/medusaStoreApi";
 
@@ -1947,7 +1949,8 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
                     />
                   </div>
                 ) : (
-                  safeCarrier && (
+                  safeCarrier &&
+                  safeCarrier !== "default" && (
                     <p className="text-sm text-slate-400">
                       「{safeCarrier}」尚無產品介紹內容。
                       {isAdmin ? " 點「編輯內容」新增。" : ""}
@@ -2040,7 +2043,8 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
                     className="max-w-none product-content-wrapper"
                   />
                 ) : (
-                  safeCarrier && (
+                  safeCarrier &&
+                  safeCarrier !== "default" && (
                     <p className="text-sm text-slate-400">
                       「{safeCarrier}」尚無使用介紹內容。
                       {isAdmin ? " 點「編輯內容」新增。" : ""}
@@ -2134,7 +2138,8 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
                     accordion
                   />
                 ) : (
-                  safeCarrier && (
+                  safeCarrier &&
+                  safeCarrier !== "default" && (
                     <p className="text-sm text-slate-400">
                       「{safeCarrier}」尚無常見問題內容。
                       {isAdmin ? " 點「編輯內容」新增。" : ""}
@@ -2632,32 +2637,33 @@ export default function ProductPage({
         if (!data) return;
         setProduct((prev) => ({
           ...prev,
-          ...(data.key_features_by_carrier
+          ...(hasCarrierContentMap(data.key_features_by_carrier)
             ? { key_features_by_carrier: data.key_features_by_carrier }
             : {}),
-          ...(data.carrier_specs_by_carrier
+          ...(hasCarrierContentMap(data.carrier_specs_by_carrier)
             ? { carrier_specs_by_carrier: data.carrier_specs_by_carrier }
             : {}),
-          ...(data.hot_sale_telecoms
+          ...(Array.isArray(data.hot_sale_telecoms) &&
+          data.hot_sale_telecoms.length > 0
             ? { hot_sale_telecoms: data.hot_sale_telecoms }
             : {}),
-          ...(data.overview_notices_by_carrier
+          ...(hasCarrierContentMap(data.overview_notices_by_carrier)
             ? {
                 overview_notices_by_carrier: data.overview_notices_by_carrier,
               }
             : {}),
-          ...(data.detailed_content_by_carrier
+          ...(hasCarrierContentMap(data.detailed_content_by_carrier)
             ? {
                 detailed_content_by_carrier: data.detailed_content_by_carrier,
               }
             : {}),
-          ...(data.usage_content_by_carrier
+          ...(hasCarrierContentMap(data.usage_content_by_carrier)
             ? { usage_content_by_carrier: data.usage_content_by_carrier }
             : {}),
-          ...(data.faq_content_by_carrier
+          ...(hasCarrierContentMap(data.faq_content_by_carrier)
             ? { faq_content_by_carrier: data.faq_content_by_carrier }
             : {}),
-          ...(data.promo_offer_by_carrier
+          ...(hasCarrierContentMap(data.promo_offer_by_carrier)
             ? { promo_offer_by_carrier: data.promo_offer_by_carrier }
             : {}),
           detailed_content: data.detailed_content || prev.detailed_content,
@@ -3147,7 +3153,10 @@ export default function ProductPage({
     });
   };
 
-  const carrierName = selectedAttributes["telecom"] || "default";
+  const carrierName =
+    selectedAttributes["telecom"] ||
+    inferDefaultTelecomFromVariations(variations) ||
+    "default";
   const activeCarrierInfo =
     CARRIER_INFO_MAP[carrierName] || CARRIER_INFO_MAP.default;
   const marketingConfig = activeCarrierInfo.marketingBox;

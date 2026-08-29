@@ -20,13 +20,38 @@ import {
   BossCard,
   BossCooperationBadge,
   BossField,
-  BossFilterTabs,
-  BossKpiCard,
   BossNum,
   BossSegmented,
   BossSelect,
   BossStatusBadge,
 } from "@/components/admin/bossUi";
+import {
+  BOSS_AUI,
+  BossAnalyticsCard,
+  BossAnalyticsHeader,
+  BossChannelChips,
+  BossStatPill,
+  BossStatusChips,
+} from "@/components/admin/BossAnalyticsChrome";
+import dynamic from "next/dynamic";
+
+const chartLoading = () => (
+  <div className="h-28 flex items-center justify-center">
+    <LoadingIndicator layout="center" label="載入圖表…" size="sm" />
+  </div>
+);
+const RevenueSplitDonut = dynamic(
+  () =>
+    import("@/components/partner/AnalyticsCharts").then(
+      (m) => m.RevenueSplitDonut,
+    ),
+  { ssr: false, loading: chartLoading },
+);
+const CountCircle = dynamic(
+  () =>
+    import("@/components/partner/AnalyticsCharts").then((m) => m.CountCircle),
+  { ssr: false, loading: chartLoading },
+);
 
 const fmt = (n) => `NT$${Math.round(Number(n) || 0).toLocaleString()}`;
 
@@ -371,18 +396,10 @@ export default function BossSalesAnalyticsPanel() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" style={{ backgroundColor: BOSS_AUI.wash }}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <BossSegmented
-          className="w-full sm:w-auto sm:min-w-[280px]"
-          options={[
-            ["main", "主站"],
-            ["partner", "夥伴商店／連結"],
-          ]}
-          value={channel}
-          onChange={setChannel}
-        />
-        <p className="text-[11px] text-slate-400">
+        <BossChannelChips value={channel} onChange={setChannel} />
+        <p className="text-[11px]" style={{ color: BOSS_AUI.soft }}>
           {channel === "main"
             ? "主站：Medusa 真實訂單 · 成本 = cost_price"
             : "夥伴：Supabase 分潤訂單"}
@@ -393,25 +410,35 @@ export default function BossSalesAnalyticsPanel() {
         <BossMainSiteSalesPanel />
       ) : (
         <>
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-        <div>
-          <h3 className="text-base font-semibold text-slate-900">夥伴銷售分析</h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            點進夥伴或店鋪後，每列為一筆買家訂單；詳情可查看商品底價、夥伴售價與分潤。
-          </p>
-        </div>
-        <BossButton
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={load}
-          disabled={loading}
-        >
-          {loading ? "更新中…" : "重新整理"}
-        </BossButton>
-      </div>
+      <BossAnalyticsHeader
+        title="夥伴銷售分析"
+        subtitle="點進夥伴或店鋪後，可查看買家訂單、底價、售價與分潤"
+        rangeValue={days}
+        onRangeChange={setDays}
+        extra={
+          <button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            className="min-h-9 px-3 py-1.5 text-xs font-bold rounded-xl border bg-white disabled:opacity-50"
+            style={{ borderColor: BOSS_AUI.border, color: BOSS_AUI.mid }}
+          >
+            {loading ? "更新中…" : "重新整理"}
+          </button>
+        }
+      />
 
-      <BossCard className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <BossAnalyticsCard className="px-5 py-4">
+        <p className="text-base font-black" style={{ color: BOSS_AUI.dark }}>
+          {loading
+            ? "正在讀取夥伴分潤數據…"
+            : (kpis.orderCount || 0) > 0
+              ? `${periodLabel(days)}營收 ${fmt(kpis.revenue)}，平台利潤 ${fmt(kpis.platformProfit)}（夥伴分潤 ${fmt(kpis.partnerProfit)}）`
+              : `${periodLabel(days)}尚無符合條件的夥伴訂單`}
+        </p>
+      </BossAnalyticsCard>
+
+      <BossAnalyticsCard className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <BossField label="夥伴">
           <BossSelect
             value={partnerId}
@@ -453,15 +480,6 @@ export default function BossSalesAnalyticsPanel() {
             ))}
           </BossSelect>
         </BossField>
-        <BossField label="期間">
-          <BossSelect value={days} onChange={(e) => setDays(e.target.value)}>
-            <option value="9999">全部</option>
-            <option value="7">近 7 日</option>
-            <option value="30">近 30 日</option>
-            <option value="90">近 90 日</option>
-            <option value="365">近 1 年</option>
-          </BossSelect>
-        </BossField>
         <BossField label="檢視">
           <BossSegmented
             options={[
@@ -480,30 +498,85 @@ export default function BossSalesAnalyticsPanel() {
             }}
           />
         </BossField>
-      </BossCard>
+      </BossAnalyticsCard>
 
-      <BossFilterTabs items={STATUS_TABS} value={status} onChange={setStatus} />
+      <BossStatusChips items={STATUS_TABS} value={status} onChange={setStatus} />
 
       {error && <BossAlert>{error}</BossAlert>}
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <BossKpiCard
+      <div className="flex flex-wrap gap-3">
+        <BossStatPill
+          icon="payments"
+          iconBg="#2c6ecb"
           label="營收（已結算）"
-          value={fmt(kpis.revenue)}
+          value={loading ? "…" : fmt(kpis.revenue)}
           sub={`${kpis.orderCount || 0} 筆`}
         />
-        <BossKpiCard label="底價成本" value={fmt(kpis.b2bCost)} />
-        <BossKpiCard label="夥伴分潤" value={fmt(kpis.partnerProfit)} />
-        <BossKpiCard
+        <BossStatPill
+          icon="inventory_2"
+          iconBg="#8c9196"
+          label="底價成本"
+          value={loading ? "…" : fmt(kpis.b2bCost)}
+        />
+        <BossStatPill
+          icon="handshake"
+          iconBg="#eec200"
+          label="夥伴分潤"
+          value={loading ? "…" : fmt(kpis.partnerProfit)}
+        />
+        <BossStatPill
+          icon="account_balance_wallet"
+          iconBg="#008060"
           label="我的利潤"
-          value={fmt(kpis.platformProfit)}
+          value={loading ? "…" : fmt(kpis.platformProfit)}
           sub="營收 − 底價 − 分潤"
         />
-        <BossKpiCard
+        <BossStatPill
+          icon="report"
+          iconBg="#1a1a1a"
           label="待付款 / 退款"
-          value={`${kpis.pendingCount || 0} / ${kpis.refundCount || 0}`}
+          value={
+            loading
+              ? "…"
+              : `${kpis.pendingCount || 0} / ${kpis.refundCount || 0}`
+          }
           sub={`退款審核中 ${kpis.refundPendingCount || 0}`}
         />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <BossAnalyticsCard className="p-4">
+          <p className="text-xs font-bold mb-3" style={{ color: BOSS_AUI.mid }}>
+            夥伴分潤 vs 底價（黃＝平台利潤）
+          </p>
+          {loading ? (
+            chartLoading()
+          ) : (
+            <RevenueSplitDonut
+              profit={Number(kpis.partnerProfit) || 0}
+              cost={Number(kpis.b2bCost) || 0}
+              other={Number(kpis.platformProfit) || 0}
+              costLabel="底價成本"
+            />
+          )}
+        </BossAnalyticsCard>
+        <BossAnalyticsCard className="p-4 flex items-center gap-4">
+          {loading ? (
+            chartLoading()
+          ) : (
+            <>
+              <CountCircle value={kpis.orderCount || 0} color="#2c6ecb" />
+              <div>
+                <p className="text-xs font-bold" style={{ color: BOSS_AUI.mid }}>
+                  期間有效訂單
+                </p>
+                <p className="text-[11px] mt-1" style={{ color: BOSS_AUI.soft }}>
+                  夥伴商店／優惠連結渠道合計
+                </p>
+              </div>
+            </>
+          )}
+        </BossAnalyticsCard>
       </div>
 
       {partnerId && view === "orders" && (

@@ -20,6 +20,7 @@ import {
   paymentMethodLabel,
   buyerDisplayName,
   buyerEmail,
+  formatOrderCode,
 } from "@/lib/orderDisplay";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
 
@@ -250,7 +251,7 @@ export default function BossPartnerOrdersView({
                     <tr key={order.id} className="hover:bg-slate-50/50">
                       <td className="px-5 py-4">
                         <p className="font-mono font-semibold text-xs text-slate-800">
-                          {String(order.id).substring(0, 8).toUpperCase()}
+                          {formatOrderCode(order)}
                         </p>
                         <p className="text-xs mt-0.5 text-slate-400">
                           {formatDate(order.created_at)}

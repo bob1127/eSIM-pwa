@@ -9,6 +9,7 @@
 //   - 特定「限新會員」折扣碼（見 lib/memberOnlyPromotions.js）：
 //       必須登入，且該 email 過去沒有任何已完成付款訂單，才允許套用。
 //   - 新會員 50／歡迎禮：須已加入官方 LINE，否則回 need_line_friend 供前端引導。
+//   - 訪客 welcome 券：須 LINE Login / LIFF 驗證（lineIdToken 或 guest cookie），不可僅輸入碼。
 import { createClient } from "@supabase/supabase-js";
 import { isMemberOnlyPromoCode } from "../../../lib/memberOnlyPromotions";
 import { isSettledOrderStatus } from "../../../lib/refundPolicy";
@@ -25,6 +26,8 @@ import {
   bindWelcomeRedemption,
   isWelcomeRelatedCode,
 } from "../../../lib/welcomeGuard";
+import { resolveVerifiedLineGuest } from "../../../lib/lineGuestWelcomeVerify";
+import { pendingLineEmail } from "../../../lib/memberWelcomeBenefit";
 import { resolveMemberEmail } from "../push/_memberAuth";
 import { resolvePartnerReferralDiscount } from "../../../lib/partnerReferralDiscount";
 import {
@@ -167,7 +170,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: "Method Not Allowed" });
   }
 
-  const { cartId, code, action = "apply" } = req.body || {};
+  const { cartId, code, action = "apply", lineIdToken, guestEmail } =
+    req.body || {};
 
   if (!cartId) {
     return res.status(400).json({ success: false, error: "缺少購物車 ID" });
@@ -233,11 +237,28 @@ export default async function handler(req, res) {
     }
 
     const member = await getAuthedMember(req, res);
-    const email = member?.email || null;
+    const guestLine = await resolveVerifiedLineGuest(req, { lineIdToken });
+    const guestLineUserId = guestLine.ok ? guestLine.lineUserId : null;
+
+    let effectiveMember = member;
+    if (guestLineUserId) {
+      effectiveMember = {
+        ...(member || {}),
+        lineUserId: guestLineUserId,
+        email:
+          member?.email ||
+          (guestEmail ? String(guestEmail).toLowerCase() : null),
+        guestLineVerify: !member?.email,
+        source: member?.source || "line_guest",
+      };
+    }
+
+    const email = effectiveMember?.email || null;
     let memberCouponId = null;
     let memberCouponRow = null;
     let displayCode = normalizedCode;
     let isWelcomeFlow = false;
+    let guestWelcomeCheckout = false;
     let partnerReferral = null;
 
     // 專屬連結折扣碼：旅客輸入 referral_code → 映射 Medusa 內部碼
@@ -276,21 +297,44 @@ export default async function handler(req, res) {
       const resolved = await resolveLotteryPromoForCheckout(supabaseAdmin, {
         code: normalizedCode,
         email,
+        lineUserId: guestLineUserId || effectiveMember?.lineUserId || null,
+        guestLineVerify: Boolean(
+          guestLineUserId &&
+            (isWelcomeMemberCouponCode(normalizedCode) ||
+              isWelcomeRelatedCode(normalizedCode)),
+        ),
       });
       if (resolved?.error) {
         return res.status(resolved.status || 400).json({
           success: false,
           error: resolved.error,
           ...(resolved.need_login ? { need_login: true } : {}),
+          ...(resolved.need_line_verify ? { need_line_verify: true } : {}),
+          ...(resolved.code ? { code: resolved.code } : {}),
         });
       }
       displayCode = normalizedCode;
       normalizedCode = resolved.medusaCode;
       memberCouponId = resolved.memberCoupon?.id || null;
       memberCouponRow = resolved.memberCoupon || null;
+      guestWelcomeCheckout = Boolean(resolved.guestCheckout);
       if (resolved.isWelcome || isWelcomeMemberCouponCode(displayCode)) {
         isWelcomeFlow = true;
       }
+    }
+
+    if (
+      isWelcomeFlow &&
+      !member?.email &&
+      !guestLineUserId &&
+      isWelcomeMemberCouponCode(displayCode)
+    ) {
+      return res.status(403).json({
+        success: false,
+        need_line_verify: true,
+        error: "請先以 LINE 驗證身分後，才能套用新會員 50 元折扣碼",
+        line_oa_url: LINE_OA_URL,
+      });
     }
 
     if (isMemberOnlyPromoCode(normalizedCode)) {
@@ -319,9 +363,10 @@ export default async function handler(req, res) {
           error: "優惠券系統尚未設定完成",
         });
       }
-      const gate = await assertWelcomeRedeemAllowed(supabaseAdmin, member, {
+      const gate = await assertWelcomeRedeemAllowed(supabaseAdmin, effectiveMember, {
         couponRow: memberCouponRow,
         isPublicNewMemberCode: isMemberOnlyPromoCode(normalizedCode),
+        guestLineVerify: guestWelcomeCheckout,
       });
       if (!gate.ok) {
         if (gate.need_line_friend) {
@@ -333,6 +378,7 @@ export default async function handler(req, res) {
               code: gate.code,
               checkedVia: gate.checkedVia,
               reason: gate.reason,
+              ...(gate.need_line_verify ? { need_line_verify: true } : {}),
             },
           );
         }
@@ -441,10 +487,15 @@ export default async function handler(req, res) {
     }
 
     // 套用成功：綁定 LINE 核銷（一個 LINE 終身一次）
-    if (welcomeLineUserId && email) {
+    const redemptionEmail =
+      (guestEmail && String(guestEmail).toLowerCase()) ||
+      email ||
+      (welcomeLineUserId ? pendingLineEmail(welcomeLineUserId) : null);
+
+    if (welcomeLineUserId && redemptionEmail) {
       const bound = await bindWelcomeRedemption(supabaseAdmin, {
         lineUserId: welcomeLineUserId,
-        email,
+        email: redemptionEmail,
         couponId: memberCouponId,
         couponCode: displayCode,
         cartId,

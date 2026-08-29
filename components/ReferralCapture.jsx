@@ -25,13 +25,14 @@ export default function ReferralCapture() {
     if (!router.isReady) return;
 
     const couponRaw =
-      typeof router.query.coupon === "string" ? router.query.coupon : "";
+      (typeof router.query.coupon === "string" && router.query.coupon) ||
+      (typeof router.query.code === "string" && router.query.code) ||
+      "";
     if (couponRaw && typeof window !== "undefined") {
       try {
-        sessionStorage.setItem(
-          PENDING_COUPON_KEY,
-          couponRaw.trim().toUpperCase(),
-        );
+        const normalized = couponRaw.trim().toUpperCase();
+        sessionStorage.setItem(PENDING_COUPON_KEY, normalized);
+        sessionStorage.removeItem(`${PENDING_COUPON_KEY}_failed`);
       } catch {
         /* ignore */
       }
@@ -79,6 +80,7 @@ export default function ReferralCapture() {
     router.query.ref,
     router.query.partner,
     router.query.coupon,
+    router.query.code,
   ]);
 
   return null;

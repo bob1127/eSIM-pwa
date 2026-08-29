@@ -41,8 +41,8 @@ loadEnvLocal();
 const MEDUSA_URL = (
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 ).replace(/\/$/, "");
-const EMAIL = process.env.MEDUSA_ADMIN_EMAIL || "admin@esim.com";
-const PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "12345678";
+const EMAIL = process.env.MEDUSA_ADMIN_EMAIL || "info@bluelink.com.tw";
+const PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "bluelink_KB76qUcdEd6";
 
 /** 舊 ID → 分類 handle（腳本註解／硬編碼對照） */
 const OLD_CATEGORY_MAP = {

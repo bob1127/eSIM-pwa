@@ -20,6 +20,7 @@ import {
   broadcastPushNotifyState,
   subscribePushNotifySync,
 } from "@/lib/pushNotifySync";
+import { useUser } from "@/components/context/UserContext";
 import {
   AccountPageWrap,
   AccountBadge,
@@ -172,6 +173,7 @@ function Card({ children, className = "", style = {} }) {
 }
 
 export default function AccountTrafficView({ orders, ordersLoading }) {
+  const { token } = useUser();
   const esims = useMemo(() => extractEsimsFromOrders(orders || []), [orders]);
   const [results, setResults] = useState({});
   const [loadingId, setLoadingId] = useState(null);
@@ -208,8 +210,22 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
       }
       const res = await fetch(
         `/api/push/bind-status?endpoint=${encodeURIComponent(endpoint)}`,
+        {
+          credentials: "include",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
       );
       const data = await res.json();
+      if (data.clearedForeignBind) {
+        setMonitorBound(false);
+        setBoundTopupId(null);
+        broadcastPushNotifyState({
+          on: true,
+          topupId: null,
+          source: "account-traffic",
+        });
+        return;
+      }
       const bound = Boolean(data.bound);
       const topup = data.topupId || null;
       setMonitorBound(bound);
@@ -225,7 +241,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
     } finally {
       setMonitorChecking(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     refreshMonitorStatus();

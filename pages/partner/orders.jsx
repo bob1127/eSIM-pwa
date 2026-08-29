@@ -20,6 +20,7 @@ import {
   paymentMethodLabel,
   buyerDisplayName,
   buyerEmail,
+  formatOrderCode,
 } from "@/lib/orderDisplay";
 import { PARTNER_UI } from "@/lib/partnerUi";
 import StatusIconBadge from "@/components/partner/StatusIconBadge";
@@ -144,7 +145,9 @@ export default function PartnerOrdersPage() {
 
   useEffect(() => {
     if (!partner) return;
-    fetchPartnerStats(partner.id, store?.id).then((s) => {
+    fetchPartnerStats(partner.id, store?.id, {
+      hideCost: partner?.cooperation_model === "referral",
+    }).then((s) => {
       setStats(s);
       setLoading(false);
     });
@@ -252,6 +255,9 @@ export default function PartnerOrdersPage() {
   const selectedOrders = filtered.filter((o) => selected.has(o.id));
   const printTargetOrders = selectedOrders.length ? selectedOrders : filtered;
   const partnerDisplayName = store?.store_name || partner?.name || "";
+  // 優惠連結夥伴：不進貨、售價與官網相同 → 不揭露平台底價成本
+  const isReferral = partner?.cooperation_model === "referral";
+  const columnCount = isReferral ? 8 : 9;
   const csvName = `訂單分潤_${new Date().toISOString().slice(0, 10)}.csv`;
   const selectionLabel =
     selected.size > 0 ? `（已選 ${selected.size}）` : "";
@@ -292,7 +298,8 @@ export default function PartnerOrdersPage() {
       label: `匯出 CSV${selectionLabel}`,
       icon: "download",
       disabled: !filtered.length,
-      onClick: () => downloadOrdersCsv(printTargetOrders, csvName),
+      onClick: () =>
+        downloadOrdersCsv(printTargetOrders, csvName, { hideCost: isReferral }),
     },
     { divider: true },
     {
@@ -302,10 +309,13 @@ export default function PartnerOrdersPage() {
         : "先勾選訂單再匯出",
       icon: "checklist",
       disabled: !selected.size,
-      onClick: () => downloadOrdersCsv(selectedOrders, csvName),
+      onClick: () =>
+        downloadOrdersCsv(selectedOrders, csvName, { hideCost: isReferral }),
     },
   ];
 
+  // 選單比照 PartnerAdminLayout 的 NAV_ITEMS：方案分潤一覽只有優惠連結夥伴有，
+  // 商品管理只有商店夥伴有
   const moreMenuItems = [
     {
       id: "settlement",
@@ -319,19 +329,24 @@ export default function PartnerOrdersPage() {
       icon: "insights",
       onClick: () => router.push("/partner/analytics"),
     },
-    {
-      id: "rates",
-      label: "方案分潤一覽",
-      icon: "percent",
-      onClick: () => router.push("/partner/rates"),
-    },
-    { divider: true },
-    {
-      id: "products",
-      label: "商品管理",
-      icon: "inventory_2",
-      onClick: () => router.push("/partner/products?tab=products"),
-    },
+    ...(isReferral
+      ? [
+          {
+            id: "rates",
+            label: "方案分潤一覽",
+            icon: "percent",
+            onClick: () => router.push("/partner/rates"),
+          },
+        ]
+      : [
+          { divider: true },
+          {
+            id: "products",
+            label: "商品管理",
+            icon: "inventory_2",
+            onClick: () => router.push("/partner/products?tab=products"),
+          },
+        ]),
   ];
 
   const openDetail = (order) => setDetailOrder(order);
@@ -405,14 +420,14 @@ export default function PartnerOrdersPage() {
               iconBg="#2c6ecb"
             />
             <MetricCard
-              label="店鋪營收"
+              label={isReferral ? "推廣訂單金額" : "店鋪營收"}
               value={loading ? "…" : fmt(stats?.totalRevenue)}
               hint={
                 loading
                   ? "受取合計"
                   : `已付款 ${fmt(statusCounts.paidRevenue)} · 尚未付款 ${fmt(statusCounts.unpaidRevenue)}`
               }
-              icon="storefront"
+              icon={isReferral ? "link" : "storefront"}
               iconBg="#eec200"
             />
           </div>
@@ -463,22 +478,22 @@ export default function PartnerOrdersPage() {
           />
 
           <Card className="overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 px-3 sm:px-4 pt-1 relative z-20">
-              <div className="min-w-0 flex-1">
+            <div className="flex flex-col gap-3 px-3 sm:flex-row sm:items-end sm:justify-between sm:px-4 pt-1 relative z-20">
+              <div className="min-w-0 flex-1 overflow-x-auto">
                 <ShopifyTabs
                   tabs={filterTabs}
                   value={filter}
                   onChange={setFilter}
                 />
               </div>
-              <div className="flex items-center gap-2 shrink-0 pb-2 sm:pb-2.5">
+              <div className="w-full min-w-0 sm:w-auto sm:shrink-0 sm:pb-2.5 pb-2">
                 <PartnerOrdersDateRange
                   value={dateRange}
                   onChange={setDateRange}
                 />
                 {selected.size > 0 ? (
                   <span
-                    className="hidden sm:inline-flex text-xs font-bold shrink-0 px-2.5 py-1"
+                    className="mt-1.5 hidden sm:inline-flex text-xs font-bold shrink-0 px-2.5 py-1"
                     style={{
                       backgroundColor: UI.light,
                       color: UI.dark,
@@ -524,7 +539,7 @@ export default function PartnerOrdersPage() {
                             className="font-mono font-bold text-xs"
                             style={{ color: UI.dark }}
                           >
-                            {String(order.id).substring(0, 8).toUpperCase()}
+                            {formatOrderCode(order)}
                           </p>
                           <p
                             className="text-xs mt-0.5"
@@ -634,8 +649,12 @@ export default function PartnerOrdersPage() {
                     <th className="px-5 py-3 text-left font-bold">買家</th>
                     <th className="px-5 py-3 text-left font-bold">付款方式</th>
                     <th className="px-5 py-3 text-left font-bold">訂單金額</th>
-                    <th className="px-5 py-3 text-left font-bold">底價成本</th>
-                    <th className="px-5 py-3 text-left font-bold">分潤</th>
+                    {isReferral ? null : (
+                      <th className="px-5 py-3 text-left font-bold">底價成本</th>
+                    )}
+                    <th className="px-5 py-3 text-left font-bold">
+                      {isReferral ? "推廣分潤" : "分潤"}
+                    </th>
                     <th className="px-5 py-3 text-left font-bold">付款狀態</th>
                     <th className="px-4 py-3 text-center font-bold w-16">
                       操作
@@ -645,14 +664,14 @@ export default function PartnerOrdersPage() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={9} className="text-center py-10">
+                      <td colSpan={columnCount} className="text-center py-10">
                         <LoadingIndicator layout="center" label="載入中..." size="sm" />
                       </td>
                     </tr>
                   ) : paged.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={9}
+                        colSpan={columnCount}
                         className="text-center py-12 text-sm"
                         style={{ color: UI.soft }}
                       >
@@ -685,7 +704,7 @@ export default function PartnerOrdersPage() {
                               className="font-mono font-bold text-xs"
                               style={{ color: UI.dark }}
                             >
-                              {String(order.id).substring(0, 8).toUpperCase()}
+                              {formatOrderCode(order)}
                             </p>
                             <p
                               className="text-xs mt-0.5"
@@ -726,9 +745,11 @@ export default function PartnerOrdersPage() {
                           >
                             {fmt(order.total_amount)}
                           </td>
-                          <td className="px-5 py-4" style={{ color: UI.soft }}>
-                            {fmt(order.b2b_cost)}
-                          </td>
+                          {isReferral ? null : (
+                            <td className="px-5 py-4" style={{ color: UI.soft }}>
+                              {fmt(order.b2b_cost)}
+                            </td>
+                          )}
                           <td
                             className="px-5 py-4 font-black"
                             style={{ color: UI.dark }}
@@ -811,12 +832,15 @@ export default function PartnerOrdersPage() {
         onClose={() => setPrintOpen(false)}
         orders={printTargetOrders}
         partnerName={partnerDisplayName}
+        hideCost={isReferral}
       />
 
       <OrderDetailModal
         open={!!detailOrder}
         order={detailOrder}
         onClose={() => setDetailOrder(null)}
+        hideCost={isReferral}
+        partner={partner}
       />
     </PartnerAdminLayout>
   );

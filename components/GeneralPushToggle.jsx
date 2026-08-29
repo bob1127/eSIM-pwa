@@ -76,15 +76,10 @@ export default function GeneralPushToggle({
   useEffect(() => {
     return subscribePushNotifySync((detail) => {
       if (detail?.source === SYNC_SOURCE) return;
-      if (detail?.on) {
-        setSubscribed(true);
-        setEnabled(true);
-      } else {
-        setSubscribed(false);
-        setEnabled(false);
-      }
+      // 流量開關變更時重讀一般推播旗標，避免誤把 SW 訂閱當成已退訂
+      load();
     });
-  }, []);
+  }, [load]);
 
   const enablePush = async () => {
     const support = await detectPushSupport();
@@ -107,42 +102,23 @@ export default function GeneralPushToggle({
   };
 
   const disablePush = async () => {
+    // 只關「優惠／公告」旗標；保留 SW 訂閱與流量 eSIM 綁定（關閉再開可還原）
     const endpoint = await getPushEndpoint();
     if (endpoint) {
-      try {
-        await fetch("/api/push/unbind", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ endpoint }),
-        });
-      } catch {
-        /* ignore */
-      }
-      try {
-        await fetch("/api/push/general-push/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ endpoint, enabled: false }),
-        });
-      } catch {
-        /* ignore */
+      const res = await fetch("/api/push/general-push/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint, enabled: false }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "關閉失敗");
       }
     }
 
-    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-      try {
-        const reg = await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.getSubscription();
-        if (sub) await sub.unsubscribe();
-      } catch {
-        /* ignore */
-      }
-    }
-
-    setSubscribed(false);
+    setSubscribed(true);
     setEnabled(false);
-    broadcastPushNotifyState({ on: false, source: SYNC_SOURCE });
-    alert("已關閉推播通知。");
+    alert("已關閉優惠／公告推播。\n流量提醒若已綁定，不受影響。");
   };
 
   const handleToggle = async () => {
@@ -218,7 +194,9 @@ export default function GeneralPushToggle({
           >
             {isOn
               ? "優惠、公告已開啟"
-              : "優惠、公告（流量提醒另設）"}
+              : subscribed
+                ? "優惠、公告已關閉（流量提醒另設）"
+                : "優惠、公告（流量提醒另設）"}
           </p>
         </div>
         <TrafficNotifyToggle

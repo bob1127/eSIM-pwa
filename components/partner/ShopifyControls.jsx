@@ -7,6 +7,7 @@ import {
   partnerDropdownTriggerClass,
   accountDropdownTriggerClass,
   ACCOUNT_DROPDOWN_TRIGGER_STYLE,
+  PARTNER_PILL_RADIUS_STYLE,
 } from "@/components/partner/partnerDropdownStyles";
 import {
   DropdownMenu,
@@ -91,7 +92,7 @@ function FilterMenuItem({ item, active, onPick, showItemIcons = false }) {
       className={cn(
         "cursor-pointer rounded-lg px-3 py-2.5 text-sm font-semibold transition-all active:scale-[0.98]",
         active
-          ? "bg-[#1E4AD1] text-white data-highlighted:bg-[#1639a8] data-highlighted:text-white"
+          ? "bg-[#2d2d2d] text-white data-highlighted:bg-[#1f1f1f] data-highlighted:text-white"
           : "text-slate-700 data-highlighted:bg-slate-100",
         showItemIcons && "gap-2",
       )}
@@ -146,20 +147,34 @@ export function ShopifyDropdown({
       <DropdownMenuTrigger
         disabled={disabled}
         className={triggerClass}
-        style={variant === "account" ? ACCOUNT_DROPDOWN_TRIGGER_STYLE : undefined}
+        style={
+          variant === "account"
+            ? ACCOUNT_DROPDOWN_TRIGGER_STYLE
+            : PARTNER_PILL_RADIUS_STYLE
+        }
       >
         {icon ? (
           <MaterialIcon
             name={icon}
             size={16}
-            className={variant === "account" ? "text-[#303030]" : "text-slate-500"}
+            className={
+              variant === "account"
+                ? "text-[#303030]"
+                : primary
+                  ? "text-white"
+                  : "text-[#303030]"
+            }
           />
         ) : null}
         <span>{label}</span>
         <ChevronDownIcon
           className={cn(
             "size-4",
-            variant === "account" ? "opacity-70" : "opacity-60",
+            variant === "account"
+              ? "opacity-70"
+              : primary
+                ? "opacity-80 text-white"
+                : "opacity-60 text-[#303030]",
           )}
         />
       </DropdownMenuTrigger>

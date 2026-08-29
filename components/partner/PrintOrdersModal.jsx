@@ -2,10 +2,13 @@ import { useMemo, useState } from "react";
 import MaterialIcon from "@/components/MaterialIcon";
 import { SHOPIFY_UI } from "@/lib/shopifyUi";
 import { fmt } from "@/components/partner/DobermanWidgets";
+import PartnerButton from "@/components/partner/ui/PartnerButton";
 import {
   paymentMethodLabel,
   buyerDisplayName,
   buyerEmail,
+  formatOrderCode,
+  formatOrderFullId,
 } from "@/lib/orderDisplay";
 import {
   sumTotals,
@@ -30,16 +33,16 @@ function formatDate(d) {
   });
 }
 
-function orderCode(id) {
-  return String(id || "").substring(0, 8).toUpperCase();
-}
-
 function toCsvValue(v) {
   const s = String(v ?? "");
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export function downloadOrdersCsv(orders, filename) {
+/**
+ * hideCost：優惠連結夥伴適用。這類夥伴不進貨、售價與官網相同，底價成本屬平台
+ * 商業機密，報表一律不揭露（夥伴商店夥伴才看得到自己的進貨底價）。
+ */
+export function downloadOrdersCsv(orders, filename, { hideCost = false } = {}) {
   const header = [
     "訂單編號",
     "日期",
@@ -48,19 +51,19 @@ export function downloadOrdersCsv(orders, filename) {
     "商品",
     "付款方式",
     "訂單金額",
-    "底價成本",
+    ...(hideCost ? [] : ["底價成本"]),
     "分潤",
     "狀態",
   ];
   const body = (orders || []).map((o) => [
-    orderCode(o.id),
+    formatOrderFullId(o),
     formatDate(o.created_at),
     buyerDisplayName(o),
     buyerEmail(o) || "",
     primaryItemName(o),
     paymentMethodLabel(o) || "",
     Math.round(Number(o.total_amount) || 0),
-    Math.round(Number(o.b2b_cost) || 0),
+    ...(hideCost ? [] : [Math.round(Number(o.b2b_cost) || 0)]),
     Math.round(Number(o.partner_profit) || 0),
     STATUS_LABEL[o.status] || o.status || "",
   ]);
@@ -78,7 +81,7 @@ export function downloadOrdersCsv(orders, filename) {
 }
 
 /** 圖一：訂單分潤明細 — 完整欄位、固定欄寬、避免文字擠壓換行 */
-function PrintableOrderDetail({ orders, partnerName, generatedAt }) {
+function PrintableOrderDetail({ orders, partnerName, generatedAt, hideCost }) {
   const totals = sumTotals(orders);
   return (
     <div className="print-doc p-6 sm:p-8 text-[#1a1a1a] bg-white">
@@ -105,8 +108,8 @@ function PrintableOrderDetail({ orders, partnerName, generatedAt }) {
           <col style={{ width: "18%" }} />
           <col style={{ width: "11%" }} />
           <col style={{ width: "11%" }} />
-          <col style={{ width: "10%" }} />
-          <col style={{ width: "10%" }} />
+          <col style={{ width: hideCost ? "20%" : "10%" }} />
+          {hideCost ? null : <col style={{ width: "10%" }} />}
           <col style={{ width: "7%" }} />
         </colgroup>
         <thead>
@@ -117,7 +120,9 @@ function PrintableOrderDetail({ orders, partnerName, generatedAt }) {
             <th className="text-left py-2.5 pr-2 font-bold">商品</th>
             <th className="text-left py-2.5 pr-2 font-bold">付款方式</th>
             <th className="text-right py-2.5 px-1 font-bold">訂單金額</th>
-            <th className="text-right py-2.5 px-1 font-bold">底價成本</th>
+            {hideCost ? null : (
+              <th className="text-right py-2.5 px-1 font-bold">底價成本</th>
+            )}
             <th className="text-right py-2.5 px-1 font-bold">分潤</th>
             <th className="text-left py-2.5 pl-2 font-bold">狀態</th>
           </tr>
@@ -126,7 +131,7 @@ function PrintableOrderDetail({ orders, partnerName, generatedAt }) {
           {orders.map((o) => (
             <tr key={o.id} className="border-b border-[#eceef0] align-top">
               <td className="py-2.5 pr-2 font-mono font-bold whitespace-nowrap">
-                {orderCode(o.id)}
+                {formatOrderCode(o)}
               </td>
               <td className="py-2.5 pr-2 whitespace-nowrap text-[#303030]">
                 {formatDate(o.created_at)}
@@ -150,9 +155,11 @@ function PrintableOrderDetail({ orders, partnerName, generatedAt }) {
               <td className="py-2.5 px-1 text-right tabular-nums whitespace-nowrap">
                 {fmt(o.total_amount)}
               </td>
-              <td className="py-2.5 px-1 text-right tabular-nums whitespace-nowrap text-[#6b6b6b]">
-                {fmt(o.b2b_cost)}
-              </td>
+              {hideCost ? null : (
+                <td className="py-2.5 px-1 text-right tabular-nums whitespace-nowrap text-[#6b6b6b]">
+                  {fmt(o.b2b_cost)}
+                </td>
+              )}
               <td className="py-2.5 px-1 text-right font-bold tabular-nums whitespace-nowrap">
                 {fmt(o.partner_profit)}
               </td>
@@ -170,9 +177,11 @@ function PrintableOrderDetail({ orders, partnerName, generatedAt }) {
             <td className="py-3 px-1 text-right tabular-nums whitespace-nowrap">
               {fmt(totals.revenue)}
             </td>
-            <td className="py-3 px-1 text-right tabular-nums whitespace-nowrap">
-              {fmt(totals.cost)}
-            </td>
+            {hideCost ? null : (
+              <td className="py-3 px-1 text-right tabular-nums whitespace-nowrap">
+                {fmt(totals.cost)}
+              </td>
+            )}
             <td className="py-3 px-1 text-right tabular-nums whitespace-nowrap">
               {fmt(totals.profit)}
             </td>
@@ -185,7 +194,7 @@ function PrintableOrderDetail({ orders, partnerName, generatedAt }) {
 }
 
 /** 圖二：分潤總覽摘要 — 完整 KPI + 商品拆分 + 合計列 */
-function PrintableSummary({ orders, partnerName, generatedAt }) {
+function PrintableSummary({ orders, partnerName, generatedAt, hideCost }) {
   const totals = sumTotals(orders);
   const breakdown = productBreakdown(orders);
   const paid = orders.filter((o) => o.status === "completed").length;
@@ -210,11 +219,15 @@ function PrintableSummary({ orders, partnerName, generatedAt }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-6">
+      <div
+        className={`grid grid-cols-2 gap-2.5 mb-6 ${
+          hideCost ? "sm:grid-cols-4" : "sm:grid-cols-5"
+        }`}
+      >
         {[
           ["訂單數", `${totals.count} 筆`],
           ["營收合計", fmt(totals.revenue)],
-          ["底價成本", fmt(totals.cost)],
+          ...(hideCost ? [] : [["底價成本", fmt(totals.cost)]]),
           ["分潤合計", fmt(totals.profit)],
           ["分潤占營收", `${totals.rate}%`],
         ].map(([label, value]) => (
@@ -315,6 +328,7 @@ export default function PrintOrdersModal({
   onClose,
   orders = [],
   partnerName,
+  hideCost = false,
 }) {
   const [docs, setDocs] = useState({ detail: true, summary: true });
   const generatedAt = useMemo(
@@ -342,6 +356,7 @@ export default function PrintOrdersModal({
     downloadOrdersCsv(
       orders,
       `訂單分潤_${new Date().toISOString().slice(0, 10)}.csv`,
+      { hideCost },
     );
   };
 
@@ -411,6 +426,7 @@ export default function PrintOrdersModal({
                       orders={orders}
                       partnerName={partnerName}
                       generatedAt={generatedAt}
+                      hideCost={hideCost}
                     />
                   </div>
                 )}
@@ -426,6 +442,7 @@ export default function PrintOrdersModal({
                       orders={orders}
                       partnerName={partnerName}
                       generatedAt={generatedAt}
+                      hideCost={hideCost}
                     />
                   </div>
                 )}
@@ -501,26 +518,16 @@ export default function PrintOrdersModal({
             className="flex items-center justify-end gap-2 px-4 py-3 shrink-0"
             style={{ borderTop: `1px solid ${SHOPIFY_UI.cardBorder}` }}
           >
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-9 px-4 rounded-md text-xs font-bold transition"
-              style={{
-                border: `1px solid ${SHOPIFY_UI.secondaryBorder}`,
-                color: SHOPIFY_UI.textPrimary,
-              }}
-            >
+            <PartnerButton type="button" variant="secondary" onClick={onClose}>
               取消
-            </button>
-            <button
+            </PartnerButton>
+            <PartnerButton
               type="button"
               onClick={handlePrint}
               disabled={!anySelected}
-              className="h-9 px-4 rounded-md text-xs font-bold text-white disabled:opacity-40 transition"
-              style={{ backgroundColor: SHOPIFY_UI.primaryBtnBg }}
             >
               開始列印
-            </button>
+            </PartnerButton>
           </div>
         </div>
       </div>
@@ -531,6 +538,7 @@ export default function PrintOrdersModal({
             orders={orders}
             partnerName={partnerName}
             generatedAt={generatedAt}
+            hideCost={hideCost}
           />
         )}
         {docs.summary && (
@@ -539,6 +547,7 @@ export default function PrintOrdersModal({
               orders={orders}
               partnerName={partnerName}
               generatedAt={generatedAt}
+              hideCost={hideCost}
             />
           </div>
         )}

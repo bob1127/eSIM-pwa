@@ -332,17 +332,21 @@ function CountryTile({ country, onSelect }) {
     <button
       type="button"
       onClick={() => onSelect(country)}
-      className="flex aspect-square flex-col items-center justify-center gap-0.5 rounded-none bg-[#F7F9FB] p-1 text-center ring-1 ring-slate-200/90 transition active:scale-[0.98]"
+      className="flex aspect-square flex-col items-stretch overflow-hidden rounded-none bg-[#F7F9FB] p-0.5 text-center ring-1 ring-slate-200/90 transition active:scale-[0.98]"
     >
-      <div className="flex h-[54px] w-[54px] shrink-0 items-center justify-center overflow-hidden bg-white">
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-white px-0.5 pt-0.5">
         {img ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={img} alt="" className="h-[48px] w-[48px] object-contain" />
+          <img
+            src={img}
+            alt=""
+            className="h-[58px] w-[58px] max-h-full max-w-full object-contain"
+          />
         ) : (
-          <MaterialIcon name="public" size={28} className="text-slate-400" />
+          <MaterialIcon name="public" size={32} className="text-slate-400" />
         )}
       </div>
-      <span className="line-clamp-2 w-full px-0.5 text-[12px] font-bold leading-tight text-slate-800">
+      <span className="shrink-0 line-clamp-2 w-full px-0.5 pb-0.5 text-[13px] font-bold leading-tight text-slate-800">
         {country.name}
       </span>
     </button>
@@ -358,33 +362,33 @@ function ListingProductCard({ product, onSelect }) {
     <button
       type="button"
       onClick={() => onSelect(product)}
-      className="flex w-full items-stretch gap-3 border border-slate-200/90 bg-white p-2.5 text-left transition active:border-[#1E4AD1]/50"
+      className="flex w-full items-stretch gap-3.5 border border-slate-200/90 bg-white p-3 text-left transition active:border-[#1E4AD1]/50"
     >
-      <div className="flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden bg-[#F9FAFB]">
+      <div className="flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden bg-[#F9FAFB]">
         {img ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={img} alt="" className="h-full w-full object-contain p-2" />
         ) : (
-          <MaterialIcon name="sim_card" size={32} className="text-slate-300" />
+          <MaterialIcon name="sim_card" size={36} className="text-slate-300" />
         )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col py-0.5">
-        <p className="line-clamp-2 text-[13px] font-bold leading-snug text-slate-800">
+        <p className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-800">
           {product.name}
         </p>
         {tags.length > 0 ? (
-          <p className="mt-1 line-clamp-2 text-[11px] font-medium leading-snug text-[#1E4AD1]">
+          <p className="mt-1 line-clamp-2 text-[12px] font-medium leading-snug text-[#1E4AD1]">
             {tags.join(" · ")}
           </p>
         ) : null}
-        <p className="mt-auto pt-1.5 text-[15px] font-black tabular-nums leading-none text-[#0071EB]">
+        <p className="mt-auto pt-1.5 text-[17px] font-black tabular-nums leading-none text-[#0071EB]">
           {formatPrice(product.minPrice)}
-          <span className="ml-0.5 text-[11px] font-bold">起</span>
+          <span className="ml-0.5 text-[12px] font-bold">起</span>
         </p>
       </div>
       <MaterialIcon
         name="chevron_right"
-        size={20}
+        size={22}
         className="mt-8 shrink-0 self-start text-slate-300"
       />
     </button>
@@ -394,7 +398,7 @@ function ListingProductCard({ product, onSelect }) {
 function SpecSelect({ label, value, options, onChange, disabled }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[11px] font-bold text-slate-500">
+      <span className="mb-1 block text-[12px] font-bold text-slate-500">
         {label}
       </span>
       <div className="relative">
@@ -402,7 +406,7 @@ function SpecSelect({ label, value, options, onChange, disabled }) {
           value={value}
           disabled={disabled || options.length === 0}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none rounded-none border border-slate-200 bg-white px-3 py-2.5 pr-9 text-[13px] font-bold text-slate-800 outline-none disabled:bg-slate-50 disabled:text-slate-400"
+          className="w-full appearance-none rounded-none border border-slate-200 bg-white px-3 py-3 pr-9 text-[15px] font-bold text-slate-800 outline-none disabled:bg-slate-50 disabled:text-slate-400"
         >
           {options.length === 0 ? (
             <option value="">無可選項目</option>
@@ -432,7 +436,7 @@ function TelecomList({ product, onSelect }) {
 
   if (!telecoms.length) {
     return (
-      <p className="px-1 py-10 text-center text-[13px] text-slate-500">
+      <p className="px-1 py-10 text-center text-[15px] text-slate-500">
         此商品尚無可選電信
       </p>
     );
@@ -440,7 +444,7 @@ function TelecomList({ product, onSelect }) {
 
   return (
     <div className="space-y-2.5">
-      <p className="px-0.5 text-[11px] font-semibold text-slate-400">
+      <p className="px-0.5 text-[12px] font-semibold text-slate-400">
         選擇電信商變體
       </p>
       {telecoms.map((telecom) => {
@@ -455,35 +459,35 @@ function TelecomList({ product, onSelect }) {
             key={telecom}
             type="button"
             onClick={() => onSelect(telecom)}
-            className="relative flex w-full items-center gap-3 border border-slate-200 bg-white px-3.5 py-3.5 text-left transition active:border-[#1E4AD1]"
+            className="relative flex w-full items-center gap-3 border border-slate-200 bg-white px-4 py-4 text-left transition active:border-[#1E4AD1]"
           >
             {hot ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src="/images/hot-sale.png"
                 alt="熱銷推薦"
-                className="pointer-events-none absolute -right-1 -top-2.5 z-10 h-8 w-auto drop-shadow-sm"
+                className="pointer-events-none absolute -right-1 -top-2.5 z-10 h-9 w-auto drop-shadow-sm"
               />
             ) : null}
             <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-bold text-slate-900">{telecom}</p>
+              <p className="text-[16px] font-bold text-slate-900">{telecom}</p>
               {hot ? (
-                <p className="mt-0.5 text-[10px] font-bold text-[#E11D48]">
+                <p className="mt-0.5 text-[11px] font-bold text-[#E11D48]">
                   熱銷推薦
                 </p>
               ) : (
-                <p className="mt-0.5 text-[11px] font-semibold text-slate-400">
+                <p className="mt-0.5 text-[12px] font-semibold text-slate-400">
                   點擊選擇天數與數據
                 </p>
               )}
             </div>
             <div className="shrink-0 text-right">
-              <p className="text-[13px] font-black text-[#0071EB]">
+              <p className="text-[15px] font-black text-[#0071EB]">
                 {min > 0 ? `${formatPrice(min)}起` : ""}
               </p>
               <MaterialIcon
                 name="chevron_right"
-                size={20}
+                size={22}
                 className="ml-auto text-slate-300"
               />
             </div>
@@ -562,11 +566,11 @@ function VariantSpecInfo({ product, telecom, variant }) {
 
   return (
     <div className="mt-3 border-t border-slate-100 pt-3">
-      <p className="text-[11px] font-bold text-slate-500">方案規格</p>
+      <p className="text-[12px] font-bold text-slate-500">方案規格</p>
       <dl className="mt-2 space-y-2">
         {rows.map((row) => (
-          <div key={row.label} className="flex gap-2 text-[12px] leading-snug">
-            <dt className="w-[72px] shrink-0 font-bold text-slate-500">
+          <div key={row.label} className="flex gap-2 text-[13px] leading-snug">
+            <dt className="w-[76px] shrink-0 font-bold text-slate-500">
               {row.label}
             </dt>
             <dd className="min-w-0 flex-1 font-semibold text-slate-800">
@@ -676,32 +680,32 @@ function CheckoutSpecPanel({
 
   return (
     <div className="space-y-3 pb-4">
-      <div className="border border-slate-200 bg-white p-3.5">
-        <div className="flex items-start gap-3">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden bg-slate-50 ring-1 ring-slate-100">
+      <div className="border border-slate-200 bg-white p-4">
+        <div className="flex items-start gap-3.5">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden bg-slate-50 ring-1 ring-slate-100">
             {img ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={img} alt="" className="h-12 w-12 object-contain" />
+              <img src={img} alt="" className="h-14 w-14 object-contain" />
             ) : (
-              <MaterialIcon name="sim_card" size={24} className="text-slate-400" />
+              <MaterialIcon name="sim_card" size={28} className="text-slate-400" />
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-bold leading-snug text-slate-900">
+            <p className="text-[16px] font-bold leading-snug text-slate-900">
               {product.name}
             </p>
-            <p className="mt-0.5 text-[12px] font-bold text-[#1E4AD1]">
+            <p className="mt-0.5 text-[13px] font-bold text-[#1E4AD1]">
               {telecom}
             </p>
-            <p className="mt-1.5 text-[18px] font-black text-[#1E4AD1]">
+            <p className="mt-1.5 text-[20px] font-black text-[#1E4AD1]">
               {formatPrice(selectedVariant?.price)}
             </p>
           </div>
         </div>
 
         <div className="mt-3 border-t border-slate-100 pt-3">
-          <p className="text-[11px] font-bold text-slate-500">方案簡介</p>
-          <p className="mt-1 text-[12px] leading-relaxed text-slate-600">
+          <p className="text-[12px] font-bold text-slate-500">方案簡介</p>
+          <p className="mt-1 text-[14px] leading-relaxed text-slate-600">
             {intro}
           </p>
         </div>
@@ -731,7 +735,7 @@ function CheckoutSpecPanel({
         </div>
 
         {specLine ? (
-          <p className="mt-2 text-[11px] font-semibold text-slate-400">
+          <p className="mt-2 text-[12px] font-semibold text-slate-400">
             已選：{specLine}
           </p>
         ) : null}
@@ -741,7 +745,7 @@ function CheckoutSpecPanel({
         <JekoPillButton
           type="button"
           size="sm"
-          className="min-w-0 flex-1 !min-h-[44px] !rounded-none text-[13px]"
+          className="min-w-0 flex-1 !min-h-[48px] !rounded-none text-[15px]"
           disabled={busy || !selectedVariant}
           onClick={() =>
             onBuy({
@@ -762,7 +766,7 @@ function CheckoutSpecPanel({
               telecom: attrs.telecom || telecom,
             })
           }
-          className="min-w-0 flex-1 border border-slate-200 bg-white px-3 py-2.5 text-[13px] font-bold text-slate-700 transition active:bg-slate-50"
+          className="min-w-0 flex-1 border border-slate-200 bg-white px-3 py-3 text-[15px] font-bold text-slate-700 transition active:bg-slate-50"
         >
           查看詳情
         </button>
@@ -1071,16 +1075,16 @@ export default function EsimQuickBuyPanel({ onCloseSheet } = {}) {
           <button
             type="button"
             onClick={goBack}
-            className="flex items-center gap-0.5 py-1 pr-2 text-[13px] font-bold text-[#1E4AD1]"
+            className="flex items-center gap-0.5 py-1 pr-2 text-[15px] font-bold text-[#1E4AD1]"
             aria-label="返回上一層"
           >
-            <MaterialIcon name="chevron_left" size={22} />
+            <MaterialIcon name="chevron_left" size={24} />
             返回
           </button>
         ) : (
           <span className="w-[52px]" />
         )}
-        <p className="min-w-0 flex-1 truncate text-center text-[15px] font-black text-slate-900">
+        <p className="min-w-0 flex-1 truncate text-center text-[17px] font-black text-slate-900">
           {title}
         </p>
         <span className="w-[52px]" />
@@ -1091,10 +1095,10 @@ export default function EsimQuickBuyPanel({ onCloseSheet } = {}) {
           {level === "countries" ? (
             <StackPage key="countries" direction={direction}>
               <div className="px-0.5 pb-6">
-                <div className="mb-3 flex items-center bg-[#f7f8fa] px-3 py-2 ring-1 ring-slate-200/80 focus-within:ring-slate-200/80">
+                <div className="mb-3 flex items-center bg-[#f7f8fa] px-3 py-2.5 ring-1 ring-slate-200/80 focus-within:ring-slate-200/80">
                   <MaterialIcon
                     name="search"
-                    size={18}
+                    size={20}
                     className="text-slate-400"
                   />
                   <input
@@ -1104,7 +1108,7 @@ export default function EsimQuickBuyPanel({ onCloseSheet } = {}) {
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="搜尋國家或關鍵字"
                     autoComplete="off"
-                    className="min-w-0 flex-1 border-0 bg-transparent px-2 py-1 text-[13px] font-semibold text-slate-800 shadow-none outline-none ring-0 placeholder:font-medium placeholder:text-slate-400 focus:border-0 focus:outline-none focus:ring-0"
+                    className="min-w-0 flex-1 border-0 bg-transparent px-2 py-1.5 text-[15px] font-semibold text-slate-800 shadow-none outline-none ring-0 placeholder:font-medium placeholder:text-slate-400 focus:border-0 focus:outline-none focus:ring-0"
                   />
                 </div>
                 {loading ? (
@@ -1114,7 +1118,7 @@ export default function EsimQuickBuyPanel({ onCloseSheet } = {}) {
                     className="py-16"
                   />
                 ) : listedCountries.length === 0 ? (
-                  <p className="px-2 py-10 text-center text-[13px] text-slate-500">
+                  <p className="px-2 py-10 text-center text-[15px] text-slate-500">
                     找不到符合的國家
                   </p>
                 ) : (
@@ -1138,7 +1142,7 @@ export default function EsimQuickBuyPanel({ onCloseSheet } = {}) {
               direction={direction}
             >
               <div className="min-h-full bg-[#F7F9FB] px-0.5 pb-6 pt-1">
-                <p className="mb-2 px-1 text-[12px] text-slate-500">
+                <p className="mb-2 px-1 text-[13px] text-slate-500">
                   共{" "}
                   <span className="font-bold text-slate-800">
                     {productsLoading && !products.length ? "…" : products.length}
@@ -1153,12 +1157,12 @@ export default function EsimQuickBuyPanel({ onCloseSheet } = {}) {
                   />
                 ) : products.length === 0 ? (
                   <div className="px-2 py-10 text-center">
-                    <p className="text-[13px] font-bold text-slate-700">
+                    <p className="text-[15px] font-bold text-slate-700">
                       此國家暫無商品
                     </p>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-3">
                     {products.map((product) => (
                       <ListingProductCard
                         key={product.id || product.slug}
@@ -1180,7 +1184,7 @@ export default function EsimQuickBuyPanel({ onCloseSheet } = {}) {
               direction={direction}
             >
               <div className="px-0.5 pb-6">
-                <p className="mb-2 px-1 text-[13px] font-bold text-slate-800">
+                <p className="mb-2 px-1 text-[15px] font-bold text-slate-800">
                   {selectedProduct?.name}
                 </p>
                 {selectedProduct ? (

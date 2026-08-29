@@ -810,7 +810,7 @@ export default function PartnerCatalogPage() {
                   />
                 </div>
 
-                {/* 圖一風格：白底描邊下拉 */}
+                {/* 圖二風格：白底描邊下拉 */}
                 <div className="flex flex-wrap items-center gap-2">
                   <ShopifyDropdown
                     label={

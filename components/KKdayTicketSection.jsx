@@ -358,10 +358,25 @@ function KKdayCard({ item, onClick }) {
 /* ─────────────────────────────────────────────── */
 /* 主元件                                           */
 /* ─────────────────────────────────────────────── */
-export default function KKdayTicketSection() {
-  const [activeTab, setActiveTab] = useState("japan");
+export default function KKdayTicketSection({
+  embedded = false,
+  countryId: countryIdProp,
+  onCountryChange,
+  hideHeader = false,
+  hideCountryTabs = false,
+} = {}) {
+  const [internalTab, setInternalTab] = useState("japan");
+  const activeTab = countryIdProp ?? internalTab;
+  const setActiveTab = (id) => {
+    if (onCountryChange) onCountryChange(id);
+    else setInternalTab(id);
+  };
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    setShowAll(false);
+  }, [activeTab]);
 
   const filtered = useMemo(
     () =>
@@ -386,21 +401,19 @@ export default function KKdayTicketSection() {
               ? aff("https://www.kkday.com/zh-tw/destination/vn-vietnam")
               : aff("https://www.kkday.com/zh-tw/destination/jp-japan");
 
-  return (
-    <section
-      id="kkday-ticket-recommend"
-      className="w-full bg-[#f0f1f3] pb-12 lg:pb-16 pt-4 scroll-mt-28"
-    >
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        <HomeSectionHeader
-          eyebrow="景點 / 體驗"
-          title="Jeko 門票推薦"
-          href={listingUrl}
-          moreLabel="查看更多門票"
-          external
-        />
+  const body = (
+    <>
+        {!hideHeader ? (
+          <HomeSectionHeader
+            eyebrow="景點 / 體驗"
+            title="Jeko 門票推薦"
+            href={listingUrl}
+            moreLabel="查看更多門票"
+            external
+          />
+        ) : null}
 
-        {/* 國家 Tab — Google 底線風格 */}
+        {!hideCountryTabs ? (
         <div className="flex gap-6 sm:gap-8 mb-8 border-b border-gray-200/80 overflow-x-auto scrollbar-none">
           {COUNTRY_TABS.map((tab) => {
             const active = activeTab === tab.id;
@@ -427,8 +440,8 @@ export default function KKdayTicketSection() {
             );
           })}
         </div>
+        ) : null}
 
-        {/* 手機版輪播 */}
         <AnimatePresence mode="wait">
           <motion.div
             key={`mobile-${activeTab}`}
@@ -456,7 +469,6 @@ export default function KKdayTicketSection() {
           </motion.div>
         </AnimatePresence>
 
-        {/* 桌面版網格 */}
         <AnimatePresence mode="wait">
           <motion.div
             key={`desktop-${activeTab}-${showAll}`}
@@ -482,7 +494,6 @@ export default function KKdayTicketSection() {
           </motion.div>
         </AnimatePresence>
 
-        {/* 按鈕列 */}
         <div className="mt-8 hidden md:flex items-center justify-center gap-4 flex-wrap">
           {!showAll && filtered.length > PREVIEW_COUNT && (
             <button
@@ -502,15 +513,26 @@ export default function KKdayTicketSection() {
             查看更多票券
           </a>
         </div>
-      </div>
 
-      {/* Modal */}
       {selectedItem && (
         <TicketModal
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
         />
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="w-full">{body}</div>;
+  }
+
+  return (
+    <section
+      id="kkday-ticket-recommend"
+      className="w-full bg-[#f0f1f3] pb-12 lg:pb-16 pt-4 scroll-mt-28"
+    >
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">{body}</div>
     </section>
   );
 }

@@ -90,6 +90,7 @@ export default function ColorPickerField({ value, onChange }) {
   const parsed = colorState(value);
   const pickerHex = parsed.empty ? FALLBACK : parsed.hex;
   const [hexDraft, setHexDraft] = useState(parsed.hex || "");
+  const [advanced, setAdvanced] = useState(false);
 
   useEffect(() => {
     setHexDraft(parsed.hex || (parsed.transparent ? "transparent" : ""));
@@ -121,7 +122,7 @@ export default function ColorPickerField({ value, onChange }) {
       <div className="flex items-center gap-2">
         <label
           className="relative w-9 h-9 shrink-0 rounded-md overflow-hidden border border-white/20 cursor-pointer"
-          title="開啟顏色選擇器"
+          title="點擊選色"
           style={{
             background:
               parsed.transparent || parsed.empty
@@ -145,7 +146,7 @@ export default function ColorPickerField({ value, onChange }) {
             if (hex) applyHex(hex);
           }}
           onBlur={(e) => commitHexDraft(e.target.value)}
-          placeholder="#RRGGBB"
+          placeholder="點左方色塊選色"
           spellCheck={false}
           autoCapitalize="none"
           className="flex-1 min-w-0 bg-[#2b2c31] border border-white/10 rounded px-2.5 py-1.5 text-[12px] text-white font-mono placeholder:text-white/30 focus:outline-none focus:border-[#e2498e]"
@@ -161,62 +162,76 @@ export default function ColorPickerField({ value, onChange }) {
         ) : null}
       </div>
 
-      <div>
-        <p className="text-[9px] font-bold tracking-wider text-white/35 mb-1">RGB</p>
-        <div className="grid grid-cols-3 gap-1.5">
-          {[
-            ["R", "r"],
-            ["G", "g"],
-            ["B", "b"],
-          ].map(([label, key]) => (
-            <label key={key} className="block">
-              <span className="block text-center text-[9px] text-white/40 mb-0.5">
-                {label}
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={255}
-                value={parsed.rgb[key]}
-                onChange={(e) =>
-                  applyRgb({ [key]: clamp(Number(e.target.value), 0, 255) })
-                }
-                className={numCls}
-              />
-            </label>
-          ))}
-        </div>
-      </div>
+      <button
+        type="button"
+        onClick={() => setAdvanced((v) => !v)}
+        className="text-[10px] font-bold text-white/40 hover:text-white/70"
+      >
+        {advanced ? "收合進階色碼" : "進階色碼（RGB／CMYK）"}
+      </button>
 
-      <div>
-        <p className="text-[9px] font-bold tracking-wider text-white/35 mb-1">
-          CMYK %
-        </p>
-        <div className="grid grid-cols-4 gap-1.5">
-          {[
-            ["C", "c"],
-            ["M", "m"],
-            ["Y", "y"],
-            ["K", "k"],
-          ].map(([label, key]) => (
-            <label key={key} className="block">
-              <span className="block text-center text-[9px] text-white/40 mb-0.5">
-                {label}
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={parsed.cmyk[key]}
-                onChange={(e) =>
-                  applyCmyk({ [key]: clamp(Number(e.target.value), 0, 100) })
-                }
-                className={numCls}
-              />
-            </label>
-          ))}
-        </div>
-      </div>
+      {advanced ? (
+        <>
+          <div>
+            <p className="text-[9px] font-bold tracking-wider text-white/35 mb-1">
+              RGB
+            </p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                ["R", "r"],
+                ["G", "g"],
+                ["B", "b"],
+              ].map(([label, key]) => (
+                <label key={key} className="block">
+                  <span className="block text-center text-[9px] text-white/40 mb-0.5">
+                    {label}
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={255}
+                    value={parsed.rgb[key]}
+                    onChange={(e) =>
+                      applyRgb({ [key]: clamp(Number(e.target.value), 0, 255) })
+                    }
+                    className={numCls}
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[9px] font-bold tracking-wider text-white/35 mb-1">
+              CMYK %
+            </p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                ["C", "c"],
+                ["M", "m"],
+                ["Y", "y"],
+                ["K", "k"],
+              ].map(([label, key]) => (
+                <label key={key} className="block">
+                  <span className="block text-center text-[9px] text-white/40 mb-0.5">
+                    {label}
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={parsed.cmyk[key]}
+                    onChange={(e) =>
+                      applyCmyk({ [key]: clamp(Number(e.target.value), 0, 100) })
+                    }
+                    className={numCls}
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -1,7 +1,11 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import {
+  claimLocalPushEndpoint,
+  onPushLogout,
+} from '@/lib/pushAccountClient';
 
 const UserContext = createContext();
 
@@ -10,8 +14,18 @@ export const UserProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isHydrated, setIsHydrated] = useState(false); // 確保客戶端讀取完畢
+  const lastClaimedUserIdRef = useRef(null);
 
   useEffect(() => {
+    const syncPushForSession = (nextSession) => {
+      const uid = nextSession?.user?.id || null;
+      const accessToken = nextSession?.access_token || null;
+      if (!uid) return;
+      if (lastClaimedUserIdRef.current === uid) return;
+      lastClaimedUserIdRef.current = uid;
+      claimLocalPushEndpoint({ token: accessToken }).catch(() => {});
+    };
+
     // 1. 初始化檢查 Session
     const initSession = async () => {
       const { data: { session: initialSession } } = await supabase.auth.getSession();
@@ -19,16 +33,32 @@ export const UserProvider = ({ children }) => {
       setUser(initialSession?.user ?? null);
       setLoading(false);
       setIsHydrated(true);
+      syncPushForSession(initialSession);
     };
 
     initSession();
 
     // 2. 監聽全站登入狀態 (登入、登出、Token 刷新)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
       setIsHydrated(true);
+      if (event === "SIGNED_OUT") {
+        lastClaimedUserIdRef.current = null;
+        onPushLogout();
+      } else if (
+        event === "SIGNED_IN" ||
+        event === "USER_UPDATED" ||
+        event === "INITIAL_SESSION"
+      ) {
+        syncPushForSession(session);
+      } else if (event === "TOKEN_REFRESHED" && session?.user?.id) {
+        // 同帳號刷新不重 claim；換帳號才會在上方 uid 比對觸發
+        if (lastClaimedUserIdRef.current !== session.user.id) {
+          syncPushForSession(session);
+        }
+      }
     });
 
     // 3. 修正瀏覽器「上一頁」造成的登入狀態不同步：
@@ -59,6 +89,8 @@ export const UserProvider = ({ children }) => {
   }, []);
 
   const logout = async () => {
+    lastClaimedUserIdRef.current = null;
+    onPushLogout();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

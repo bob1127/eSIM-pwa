@@ -168,83 +168,80 @@ export default function PartnerBlogArticleView({
     "max-w-[1480px] w-[96%] mx-auto px-3 sm:px-5 lg:px-8";
   const mainColumnClass = "min-w-0 w-full lg:max-w-[calc(100%-330px)]";
 
+  const breadcrumb = isMain ? (
+    <>
+      <Link href="/" className="hover:text-slate-700">
+        首頁
+      </Link>
+      <span className="mx-1.5">/</span>
+      <Link href="/blog/" className="hover:text-slate-700">
+        旅遊文章
+      </Link>
+      <span className="mx-1.5">/</span>
+      <span className="text-[#0A6CD0]">合作夥伴供稿</span>
+    </>
+  ) : (
+    <>
+      <Link href={`/p/${domain}/`} className="hover:text-slate-700">
+        首頁
+      </Link>
+      <span className="mx-1.5">/</span>
+      <Link href={`/p/${domain}/blog/`} className="hover:text-slate-700">
+        旅遊文章
+      </Link>
+      <span className="mx-1.5">/</span>
+      <span className="text-slate-600">{post.categoryLabel}</span>
+    </>
+  );
+
   return (
     <div className="bg-white min-h-screen">
-      <div className={shellClass}>
+      <div className={`${shellClass} pt-8 lg:pt-10`}>
+        <Link
+          href={isMain ? "/blog/" : `/p/${domain}/`}
+          className="inline-block text-[13px] font-black tracking-[0.2em] uppercase text-slate-900 mb-4"
+        >
+          {isMain ? "NEWS" : brand}
+        </Link>
+        <nav className="text-[12px] text-slate-400 tracking-wide mb-5 md:mb-6">
+          {breadcrumb}
+        </nav>
+
+        {/* Hero：與下方主欄+側欄同一內容寬對齊（非視窗滿版） */}
+        <div className="relative w-full aspect-[16/9] md:aspect-[2/1] bg-[#efeee9] overflow-hidden mb-6 md:mb-8">
+          {post.image ? (
+            <button
+              type="button"
+              className="absolute inset-0 block w-full h-full cursor-zoom-in text-left"
+              onClick={() =>
+                articleGallery.length > 0 && setCoverLightboxOpen(true)
+              }
+              aria-label="查看文章圖片幻燈片"
+            >
+              <Image
+                src={post.image}
+                alt={post.title}
+                fill
+                priority
+                className="object-cover"
+                sizes="(max-width:1480px) 96vw, 1480px"
+              />
+            </button>
+          ) : null}
+          {isMain ? (
+            <span className="absolute top-4 left-4 z-10 bg-[#1E4AD1] text-white text-[11px] font-bold px-2.5 py-1 tracking-wide">
+              合作夥伴供稿
+            </span>
+          ) : post.categoryLabel ? (
+            <span className="absolute top-4 left-4 z-10 bg-black/70 text-white text-[11px] font-bold px-2.5 py-1 rounded-full tracking-wide">
+              {post.categoryLabel}
+            </span>
+          ) : null}
+        </div>
+
         <div className="flex flex-col lg:flex-row lg:items-start min-h-[70vh] gap-6 lg:gap-0 pb-8 lg:pb-12">
           {/* ── 主欄 ── */}
-          <div className={`flex-1 ${mainColumnClass} lg:pr-10 py-8 lg:py-10`}>
-            {/* Logo / brand */}
-            <Link
-              href={isMain ? "/blog/" : `/p/${domain}/`}
-              className="inline-block text-[13px] font-black tracking-[0.2em] uppercase text-slate-900 mb-6"
-            >
-              {isMain ? "NEWS" : brand}
-            </Link>
-
-            {/* Breadcrumb */}
-            <nav className="text-[12px] text-slate-400 tracking-wide mb-4">
-              {isMain ? (
-                <>
-                  <Link href="/" className="hover:text-slate-700">
-                    首頁
-                  </Link>
-                  <span className="mx-1.5">/</span>
-                  <Link href="/blog/" className="hover:text-slate-700">
-                    旅遊文章
-                  </Link>
-                  <span className="mx-1.5">/</span>
-                  <span className="text-[#0A6CD0]">合作夥伴供稿</span>
-                </>
-              ) : (
-                <>
-                  <Link href={`/p/${domain}/`} className="hover:text-slate-700">
-                    首頁
-                  </Link>
-                  <span className="mx-1.5">/</span>
-                  <Link
-                    href={`/p/${domain}/blog/`}
-                    className="hover:text-slate-700"
-                  >
-                    旅遊文章
-                  </Link>
-                  <span className="mx-1.5">/</span>
-                  <span className="text-slate-600">{post.categoryLabel}</span>
-                </>
-              )}
-            </nav>
-
-            <div className="relative w-full aspect-[16/9] md:aspect-[2/1] bg-[#efeee9] overflow-hidden mb-6 md:mb-8">
-              {post.image ? (
-                <button
-                  type="button"
-                  className="absolute inset-0 block w-full h-full cursor-zoom-in text-left"
-                  onClick={() =>
-                    articleGallery.length > 0 && setCoverLightboxOpen(true)
-                  }
-                  aria-label="查看文章圖片幻燈片"
-                >
-                  <Image
-                    src={post.image}
-                    alt={post.title}
-                    fill
-                    priority
-                    className="object-cover"
-                    sizes="(max-width:1024px) 100vw, 80vw"
-                  />
-                </button>
-              ) : null}
-              {isMain ? (
-                <span className="absolute top-4 left-4 z-10 bg-[#1E4AD1] text-white text-[11px] font-bold px-2.5 py-1 tracking-wide">
-                  合作夥伴供稿
-                </span>
-              ) : post.categoryLabel ? (
-                <span className="absolute top-4 left-4 z-10 bg-black/70 text-white text-[11px] font-bold px-2.5 py-1 rounded-full tracking-wide">
-                  {post.categoryLabel}
-                </span>
-              ) : null}
-            </div>
-
+          <div className={`flex-1 ${mainColumnClass} lg:pr-10 pb-8 lg:pb-10`}>
             <h1 className="text-[24px] md:text-[28px] font-bold text-[#111] leading-[1.5] mb-4 tracking-tight">
               {post.title}
             </h1>

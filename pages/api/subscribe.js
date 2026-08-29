@@ -24,6 +24,7 @@
 
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
+import { CLEAR_BIND_FIELDS } from "../../lib/pushAccountSync";
 
 webpush.setVapidDetails(
   "mailto:bob112722761236tom@gmail.com",
@@ -81,18 +82,37 @@ export default async function handler(req, res) {
   step("parse_body", { ok: true, endpointPrefix: endpoint.slice(0, 40) });
 
   // 3. 存入 Supabase（upsert 避免重複）
+  // 防呆：無 token 時不把既有 user_id 清成 null；換帳號時清他人 eSIM 綁定
+  const { data: existing } = await supabaseAdmin
+    .from("push_subscriptions")
+    .select("id, user_id")
+    .eq("endpoint", endpoint)
+    .maybeSingle();
+
+  const row = {
+    endpoint,
+    p256dh: keys.p256dh,
+    auth: keys.auth,
+    general_push_enabled: true,
+  };
+
+  if (userId) {
+    row.user_id = userId;
+    if (
+      existing?.user_id &&
+      String(existing.user_id) !== String(userId)
+    ) {
+      Object.assign(row, CLEAR_BIND_FIELDS);
+      step("user_switch_clear_bind", {
+        previousUser: String(existing.user_id).slice(0, 8),
+        nextUser: userId.slice(0, 8),
+      });
+    }
+  }
+
   const { error: dbError } = await supabaseAdmin
     .from("push_subscriptions")
-    .upsert(
-      {
-        user_id: userId,
-        endpoint,
-        p256dh: keys.p256dh,
-        auth: keys.auth,
-        general_push_enabled: true,
-      },
-      { onConflict: "endpoint" }
-    );
+    .upsert(row, { onConflict: "endpoint" });
 
   if (dbError) {
     step("db_upsert", { ok: false, error: dbError.message, code: dbError.code });

@@ -51,8 +51,8 @@ if (!MEDUSA_PUBLISHABLE_KEY) {
   throw new Error("Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY (check esim-store-front/.env.local)")
 }
 
-const MEDUSA_ADMIN_EMAIL = process.env.MEDUSA_ADMIN_EMAIL || "admin@esim.com"
-const MEDUSA_ADMIN_PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "12345678"
+const MEDUSA_ADMIN_EMAIL = process.env.MEDUSA_ADMIN_EMAIL || "info@bluelink.com.tw"
+const MEDUSA_ADMIN_PASSWORD = process.env.MEDUSA_ADMIN_PASSWORD || "bluelink_KB76qUcdEd6"
 
 const headers = {
   "Content-Type": "application/json",

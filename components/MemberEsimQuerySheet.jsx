@@ -455,6 +455,7 @@ export default function MemberEsimQuerySheet({
       }
       const res = await fetch(
         `/api/push/bind-status?endpoint=${encodeURIComponent(endpoint)}`,
+        { credentials: "include", headers: authHeaders() },
       );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -467,7 +468,7 @@ export default function MemberEsimQuerySheet({
     } catch {
       setBoundTopupId(null);
     }
-  }, [demoMode]);
+  }, [demoMode, authHeaders]);
 
   const loadEsims = useCallback(async () => {
     if (demoMode) {

@@ -16,9 +16,18 @@ import {
 import { buildReferralShareUrl } from "@/lib/partnerReferral";
 import { displayReferralCouponCode } from "@/lib/partnerReferralDiscount";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
-import { paymentMethodLabel, buyerDisplayName } from "@/lib/orderDisplay";
+import {
+  paymentMethodLabel,
+  buyerDisplayName,
+  formatOrderCode,
+} from "@/lib/orderDisplay";
 import { SHOPIFY_BADGE } from "@/lib/shopifyUi";
 import StatusIconBadge from "@/components/partner/StatusIconBadge";
+import PartnerButton, {
+  partnerButtonVariants,
+  PARTNER_PILL_RADIUS_STYLE,
+} from "@/components/partner/ui/PartnerButton";
+import { cn } from "@/lib/utils";
 import {
   filterByRange,
   sumTotals,
@@ -168,11 +177,11 @@ function ActionCard({ icon, iconBg, title, desc, ctaLabel, onClick, href }) {
       </div>
       <Cta
         {...(href ? { href } : { type: "button", onClick })}
-        className="shrink-0 h-8 px-3.5 text-xs font-bold text-white transition"
-        style={{
-          backgroundColor: UI.dark,
-          borderRadius: UI.radiusSm,
-        }}
+        className={cn(
+          partnerButtonVariants({ variant: "secondary", size: "sm" }),
+          "shrink-0",
+        )}
+        style={PARTNER_PILL_RADIUS_STYLE}
       >
         {ctaLabel}
       </Cta>
@@ -191,7 +200,9 @@ export default function PartnerDashboard() {
   useEffect(() => {
     if (!partner) return;
     setLoading(true);
-    fetchPartnerStats(partner.id, store?.id).then((s) => {
+    fetchPartnerStats(partner.id, store?.id, {
+      hideCost: partner?.cooperation_model === "referral",
+    }).then((s) => {
       setStats(s);
       setLoading(false);
     });
@@ -234,8 +245,8 @@ export default function PartnerDashboard() {
   );
 
   const share = useMemo(
-    () => productBreakdown(valid).map((p) => [p.name, p.profit]),
-    [valid],
+    () => productBreakdown(valid, partner).map((p) => [p.name, p.profit]),
+    [valid, partner],
   );
 
   const storeUrl = isStorePublicLive(store)
@@ -324,26 +335,33 @@ export default function PartnerDashboard() {
                       : "您的專屬賣場已開通，前往選品管理加入方案即可開始推廣。"}
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5">
+            <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end sm:flex-wrap sm:flex-row sm:justify-end">
+              <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-1.5 sm:flex sm:w-auto sm:items-center">
                 <input
                   type="date"
                   value={rangeStart}
                   onChange={(e) => setRangeStart(e.target.value)}
-                  className="h-9 text-xs px-2.5 outline-none"
+                  className="h-10 w-full min-w-0 text-base sm:h-9 sm:text-xs px-2.5 outline-none"
                   style={dateInputStyle}
+                  aria-label="開始日期"
                 />
-                <span style={{ color: UI.soft }}>→</span>
+                <span
+                  className="shrink-0 text-center text-xs"
+                  style={{ color: UI.soft }}
+                >
+                  →
+                </span>
                 <input
                   type="date"
                   value={rangeEnd}
                   onChange={(e) => setRangeEnd(e.target.value)}
-                  className="h-9 text-xs px-2.5 outline-none"
+                  className="h-10 w-full min-w-0 text-base sm:h-9 sm:text-xs px-2.5 outline-none"
                   style={dateInputStyle}
+                  aria-label="結束日期"
                 />
               </div>
               <div
-                className="inline-flex items-center p-0.5"
+                className="inline-flex w-full items-center justify-stretch p-0.5 sm:w-auto"
                 style={{
                   backgroundColor: UI.light,
                   borderRadius: UI.radius,
@@ -357,7 +375,7 @@ export default function PartnerDashboard() {
                     key={q.id}
                     type="button"
                     onClick={() => handleQuickRange(q.id)}
-                    className="px-2.5 py-1.5 text-xs font-bold transition"
+                    className="min-h-10 flex-1 px-2.5 py-1.5 text-xs font-bold transition sm:min-h-0 sm:flex-none"
                     style={{
                       color: UI.mid,
                       borderRadius: UI.radiusSm,
@@ -418,17 +436,14 @@ export default function PartnerDashboard() {
                   </p>
                 )}
               </div>
-              <button
+              <PartnerButton
                 type="button"
+                variant="secondary"
                 onClick={copyReferral}
-                className="shrink-0 h-9 px-4 text-white text-sm font-bold transition"
-                style={{
-                  backgroundColor: UI.dark,
-                  borderRadius: UI.radiusSm,
-                }}
+                className="shrink-0"
               >
                 複製連結
-              </button>
+              </PartnerButton>
             </Card>
           )}
 
@@ -562,14 +577,14 @@ export default function PartnerDashboard() {
                         }}
                         className="cursor-pointer transition-colors hover:bg-[#fafafa] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#2c6ecb]"
                         style={{ borderTop: `1px solid ${UI.border}` }}
-                        aria-label={`查看訂單 ${String(order.id).substring(0, 8).toUpperCase()} 詳情`}
+                        aria-label={`查看訂單 ${formatOrderCode(order)} 詳情`}
                       >
                         <td className="px-4 py-3">
                           <p
                             className="font-mono font-bold text-xs"
                             style={{ color: UI.dark }}
                           >
-                            {String(order.id).substring(0, 8).toUpperCase()}
+                            {formatOrderCode(order)}
                           </p>
                           <p
                             className="text-xs mt-0.5"
@@ -646,6 +661,14 @@ export default function PartnerDashboard() {
                     onClick={copyReferral}
                   />
                   <ActionCard
+                    icon="percent"
+                    iconBg="#1E4AD1"
+                    title="方案分潤一覽"
+                    desc="查看各商品分潤％與專屬推廣連結"
+                    ctaLabel="前往查看"
+                    href="/partner/rates"
+                  />
+                  <ActionCard
                     icon="insights"
                     iconBg="#008060"
                     title="查看分潤分析"
@@ -712,6 +735,8 @@ export default function PartnerDashboard() {
         open={!!detailOrder}
         order={detailOrder}
         onClose={() => setDetailOrder(null)}
+        hideCost={isReferral}
+        partner={partner}
       />
     </PartnerAdminLayout>
   );

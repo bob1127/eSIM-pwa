@@ -16,6 +16,7 @@ import BossSalesAnalyticsPanel from "@/components/admin/BossSalesAnalyticsPanel"
 import AdminMissionsPanel from "@/components/admin/AdminMissionsPanel";
 import BossPlatformSettingsPanel from "@/components/admin/BossPlatformSettingsPanel";
 import BossTrafficAlertCopyPanel from "@/components/admin/BossTrafficAlertCopyPanel";
+import BossLineWelcomePreviewPanel from "@/components/admin/BossLineWelcomePreviewPanel";
 import BossInlineLogin from "@/components/account/BossInlineLogin";
 import { QuarterRing } from "@/components/ui/QuarterRing";
 
@@ -55,7 +56,8 @@ export default function AdminBossDashboard() {
       tab === "withdrawals" ||
       tab === "missions" ||
       tab === "settings" ||
-      tab === "traffic-copy"
+      tab === "traffic-copy" ||
+      tab === "line-welcome"
     ) {
       setBossTab(tab);
     }
@@ -162,6 +164,7 @@ export default function AdminBossDashboard() {
     { id: "refunds", label: "退款審核" },
     { id: "withdrawals", label: "提領審核" },
     { id: "traffic-copy", label: "流量提醒文案" },
+    { id: "line-welcome", label: "LINE歡迎設計" },
     { id: "settings", label: "平台設定" },
   ];
 
@@ -176,9 +179,11 @@ export default function AdminBossDashboard() {
             ? "任務牆"
             : bossTab === "traffic-copy"
               ? "流量提醒文案"
-              : bossTab === "settings"
-                ? "平台設定"
-                : "夥伴審核";
+              : bossTab === "line-welcome"
+                ? "LINE 歡迎設計"
+                : bossTab === "settings"
+                  ? "平台設定"
+                  : "夥伴審核";
 
   const content = (
     <>
@@ -218,6 +223,8 @@ export default function AdminBossDashboard() {
       {bossTab === "settings" && <BossPlatformSettingsPanel />}
 
       {bossTab === "traffic-copy" && <BossTrafficAlertCopyPanel />}
+
+      {bossTab === "line-welcome" && <BossLineWelcomePreviewPanel />}
 
       {bossTab === "partners" && (
         <>

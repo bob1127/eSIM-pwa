@@ -407,33 +407,33 @@ export function ReportPeriodBar({
               ))}
             </div>
           ) : null}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 sm:flex sm:w-auto sm:items-center sm:gap-2">
             <input
               type="date"
               value={rangeStart}
               onChange={(e) => onRangeStartChange(e.target.value)}
-              className="flex-1 sm:flex-none text-sm border border-slate-300 rounded-lg sm:rounded-none px-3 py-2.5 sm:py-1.5 focus:border-[#1E4AD1] outline-none min-w-0"
+              aria-label="開始日期"
+              className="w-full min-w-0 text-base sm:text-sm border border-slate-300 rounded-lg sm:rounded-none px-2.5 py-2.5 sm:px-3 sm:py-1.5 focus:border-[#1E4AD1] outline-none touch-manipulation"
             />
-            <span className="text-slate-400 shrink-0">→</span>
+            <span className="text-slate-400 shrink-0 text-xs sm:text-sm">→</span>
             <input
               type="date"
               value={rangeEnd}
               onChange={(e) => onRangeEndChange(e.target.value)}
-              className="flex-1 sm:flex-none text-sm border border-slate-300 rounded-lg sm:rounded-none px-3 py-2.5 sm:py-1.5 focus:border-[#1E4AD1] outline-none min-w-0"
+              aria-label="結束日期"
+              className="w-full min-w-0 text-base sm:text-sm border border-slate-300 rounded-lg sm:rounded-none px-2.5 py-2.5 sm:px-3 sm:py-1.5 focus:border-[#1E4AD1] outline-none touch-manipulation"
             />
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 text-sm flex-wrap">
-            {quickLinks.map((q, i) => (
-              <span key={q.id} className="inline-flex items-center gap-2 sm:gap-3">
-                {i > 0 ? <span className="text-slate-300">｜</span> : null}
-                <button
-                  type="button"
-                  onClick={() => onQuickRange(q.id)}
-                  className="font-bold text-slate-700 hover:text-[#1E4AD1] py-1"
-                >
-                  {q.label}
-                </button>
-              </span>
+          <div className="flex w-full items-stretch gap-1 sm:w-auto sm:items-center sm:gap-3 text-sm flex-wrap">
+            {quickLinks.map((q) => (
+              <button
+                key={q.id}
+                type="button"
+                onClick={() => onQuickRange(q.id)}
+                className="min-h-10 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 hover:text-[#1E4AD1] touch-manipulation sm:min-h-0 sm:flex-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-1 sm:text-sm"
+              >
+                {q.label}
+              </button>
             ))}
           </div>
         </div>

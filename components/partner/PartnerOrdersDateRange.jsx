@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
@@ -9,7 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Field, FieldLabel } from "@/components/ui/field";
 import PartnerSelectMenu from "@/components/partner/PartnerSelectMenu";
-import { partnerDropdownTriggerClass } from "@/components/partner/partnerDropdownStyles";
+import PartnerButton from "@/components/partner/ui/PartnerButton";
+import {
+  partnerDropdownTriggerClass,
+  PARTNER_PILL_RADIUS_STYLE,
+} from "@/components/partner/partnerDropdownStyles";
 import {
   ORDER_DATE_PRESETS,
   detectOrderDatePreset,
@@ -17,6 +27,7 @@ import {
 } from "@/lib/partnerOrderFilters";
 
 const PANEL_Z = 10100;
+const MOBILE_MQ = "(max-width: 639px)";
 
 function formatRangeLabel(value) {
   if (!value?.from) return "選擇日期";
@@ -26,19 +37,33 @@ function formatRangeLabel(value) {
   return format(value.from, "yyyy/MM/dd", { locale: zhTW });
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_MQ);
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return isMobile;
+}
+
 /**
- * 夥伴訂單分潤：期間預設 + 自訂日期區間（Portal 避免被 overflow 裁切）
+ * 夥伴後台日期區間：桌面錨點彈層、手機底部抽屜（防破版／好點選）
  */
 export default function PartnerOrdersDateRange({
   value,
   onChange,
   className = "",
+  label = "期間",
 }) {
+  const isMobile = useIsMobile();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [presetOpen, setPresetOpen] = useState(false);
-  const [monthCount, setMonthCount] = useState(2);
   const [panelStyle, setPanelStyle] = useState({ top: 0, left: 0 });
   const [mounted, setMounted] = useState(false);
+  const [draft, setDraft] = useState(value);
   const [presetChoice, setPresetChoice] = useState(() =>
     detectOrderDatePreset(value),
   );
@@ -47,6 +72,7 @@ export default function PartnerOrdersDateRange({
   const panelRef = useRef(null);
 
   const preset = presetChoice;
+  const monthCount = isMobile ? 1 : 2;
 
   useEffect(() => {
     const next = detectOrderDatePreset(value);
@@ -58,27 +84,41 @@ export default function PartnerOrdersDateRange({
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
-    const update = () => setMonthCount(mq.matches ? 1 : 2);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
+    if (calendarOpen) setDraft(value);
+  }, [calendarOpen, value]);
+
+  // 手機開啟時鎖捲動，避免背景滑動
+  useEffect(() => {
+    if (!calendarOpen || !isMobile) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [calendarOpen, isMobile]);
 
   const updatePanelPosition = useCallback(() => {
+    if (isMobile) return;
     const el = triggerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const panelWidth = monthCount > 1 ? 560 : 320;
     const margin = 8;
+    const estHeight = 360;
     let left = rect.right - panelWidth;
-    left = Math.max(margin, Math.min(left, window.innerWidth - panelWidth - margin));
-    const top = rect.bottom + margin;
+    left = Math.max(
+      margin,
+      Math.min(left, window.innerWidth - panelWidth - margin),
+    );
+    let top = rect.bottom + margin;
+    if (top + estHeight > window.innerHeight - margin) {
+      top = Math.max(margin, rect.top - estHeight - margin);
+    }
     setPanelStyle({ top, left });
-  }, [monthCount]);
+  }, [isMobile, monthCount]);
 
   useLayoutEffect(() => {
-    if (!calendarOpen) return undefined;
+    if (!calendarOpen || isMobile) return undefined;
     updatePanelPosition();
     window.addEventListener("resize", updatePanelPosition);
     window.addEventListener("scroll", updatePanelPosition, true);
@@ -86,11 +126,12 @@ export default function PartnerOrdersDateRange({
       window.removeEventListener("resize", updatePanelPosition);
       window.removeEventListener("scroll", updatePanelPosition, true);
     };
-  }, [calendarOpen, updatePanelPosition]);
+  }, [calendarOpen, isMobile, updatePanelPosition]);
 
   useEffect(() => {
     if (!calendarOpen) return undefined;
     const onPointerDown = (e) => {
+      if (isMobile) return; // 手機用 backdrop / 按鈕關閉
       const t = e.target;
       if (rootRef.current?.contains(t) || panelRef.current?.contains(t)) return;
       setCalendarOpen(false);
@@ -107,7 +148,15 @@ export default function PartnerOrdersDateRange({
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [calendarOpen]);
+  }, [calendarOpen, isMobile]);
+
+  const closeCalendar = () => setCalendarOpen(false);
+
+  const applyDraftAndClose = () => {
+    onChange(draft);
+    setPresetChoice(draft?.from ? "custom" : "all");
+    setCalendarOpen(false);
+  };
 
   const onPresetSelect = (id) => {
     setPresetChoice(id);
@@ -117,6 +166,7 @@ export default function PartnerOrdersDateRange({
       return;
     }
     onChange(presetToDateRange(id));
+    setDraft(presetToDateRange(id));
     setCalendarOpen(false);
   };
 
@@ -130,84 +180,184 @@ export default function PartnerOrdersDateRange({
     setCalendarOpen((v) => !v);
   };
 
+  const clearRange = () => {
+    onChange(undefined);
+    setDraft(undefined);
+    setPresetChoice("all");
+    setCalendarOpen(false);
+    setPresetOpen(false);
+  };
+
+  const onCalendarSelect = (next) => {
+    if (isMobile) {
+      setDraft(next);
+      setPresetChoice("custom");
+      return;
+    }
+    onChange(next);
+    setPresetChoice("custom");
+    if (next?.from && next?.to) setCalendarOpen(false);
+  };
+
   const presetOptions = ORDER_DATE_PRESETS.map((opt) => ({
     id: opt.id,
     label: opt.label,
   }));
 
+  const calendarInner = (
+    <Calendar
+      mode="range"
+      defaultMonth={draft?.from || value?.from || new Date()}
+      selected={isMobile ? draft : value}
+      onSelect={onCalendarSelect}
+      numberOfMonths={monthCount}
+      className={isMobile ? "w-full max-w-full p-2 sm:p-3" : undefined}
+    />
+  );
+
   const calendarPanel =
     calendarOpen && mounted
       ? createPortal(
-          <div
-            ref={panelRef}
-            role="dialog"
-            aria-label="選擇日期區間"
-            className="fixed rounded-lg border border-slate-200 bg-white shadow-xl"
-            style={{
-              zIndex: PANEL_Z,
-              top: panelStyle.top,
-              left: panelStyle.left,
-            }}
-          >
-            <Calendar
-              mode="range"
-              defaultMonth={value?.from}
-              selected={value}
-              onSelect={(next) => {
-                onChange(next);
-                setPresetChoice("custom");
-                if (next?.from && next?.to) setCalendarOpen(false);
+          isMobile ? (
+            <div
+              className="fixed inset-0 flex flex-col justify-end"
+              style={{ zIndex: PANEL_Z }}
+              role="presentation"
+            >
+              <button
+                type="button"
+                className="absolute inset-0 bg-black/40"
+                aria-label="關閉日期選擇"
+                onClick={closeCalendar}
+              />
+              <div
+                ref={panelRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label="選擇日期區間"
+                className="relative flex max-h-[min(88dvh,640px)] w-full flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-2xl"
+                style={{
+                  paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+                }}
+              >
+                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900">選擇期間</p>
+                    <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                      {formatRangeLabel(draft)}
+                      {draft?.from && !draft?.to ? "（請再選結束日）" : ""}
+                    </p>
+                  </div>
+                  <PartnerButton
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={closeCalendar}
+                    aria-label="關閉"
+                    className="shrink-0 text-slate-500"
+                  >
+                    <X className="size-5" />
+                  </PartnerButton>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1">
+                  {calendarInner}
+                </div>
+
+                <div className="flex shrink-0 gap-2 border-t border-slate-100 bg-white px-4 pt-3">
+                  <PartnerButton
+                    type="button"
+                    variant="secondary"
+                    className="flex-1"
+                    onClick={() => {
+                      setDraft(undefined);
+                      onChange(undefined);
+                      setPresetChoice("all");
+                      setCalendarOpen(false);
+                    }}
+                  >
+                    清除
+                  </PartnerButton>
+                  <PartnerButton
+                    type="button"
+                    variant="secondary"
+                    className="flex-1"
+                    onClick={applyDraftAndClose}
+                    disabled={draft?.from && !draft?.to}
+                  >
+                    完成
+                  </PartnerButton>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              ref={panelRef}
+              role="dialog"
+              aria-label="選擇日期區間"
+              className="fixed overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl"
+              style={{
+                zIndex: PANEL_Z,
+                top: panelStyle.top,
+                left: panelStyle.left,
+                maxWidth: "calc(100vw - 16px)",
               }}
-              numberOfMonths={monthCount}
-            />
-          </div>,
+            >
+              {calendarInner}
+            </div>
+          ),
           document.body,
         )
       : null;
 
   return (
-    <Field className={className}>
-      <FieldLabel htmlFor="partner-orders-date-preset">期間</FieldLabel>
-      <div ref={rootRef} className="flex flex-wrap items-center gap-1.5">
-        <PartnerSelectMenu
-          id="partner-orders-date-preset"
-          value={preset}
-          onChange={onPresetSelect}
-          options={presetOptions}
-          open={presetOpen}
-          onOpenChange={onPresetOpenChange}
-          className="min-w-[108px]"
-        />
+    <Field className={`w-full min-w-0 sm:w-auto ${className}`}>
+      {label ? (
+        <FieldLabel htmlFor="partner-orders-date-preset">{label}</FieldLabel>
+      ) : null}
+      <div
+        ref={rootRef}
+        className="flex w-full min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center"
+      >
+        <div className="grid w-full grid-cols-1 gap-1.5 min-[380px]:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+          <PartnerSelectMenu
+            id="partner-orders-date-preset"
+            value={preset}
+            onChange={onPresetSelect}
+            options={presetOptions}
+            open={presetOpen}
+            onOpenChange={onPresetOpenChange}
+            className="w-full min-w-0 sm:min-w-[108px] sm:w-auto"
+          />
 
-        <span ref={triggerRef} className="inline-flex">
-          <button
-            type="button"
-            aria-expanded={calendarOpen}
-            aria-haspopup="dialog"
-            onClick={toggleCalendar}
-            className={partnerDropdownTriggerClass({
-              className:
-                "min-w-[148px] justify-start gap-2 px-2.5 font-semibold",
-            })}
-          >
-            <CalendarIcon className="size-4 shrink-0 text-slate-500" />
-            <span className="truncate">{formatRangeLabel(value)}</span>
-            <ChevronDownIcon className="size-4 shrink-0 opacity-60 ml-auto" />
-          </button>
-        </span>
+          <span ref={triggerRef} className="inline-flex min-w-0 w-full sm:w-auto">
+            <button
+              type="button"
+              aria-expanded={calendarOpen}
+              aria-haspopup="dialog"
+              onClick={toggleCalendar}
+              className={partnerDropdownTriggerClass({
+                className:
+                  "w-full min-w-0 justify-start gap-2 px-2.5 font-semibold sm:min-w-[148px]",
+              })}
+              style={PARTNER_PILL_RADIUS_STYLE}
+            >
+              <CalendarIcon className="size-4 shrink-0 text-slate-500" />
+              <span className="min-w-0 flex-1 truncate text-left">
+                {formatRangeLabel(value)}
+              </span>
+              <ChevronDownIcon className="size-4 shrink-0 opacity-60" />
+            </button>
+          </span>
+        </div>
 
         {value?.from ? (
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
-            onClick={() => {
-              onChange(undefined);
-              setPresetChoice("all");
-              setCalendarOpen(false);
-              setPresetOpen(false);
-            }}
-            className="text-slate-400 hover:text-slate-600"
+            onClick={clearRange}
+            className="self-start text-slate-400 hover:text-slate-600 sm:self-auto"
             aria-label="清除日期篩選"
             title="清除日期篩選"
           >

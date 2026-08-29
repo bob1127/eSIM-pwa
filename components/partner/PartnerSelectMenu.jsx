@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon } from "lucide-react";
-import { partnerDropdownTriggerClass } from "@/components/partner/partnerDropdownStyles";
+import { partnerDropdownTriggerClass, PARTNER_PILL_RADIUS_STYLE } from "@/components/partner/partnerDropdownStyles";
 
 /**
  * 單選下拉（Base UI Menu）
@@ -56,6 +56,7 @@ export default function PartnerSelectMenu({
           primary,
           className: cn(className, triggerClassName),
         })}
+        style={PARTNER_PILL_RADIUS_STYLE}
       >
         {icon ? (
           <MaterialIcon name={icon} size={16} className="shrink-0 text-slate-500" />
@@ -65,7 +66,7 @@ export default function PartnerSelectMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align={align === "end" ? "end" : "start"}
-        className="min-w-[220px] p-2"
+        className="min-w-[min(220px,calc(100vw-24px))] max-w-[calc(100vw-16px)] p-2"
       >
         <DropdownMenuGroup className="space-y-1">
           {options.map((opt) => {
@@ -82,7 +83,7 @@ export default function PartnerSelectMenu({
                 className={cn(
                   "cursor-pointer rounded-lg px-3 py-2.5 text-sm font-semibold transition-all active:scale-[0.98]",
                   active
-                    ? "bg-[#1E4AD1] text-white data-highlighted:bg-[#1639a8] data-highlighted:text-white"
+                    ? "bg-[#2d2d2d] text-white data-highlighted:bg-[#1f1f1f] data-highlighted:text-white"
                     : "text-slate-700 data-highlighted:bg-slate-100",
                   showItemIcons && "gap-2",
                 )}

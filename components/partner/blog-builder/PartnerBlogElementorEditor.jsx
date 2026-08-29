@@ -288,9 +288,9 @@ function EditableCanvas({
                 onSelect(block.id);
               }}
               data-block-id={block.id}
-              className={`group relative w-full min-w-0 rounded-md transition cursor-pointer ${
+              className={`group relative w-full min-w-0 rounded-md transition cursor-pointer overflow-visible ${
                 selected
-                  ? "ring-2 ring-[#93003c] ring-offset-2"
+                  ? "ring-2 ring-[#93003c] ring-offset-2 z-[1]"
                   : "hover:ring-1 hover:ring-sky-400"
               }`}
             >
@@ -684,6 +684,10 @@ export default function PartnerBlogElementorEditor({
           <span className="shrink-0 text-[10px] text-emerald-300/80 hidden sm:inline">
             {saveHint}
           </span>
+        ) : status === "published" ? (
+          <span className="shrink-0 text-[10px] font-bold text-emerald-300/80 hidden sm:inline">
+            已同步
+          </span>
         ) : null}
         <div className="flex-1" />
         <div className="flex items-center rounded-lg bg-black/30 p-0.5">
@@ -761,7 +765,17 @@ export default function PartnerBlogElementorEditor({
         </button>
         <button
           type="button"
-          disabled={saving}
+          disabled={
+            saving ||
+            (status === "published" ? !dirty : false)
+          }
+          title={
+            status === "published" && !dirty
+              ? "沒有未儲存變更，已與前台同步"
+              : dirty
+                ? "有未儲存變更，點此寫入前台"
+                : undefined
+          }
           onClick={() => {
             const { ok } = validatePartnerBlogMeta(meta, { requireImage: true });
             if (!ok) {
@@ -770,15 +784,19 @@ export default function PartnerBlogElementorEditor({
             }
             setPublishOpen(true);
           }}
-          className="shrink-0 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-black rounded bg-[#93003c] hover:bg-[#b0104c] disabled:opacity-50"
+          className={`shrink-0 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-black rounded disabled:opacity-50 ${
+            dirty
+              ? "bg-amber-400 text-slate-900 hover:bg-amber-300"
+              : "bg-[#93003c] hover:bg-[#b0104c] text-white"
+          }`}
         >
           {saving ? (
             <span className="inline-flex items-center gap-1">
-              <QuarterRing size="xs" className="text-white" />
+              <QuarterRing size="xs" className={dirty ? "text-slate-900" : "text-white"} />
               {status === "published" ? "更新中…" : "發布中…"}
             </span>
           ) : status === "published" ? (
-            "更新發布"
+            dirty ? "更新發布 *" : "已同步"
           ) : (
             "發布"
           )}
@@ -888,7 +906,7 @@ export default function PartnerBlogElementorEditor({
 
         <main
           ref={canvasRef}
-          className={`flex-1 min-w-0 overflow-y-auto overflow-x-hidden ${
+          className={`flex-1 min-w-0 overflow-y-auto ${
             viewport === "desktop" ? "bg-white" : "bg-[#cfd3da] p-2 sm:p-4 lg:p-8"
           }`}
           onClick={() => setSelectedId(null)}
@@ -902,8 +920,8 @@ export default function PartnerBlogElementorEditor({
               viewport === "desktop"
                 ? ""
                 : viewport === "tablet"
-                  ? "mx-auto min-h-[70vh] shadow-2xl rounded-xl overflow-hidden"
-                  : "mx-auto min-h-[70vh] shadow-2xl rounded-[28px] overflow-hidden ring-4 sm:ring-8 ring-black/10"
+                  ? "mx-auto min-h-[70vh] shadow-2xl rounded-xl overflow-x-hidden overflow-y-visible"
+                  : "mx-auto min-h-[70vh] shadow-2xl rounded-[28px] overflow-x-hidden overflow-y-visible ring-4 sm:ring-8 ring-black/10"
             }`}
             style={
               viewport === "desktop"

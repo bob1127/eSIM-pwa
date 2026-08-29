@@ -68,19 +68,29 @@ async function uploadBlogFile(file, { token, storeId, kind, postId, excludeBlock
 
 /**
  * 本機選擇或拖放上傳（寫入 R2，有大小上限）
- * @param {{ kind: "image"|"video", value?: string, onUploaded: (url: string) => void, multiple?: boolean, blockId?: string }} props
+ * @param {{
+ *   kind?: "image"|"video",
+ *   value?: string,
+ *   onUploaded: (url: string | string[]) => void,
+ *   multiple?: boolean,
+ *   maxFiles?: number,
+ *   blockId?: string,
+ *   variant?: "dark"|"light",
+ * }} props
  */
 export default function MediaUploadField({
   kind = "image",
   value = "",
   onUploaded,
   multiple = false,
+  maxFiles = 8,
   variant = "dark",
   blockId = "",
 }) {
   const { token, storeId, postId, blocks, editingBlockId } = useBlogBuilderMedia();
   const activeBlockId = blockId || editingBlockId;
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [over, setOver] = useState(false);
   const max = kind === "video" ? BLOG_VIDEO_MAX_BYTES : BLOG_IMAGE_MAX_BYTES;
@@ -88,6 +98,7 @@ export default function MediaUploadField({
     kind === "video"
       ? "video/mp4,video/webm"
       : "image/jpeg,image/png,image/webp,image/gif";
+  const batchLimit = Math.max(1, Math.min(24, Number(maxFiles) || 8));
 
   const uploadedVideoCount = useMemo(
     () =>
@@ -115,9 +126,17 @@ export default function MediaUploadField({
     }
     setError("");
     setBusy(true);
+    setProgress("");
+    const slice = multiple ? files.slice(0, batchLimit) : files.slice(0, 1);
+    const uploaded = [];
     try {
-      const slice = multiple ? files.slice(0, 8) : files.slice(0, 1);
-      for (const file of slice) {
+      for (let i = 0; i < slice.length; i += 1) {
+        const file = slice[i];
+        if (multiple && slice.length > 1) {
+          setProgress(`上傳中 ${i + 1}／${slice.length}…`);
+        } else {
+          setProgress("上傳中…");
+        }
         const detected = blogMediaKindFromFile(file);
         if (kind === "image" && detected !== "image") {
           throw new Error("請上傳 JPG / PNG / WEBP / GIF");
@@ -137,12 +156,20 @@ export default function MediaUploadField({
           postId,
           excludeBlockId: activeBlockId,
         });
-        onUploaded(url);
+        uploaded.push(url);
       }
+      if (!uploaded.length) return;
+      // multiple：一次回傳陣列，避免逐張 set 時閉包覆蓋
+      if (multiple) onUploaded(uploaded);
+      else onUploaded(uploaded[0]);
     } catch (err) {
       setError(err.message || "上傳失敗");
+      // 已成功的仍寫入，避免整批白做
+      if (multiple && uploaded.length) onUploaded(uploaded);
+      else if (!multiple && uploaded[0]) onUploaded(uploaded[0]);
     } finally {
       setBusy(false);
+      setProgress("");
     }
   };
 
@@ -200,10 +227,12 @@ export default function MediaUploadField({
           }`}
         >
           {busy
-            ? "上傳中…"
+            ? progress || "上傳中…"
             : videoQuotaFull
               ? "已達本機影片上限"
-              : "拖放檔案到這裡，或點選上傳"}
+              : multiple
+                ? "拖放多個檔案到這裡，或點選上傳"
+                : "拖放檔案到這裡，或點選上傳"}
         </p>
         <p
           className={`text-[10px] mt-1 ${
@@ -212,7 +241,9 @@ export default function MediaUploadField({
         >
           {kind === "video"
             ? `MP4／WEBM，單檔 ${formatUploadBytes(BLOG_VIDEO_MAX_BYTES)}`
-            : `JPG／PNG／WEBP／GIF，單檔 ${formatUploadBytes(BLOG_IMAGE_MAX_BYTES)}`}
+            : multiple
+              ? `JPG／PNG／WEBP／GIF，單檔 ${formatUploadBytes(BLOG_IMAGE_MAX_BYTES)}，一次最多 ${batchLimit} 張`
+              : `JPG／PNG／WEBP／GIF，單檔 ${formatUploadBytes(BLOG_IMAGE_MAX_BYTES)}`}
         </p>
         <label
           className={`inline-block mt-2 cursor-pointer rounded px-3 py-1.5 text-[11px] font-bold ${

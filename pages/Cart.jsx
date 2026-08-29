@@ -20,6 +20,11 @@ import { PENDING_COUPON_KEY } from "@/lib/partnerReferralDiscount";
 import { useLineBind } from "@/hooks/useLineBind";
 import { maybeMarkWelcomeGiftOnFirstClaim } from "@/lib/welcomeGiftPopup";
 import { buildLoginUrl } from "@/lib/authRedirect";
+import {
+  consumeWelcomeVerifyPendingFlag,
+  getLineIdTokenForWelcomeCheckout,
+  isWelcomeCouponCode,
+} from "@/lib/lineWelcomeCheckoutClient";
 import JekoPillButton from "@/components/ui/JekoPillButton";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
@@ -112,6 +117,7 @@ const CartPage = () => {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponMessage, setCouponMessage] = useState("");
   const [needLineFriend, setNeedLineFriend] = useState(false);
+  const [needLineVerify, setNeedLineVerify] = useState(false);
   const [needLogin, setNeedLogin] = useState(false);
   const [lineOaUrl, setLineOaUrl] = useState(
     process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn",
@@ -275,6 +281,33 @@ const CartPage = () => {
 
   const handleNext = () => goToStep(activeStep + 1);
   const handleBack = () => goToStep(activeStep - 1);
+
+  // LINE「前往結帳」?code= 或 ?coupon= → 寫入 pending，交由下方自動套用
+  useEffect(() => {
+    if (!router.isReady) return;
+    const raw =
+      (typeof router.query.code === "string" && router.query.code) ||
+      (typeof router.query.coupon === "string" && router.query.coupon) ||
+      "";
+    const normalized = String(raw || "").trim().toUpperCase();
+    if (!normalized) return;
+
+    try {
+      sessionStorage.setItem(PENDING_COUPON_KEY, normalized);
+      sessionStorage.removeItem(`${PENDING_COUPON_KEY}_failed`);
+    } catch {
+      /* ignore */
+    }
+    setCoupon(normalized);
+    setPromoOpen(true);
+
+    const q = { ...router.query };
+    delete q.code;
+    delete q.coupon;
+    router.replace({ pathname: router.pathname, query: q }, undefined, {
+      shallow: true,
+    });
+  }, [router.isReady, router.query.code, router.query.coupon]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 專屬折扣碼連結：從 sessionStorage 自動套用（優先於歡迎禮）
   useEffect(() => {
@@ -486,7 +519,7 @@ const CartPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStep, authReady, isLoggedIn, token, cartId]);
 
-  const handleApplyCoupon = async () => {
+  const handleApplyCoupon = async ({ lineIdToken: lineIdTokenOverride } = {}) => {
     const code = coupon.trim();
     if (!code) return;
     if (!cartId) {
@@ -497,7 +530,35 @@ const CartPage = () => {
     setIsApplyingCoupon(true);
     setCouponMessage("");
     setNeedLineFriend(false);
-    if (!isLoggedIn) setNeedLogin(true);
+    setNeedLineVerify(false);
+
+    const isWelcome = isWelcomeCouponCode(code);
+    let lineIdToken = lineIdTokenOverride || null;
+
+    if (!isLoggedIn && isWelcome && !lineIdToken) {
+      setNeedLogin(false);
+      const lineResult = await getLineIdTokenForWelcomeCheckout();
+      if (lineResult.pending) {
+        setIsApplyingCoupon(false);
+        return;
+      }
+      if (!lineResult.ok) {
+        setNeedLineVerify(true);
+        setPromoOpen(true);
+        setCouponMessage(
+          lineResult.error ||
+            "請先以 LINE 驗證身分（不需註冊會員），才能套用新會員折扣碼",
+        );
+        setIsApplyingCoupon(false);
+        return;
+      }
+      lineIdToken = lineResult.idToken;
+    }
+
+    if (!isLoggedIn && !isWelcome) {
+      setNeedLogin(true);
+    }
+
     try {
       const res = await fetch("/api/checkout/promotion", {
         method: "POST",
@@ -506,16 +567,44 @@ const CartPage = () => {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         credentials: "include",
-        body: JSON.stringify({ cartId, code, action: "apply" }),
+        body: JSON.stringify({
+          cartId,
+          code,
+          action: "apply",
+          ...(lineIdToken ? { lineIdToken } : {}),
+        }),
       });
       const data = await res.json().catch(() => ({}));
-      if (data.need_login || res.status === 401) {
+      if (data.need_line_verify) {
         setDiscount(0);
         setAppliedCode(null);
-        setNeedLogin(true);
+        setNeedLineVerify(true);
+        setNeedLogin(false);
         setNeedLineFriend(false);
         setPromoOpen(true);
-        setCouponMessage(data.error || "登入後才能套用折扣碼");
+        if (data.line_oa_url) setLineOaUrl(data.line_oa_url);
+        setCouponMessage(
+          data.error ||
+            "請先以 LINE 驗證身分後才能套用新會員 50 元折扣碼（不需註冊會員）",
+        );
+        return;
+      }
+      if (data.need_login || res.status === 401) {
+        if (isWelcome) {
+          setNeedLineVerify(true);
+          setNeedLogin(false);
+          setCouponMessage(
+            data.error ||
+              "請按「用 LINE 驗證並套用」確認身分（不需註冊會員）",
+          );
+        } else {
+          setDiscount(0);
+          setAppliedCode(null);
+          setNeedLogin(true);
+          setNeedLineFriend(false);
+          setPromoOpen(true);
+          setCouponMessage(data.error || "登入後才能套用折扣碼");
+        }
         return;
       }
       if (data.need_line_friend) {
@@ -540,6 +629,7 @@ const CartPage = () => {
       const raw = Number(data.discount_total || 0);
       const asYen = raw >= 1000 ? Math.round(raw / 100) : raw;
       setNeedLineFriend(false);
+      setNeedLineVerify(false);
       if (isLoggedIn) setNeedLogin(false);
       setDiscount(asYen);
       setAppliedCode(data.code || code.toUpperCase());
@@ -559,6 +649,29 @@ const CartPage = () => {
     }
   };
 
+  // LINE OAuth 訪客驗證回到購物車後自動重試套用
+  useEffect(() => {
+    if (!router.isReady) return;
+    const welcomed = router.query.line_welcome;
+    if (welcomed === "0" && router.query.line_welcome_msg) {
+      setPromoOpen(true);
+      setCouponMessage(String(router.query.line_welcome_msg));
+      setNeedLineVerify(true);
+      return;
+    }
+    if (welcomed === "1" || consumeWelcomeVerifyPendingFlag()) {
+      setPromoOpen(true);
+      setNeedLineVerify(false);
+      const code = coupon.trim();
+      if (code && cartId && !appliedCode) {
+        handleApplyCoupon();
+      } else if (code) {
+        setCouponMessage("LINE 已驗證，請按「套用」使用折扣碼");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query.line_welcome, cartId]);
+
   const handleRemoveCoupon = async () => {
     if (!cartId || !appliedCode) return;
     setIsApplyingCoupon(true);
@@ -577,6 +690,7 @@ const CartPage = () => {
       setCoupon("");
       setCouponMessage("");
       setNeedLineFriend(false);
+      setNeedLineVerify(false);
       setIsApplyingCoupon(false);
     }
   };
@@ -956,7 +1070,40 @@ const CartPage = () => {
                                 </button>
                               </div>
 
-                              {needLogin && !isLoggedIn && (
+                              {needLineVerify && !isLoggedIn && isWelcomeCouponCode(coupon) && (
+                                <div className="rounded-xl border border-[#06C755]/40 bg-emerald-50/80 px-3.5 py-3">
+                                  <p className="text-[13px] font-bold text-slate-800 leading-snug">
+                                    新會員 50 元：請用 LINE 驗證
+                                  </p>
+                                  <p className="mt-1 text-[12px] text-slate-600 leading-relaxed">
+                                    不需註冊會員。請確認已加入官方 LINE，並按下方按鈕驗證
+                                    LINE 身分後套用（防止他人盜用您的折扣碼）。
+                                  </p>
+                                  <div className="mt-2.5 flex flex-col gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleApplyCoupon()}
+                                      disabled={isApplyingCoupon}
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2 disabled:opacity-60"
+                                    >
+                                      <LineIconSvg className="w-3.5 h-3.5" />
+                                      {isApplyingCoupon
+                                        ? "驗證中…"
+                                        : "用 LINE 驗證並套用"}
+                                    </button>
+                                    <a
+                                      href={lineOaUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#06C755] bg-white text-[#06C755] text-[12px] font-bold px-4 py-2"
+                                    >
+                                      尚未加好友？加入官方 LINE
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
+
+                              {needLogin && !isLoggedIn && !isWelcomeCouponCode(coupon) && (
                                 <div className="rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-3">
                                   <p className="text-[13px] font-bold text-slate-800 leading-snug">
                                     登入後才能套用折扣碼
@@ -1052,9 +1199,9 @@ const CartPage = () => {
                                   className={`leading-relaxed ${
                                     appliedCode
                                       ? "text-[11px] text-slate-400"
-                                      : needLogin && !isLoggedIn
+                                      : needLogin && !isLoggedIn && !isWelcomeCouponCode(coupon)
                                         ? "text-[12px] text-amber-700"
-                                        : needLineFriend
+                                        : needLineVerify || needLineFriend
                                           ? "text-[12px] text-amber-700"
                                           : "text-[12px] text-red-500"
                                   }`}

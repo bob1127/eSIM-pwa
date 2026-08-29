@@ -792,9 +792,8 @@ export default function EsimBottomSheet() {
     return path === "/product" || path.startsWith("/product/");
   }, [router.asPath, router.pathname]);
 
-  const collapsedH = isProductRoute ? COLLAPSED_H_PRODUCT : COLLAPSED_H;
-
-  const [expanded, setExpanded] = useState(false);
+  /** mini＝產品頁橫槓；normal＝五格底欄；expanded＝展開內容 */
+  const [sheetSnap, setSheetSnap] = useState("normal");
   const [panel, setPanel] = useState("qr"); // qr | install | promo | buy | jbao
   const [dragY, setDragY] = useState(0);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
@@ -814,6 +813,9 @@ export default function EsimBottomSheet() {
   const [promoPoints, setPromoPoints] = useState(0);
   const [promoLoading, setPromoLoading] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  /** 從底欄 J寶進客服後：關閉聊天仍保持展開，且導覽只留優惠／快速購買／QR */
+  const [compactNav, setCompactNav] = useState(false);
+  const chatFromSheetRef = useRef(false);
   const [showBindHint, setShowBindHint] = useState(false);
   const [offerPwaAfterBindHint, setOfferPwaAfterBindHint] = useState(false);
 
@@ -830,6 +832,15 @@ export default function EsimBottomSheet() {
 
   const needsAppleInstall =
     !isStandalone && (deviceType === "ios" || deviceType === "mac");
+
+  useEffect(() => {
+    setSheetSnap(isProductRoute ? "mini" : "normal");
+    setCompactNav(false);
+  }, [isProductRoute]);
+
+  const expanded = sheetSnap === "expanded";
+  const miniCollapsed = sheetSnap === "mini";
+  const snapCollapsedH = miniCollapsed ? COLLAPSED_H_PRODUCT : COLLAPSED_H;
 
   const loadOrders = useCallback(async () => {
     if (!memberEmail) return;
@@ -974,7 +985,7 @@ export default function EsimBottomSheet() {
   const closeBindHint = useCallback(async () => {
     setShowBindHint(false);
     setPanel("qr");
-    setExpanded(true);
+    setSheetSnap("expanded");
     if (!offerPwaAfterBindHint) return;
     setOfferPwaAfterBindHint(false);
     if (
@@ -1016,13 +1027,26 @@ export default function EsimBottomSheet() {
         setBoundTopupId(null);
         return null;
       }
+      const headers = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
       const res = await fetch(
         `/api/push/bind-status?endpoint=${encodeURIComponent(endpoint)}`,
+        { headers, credentials: "include" },
       );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setBoundTopupId(null);
         return null;
+      }
+      if (data.clearedForeignBind) {
+        try {
+          const { clearLocalPushBindCache } = await import(
+            "@/lib/pushAccountClient"
+          );
+          clearLocalPushBindCache();
+        } catch {
+          /* ignore */
+        }
       }
       const topup =
         data.bound && data.topupId != null ? String(data.topupId) : null;
@@ -1032,7 +1056,7 @@ export default function EsimBottomSheet() {
       setBoundTopupId(null);
       return null;
     }
-  }, []);
+  }, [token]);
 
   /** 依裝置自動分流：iPhone 先裝 App；Android／電腦直接開通知 */
   const enableTrafficAlert = useCallback(async () => {
@@ -1058,7 +1082,7 @@ export default function EsimBottomSheet() {
       // ── iPhone／iPad：必須先用主畫面 App 開啟 ──
       if (isApplePhone && !ctx.isStandalone) {
         setPanel("install");
-        setExpanded(true);
+        setSheetSnap("expanded");
         setShowInstallGuide(true);
         return;
       }
@@ -1086,6 +1110,15 @@ export default function EsimBottomSheet() {
       // ── Android／電腦／已安裝的 iPhone App：直接開通知（不強制裝 PWA）──
       await subscribeToPush({ token });
 
+      try {
+        const { setTrafficNotifyPref } = await import(
+          "@/lib/pushAccountClient"
+        );
+        setTrafficNotifyPref(true);
+      } catch {
+        /* ignore */
+      }
+
       setTrafficOn(true);
       const bindData = await refreshBindStatus();
       broadcastPushNotifyState({
@@ -1106,7 +1139,7 @@ export default function EsimBottomSheet() {
       setOfferPwaAfterBindHint(shouldOfferPwa);
       setShowBindHint(true);
       setPanel("qr");
-      setExpanded(true);
+      setSheetSnap("expanded");
     } catch (err) {
       const msg = err?.message || String(err);
       alert(
@@ -1146,14 +1179,15 @@ export default function EsimBottomSheet() {
         }
       }
 
-      if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-        try {
-          const reg = await navigator.serviceWorker.ready;
-          const sub = await reg.pushManager.getSubscription();
-          if (sub) await sub.unsubscribe();
-        } catch {
-          /* 本機退訂失敗仍關閉 UI */
-        }
+      // 保留 Service Worker 訂閱：關閉再開 PWA 仍可還原「已開通知」；
+      // 僅解除 eSIM 綁定。一般優惠推播也不被誤砍。
+      try {
+        const { setTrafficNotifyPref } = await import(
+          "@/lib/pushAccountClient"
+        );
+        setTrafficNotifyPref(false);
+      } catch {
+        /* ignore */
       }
 
       setBoundTopupId(null);
@@ -1284,6 +1318,23 @@ export default function EsimBottomSheet() {
           typeof Notification === "undefined" ||
           Notification.permission === "granted";
 
+        let preferOff = false;
+        try {
+          const { getTrafficNotifyPref } = await import(
+            "@/lib/pushAccountClient"
+          );
+          preferOff = getTrafficNotifyPref() === "off";
+        } catch {
+          /* ignore */
+        }
+
+        // 使用者曾明確關閉流量通知 → 保留 OFF（仍可讀綁定狀態）
+        if (preferOff) {
+          setTrafficOn(false);
+          if (!cancelled) await refreshBindStatus();
+          return;
+        }
+
         if (permissionOk) {
           setTrafficOn(true);
           if (!cancelled) await refreshBindStatus();
@@ -1344,16 +1395,24 @@ export default function EsimBottomSheet() {
 
   const openPanel = (id) => {
     if (id === "jbao") {
+      if (!chatOpen) {
+        chatFromSheetRef.current = true;
+        setCompactNav(true);
+        setPanel("qr");
+        setSheetSnap("expanded");
+      } else if (chatFromSheetRef.current) {
+        // 從底欄開啟的客服：關閉後仍回到展開的 QR 主 tab
+        chatFromSheetRef.current = true;
+      }
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent(chatOpen ? "jeko:close-ai-chat" : "jeko:open-ai-chat"),
         );
       }
-      setExpanded(false);
       return;
     }
     setPanel(id);
-    setExpanded(true);
+    setSheetSnap("expanded");
   };
 
   const onPointerDown = (e) => {
@@ -1366,16 +1425,29 @@ export default function EsimBottomSheet() {
     if (!dragging.current) return;
     const y = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
     const delta = y - startY.current;
-    if (expanded) setDragY(Math.max(0, delta));
-    else setDragY(Math.min(0, delta));
+    if (sheetSnap === "expanded") {
+      setDragY(Math.max(0, delta));
+    } else if (sheetSnap === "normal") {
+      setDragY(delta);
+    } else {
+      setDragY(Math.min(0, delta));
+    }
   };
 
   const onPointerUp = () => {
     if (!dragging.current) return;
     dragging.current = false;
-    if (expanded && dragY > 60) setExpanded(false);
-    else if (!expanded && dragY < -40) {
-      setExpanded(true);
+    const dy = dragY;
+    if (sheetSnap === "expanded") {
+      if (dy > 60) setSheetSnap("mini");
+    } else if (sheetSnap === "normal") {
+      if (dy > 50) setSheetSnap("mini");
+      else if (dy < -40) {
+        setSheetSnap("expanded");
+        if (!panel) setPanel("qr");
+      }
+    } else if (dy < -40) {
+      setSheetSnap("expanded");
       if (!panel) setPanel("qr");
     }
     setDragY(0);
@@ -1391,10 +1463,23 @@ export default function EsimBottomSheet() {
   }, [expanded]);
 
   useEffect(() => {
-    const onVis = (e) => setChatOpen(Boolean(e?.detail?.open));
+    const onVis = (e) => {
+      const open = Boolean(e?.detail?.open);
+      setChatOpen(open);
+      if (!open && chatFromSheetRef.current) {
+        chatFromSheetRef.current = false;
+        setSheetSnap("expanded");
+        setPanel("qr");
+        setCompactNav(true);
+      }
+    };
     window.addEventListener("jeko:ai-chat-visibility", onVis);
     return () => window.removeEventListener("jeko:ai-chat-visibility", onVis);
   }, []);
+
+  useEffect(() => {
+    if (sheetSnap !== "expanded") setCompactNav(false);
+  }, [sheetSnap]);
 
   const expandedPx =
     typeof window !== "undefined"
@@ -1402,8 +1487,25 @@ export default function EsimBottomSheet() {
           (panel === "buy" ? EXPANDED_VH_BUY : EXPANDED_VH)) /
         100
       : 560;
-  const baseH = expanded ? expandedPx : collapsedH;
-  const height = Math.max(collapsedH, baseH - dragY);
+
+  const height = useMemo(() => {
+    if (sheetSnap === "expanded") {
+      return Math.max(snapCollapsedH, expandedPx - dragY);
+    }
+    if (sheetSnap === "normal") {
+      if (dragY > 0) {
+        return Math.max(COLLAPSED_H_PRODUCT, COLLAPSED_H - dragY);
+      }
+      if (dragY < 0) {
+        return Math.min(expandedPx, COLLAPSED_H - dragY);
+      }
+      return COLLAPSED_H;
+    }
+    if (dragY < 0) {
+      return Math.min(COLLAPSED_H, COLLAPSED_H_PRODUCT - dragY);
+    }
+    return COLLAPSED_H_PRODUCT;
+  }, [sheetSnap, expandedPx, dragY, snapCollapsedH]);
 
   const navItems = [
     {
@@ -1431,12 +1533,14 @@ export default function EsimBottomSheet() {
     },
   ];
 
-  /** 收合時維持 QR 為品牌藍 CTA；展開時跟隨目前功能；聊天開啟時亮 J寶 */
-  const activeNavId = chatOpen
-    ? "jbao"
-    : expanded
-      ? panel || "qr"
-      : "qr";
+  /** 收合時維持 QR 為品牌藍 CTA；展開時跟隨目前功能 */
+  const activeNavId = expanded ? panel || "qr" : "qr";
+
+  const visibleNavItems = compactNav
+    ? navItems.filter((item) =>
+        item.id === "promo" || item.id === "buy" || item.id === "qr",
+      )
+    : navItems;
 
   const displayName =
     supabaseUser?.user_metadata?.full_name ||
@@ -1444,8 +1548,6 @@ export default function EsimBottomSheet() {
     null;
 
   if (isShopRoute) return null;
-
-  const miniCollapsed = isProductRoute && !expanded;
 
   // 底欄佔位改由 Footer pb 負責；此處若再插 h-[118px] 會在 footer 上方留出大空白
   return (
@@ -1456,7 +1558,7 @@ export default function EsimBottomSheet() {
           aria-label="關閉面板"
           className="fixed inset-0 bg-black/35 md:hidden"
           style={{ zIndex: SHEET_Z_BACKDROP }}
-          onClick={() => setExpanded(false)}
+          onClick={() => setSheetSnap("normal")}
         />
       )}
 
@@ -1484,21 +1586,27 @@ export default function EsimBottomSheet() {
             onTouchMove={onPointerMove}
             onTouchEnd={onPointerUp}
             onClick={() => {
-              if (!expanded) {
-                setPanel((p) => p || "qr");
-                setExpanded(true);
+              if (sheetSnap === "expanded") {
+                setSheetSnap("normal");
               } else {
-                setExpanded(false);
+                setPanel((p) => p || "qr");
+                setSheetSnap("expanded");
               }
             }}
             role="button"
             tabIndex={0}
             aria-expanded={expanded}
-            aria-label={expanded ? "收合我的 eSIM" : "展開我的 eSIM"}
+            aria-label={
+              sheetSnap === "mini"
+                ? "展開我的 eSIM"
+                : expanded
+                  ? "收合我的 eSIM"
+                  : "展開我的 eSIM"
+            }
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                setExpanded((v) => !v);
+                setSheetSnap((v) => (v === "expanded" ? "normal" : "expanded"));
               }
             }}
           >
@@ -1548,8 +1656,12 @@ export default function EsimBottomSheet() {
           {!miniCollapsed && (
           <div className="shrink-0 px-2 pt-1 pb-2">
             <LayoutGroup id="esim-sheet-nav">
-              <div className="grid grid-cols-5 items-end gap-0.5">
-                {navItems.map((item) => {
+              <div
+                className={`grid items-end gap-0.5 ${
+                  compactNav ? "grid-cols-3" : "grid-cols-5"
+                }`}
+              >
+                {visibleNavItems.map((item) => {
                   const isActive = activeNavId === item.id;
                   const Icon = item.Icon;
                   return (
@@ -1635,11 +1747,11 @@ export default function EsimBottomSheet() {
                   loading={promoLoading}
                   points={promoPoints}
                   coupons={promoCoupons}
-                  onClose={() => setExpanded(false)}
+                  onClose={() => setSheetSnap("normal")}
                 />
               ) : panel === "buy" ? (
                 <div className="min-h-0 flex-1">
-                  <EsimQuickBuyPanel onCloseSheet={() => setExpanded(false)} />
+                  <EsimQuickBuyPanel onCloseSheet={() => setSheetSnap("normal")} />
                 </div>
               ) : isGuest ? (
                 <LoginGate />
@@ -1671,7 +1783,7 @@ export default function EsimBottomSheet() {
                         href="/product"
                         size="sm"
                         className="flex-1 min-w-0 basis-0 !min-h-[42px]"
-                        onClick={() => setExpanded(false)}
+                        onClick={() => setSheetSnap("normal")}
                       >
                         購買 eSIM
                       </JekoPillButton>

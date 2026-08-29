@@ -12,6 +12,7 @@ export default function CanvasEditable({
   onChange,
   as: Tag = "span",
   className = "",
+  style,
   html = false,
   singleLine = false,
   placeholder = "點此編輯",
@@ -36,11 +37,16 @@ export default function CanvasEditable({
       return (
         <Tag
           className={className}
+          style={style}
           dangerouslySetInnerHTML={{ __html: display }}
         />
       );
     }
-    return <Tag className={className}>{display}</Tag>;
+    return (
+      <Tag className={className} style={style}>
+        {display}
+      </Tag>
+    );
   }
 
   const commit = (el) => {
@@ -56,7 +62,10 @@ export default function CanvasEditable({
     <>
       <Tag
         ref={ref}
-        className={`${className} outline-none cursor-text rounded-[2px] empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 focus:ring-1 focus:ring-[#93003c]/50 focus:bg-black/[0.03]`.trim()}
+        style={style}
+        className={`${className} outline-none cursor-text rounded-[2px] break-words ${
+          html ? "" : "whitespace-pre-wrap "
+        }empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 focus:ring-1 focus:ring-[#93003c]/50 focus:bg-black/[0.03]`.trim()}
         contentEditable
         suppressContentEditableWarning
         data-placeholder={placeholder}

@@ -275,15 +275,6 @@ export default function NavbarSiteSearch({
               </button>
             ) : null}
           </div>
-          {!isBar ? (
-            <button
-              type="button"
-              onClick={close}
-              className="text-[13px] text-slate-500 hover:text-slate-800 shrink-0"
-            >
-              取消
-            </button>
-          ) : null}
         </div>
         {showPanel ? (
           <div

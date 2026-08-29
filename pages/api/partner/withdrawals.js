@@ -6,10 +6,13 @@ import {
 import {
   computePayoutSnapshot,
   validateWithdrawalAmount,
+  isWithdrawalLedgerConsistent,
   netRemitAmount,
   WITHDRAWAL_STATUS_LABEL,
   isPayoutAccountComplete,
   buildPayoutSnapshot,
+  PAYOUT_MIN_WITHDRAWAL,
+  PAYOUT_MAX_WITHDRAWAL,
 } from "../../../lib/partnerPayout";
 
 function mapRequest(r) {
@@ -60,6 +63,17 @@ async function loadOrdersAndRequests(supabase, partnerId) {
   return { orders: orders || [], requests: requests || [], missingTable: false };
 }
 
+function isUniquePendingViolation(error) {
+  const msg = String(error?.message || "");
+  const code = String(error?.code || "");
+  return (
+    code === "23505" ||
+    /uniq_partner_withdrawal_one_pending|duplicate key|unique constraint/i.test(
+      msg,
+    )
+  );
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
     res.setHeader("Allow", ["GET", "POST"]);
@@ -82,19 +96,19 @@ export default async function handler(req, res) {
   const partnerId = access.partner.id;
 
   try {
-    const { orders, requests, missingTable } = await loadOrdersAndRequests(
-      supabase,
-      partnerId,
-    );
-    if (missingTable) {
-      return res.status(503).json({
-        error: "提領功能資料表尚未建立，請先執行 migration 20260802e",
-      });
-    }
-
-    const snapshot = computePayoutSnapshot({ orders, requests });
-
     if (req.method === "GET") {
+      const { orders, requests, missingTable } = await loadOrdersAndRequests(
+        supabase,
+        partnerId,
+      );
+      if (missingTable) {
+        return res.status(503).json({
+          error: "提領功能資料表尚未建立，請先執行 migration 20260802e",
+        });
+      }
+
+      const snapshot = computePayoutSnapshot({ orders, requests });
+
       let { data: bank, error: bankGetErr } = await supabase
         .from("partner_bank_accounts")
         .select(
@@ -127,7 +141,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // POST 申請
+    // ── POST 申請：以伺服器最新餘額硬擋，防超額／連點／併發 ──
+
     let { data: bank, error: bankErr } = await supabase
       .from("partner_bank_accounts")
       .select(
@@ -145,11 +160,48 @@ export default async function handler(req, res) {
         .maybeSingle());
     }
     if (!isPayoutAccountComplete(bank)) {
-      return res.status(400).json({ error: "請先完整儲存收款帳戶資料" });
+      return res.status(400).json({
+        error: "請先完整儲存收款帳戶資料",
+        title: "請先完成收款帳戶",
+      });
     }
 
+    // 送出當下重算（勿信任前端帶的餘額）
+    const fresh = await loadOrdersAndRequests(supabase, partnerId);
+    if (fresh.missingTable) {
+      return res.status(503).json({
+        error: "提領功能資料表尚未建立，請先執行 migration 20260802e",
+      });
+    }
+
+    const snapshot = computePayoutSnapshot({
+      orders: fresh.orders,
+      requests: fresh.requests,
+    });
+
     const check = validateWithdrawalAmount(req.body?.amount, snapshot);
-    if (!check.ok) return res.status(400).json({ error: check.error });
+    if (!check.ok) {
+      return res.status(400).json({
+        error: check.error,
+        title: check.title,
+        detail: check.detail,
+        snapshot,
+      });
+    }
+
+    // 雙重硬擋：金額必須落在 [min, min(available, max)]
+    if (
+      check.amount < PAYOUT_MIN_WITHDRAWAL ||
+      check.amount > PAYOUT_MAX_WITHDRAWAL ||
+      check.amount > snapshot.available
+    ) {
+      return res.status(400).json({
+        error: `超過可提領餘額 NT$${snapshot.available.toLocaleString()}`,
+        title: "超過可提領餘額",
+        detail: "系統已拒絕此超額申請。",
+        snapshot,
+      });
+    }
 
     const payoutSnapshot = buildPayoutSnapshot(bank);
     const insertPayload = {
@@ -168,11 +220,7 @@ export default async function handler(req, res) {
       )
       .single();
 
-    // 尚未跑 fee_amount / payout_snapshot migration 時降級
-    if (
-      error &&
-      /fee_amount|payout_snapshot/i.test(error.message || "")
-    ) {
+    if (error && /fee_amount|payout_snapshot/i.test(error.message || "")) {
       const slim = {
         partner_id: partnerId,
         amount: check.amount,
@@ -197,15 +245,60 @@ export default async function handler(req, res) {
       }
     }
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      if (isUniquePendingViolation(error)) {
+        return res.status(409).json({
+          error: "尚有審核中的提領申請，請待處理完成後再送",
+          title: "無法重複申請",
+          detail: "同一時間僅能有一筆審核中的提領，請勿重複送出。",
+        });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+
+    // 寫入後再算一次帳本：若因併發導致超額保留，立即撤銷此筆
+    const after = await loadOrdersAndRequests(supabase, partnerId);
+    const afterSnap = computePayoutSnapshot({
+      orders: after.orders,
+      requests: after.requests,
+    });
+
+    if (!isWithdrawalLedgerConsistent(afterSnap)) {
+      console.error(
+        "[partner/withdrawals] overdraw detected, rolling back",
+        {
+          partnerId,
+          requestId: created?.id,
+          amount: check.amount,
+          earnedFrozen: afterSnap.earnedFrozen,
+          reserved: afterSnap.reserved,
+          available: afterSnap.available,
+        },
+      );
+      if (created?.id) {
+        await supabase
+          .from("partner_withdrawal_requests")
+          .delete()
+          .eq("id", created.id)
+          .eq("partner_id", partnerId)
+          .eq("status", "pending");
+      }
+      return res.status(409).json({
+        error: "可提領餘額不足或發生併發衝突，已取消本次申請",
+        title: "申請已取消（防超額）",
+        detail:
+          "系統偵測到提領後保留金額會超過可結算分潤，已自動撤銷本次申請，不會超額出金。請重新整理後再試。",
+        snapshot: computePayoutSnapshot({
+          orders: after.orders,
+          requests: (after.requests || []).filter((r) => r.id !== created?.id),
+        }),
+      });
+    }
 
     return res.status(200).json({
       ok: true,
       request: mapRequest(created),
-      snapshot: computePayoutSnapshot({
-        orders,
-        requests: [created, ...requests],
-      }),
+      snapshot: afterSnap,
     });
   } catch (err) {
     console.error("[partner/withdrawals]", err);

@@ -1,20 +1,44 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { bossFetch } from "@/lib/bossAdminClient";
 import { getOrderStatusLabel } from "@/lib/adminAnalytics";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import { BossAlert, BossNum, BossStatusBadge } from "@/components/admin/bossUi";
 import {
-  BossAlert,
-  BossButton,
-  BossCard,
-  BossField,
-  BossFilterTabs,
-  BossKpiCard,
-  BossNum,
-  BossSelect,
-  BossStatusBadge,
-} from "@/components/admin/bossUi";
+  BOSS_AUI,
+  BossAnalyticsCard,
+  BossAnalyticsHeader,
+  BossStatPill,
+  BossStatusChips,
+} from "@/components/admin/BossAnalyticsChrome";
+
+const chartLoading = () => (
+  <div className="h-28 flex items-center justify-center">
+    <LoadingIndicator layout="center" label="載入圖表…" size="sm" />
+  </div>
+);
+
+const RevenueSplitDonut = dynamic(
+  () =>
+    import("@/components/partner/AnalyticsCharts").then(
+      (m) => m.RevenueSplitDonut,
+    ),
+  { ssr: false, loading: chartLoading },
+);
+const CountCircle = dynamic(
+  () =>
+    import("@/components/partner/AnalyticsCharts").then((m) => m.CountCircle),
+  { ssr: false, loading: chartLoading },
+);
+const MonthlyBarChart = dynamic(
+  () =>
+    import("@/components/partner/AnalyticsCharts").then(
+      (m) => m.MonthlyBarChart,
+    ),
+  { ssr: false, loading: chartLoading },
+);
 
 const fmt = (n) => `NT$${Math.round(Number(n) || 0).toLocaleString()}`;
 
@@ -58,141 +82,220 @@ export default function BossMainSiteSalesPanel() {
   const productRank = report?.productRank || [];
   const chart = report?.lineChart;
 
+  const monthlyBuckets = useMemo(() => {
+    if (!chart?.labels?.length) return [];
+    return chart.labels.map((label, i) => ({
+      label,
+      profit: Number(chart.profitSeries?.[i]) || 0,
+      revenue: Number(chart.revenueSeries?.[i]) || 0,
+    }));
+  }, [chart]);
+
+  const periodHint =
+    days === "9999"
+      ? "全部期間"
+      : days === "365"
+        ? "近 1 年"
+        : `近 ${days} 天`;
+
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-        <div>
-          <h3 className="text-base font-semibold text-slate-900">主站銷售狀況</h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            資料來自 Medusa 真實訂單（已排除夥伴店／連結）；成本取自變體{" "}
-            <code className="text-[11px] bg-slate-100 px-1 rounded">cost_price</code>
-            ，毛利＝營收 − 成本（未扣金流手續費）。
-          </p>
-        </div>
-        <BossButton
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={load}
-          disabled={loading}
-        >
-          {loading ? "更新中…" : "重新整理"}
-        </BossButton>
-      </div>
+    <div className="space-y-5" style={{ backgroundColor: BOSS_AUI.wash }}>
+      <BossAnalyticsHeader
+        title="主站銷售狀況"
+        subtitle="Medusa 真實訂單（已排除夥伴店／連結）；毛利＝營收 − 變體 cost_price"
+        rangeValue={days}
+        onRangeChange={setDays}
+        extra={
+          <button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            className="min-h-9 px-3 py-1.5 text-xs font-bold rounded-xl border bg-white disabled:opacity-50"
+            style={{ borderColor: BOSS_AUI.border, color: BOSS_AUI.mid }}
+          >
+            {loading ? "更新中…" : "重新整理"}
+          </button>
+        }
+      />
 
-      <BossCard className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
-        <BossField label="期間">
-          <BossSelect value={days} onChange={(e) => setDays(e.target.value)}>
-            <option value="9999">全部</option>
-            <option value="7">近 7 日</option>
-            <option value="30">近 30 日</option>
-            <option value="90">近 90 日</option>
-            <option value="365">近 1 年</option>
-          </BossSelect>
-        </BossField>
-        <BossField label="資料來源">
-          <p className="text-xs text-slate-600 pt-2">
-            Medusa 拉取 {meta?.medusaFetched ?? "—"} 筆
-            {meta?.partnerSkipped != null
-              ? ` · 已排除夥伴 ${meta.partnerSkipped}`
-              : ""}
-          </p>
-        </BossField>
-      </BossCard>
+      <BossAnalyticsCard className="px-5 py-4">
+        <p className="text-base font-black" style={{ color: BOSS_AUI.dark }}>
+          {loading
+            ? "正在讀取主站訂單…"
+            : (kpis.orderCount || 0) > 0
+              ? `${periodHint}營收 ${fmt(kpis.revenue)}，毛利 ${fmt(kpis.profit)}（${kpis.orderCount} 筆已付款）`
+              : `${periodHint}尚無符合條件的已付款訂單`}
+        </p>
+        <p className="text-xs mt-1" style={{ color: BOSS_AUI.mid }}>
+          Medusa 拉取 {meta?.medusaFetched ?? "—"} 筆
+          {meta?.partnerSkipped != null
+            ? ` · 已排除夥伴 ${meta.partnerSkipped}`
+            : ""}
+        </p>
+      </BossAnalyticsCard>
 
-      <BossFilterTabs items={STATUS_TABS} value={status} onChange={setStatus} />
+      <BossStatusChips
+        items={STATUS_TABS}
+        value={status}
+        onChange={setStatus}
+      />
 
-      {error && <BossAlert>{error}</BossAlert>}
+      {error ? <BossAlert>{error}</BossAlert> : null}
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <BossKpiCard
+      <div className="flex flex-wrap gap-3">
+        <BossStatPill
+          icon="payments"
+          iconBg="#2c6ecb"
           label="營收（已付款）"
-          value={fmt(kpis.revenue)}
-          sub={`${kpis.orderCount || 0} 筆 · 今日 ${fmt(kpis.todayRevenue || 0)}`}
+          value={loading ? "…" : fmt(kpis.revenue)}
+          sub={`今日 ${fmt(kpis.todayRevenue || 0)}`}
         />
-        <BossKpiCard
+        <BossStatPill
+          icon="inventory_2"
+          iconBg="#8c9196"
           label="供應成本"
-          value={fmt(kpis.cost)}
+          value={loading ? "…" : fmt(kpis.cost)}
           sub={
             kpis.missingCostCount
               ? `${kpis.missingCostCount} 筆缺 cost_price`
               : "變體 cost_price"
           }
         />
-        <BossKpiCard
+        <BossStatPill
+          icon="account_balance_wallet"
+          iconBg="#008060"
           label="毛利"
-          value={fmt(kpis.profit)}
+          value={loading ? "…" : fmt(kpis.profit)}
           sub="營收 − 成本"
         />
-        <BossKpiCard
+        <BossStatPill
+          icon="receipt_long"
+          iconBg="#1a1a1a"
           label="今日訂單"
-          value={String(kpis.todayOrders || 0)}
+          value={loading ? "…" : String(kpis.todayOrders || 0)}
           sub={`近 7 日營收 ${fmt(kpis.weekRevenue || 0)}`}
         />
-        <BossKpiCard
+        <BossStatPill
+          icon="report"
+          iconBg="#eec200"
           label="待付款 / 退款"
-          value={`${kpis.pendingCount || 0} / ${kpis.refundCount || 0}`}
+          value={
+            loading
+              ? "…"
+              : `${kpis.pendingCount || 0} / ${kpis.refundCount || 0}`
+          }
         />
       </div>
 
-      {chart?.labels?.length ? (
-        <BossCard className="p-4">
-          <p className="text-xs font-semibold text-slate-500 mb-3">
-            近 {chart.labels.length} 日營收／毛利（已付款）
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <BossAnalyticsCard className="p-4">
+          <p
+            className="text-xs font-bold mb-3"
+            style={{ color: BOSS_AUI.mid }}
+          >
+            毛利 vs 供應成本
           </p>
-          <div className="flex items-end gap-1 h-28">
-            {chart.labels.map((label, i) => {
-              const rev = Number(chart.revenueSeries[i]) || 0;
-              const max = Math.max(1, ...chart.revenueSeries.map(Number));
-              const h = Math.round((rev / max) * 100);
-              return (
-                <div
-                  key={`${label}-${i}`}
-                  className="flex-1 min-w-0 flex flex-col items-center gap-1"
-                  title={`${label} · 營收 ${fmt(rev)} · 毛利 ${fmt(chart.profitSeries[i])}`}
-                >
-                  <div
-                    className="w-full max-w-[14px] rounded-t bg-[#1a56db]/80"
-                    style={{ height: `${Math.max(h, rev > 0 ? 4 : 0)}%` }}
-                  />
-                  <span className="text-[9px] text-slate-400 truncate w-full text-center">
-                    {label}
-                  </span>
-                </div>
-              );
-            })}
+          {loading ? (
+            chartLoading()
+          ) : (
+            <RevenueSplitDonut
+              profit={Number(kpis.profit) || 0}
+              cost={Number(kpis.cost) || 0}
+              costLabel="供應成本"
+            />
+          )}
+        </BossAnalyticsCard>
+
+        <BossAnalyticsCard className="p-4 flex items-center gap-4">
+          {loading ? (
+            chartLoading()
+          ) : (
+            <>
+              <CountCircle value={kpis.todayOrders || 0} color="#008060" />
+              <div>
+                <p className="text-xs font-bold" style={{ color: BOSS_AUI.mid }}>
+                  今日新增訂單
+                </p>
+                <p className="text-[11px] mt-1" style={{ color: BOSS_AUI.soft }}>
+                  主站渠道（已排除夥伴）
+                </p>
+              </div>
+            </>
+          )}
+        </BossAnalyticsCard>
+
+        <BossAnalyticsCard className="p-4">
+          <p className="text-xs font-bold mb-2" style={{ color: BOSS_AUI.mid }}>
+            期間毛利趨勢
+          </p>
+          <div className="h-28">
+            {loading ? (
+              chartLoading()
+            ) : (
+              <MonthlyBarChart buckets={monthlyBuckets} />
+            )}
           </div>
-        </BossCard>
-      ) : null}
+        </BossAnalyticsCard>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <BossCard className="lg:col-span-1 p-0 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100">
-            <h4 className="text-sm font-semibold text-slate-900">商品營收排行</h4>
+        <BossAnalyticsCard className="lg:col-span-1 overflow-hidden">
+          <div
+            className="px-4 py-3"
+            style={{ borderBottom: `1px solid ${BOSS_AUI.border}` }}
+          >
+            <h4
+              className="text-sm font-black"
+              style={{ color: BOSS_AUI.dark }}
+            >
+              熱銷商品
+            </h4>
           </div>
           {loading ? (
             <LoadingIndicator layout="center" label="載入中…" className="py-10" />
           ) : productRank.length === 0 ? (
-            <p className="py-10 text-center text-sm text-slate-400">尚無已付款商品</p>
+            <p
+              className="py-10 text-center text-sm"
+              style={{ color: BOSS_AUI.soft }}
+            >
+              尚無已付款商品
+            </p>
           ) : (
-            <ul className="divide-y divide-slate-100">
-              {productRank.map((p, idx) => (
+            <ul className="divide-y" style={{ borderColor: BOSS_AUI.border }}>
+              {productRank.slice(0, 8).map((p, idx) => (
                 <li
                   key={p.name}
-                  className="px-4 py-2.5 flex items-start justify-between gap-2 text-sm"
+                  className="px-4 py-3 flex items-start justify-between gap-2"
+                  style={{ borderColor: BOSS_AUI.border }}
                 >
-                  <div className="min-w-0">
-                    <p className="font-medium text-slate-800 truncate">
-                      <span className="text-slate-400 mr-1.5">{idx + 1}.</span>
-                      {p.name}
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      {p.qty} 件 · 成本 {fmt(p.cost)}
-                    </p>
+                  <div className="min-w-0 flex gap-2">
+                    <span
+                      className="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0"
+                      style={{
+                        backgroundColor: idx < 3 ? "#1E4AD1" : BOSS_AUI.light,
+                        color: idx < 3 ? "#fff" : BOSS_AUI.mid,
+                      }}
+                    >
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p
+                        className="text-sm font-bold truncate"
+                        style={{ color: BOSS_AUI.dark }}
+                      >
+                        {p.name}
+                      </p>
+                      <p
+                        className="text-[11px] mt-0.5"
+                        style={{ color: BOSS_AUI.soft }}
+                      >
+                        {p.qty} 件 · 成本 {fmt(p.cost)}
+                      </p>
+                    </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <BossNum className="font-semibold">{fmt(p.revenue)}</BossNum>
-                    <p className="text-[11px] text-emerald-700 mt-0.5">
+                    <BossNum className="text-sm font-black">{fmt(p.revenue)}</BossNum>
+                    <p className="text-[11px] text-emerald-700 mt-0.5 font-semibold">
                       毛利 {fmt(p.profit)}
                     </p>
                   </div>
@@ -200,12 +303,22 @@ export default function BossMainSiteSalesPanel() {
               ))}
             </ul>
           )}
-        </BossCard>
+        </BossAnalyticsCard>
 
-        <BossCard className="lg:col-span-2 p-0 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-slate-900">訂單明細</h4>
-            <span className="text-[11px] text-slate-400">{orders.length} 筆</span>
+        <BossAnalyticsCard className="lg:col-span-2 overflow-hidden">
+          <div
+            className="px-4 py-3 flex items-center justify-between"
+            style={{ borderBottom: `1px solid ${BOSS_AUI.border}` }}
+          >
+            <h4
+              className="text-sm font-black"
+              style={{ color: BOSS_AUI.dark }}
+            >
+              訂單明細
+            </h4>
+            <span className="text-[11px]" style={{ color: BOSS_AUI.soft }}>
+              {orders.length} 筆
+            </span>
           </div>
           {loading ? (
             <LoadingIndicator
@@ -214,14 +327,17 @@ export default function BossMainSiteSalesPanel() {
               className="py-16"
             />
           ) : orders.length === 0 ? (
-            <p className="py-12 text-center text-sm text-slate-400">
+            <p
+              className="py-12 text-center text-sm"
+              style={{ color: BOSS_AUI.soft }}
+            >
               沒有符合條件的主站訂單
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-xs text-slate-500">
-                  <tr>
+                <thead style={{ backgroundColor: BOSS_AUI.wash }}>
+                  <tr className="text-[11px]" style={{ color: BOSS_AUI.soft }}>
                     <th className="px-4 py-3 text-left font-bold">訂單</th>
                     <th className="px-4 py-3 text-left font-bold">買家</th>
                     <th className="px-4 py-3 text-left font-bold">商品</th>
@@ -232,21 +348,24 @@ export default function BossMainSiteSalesPanel() {
                     <th className="px-4 py-3 text-left font-bold">日期</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-[#e5e5e5]">
                   {orders.map((o) => (
-                    <tr key={o.id} className="hover:bg-slate-50/60">
+                    <tr key={o.id} className="hover:bg-[#fafafa]">
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-800">
+                        <p
+                          className="font-bold"
+                          style={{ color: BOSS_AUI.dark }}
+                        >
                           #{o.displayId ?? o.id.slice(-8)}
                         </p>
-                        <p className="text-[10px] font-mono text-slate-400 mt-0.5 truncate max-w-[140px]">
+                        <p className="text-[10px] font-mono mt-0.5 truncate max-w-[140px]" style={{ color: BOSS_AUI.soft }}>
                           {o.id}
                         </p>
                       </td>
-                      <td className="px-4 py-3 text-slate-600 text-xs max-w-[160px] truncate">
+                      <td className="px-4 py-3 text-xs max-w-[160px] truncate" style={{ color: BOSS_AUI.mid }}>
                         {o.email || "—"}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 max-w-[200px] truncate">
+                      <td className="px-4 py-3 max-w-[200px] truncate" style={{ color: BOSS_AUI.mid }}>
                         {o.itemSummary}
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -256,18 +375,18 @@ export default function BossMainSiteSalesPanel() {
                         />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <BossNum className="font-medium">{fmt(o.revenue)}</BossNum>
+                        <BossNum className="font-bold">{fmt(o.revenue)}</BossNum>
                       </td>
-                      <td className="px-4 py-3 text-right text-slate-600">
+                      <td className="px-4 py-3 text-right" style={{ color: BOSS_AUI.mid }}>
                         <BossNum>{fmt(o.cost)}</BossNum>
                         {o.missingCost ? (
                           <p className="text-[10px] text-amber-600 mt-0.5">缺成本</p>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold">
+                      <td className="px-4 py-3 text-right font-black">
                         <BossNum>{fmt(o.profit)}</BossNum>
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-500">
+                      <td className="px-4 py-3 text-xs" style={{ color: BOSS_AUI.soft }}>
                         {o.createdAt
                           ? new Date(o.createdAt).toLocaleString("zh-TW", {
                               month: "numeric",
@@ -283,7 +402,7 @@ export default function BossMainSiteSalesPanel() {
               </table>
             </div>
           )}
-        </BossCard>
+        </BossAnalyticsCard>
       </div>
     </div>
   );

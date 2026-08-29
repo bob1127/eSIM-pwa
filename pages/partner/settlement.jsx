@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import PartnerAdminLayout from "@/components/partner/PartnerAdminLayout";
 import MaterialIcon from "@/components/MaterialIcon";
 import {
@@ -26,7 +27,22 @@ import {
   PAYOUT_METHODS,
   normalizePayoutMethod,
   getPayoutMethodLabel,
+  validateWithdrawalAmount,
+  isPayoutAccountComplete,
+  WITHDRAWAL_STATUS_LABEL,
+  feeForNextWithdrawal,
+  netRemitAmount,
+  sumWithdrawalReserved,
+  freezeCutoffIso,
 } from "@/lib/partnerPayout";
+import PartnerDialog from "@/components/partner/ui/PartnerDialog";
+import PartnerButton from "@/components/partner/ui/PartnerButton";
+
+/**
+ * 結算頁 UI 假資料預覽（不寫資料庫）。
+ * 試完改 false；或網址加 ?demo=0 關閉、?demo=1 強制開啟。
+ */
+const FORCE_SETTLEMENT_DEMO = true;
 
 /** 結算頁：深灰／淺灰／白 + 小圓角；狀態徽章用特殊色 */
 const UI = {
@@ -44,6 +60,154 @@ const UI = {
 const PAGE_SIZE = 8;
 
 const fmt = (n) => `NT$${Math.round(Number(n) || 0).toLocaleString()}`;
+
+function daysAgoIso(days, hour = 10) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  d.setHours(hour, 30, 0, 0);
+  return d.toISOString();
+}
+
+function mapDemoRequest(r) {
+  const fee = Math.round(Number(r.fee_amount) || 0);
+  const amount = Math.round(Number(r.amount) || 0);
+  return {
+    ...r,
+    fee_amount: fee,
+    net_amount: netRemitAmount(amount, fee),
+    status_label: WITHDRAWAL_STATUS_LABEL[r.status] || r.status || "未知",
+  };
+}
+
+/** 假資料：多筆狀態＋足夠可提領，方便測匯出／分頁／申請流程（僅前端） */
+function buildSettlementDemo() {
+  const raw = [
+    {
+      id: "demo-w-01",
+      amount: 5000,
+      fee_amount: 0,
+      status: "remitted",
+      requested_at: daysAgoIso(48),
+      remitted_at: daysAgoIso(42),
+      remittance_memo: "已匯至玉山銀行（假資料）",
+    },
+    {
+      id: "demo-w-02",
+      amount: 8000,
+      fee_amount: 15,
+      status: "remitted",
+      requested_at: daysAgoIso(40),
+      remitted_at: daysAgoIso(35),
+      remittance_memo: "本月第 2 次提領手續費",
+    },
+    {
+      id: "demo-w-03",
+      amount: 12000,
+      fee_amount: 0,
+      status: "remitted",
+      requested_at: daysAgoIso(32),
+      remitted_at: daysAgoIso(28),
+      remittance_memo: "",
+    },
+    {
+      id: "demo-w-04",
+      amount: 4500,
+      fee_amount: 0,
+      status: "approved",
+      requested_at: daysAgoIso(12),
+      processed_at: daysAgoIso(10),
+      admin_note: "已核准，待財務排匯",
+    },
+    {
+      id: "demo-w-05",
+      amount: 6000,
+      fee_amount: 0,
+      status: "rejected",
+      requested_at: daysAgoIso(20),
+      processed_at: daysAgoIso(19),
+      admin_note: "帳戶資料不符，請更新後再申請（假資料）",
+    },
+    {
+      id: "demo-w-06",
+      amount: 3500,
+      fee_amount: 0,
+      status: "remitted",
+      requested_at: daysAgoIso(55),
+      remitted_at: daysAgoIso(50),
+    },
+    {
+      id: "demo-w-07",
+      amount: 7000,
+      fee_amount: 15,
+      status: "remitted",
+      requested_at: daysAgoIso(60),
+      remitted_at: daysAgoIso(55),
+    },
+    {
+      id: "demo-w-08",
+      amount: 4000,
+      fee_amount: 0,
+      status: "remitted",
+      requested_at: daysAgoIso(70),
+      remitted_at: daysAgoIso(65),
+    },
+    {
+      id: "demo-w-09",
+      amount: 9000,
+      fee_amount: 0,
+      status: "cancelled",
+      requested_at: daysAgoIso(25),
+      admin_note: "夥伴自行取消（假資料）",
+    },
+    {
+      id: "demo-w-10",
+      amount: 10000,
+      fee_amount: 0,
+      status: "remitted",
+      requested_at: daysAgoIso(85),
+      remitted_at: daysAgoIso(80),
+    },
+  ];
+  const requests = raw.map(mapDemoRequest);
+  const reserved = sumWithdrawalReserved(requests);
+  const available = 12800;
+  const heldInFreeze = 4200;
+  const earnedFrozen = available + reserved;
+  const totalEarned = earnedFrozen + heldInFreeze;
+  const requestsThisMonth = 0;
+  const nextFee = feeForNextWithdrawal(requestsThisMonth);
+
+  return {
+    scheduleHint: "【假資料】示範月結：上月對帳單已產製，本期應匯已扣已匯提領。",
+    bank: {
+      payout_method: "tw_bank",
+      bank_name: "玉山銀行",
+      bank_code: "808",
+      branch_name: "敦南分行",
+      account_name: "示範夥伴",
+      account_number: "123456789012",
+      payout_note: "",
+    },
+    requests,
+    snapshot: {
+      totalEarned,
+      earnedFrozen,
+      heldInFreeze,
+      reserved,
+      available,
+      freezeDays: PAYOUT_FREEZE_DAYS,
+      freezeCutoffIso: freezeCutoffIso(new Date(), PAYOUT_FREEZE_DAYS),
+      minWithdrawal: PAYOUT_MIN_WITHDRAWAL,
+      maxWithdrawal: PAYOUT_MAX_WITHDRAWAL,
+      requestsThisMonth,
+      freeWithdrawalsPerMonth: PAYOUT_FREE_WITHDRAWALS_PER_MONTH,
+      nextFee,
+      extraWithdrawalFee: PAYOUT_EXTRA_WITHDRAWAL_FEE,
+      canRequest: true,
+      blockReason: null,
+    },
+  };
+}
 
 async function getToken() {
   const { data } = await supabase.auth.getSession();
@@ -416,7 +580,16 @@ function WithdrawalDetailModal({ open, row, onClose }) {
 }
 
 export default function PartnerSettlementPage() {
+  const router = useRouter();
   const { partner } = usePartnerSession();
+  const demoMode = useMemo(() => {
+    if (!router.isReady) return FORCE_SETTLEMENT_DEMO;
+    const q = router.query.demo;
+    if (q === "0" || q === "false") return false;
+    if (q === "1" || q === "true") return true;
+    return FORCE_SETTLEMENT_DEMO;
+  }, [router.isReady, router.query.demo]);
+
   const [loading, setLoading] = useState(true);
   const [savingBank, setSavingBank] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -439,11 +612,32 @@ export default function PartnerSettlementPage() {
   const [page, setPage] = useState(1);
   const [detailRow, setDetailRow] = useState(null);
   const [freezeInfoOpen, setFreezeInfoOpen] = useState(false);
+  const [guardDialog, setGuardDialog] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  const submitLockRef = useRef(false);
+
+  const applyDemoData = useCallback(() => {
+    const demo = buildSettlementDemo();
+    setSnapshot(demo.snapshot);
+    setRequests(demo.requests);
+    setScheduleHint(demo.scheduleHint);
+    setBank(demo.bank);
+    const avail = Math.round(Number(demo.snapshot.available) || 0);
+    const maxW = Math.round(
+      Number(demo.snapshot.maxWithdrawal) || PAYOUT_MAX_WITHDRAWAL,
+    );
+    setAmount(String(Math.min(avail, maxW)));
+    setError("");
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
+      if (demoMode) {
+        applyDemoData();
+        return;
+      }
       const token = await getToken();
       const res = await fetch("/api/partner/withdrawals", {
         headers: { Authorization: `Bearer ${token}` },
@@ -476,11 +670,12 @@ export default function PartnerSettlementPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [demoMode, applyDemoData]);
 
   useEffect(() => {
-    if (partner?.id) load();
-  }, [partner?.id, load]);
+    if (!partner?.id || !router.isReady) return;
+    load();
+  }, [partner?.id, router.isReady, load]);
 
   useEffect(() => {
     setPage(1);
@@ -491,6 +686,10 @@ export default function PartnerSettlementPage() {
     setMessage("");
     setError("");
     try {
+      if (demoMode) {
+        setMessage("【假資料】收款帳戶已更新（未寫入資料庫）");
+        return;
+      }
       const token = await getToken();
       const res = await fetch("/api/partner/bank-account", {
         method: "PUT",
@@ -520,11 +719,90 @@ export default function PartnerSettlementPage() {
     }
   };
 
-  const submitWithdrawal = async () => {
+  const showGuard = (title, detail) => {
+    setGuardDialog({
+      title: title || "無法申請提領",
+      detail: detail || "目前無法申請提領。",
+    });
+  };
+
+  const availableAmt = Math.max(0, Math.round(Number(snapshot?.available) || 0));
+  const inputMax = Math.max(
+    0,
+    Math.min(availableAmt, PAYOUT_MAX_WITHDRAWAL),
+  );
+
+  const onAmountChange = (raw) => {
+    const digits = String(raw || "").replace(/[^\d]/g, "");
+    if (!digits) {
+      setAmount("");
+      return;
+    }
+    let n = parseInt(digits, 10);
+    if (!Number.isFinite(n) || n < 0) {
+      setAmount("");
+      return;
+    }
+    if (inputMax > 0 && n > inputMax) n = inputMax;
+    setAmount(String(n));
+  };
+
+  const amountHint = useMemo(() => {
+    if (!snapshot || amount === "" || amount == null) return "";
+    const check = validateWithdrawalAmount(amount, snapshot);
+    if (check.ok) {
+      const fee = check.fee || 0;
+      return fee > 0
+        ? `可送出。手續費 ${fmt(fee)}，實匯約 ${fmt(check.netAmount)}。`
+        : `可送出。本月首次免手續費，實匯 ${fmt(check.netAmount)}。`;
+    }
+    return check.error || "";
+  }, [amount, snapshot]);
+
+  const executeWithdrawal = async (safeAmount) => {
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
     setSubmitting(true);
     setMessage("");
     setError("");
+    setConfirmDialog(null);
     try {
+      if (demoMode) {
+        const fee = Math.round(Number(snapshot?.nextFee) || 0);
+        const amountN = Math.round(Number(safeAmount) || 0);
+        const newReq = mapDemoRequest({
+          id: `demo-w-local-${Date.now()}`,
+          amount: amountN,
+          fee_amount: fee,
+          status: "pending",
+          requested_at: new Date().toISOString(),
+          admin_note: "假資料本地申請（未寫入資料庫）",
+        });
+        const nextRequests = [newReq, ...requests];
+        const reserved = sumWithdrawalReserved(nextRequests);
+        const earnedFrozen = Math.round(Number(snapshot?.earnedFrozen) || 0);
+        const available = Math.max(0, earnedFrozen - reserved);
+        const requestsThisMonth =
+          Math.round(Number(snapshot?.requestsThisMonth) || 0) + 1;
+        setRequests(nextRequests);
+        setSnapshot({
+          ...snapshot,
+          reserved,
+          available,
+          requestsThisMonth,
+          nextFee: feeForNextWithdrawal(requestsThisMonth),
+          canRequest: false,
+          blockReason: "尚有審核中的提領申請，請待處理完成後再送",
+        });
+        setMessage(
+          fee > 0
+            ? `【假資料】已送出提領 ${fmt(amountN)}（手續費 ${fmt(fee)}，實匯 ${fmt(netRemitAmount(amountN, fee))}）`
+            : `【假資料】已送出提領申請 ${fmt(amountN)}（本月首次免手續費）`,
+        );
+        setAmount("");
+        setTab("pending");
+        return;
+      }
       const token = await getToken();
       const res = await fetch("/api/partner/withdrawals", {
         method: "POST",
@@ -532,22 +810,64 @@ export default function PartnerSettlementPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount: safeAmount }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "申請失敗");
+      if (!res.ok) {
+        if (data.snapshot) setSnapshot(data.snapshot);
+        throw new Error(data.detail || data.error || "申請失敗");
+      }
       setMessage(
         data.request?.fee_amount > 0
           ? `已送出提領 ${fmt(data.request?.amount)}（手續費 ${fmt(data.request.fee_amount)}，實匯 ${fmt(data.request.net_amount)}）`
           : `已送出提領申請 ${fmt(data.request?.amount)}（本月首次免手續費）`,
       );
       setSnapshot(data.snapshot);
+      setAmount("");
       await load();
     } catch (err) {
-      setError(err.message || "申請失敗");
+      showGuard("申請失敗", err.message || "申請失敗，請稍後再試。");
     } finally {
       setSubmitting(false);
+      submitLockRef.current = false;
     }
+  };
+
+  const submitWithdrawal = () => {
+    setMessage("");
+    setError("");
+
+    if (submitting || submitLockRef.current) return;
+
+    if (!isPayoutAccountComplete(bank)) {
+      showGuard(
+        "請先完成收款帳戶",
+        "申請提領前須完整儲存收款帳戶資料（銀行／戶名／帳號等）。請於右側「收款帳戶」填寫並儲存後再申請。",
+      );
+      return;
+    }
+
+    const check = validateWithdrawalAmount(amount, snapshot);
+    if (!check.ok) {
+      showGuard(check.title, check.detail || check.error);
+      return;
+    }
+
+    // 前端再擋一次：絕不允許 > 可提領
+    if (check.amount > availableAmt) {
+      showGuard(
+        "超過可提領餘額",
+        `可提領餘額為 ${fmt(availableAmt)}，無法申請 ${fmt(check.amount)}。系統不會允許超額提領。`,
+      );
+      return;
+    }
+
+    setConfirmDialog({
+      amount: check.amount,
+      fee: check.fee,
+      net: check.netAmount,
+      available: availableAmt,
+    });
   };
 
   const filteredRequests = useMemo(() => {
@@ -623,6 +943,23 @@ export default function PartnerSettlementPage() {
         className="px-4 sm:px-6 pt-5 pb-24 md:pb-6 space-y-4"
         style={{ backgroundColor: UI.wash }}
       >
+        {demoMode ? (
+          <div
+            className="px-3 py-2.5 text-xs sm:text-sm font-semibold leading-relaxed"
+            style={{
+              backgroundColor: "#fff8e6",
+              border: "1px solid #e8d9a8",
+              borderRadius: UI.radius,
+              color: UI.dark,
+            }}
+          >
+            目前為<strong>假資料預覽</strong>
+            ：可提領餘額、提領紀錄、匯出／申請提領皆在本機模擬，不會寫入資料庫。
+            試完把程式裡 <code>FORCE_SETTLEMENT_DEMO</code> 改{" "}
+            <code>false</code>，或網址加 <code>?demo=0</code>。
+          </div>
+        ) : null}
+
         {/* 頁首 */}
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="min-w-0">
@@ -797,32 +1134,49 @@ export default function PartnerSettlementPage() {
                   提領金額（NT$）
                 </span>
                 <input
-                  type="number"
-                  min={PAYOUT_MIN_WITHDRAWAL}
-                  max={PAYOUT_MAX_WITHDRAWAL}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="off"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => onAmountChange(e.target.value)}
                   className={inputClass}
                   style={{ ...inputStyle, width: "10rem" }}
+                  aria-invalid={
+                    !!amount &&
+                    !!snapshot &&
+                    !validateWithdrawalAmount(amount, snapshot).ok
+                  }
+                  placeholder={`${PAYOUT_MIN_WITHDRAWAL}`}
                 />
               </label>
-              <button
+              <PartnerButton
                 type="button"
-                disabled={submitting || !snapshot?.canRequest}
+                disabled={submitting || loading}
                 onClick={submitWithdrawal}
-                className="h-9 px-4 text-xs font-bold text-white disabled:opacity-50 transition"
-                style={{
-                  backgroundColor: "#008060",
-                  borderRadius: UI.radiusSm,
-                }}
               >
                 {submitting ? "送出中…" : "一鍵申請提領"}
-              </button>
+              </PartnerButton>
             </div>
+            <p className="text-[11px] leading-relaxed" style={{ color: UI.mid }}>
+              目前可提領 {fmt(availableAmt)}
+              {inputMax > 0
+                ? ` · 本次最多可填 ${fmt(inputMax)}（取可提領與單次上限 ${fmt(PAYOUT_MAX_WITHDRAWAL)} 較小值）`
+                : ` · 未達最低門檻 ${fmt(PAYOUT_MIN_WITHDRAWAL)}`}
+            </p>
+            {amountHint ? (
+              <p
+                className="text-[12px] leading-relaxed whitespace-pre-line"
+                style={{ color: UI.dark }}
+              >
+                {amountHint}
+              </p>
+            ) : null}
             <p className="text-[11px] leading-relaxed" style={{ color: UI.soft }}>
               送出後狀態為「審核中」；核准後目標於{" "}
               {PAYOUT_REMITTANCE_WORKING_DAYS}{" "}
-              個工作天內匯款（遇金融機構非營業日得順延）。
+              個工作天內匯款（遇金融機構非營業日得順延）。最低{" "}
+              {fmt(PAYOUT_MIN_WITHDRAWAL)}、單次上限 {fmt(PAYOUT_MAX_WITHDRAWAL)}。
             </p>
           </Card>
 
@@ -1002,18 +1356,14 @@ export default function PartnerSettlementPage() {
               </span>
               。非台灣銀行匯款可能需較長作業時間，平台會與您確認後再匯。
             </p>
-            <button
+            <PartnerButton
               type="button"
               disabled={savingBank}
               onClick={saveBank}
-              className="h-9 px-4 text-xs font-bold text-white disabled:opacity-50 transition w-full sm:w-auto"
-              style={{
-                backgroundColor: UI.dark,
-                borderRadius: UI.radiusSm,
-              }}
+              className="w-full sm:w-auto"
             >
               {savingBank ? "儲存中…" : "儲存帳戶"}
-            </button>
+            </PartnerButton>
           </Card>
         </div>
 
@@ -1146,6 +1496,91 @@ export default function PartnerSettlementPage() {
         snapshot={snapshot}
         onClose={() => setFreezeInfoOpen(false)}
       />
+      <PartnerDialog
+        open={!!guardDialog}
+        onClose={() => setGuardDialog(null)}
+        title={guardDialog?.title || "無法申請提領"}
+        maxWidth="max-w-md"
+        footer={
+          <PartnerButton
+            type="button"
+            variant="secondary"
+            onClick={() => setGuardDialog(null)}
+          >
+            知道了
+          </PartnerButton>
+        }
+      >
+        <p
+          className="text-sm leading-relaxed whitespace-pre-line"
+          style={{ color: "#1a1a1a" }}
+        >
+          {guardDialog?.detail}
+        </p>
+      </PartnerDialog>
+
+      <PartnerDialog
+        open={!!confirmDialog}
+        onClose={() => !submitting && setConfirmDialog(null)}
+        title="確認提領申請"
+        maxWidth="max-w-md"
+        footer={
+          <>
+            <PartnerButton
+              type="button"
+              variant="secondary"
+              disabled={submitting}
+              onClick={() => setConfirmDialog(null)}
+            >
+              取消
+            </PartnerButton>
+            <PartnerButton
+              type="button"
+              disabled={submitting}
+              onClick={() =>
+                confirmDialog && executeWithdrawal(confirmDialog.amount)
+              }
+            >
+              {submitting ? "送出中…" : "確認送出"}
+            </PartnerButton>
+          </>
+        }
+      >
+        {confirmDialog ? (
+          <div className="space-y-2 text-sm leading-relaxed" style={{ color: "#1a1a1a" }}>
+            <p>請確認以下金額後再送出。送出後進入審核，無法自行取消超額申請。</p>
+            <ul className="space-y-1.5 border border-slate-200 rounded-md p-3 bg-slate-50">
+              <li className="flex justify-between gap-3">
+                <span>目前可提領</span>
+                <span className="font-bold tabular-nums">
+                  {fmt(confirmDialog.available)}
+                </span>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span>申請金額</span>
+                <span className="font-bold tabular-nums">
+                  {fmt(confirmDialog.amount)}
+                </span>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span>手續費</span>
+                <span className="font-bold tabular-nums">
+                  {confirmDialog.fee > 0 ? fmt(confirmDialog.fee) : "免"}
+                </span>
+              </li>
+              <li className="flex justify-between gap-3 border-t border-slate-200 pt-1.5">
+                <span>預估實匯</span>
+                <span className="font-black tabular-nums">
+                  {fmt(confirmDialog.net)}
+                </span>
+              </li>
+            </ul>
+            <p className="text-[12px] text-slate-600">
+              申請金額不可超過可提領餘額；伺服器會再次核對，超額會自動拒絕。
+            </p>
+          </div>
+        ) : null}
+      </PartnerDialog>
     </PartnerAdminLayout>
   );
 }

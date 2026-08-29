@@ -5,9 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import CarRentalCharterSection from "./CarRentalCharterSection";
-import AccommodationRecommendSection from "./AccommodationRecommendSection";
-import KKdayTicketSection from "./KKdayTicketSection";
-import TransportTicketSection from "./TransportTicketSection";
+import JekoTravelDealsSection from "./JekoTravelDealsSection";
 import JekoRecommendSection from "./JekoRecommendSection";
 import ServiceSection from "./ServiceSection";
 import MobileCardCarousel from "./MobileCardCarousel";
@@ -387,19 +385,11 @@ export default function MobileHomePage() {
         </div>
       </div>
 
-      {/* ═══ 8. 住宿推薦 ═══ */}
+      {/* ═══ 8. 交通／門票／住宿（整合輪播） ═══ */}
       <div className="mt-3" id="accommodation-section">
-        <AccommodationRecommendSection />
-      </div>
-
-      {/* ═══ 9. 景點門票 ═══ */}
-      <div className="mt-3" id="kkday-section">
-        <KKdayTicketSection />
-      </div>
-
-      {/* ═══ 10. 交通票券 ═══ */}
-      <div className="mt-3" id="transport-section">
-        <TransportTicketSection />
+        <div className="[&>section]:!bg-transparent [&>section]:!pt-0">
+          <JekoTravelDealsSection />
+        </div>
       </div>
     </div>
   );

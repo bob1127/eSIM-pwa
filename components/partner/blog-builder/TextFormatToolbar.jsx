@@ -91,13 +91,19 @@ export default function TextFormatToolbar({ rootRef, onEdit }) {
         setPos(null);
         return;
       }
-      const w = 420;
+      const w = Math.min(420, window.innerWidth - 16);
       const left = Math.min(
         window.innerWidth - w - 8,
         Math.max(8, r.left + r.width / 2 - w / 2),
       );
-      const top = Math.max(8, r.top - 52);
-      setPos({ top, left });
+      // 優先放選區下方，避免蓋住上一行文字（小白編輯時最常抱怨）
+      const below = r.bottom + 10;
+      const above = r.top - 56;
+      const top =
+        below + 56 < window.innerHeight - 8
+          ? below
+          : Math.max(8, above);
+      setPos({ top, left, width: w });
     };
 
     const onSel = () => {
@@ -135,7 +141,7 @@ export default function TextFormatToolbar({ rootRef, onEdit }) {
     <div
       ref={barRef}
       className="fixed z-[9800] rounded-lg bg-[#1f2124] text-white shadow-2xl border border-white/10 px-1.5 py-1"
-      style={{ top: pos.top, left: pos.left, width: 420 }}
+      style={{ top: pos.top, left: pos.left, width: pos.width || 420 }}
       onMouseDown={(e) => e.preventDefault()}
     >
       <div className="flex flex-wrap items-center gap-0.5">

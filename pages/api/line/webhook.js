@@ -21,10 +21,11 @@ import {
 import { getPublicSiteUrl } from "../../../lib/siteUrl";
 import {
   enableLineTrafficAlertForLineUser,
-  upsertLineTrafficAlert,
 } from "../../../lib/lineTrafficAlert";
 import { isSupportBusinessHours } from "../../../lib/supportHours";
 import { buildLineFaqReplyMessage } from "../../../lib/lineFaqAutoReply";
+import { ensureWelcomeForLineFollow } from "../../../lib/memberWelcomeBenefit";
+import { loadLineWelcomeSettings } from "../../../lib/lineWelcomeSettings";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -70,6 +71,15 @@ async function upsertLineFriend(lineUserId, displayName) {
   );
 }
 
+async function getLineFriendRecord(lineUserId) {
+  const { data } = await supabaseAdmin
+    .from("line_oa_friends")
+    .select("line_user_id, unfollowed_at")
+    .eq("line_user_id", lineUserId)
+    .maybeSingle();
+  return data || null;
+}
+
 async function markLineUnfollow(lineUserId) {
   await supabaseAdmin
     .from("line_oa_friends")
@@ -84,7 +94,8 @@ function buildLineAlertNeedMemberMessage() {
     "",
     "請擇一完成：",
     "① 傳「一鍵綁定」→ 用 Google／FB／Email 登入官網，連結此 LINE",
-    "② 直接貼上 ICCID（19～20 碼）查詢並開啟偏低提醒",
+    "② 點「開啟流量提醒」綁定要監控的 eSIM",
+    "③ 或先貼上 ICCID（19～20 碼）查目前用量（不會自動開提醒）",
     "",
     "也可至官網輸入 ICCID：",
     dataQueryUrl,
@@ -112,7 +123,7 @@ async function enableLineTrafficAlert(lineUserId) {
       result.productName ? `監控方案：${result.productName}` : null,
       "剩餘流量偏低時，我們會主動推播通知您。",
       "",
-      "💡 也可隨時傳「查詢用量」或貼上 ICCID。",
+      "💡 也可隨時傳「查詢用量」或貼 ICCID 看目前狀態。",
     ]
       .filter(Boolean)
       .join("\n"),
@@ -192,26 +203,17 @@ async function handleTextMessage(event) {
 
   if (iccid) {
     const result = await queryEsimUsage({ iccid });
+    // 對話貼 ICCID：只查目前用量，不自動開偏低提醒（提醒請走「開啟流量提醒」）
     let message = result.ok
       ? formatUsageForLine(result.data)
       : `❌ ${result.error || "查詢失敗"}`;
 
-    if (lineUserId && result.ok) {
-      const bind = await upsertLineTrafficAlert(supabaseAdmin, {
-        line_user_id: lineUserId,
-        topup_id: result.data?.topupId || null,
-        iccid,
-        product_label: result.data?.productName || null,
-        guest_email: null,
-      });
-      if (bind.ok) {
-        message += [
-          "",
-          "",
-          "✅ 已用此 ICCID 開啟 LINE 流量偏低提醒。",
-          "剩餘偏低時會主動通知您（約每日檢查一次）。",
-        ].join("\n");
-      }
+    if (result.ok) {
+      message += [
+        "",
+        "",
+        "若要開啟偏低提醒，請點「開啟流量提醒」完成綁定。",
+      ].join("\n");
     }
 
     await replyLineMessage(replyToken, { type: "text", text: message });
@@ -324,16 +326,31 @@ export default async function handler(req, res) {
   try {
     for (const event of events) {
       if (event.type === "follow" && event.source?.userId) {
-        await upsertLineFriend(
-          event.source.userId,
-          event.source?.displayName,
-        );
+        const lineUserId = event.source.userId;
+        const prior = await getLineFriendRecord(lineUserId);
+        const isReFollow = Boolean(prior?.unfollowed_at);
+
+        await upsertLineFriend(lineUserId, event.source?.displayName);
+
+        let welcomeState = null;
+        try {
+          welcomeState = await ensureWelcomeForLineFollow(
+            supabaseAdmin,
+            lineUserId,
+            { isReFollow },
+          );
+        } catch (welcomeErr) {
+          console.error("[LINE Bot] welcome coupon error", welcomeErr);
+          welcomeState = { ok: false, error: welcomeErr.message };
+        }
+
         if (event.replyToken) {
-          const welcome = buildWelcomeFollowMessage();
+          const welcome = await buildWelcomeFollowMessage(welcomeState || {});
           if (!isSupportBusinessHours()) {
+            const settings = await loadLineWelcomeSettings();
             await replyLineMessage(event.replyToken, [
               ...(Array.isArray(welcome) ? welcome : [welcome]),
-              buildOffHoursAiGuideMessage(),
+              buildOffHoursAiGuideMessage(settings),
             ]);
           } else {
             await replyLineMessage(event.replyToken, welcome);

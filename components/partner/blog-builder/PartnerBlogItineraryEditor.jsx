@@ -205,6 +205,10 @@ export default function PartnerBlogItineraryEditor({
             <span className="shrink-0 text-[10px] text-emerald-300/80 hidden sm:inline">
               {saveHint}
             </span>
+          ) : published ? (
+            <span className="shrink-0 text-[10px] font-bold text-emerald-300/80 hidden sm:inline">
+              已同步
+            </span>
           ) : null}
           <div className="flex-1" />
           {previewHref ? (
@@ -231,7 +235,7 @@ export default function PartnerBlogItineraryEditor({
           </div>
           <button
             type="button"
-            disabled={saving}
+            disabled={saving || !dirty}
             onClick={onSave}
             className="px-3 py-1.5 rounded text-[12px] font-black bg-white/10 hover:bg-white/15 disabled:opacity-40"
           >
@@ -239,11 +243,28 @@ export default function PartnerBlogItineraryEditor({
           </button>
           <button
             type="button"
-            disabled={saving}
+            disabled={saving || (published ? !dirty : false)}
+            title={
+              published && !dirty
+                ? "沒有未儲存變更，已與前台同步"
+                : dirty
+                  ? "有未儲存變更，點此寫入前台"
+                  : undefined
+            }
             onClick={requestPublish}
-            className="px-3 py-1.5 rounded text-[12px] font-black bg-[#c62828] hover:bg-[#b71c1c] disabled:opacity-40"
+            className={`px-3 py-1.5 rounded text-[12px] font-black disabled:opacity-40 ${
+              dirty
+                ? "bg-amber-400 text-slate-900 hover:bg-amber-300"
+                : "bg-[#c62828] hover:bg-[#b71c1c] text-white"
+            }`}
           >
-            更新
+            {saving
+              ? "更新中…"
+              : published
+                ? dirty
+                  ? "更新 *"
+                  : "已同步"
+                : "發布"}
           </button>
         </header>
 
@@ -457,12 +478,18 @@ export default function PartnerBlogItineraryEditor({
                     <MediaUploadField
                       kind="image"
                       multiple
+                      maxFiles={12}
                       variant="light"
-                      onUploaded={(url) =>
+                      onUploaded={(incoming) => {
+                        const add = (
+                          Array.isArray(incoming) ? incoming : [incoming]
+                        )
+                          .map((s) => String(s || "").trim())
+                          .filter(Boolean);
                         updateStop(day.id, stop.id, {
-                          photos: [...(stop.photos || []), url].slice(0, 12),
-                        })
-                      }
+                          photos: [...(stop.photos || []), ...add].slice(0, 12),
+                        });
+                      }}
                     />
                   </div>
 

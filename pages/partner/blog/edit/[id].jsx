@@ -276,17 +276,17 @@ export default function PartnerBlogEditPage() {
           return false;
         }
         const oldSlug = post.slug;
-        setPost((prev) => ({ ...prev, ...payload }));
-        if (slug !== meta.slug) {
-          setMeta((m) => ({ ...m, slug, og_image_url: ogImage || m.og_image_url }));
-        } else if (ogImage && ogImage !== meta.og_image_url) {
-          setMeta((m) => ({ ...m, og_image_url: ogImage }));
-        }
-        savedFp.current = fingerprint(blocks, {
+        const nextMeta = {
           ...meta,
           slug,
-          og_image_url: ogImage || meta.og_image_url,
-        });
+          title,
+          og_image_url: ogImage || meta.og_image_url || "",
+        };
+        // 以實際寫入內容對齊指紋，避免 sanitize 後左側仍顯示「未儲存」
+        setBlocks(clean);
+        setMeta(nextMeta);
+        setPost((prev) => ({ ...prev, ...payload }));
+        savedFp.current = fingerprint(clean, nextMeta);
         try {
           localStorage.removeItem(draftKey(post.id));
         } catch {
@@ -306,7 +306,13 @@ export default function PartnerBlogEditPage() {
         const now = new Date();
         const hh = String(now.getHours()).padStart(2, "0");
         const mm = String(now.getMinutes()).padStart(2, "0");
-        setSaveHint(silent ? `已自動儲存 ${hh}:${mm}` : `已儲存 ${hh}:${mm}`);
+        setSaveHint(
+          silent
+            ? `已自動儲存 ${hh}:${mm}`
+            : status === "published"
+              ? `已更新發布 ${hh}:${mm}`
+              : `已儲存 ${hh}:${mm}`,
+        );
         return true;
       } catch (err) {
         const msg = err?.message || String(err);

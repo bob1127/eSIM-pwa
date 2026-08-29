@@ -377,8 +377,19 @@ export default function PushNotificationSection({
 
       const res = await fetch(
         `/api/push/bind-status?endpoint=${encodeURIComponent(endpoint)}`,
+        {
+          credentials: "include",
+          headers: authHeaders(token),
+        },
       );
       const data = await res.json();
+      if (data.clearedForeignBind) {
+        try {
+          localStorage.removeItem(ICCID_STORAGE_KEY);
+        } catch {
+          /* ignore */
+        }
+      }
       if (data.bound) {
         applyBound(data);
       } else if (data.subscribed) {
@@ -391,7 +402,7 @@ export default function PushNotificationSection({
     } finally {
       setStatusChecking(false);
     }
-  }, [loadMemberEsims, applyBound, isLoggedIn]);
+  }, [loadMemberEsims, applyBound, isLoggedIn, token]);
 
   const refresh = useCallback(async () => {
     const support = await detectPushSupport();

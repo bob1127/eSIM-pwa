@@ -16,9 +16,26 @@ import {
   previousPeriodOrders,
   ordersInLastNDays,
   greetingByHour,
+  markWithdrawnOrderIds,
+  tagOrdersWithdrawn,
 } from "@/lib/partnerAnalytics";
+import {
+  formatPercentLabel,
+  formatDiscountLabel,
+  resolveOrderDiscountPercent,
+  resolveOrderPartnerRatePercent,
+  resolvePartnerDefaultDiscountPercent,
+} from "@/lib/orderPartnerTermsDisplay";
+import {
+  buyerDisplayName,
+  buyerEmail,
+  formatOrderCode,
+} from "@/lib/orderDisplay";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { resolveMedusaImageUrl } from "@/lib/resolveMedusaImageUrl";
+import PartnerDialog from "@/components/partner/ui/PartnerDialog";
+import PartnerButton from "@/components/partner/ui/PartnerButton";
+import { supabase } from "@/lib/supabaseClient";
 
 /** 分潤分析頁面：深灰／淺灰／白 + 較大圓角；圖表與狀態徽章維持原色 */
 const AUI = {
@@ -123,35 +140,73 @@ function StatPill({ icon, iconBg, label, value, sub }) {
   );
 }
 
+const TABLE_SORT_OPTIONS = [
+  { id: "rate", label: "依分潤" },
+  { id: "orders", label: "依訂單數" },
+  { id: "amount", label: "依分潤金額" },
+  { id: "time", label: "訂單時間" },
+];
+
 export default function PartnerAnalyticsPage() {
   const { partner, store } = usePartnerSession();
   const [stats, setStats] = useState(null);
+  const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rangeId, setRangeId] = useState("30d");
-  const [tableSort, setTableSort] = useState("profit");
+  const [tableSort, setTableSort] = useState("rate");
+  const [detailRow, setDetailRow] = useState(null);
 
   useEffect(() => {
     if (!partner) return;
     setLoading(true);
-    fetchPartnerStats(partner.id, store?.id).then((s) => {
+    (async () => {
+      const s = await fetchPartnerStats(partner.id, store?.id, {
+        hideCost: partner?.cooperation_model === "referral",
+      });
       setStats(s);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const res = await fetch("/api/partner/withdrawals", {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            setWithdrawals(data.requests || data.withdrawals || []);
+          }
+        }
+      } catch {
+        /* 提領資料失敗不擋分析頁 */
+      }
       setLoading(false);
-    });
+    })();
   }, [partner, store]);
 
   const { start, end } = useMemo(() => rangeToStartEnd(rangeId), [rangeId]);
 
+  const withdrawnIds = useMemo(
+    () => markWithdrawnOrderIds(stats?.orders || [], withdrawals),
+    [stats?.orders, withdrawals],
+  );
+
+  const taggedOrders = useMemo(
+    () => tagOrdersWithdrawn(stats?.orders || [], withdrawnIds),
+    [stats?.orders, withdrawnIds],
+  );
+
   const filtered = useMemo(
-    () => filterByRange(stats?.orders, start, end),
-    [stats?.orders, start, end],
+    () => filterByRange(taggedOrders, start, end),
+    [taggedOrders, start, end],
   );
   const valid = useMemo(
     () => filtered.filter((o) => isSettledOrderStatus(o.status)),
     [filtered],
   );
   const validAll = useMemo(
-    () => (stats?.orders || []).filter((o) => isSettledOrderStatus(o.status)),
-    [stats?.orders],
+    () => taggedOrders.filter((o) => isSettledOrderStatus(o.status)),
+    [taggedOrders],
   );
 
   const totals = useMemo(() => sumTotals(valid), [valid]);
@@ -162,14 +217,29 @@ export default function PartnerAnalyticsPage() {
   );
 
   const breakdown = useMemo(
-    () => productBreakdownWithTrend(valid, prevOrders),
-    [valid, prevOrders],
+    () => productBreakdownWithTrend(valid, prevOrders, partner),
+    [valid, prevOrders, partner],
   );
 
   const sortedBreakdown = useMemo(() => {
     const list = [...breakdown];
-    if (tableSort === "orders") list.sort((a, b) => b.count - a.count);
-    else list.sort((a, b) => b.profit - a.profit);
+    if (tableSort === "orders") {
+      list.sort((a, b) => b.count - a.count || b.profit - a.profit);
+    } else if (tableSort === "amount") {
+      list.sort((a, b) => b.profit - a.profit || b.count - a.count);
+    } else if (tableSort === "time") {
+      list.sort(
+        (a, b) =>
+          (b.latestOrderAt || 0) - (a.latestOrderAt || 0) ||
+          b.profit - a.profit,
+      );
+    } else {
+      list.sort(
+        (a, b) =>
+          (b.partnerRatePercent ?? -1) - (a.partnerRatePercent ?? -1) ||
+          b.profit - a.profit,
+      );
+    }
     return list;
   }, [breakdown, tableSort]);
 
@@ -191,7 +261,10 @@ export default function PartnerAnalyticsPage() {
 
   const isGood = !loading && totals.count > 0 && totals.profit > 0;
 
-  const topSellers = useMemo(() => topSellingProducts(valid, 6), [valid]);
+  const topSellers = useMemo(
+    () => topSellingProducts(valid, 6, partner),
+    [valid, partner],
+  );
 
   const tableTotals = useMemo(() => {
     const profit = sortedBreakdown.reduce((s, r) => s + (r.profit || 0), 0);
@@ -217,7 +290,7 @@ export default function PartnerAnalyticsPage() {
             </p>
           </div>
           <div
-            className="inline-flex items-center p-1"
+            className="inline-flex max-w-full flex-wrap items-center gap-0.5 p-1"
             style={{
               backgroundColor: AUI.white,
               border: `1px solid ${AUI.border}`,
@@ -229,7 +302,7 @@ export default function PartnerAnalyticsPage() {
                 key={r.id}
                 type="button"
                 onClick={() => setRangeId(r.id)}
-                className="px-3 py-1.5 text-xs font-bold transition"
+                className="min-h-9 px-2.5 py-1.5 text-[11px] sm:text-xs font-bold transition touch-manipulation whitespace-nowrap"
                 style={{
                   borderRadius: AUI.radiusSm,
                   backgroundColor: rangeId === r.id ? AUI.dark : "transparent",
@@ -259,27 +332,18 @@ export default function PartnerAnalyticsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href="/partner/orders"
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-bold transition"
-              style={{
-                border: `1px solid ${AUI.border}`,
-                color: AUI.dark,
-                backgroundColor: AUI.white,
-                borderRadius: AUI.radiusSm,
-              }}
-            >
-              <MaterialIcon name="receipt_long" size={16} />
-              查看訂單
-            </Link>
-            <Link
-              href="/partner/settlement"
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-bold text-white transition"
-              style={{ backgroundColor: AUI.dark, borderRadius: AUI.radiusSm }}
-            >
-              <MaterialIcon name="account_balance_wallet" size={16} />
-              申請提領
-            </Link>
+            <PartnerButton asChild variant="secondary">
+              <Link href="/partner/orders">
+                <MaterialIcon name="receipt_long" size={16} />
+                查看訂單
+              </Link>
+            </PartnerButton>
+            <PartnerButton asChild variant="default">
+              <Link href="/partner/settlement">
+                <MaterialIcon name="account_balance_wallet" size={16} />
+                申請提領
+              </Link>
+            </PartnerButton>
           </div>
         </Card>
 
@@ -296,7 +360,13 @@ export default function PartnerAnalyticsPage() {
             iconBg="#008060"
             label="分潤占營收"
             value={loading ? "…" : `${totals.rate}%`}
-            sub={`每付 NT$100 約 NT$${loading ? "…" : totals.rate}`}
+            sub="平均分潤比例"
+          />
+          <StatPill
+            icon="account_balance_wallet"
+            iconBg="#1a1a1a"
+            label="分潤金額"
+            value={loading ? "…" : fmt(totals.profit)}
           />
           <StatPill
             icon="payments"
@@ -316,14 +386,23 @@ export default function PartnerAnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <Card className="p-4">
             <p className="text-xs font-bold mb-3" style={{ color: AUI.mid }}>
-              分潤 vs 底價成本
+              {isReferral ? "分潤 vs 訂單其餘金額" : "分潤 vs 底價成本"}
             </p>
             {loading ? (
               <div className="h-28 flex items-center justify-center">
                 <LoadingIndicator layout="center" label="載入中…" size="sm" />
               </div>
             ) : (
-              <RevenueSplitDonut profit={totals.profit} cost={totals.cost} />
+              /* 優惠連結夥伴不進貨，底價成本屬平台商業機密 → 只呈現「分潤／其餘」 */
+              <RevenueSplitDonut
+                profit={totals.profit}
+                cost={
+                  isReferral
+                    ? Math.max(0, totals.revenue - totals.profit)
+                    : totals.cost
+                }
+                costLabel={isReferral ? "訂單其餘金額" : "底價成本"}
+              />
             )}
           </Card>
 
@@ -366,25 +445,27 @@ export default function PartnerAnalyticsPage() {
         {/* 商品分潤排行 */}
         <Card className="overflow-hidden">
           <div
-            className="flex items-center justify-between px-4 py-3"
+            className="flex items-start justify-between gap-3 px-4 py-3 flex-wrap"
             style={{ borderBottom: `1px solid ${AUI.border}` }}
           >
-            <h2 className="text-sm font-black" style={{ color: AUI.dark }}>
-              商品分潤排行
-            </h2>
+            <div className="min-w-0">
+              <h2 className="text-sm font-black" style={{ color: AUI.dark }}>
+                商品分潤排行
+              </h2>
+              <p className="text-[11px] mt-0.5" style={{ color: AUI.soft }}>
+                分潤%為實際分潤趴數；點列可看購買者與提領保留狀態
+              </p>
+            </div>
             <div
-              className="inline-flex items-center p-1"
+              className="inline-flex flex-wrap items-center gap-0.5 p-1 shrink-0 max-w-full"
               style={{ backgroundColor: AUI.light, borderRadius: AUI.radiusSm }}
             >
-              {[
-                { id: "profit", label: "依分潤" },
-                { id: "orders", label: "依訂單數" },
-              ].map((t) => (
+              {TABLE_SORT_OPTIONS.map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => setTableSort(t.id)}
-                  className="px-2.5 py-1 text-[11px] font-bold transition"
+                  className="px-2.5 py-1 text-[11px] font-bold transition whitespace-nowrap"
                   style={{
                     borderRadius: "0.5rem",
                     backgroundColor: tableSort === t.id ? AUI.white : "transparent",
@@ -406,7 +487,7 @@ export default function PartnerAnalyticsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[640px]">
+              <table className="w-full text-sm min-w-[760px]">
                 <thead>
                   <tr
                     className="text-[10px] uppercase tracking-wider"
@@ -415,6 +496,8 @@ export default function PartnerAnalyticsPage() {
                     <th className="px-4 py-2.5 text-left font-bold w-10">#</th>
                     <th className="px-4 py-2.5 text-left font-bold">商品</th>
                     <th className="px-4 py-2.5 text-right font-bold">分潤%</th>
+                    <th className="px-4 py-2.5 text-right font-bold">客戶優惠%</th>
+                    <th className="px-4 py-2.5 text-center font-bold">提領</th>
                     <th className="px-4 py-2.5 text-right font-bold">訂單數</th>
                     <th className="px-4 py-2.5 text-right font-bold">單筆分潤金額</th>
                     <th className="px-4 py-2.5 text-right font-bold">分潤小計</th>
@@ -422,28 +505,81 @@ export default function PartnerAnalyticsPage() {
                 </thead>
                 <tbody>
                   {sortedBreakdown.map((row, idx) => {
-                    const shareTone =
-                      row.sharePercent >= 20
-                        ? "success"
-                        : row.sharePercent >= 10
+                    const rateTone =
+                      row.partnerRatePercent != null && row.partnerRatePercent >= 35
+                        ? "warning"
+                        : row.partnerRatePercent != null && row.partnerRatePercent >= 25
                           ? "info"
                           : "neutral";
+                    const allWithdrawn =
+                      row.count > 0 && row.withdrawnCount === row.count;
+                    const someWithdrawn =
+                      row.withdrawnCount > 0 && !allWithdrawn;
                     return (
                       <tr
                         key={row.name}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setDetailRow(row)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setDetailRow(row);
+                          }
+                        }}
+                        className="cursor-pointer transition hover:bg-slate-50"
                         style={{ borderTop: `1px solid ${AUI.border}` }}
                       >
                         <td className="px-4 py-2.5 font-bold" style={{ color: AUI.soft }}>
                           {idx + 1}
                         </td>
                         <td
-                          className="px-4 py-2.5 font-semibold truncate max-w-[240px]"
+                          className="px-4 py-2.5 font-semibold truncate max-w-[220px]"
                           style={{ color: AUI.dark }}
                         >
-                          {row.name}
+                          <span className="inline-flex items-center gap-1">
+                            {row.name}
+                            <MaterialIcon
+                              name="chevron_right"
+                              size={16}
+                              className="text-slate-300 shrink-0"
+                            />
+                          </span>
                         </td>
                         <td className="px-4 py-2.5 text-right">
-                          <Badge tone={shareTone}>{row.sharePercent}%</Badge>
+                          <Badge tone={rateTone}>
+                            {formatPercentLabel(row.partnerRatePercent)}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          {(() => {
+                            const pct =
+                              row.discountPercent ??
+                              resolvePartnerDefaultDiscountPercent(partner);
+                            return pct != null ? (
+                              <Badge tone="success">
+                                {formatPercentLabel(pct)}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-slate-400">
+                                未套用
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td className="px-4 py-2.5 text-center">
+                          {allWithdrawn ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                              <MaterialIcon name="check_circle" size={12} />
+                              提領保留
+                            </span>
+                          ) : someWithdrawn ? (
+                            <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                              部分保留 {row.withdrawnCount}/{row.count}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-slate-300">—</span>
+                          )}
                         </td>
                         <td
                           className="px-4 py-2.5 text-right tabular-nums"
@@ -476,7 +612,7 @@ export default function PartnerAnalyticsPage() {
                   >
                     <td
                       className="px-4 py-3 font-black"
-                      colSpan={3}
+                      colSpan={5}
                       style={{ color: AUI.dark }}
                     >
                       總計
@@ -611,7 +747,18 @@ export default function PartnerAnalyticsPage() {
                         </div>
                       </div>
                       <p className="text-[11px] mt-1.5" style={{ color: AUI.soft }}>
-                        單筆約 {fmt(row.avgProfit)} · 占分潤 {row.sharePercent}%
+                        單筆約 {fmt(row.avgProfit)}
+                        {row.partnerRatePercent != null
+                          ? ` · 分潤 ${formatPercentLabel(row.partnerRatePercent)}`
+                          : ""}
+                        {(() => {
+                          const pct =
+                            row.discountPercent ??
+                            resolvePartnerDefaultDiscountPercent(partner);
+                          return pct != null
+                            ? ` · 優惠 ${formatPercentLabel(pct)}`
+                            : "";
+                        })()}
                       </p>
                     </div>
                   </Card>
@@ -621,6 +768,104 @@ export default function PartnerAnalyticsPage() {
           </div>
         )}
       </div>
+
+      <PartnerDialog
+        open={!!detailRow}
+        onClose={() => setDetailRow(null)}
+        title={detailRow?.name || "商品訂單"}
+        description={
+          detailRow
+            ? `共 ${detailRow.count} 筆 · 分潤小計 ${fmt(detailRow.profit)}`
+            : ""
+        }
+        maxWidth="max-w-xl"
+        bodyClassName="space-y-3"
+        footer={
+          <PartnerButton
+            type="button"
+            variant="secondary"
+            onClick={() => setDetailRow(null)}
+          >
+            關閉
+          </PartnerButton>
+        }
+      >
+        {detailRow ? (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-3 text-[12px] font-bold" style={{ color: AUI.dark }}>
+              <span>
+                分潤 {formatPercentLabel(detailRow.partnerRatePercent)}
+              </span>
+              <span>
+                客戶優惠{" "}
+                {formatDiscountLabel(
+                  detailRow.discountPercent ??
+                    resolvePartnerDefaultDiscountPercent(partner),
+                )}
+              </span>
+              {detailRow.withdrawnCount > 0 ? (
+                <span>
+                  提領保留 {detailRow.withdrawnCount}/{detailRow.count}
+                </span>
+              ) : null}
+            </div>
+
+            <ul className="rounded-lg border border-slate-200 divide-y divide-slate-100 overflow-hidden">
+              {(detailRow.orders || []).map((order) => {
+                const code = formatOrderCode(order);
+                const name = buyerDisplayName(order);
+                const email = buyerEmail(order);
+                const rate = resolveOrderPartnerRatePercent(order, partner);
+                const discount = resolveOrderDiscountPercent(order, partner);
+                return (
+                  <li key={order.id} className="px-3.5 py-3 bg-white">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-900">
+                          #{code}
+                          {order._withdrawn ? (
+                            <span className="ml-2 inline-flex align-middle items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">
+                              <MaterialIcon name="check_circle" size={11} />
+                              保留
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="text-xs text-slate-600 mt-1">
+                          購買者：{name || "—"}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5 break-all">
+                          Email：{email || "—"}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1.5">
+                          分潤 {formatPercentLabel(rate)}
+                          {" · "}
+                          優惠 {formatDiscountLabel(discount)}
+                          {" · "}
+                          {new Date(order.created_at).toLocaleString("zh-TW", {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[10px] font-bold uppercase text-slate-400">
+                          分潤
+                        </p>
+                        <p className="text-sm font-black tabular-nums text-[#1E4AD1]">
+                          +{fmt(order.partner_profit)}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
+      </PartnerDialog>
     </PartnerAdminLayout>
   );
 }

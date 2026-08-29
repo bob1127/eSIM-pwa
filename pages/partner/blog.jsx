@@ -31,6 +31,15 @@ const EMPTY_FORM = {
 
 const PAGE_SIZE = 20;
 
+const SORT_OPTIONS = [
+  { id: "updated_desc", label: "最後編輯（新→舊）" },
+  { id: "updated_asc", label: "最後編輯（舊→新）" },
+  { id: "published_desc", label: "發佈時間（新→舊）" },
+  { id: "published_asc", label: "發佈時間（舊→新）" },
+  { id: "title_asc", label: "標題（A→Z）" },
+  { id: "title_desc", label: "標題（Z→A）" },
+];
+
 function uniqueLabels(list) {
   const seen = new Set();
   const out = [];
@@ -43,18 +52,81 @@ function uniqueLabels(list) {
   return out;
 }
 
-function formatWpDate(iso) {
+function formatWpDateShort(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  const y = d.getFullYear();
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
-  const h = d.getHours();
-  const min = String(d.getMinutes()).padStart(2, "0");
-  const am = h < 12 ? "上午" : "下午";
-  const hh = h % 12 || 12;
-  return `${y}年 ${m}月 ${day}日 ${am} ${hh}:${min}`;
+  return d.toLocaleString("zh-TW", {
+    timeZone: "Asia/Taipei",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function timeMs(iso) {
+  const t = iso ? new Date(iso).getTime() : 0;
+  return Number.isFinite(t) ? t : 0;
+}
+
+function sortPosts(list, sortId) {
+  const rows = [...(list || [])];
+  const cmpStr = (a, b) =>
+    String(a || "").localeCompare(String(b || ""), "zh-Hant", {
+      sensitivity: "base",
+    });
+  switch (sortId) {
+    case "updated_asc":
+      return rows.sort(
+        (a, b) => timeMs(a.updated_at) - timeMs(b.updated_at),
+      );
+    case "published_desc":
+      return rows.sort(
+        (a, b) =>
+          timeMs(b.published_at || b.created_at) -
+          timeMs(a.published_at || a.created_at),
+      );
+    case "published_asc":
+      return rows.sort(
+        (a, b) =>
+          timeMs(a.published_at || a.created_at) -
+          timeMs(b.published_at || b.created_at),
+      );
+    case "title_asc":
+      return rows.sort((a, b) => cmpStr(a.title, b.title));
+    case "title_desc":
+      return rows.sort((a, b) => cmpStr(b.title, a.title));
+    case "updated_desc":
+    default:
+      return rows.sort(
+        (a, b) => timeMs(b.updated_at) - timeMs(a.updated_at),
+      );
+  }
+}
+
+function PostTimeStack({ publishedAt, updatedAt, compact = false }) {
+  const labelCls = compact
+    ? "text-[10px] text-slate-400"
+    : "text-[10px] font-bold uppercase tracking-wide text-slate-400";
+  const valueCls = compact
+    ? "text-[11px] text-slate-600 tabular-nums"
+    : "text-[12px] text-slate-700 tabular-nums";
+  return (
+    <div className={compact ? "space-y-0.5" : "space-y-1.5"}>
+      <div>
+        <p className={labelCls}>發佈時間</p>
+        <p className={valueCls}>
+          {publishedAt ? formatWpDateShort(publishedAt) : "尚未發佈"}
+        </p>
+      </div>
+      <div>
+        <p className={labelCls}>最後編輯</p>
+        <p className={valueCls}>{formatWpDateShort(updatedAt)}</p>
+      </div>
+    </div>
+  );
 }
 
 function tagList(tags) {
@@ -96,6 +168,7 @@ export default function PartnerBlogAdminPage() {
   const [tab, setTab] = useState("all");
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
+  const [sort, setSort] = useState("updated_desc");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState(() => new Set());
   const [bulk, setBulk] = useState("trash");
@@ -166,7 +239,7 @@ export default function PartnerBlogAdminPage() {
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return posts.filter((p) => {
+    const list = posts.filter((p) => {
       if (tab === "all" && p.status === "archived") return false;
       if (tab === "published" && p.status !== "published") return false;
       if (tab === "draft" && p.status !== "draft") return false;
@@ -180,7 +253,8 @@ export default function PartnerBlogAdminPage() {
         .toLowerCase()
         .includes(needle);
     });
-  }, [posts, tab, q, category]);
+    return sortPosts(list, sort);
+  }, [posts, tab, q, category, sort]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageSafe = Math.min(page, pages);
@@ -192,7 +266,7 @@ export default function PartnerBlogAdminPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [tab, q, category]);
+  }, [tab, q, category, sort]);
 
   useEffect(() => {
     if (!createOpen) return;
@@ -545,11 +619,24 @@ export default function PartnerBlogAdminPage() {
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="border border-slate-300 rounded px-2 py-1.5 text-sm bg-white"
+                  aria-label="篩選分類"
                 >
                   <option value="">所有分類</option>
                   {categories.map((c) => (
                     <option key={c} value={c}>
                       {c}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className="border border-slate-300 rounded px-2 py-1.5 text-sm bg-white min-w-[168px]"
+                  aria-label="文章排序"
+                >
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.label}
                     </option>
                   ))}
                 </select>
@@ -630,6 +717,13 @@ export default function PartnerBlogAdminPage() {
                                 </>
                               ) : null}
                             </span>
+                            <span className="mt-1.5 block">
+                              <PostTimeStack
+                                publishedAt={p.published_at}
+                                updatedAt={p.updated_at}
+                                compact
+                              />
+                            </span>
                           </span>
                           <MaterialIcon
                             name="chevron_right"
@@ -660,18 +754,20 @@ export default function PartnerBlogAdminPage() {
                       <th className="px-3 py-2 font-semibold w-28">分類</th>
                       <th className="px-3 py-2 font-semibold w-36">標籤</th>
                       <th className="px-3 py-2 font-semibold w-36">前台發布</th>
+                      <th className="px-3 py-2 font-semibold w-40">發佈時間</th>
+                      <th className="px-3 py-2 font-semibold w-40">最後編輯</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={6} className="px-3 py-10 text-center">
+                        <td colSpan={8} className="px-3 py-10 text-center">
                           <LoadingIndicator layout="center" label="載入中…" />
                         </td>
                       </tr>
                     ) : rows.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-3 py-10 text-center text-slate-400">
+                        <td colSpan={8} className="px-3 py-10 text-center text-slate-400">
                           沒有文章。{" "}
                           <PartnerButton
                             type="button"
@@ -780,9 +876,14 @@ export default function PartnerBlogAdminPage() {
                                   {postStatusLabel(p.status)}
                                 </span>
                               </div>
-                              <p className="text-[11px] text-slate-400 mt-1">
-                                {formatWpDate(p.published_at || p.updated_at)}
-                              </p>
+                            </td>
+                            <td className="px-3 py-3 align-top text-[12px] text-slate-600 tabular-nums whitespace-nowrap">
+                              {p.published_at
+                                ? formatWpDateShort(p.published_at)
+                                : "尚未發佈"}
+                            </td>
+                            <td className="px-3 py-3 align-top text-[12px] text-slate-600 tabular-nums whitespace-nowrap">
+                              {formatWpDateShort(p.updated_at)}
                             </td>
                           </tr>
                         );
@@ -877,7 +978,7 @@ export default function PartnerBlogAdminPage() {
             const rowCats = uniqueLabels([...categories, p.category_label]);
             return (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
                       作者
@@ -887,12 +988,10 @@ export default function PartnerBlogAdminPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                      更新時間
-                    </p>
-                    <p className="mt-1 text-slate-700">
-                      {formatWpDate(p.published_at || p.updated_at)}
-                    </p>
+                    <PostTimeStack
+                      publishedAt={p.published_at}
+                      updatedAt={p.updated_at}
+                    />
                   </div>
                 </div>
 

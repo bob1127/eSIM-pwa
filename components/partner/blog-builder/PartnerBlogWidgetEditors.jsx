@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   RADIUS_OPTIONS,
   WIDTH_OPTIONS,
@@ -10,7 +10,7 @@ import {
   designControlStyle,
 } from "@/lib/partnerBlogDesign";
 import ColorPickerField from "./ColorPickerField";
-import { parseSocialPostUrl } from "@/lib/partnerBlogBlocks";
+import { parseSocialPostUrl, socialEmbedPlatform } from "@/lib/partnerBlogBlocks";
 import {
   SHARE_BUTTON_CATALOG,
   parseShareItems,
@@ -21,7 +21,7 @@ import MediaUploadField, { useBlogBuilderMedia } from "./MediaUploadField";
 
 export const WIDGET_CHROME = {
   heading: { accent: "#e2498e", icon: "title", width: 380, hint: "標題層級與對齊" },
-  text: { accent: "#3b82f6", icon: "notes", width: 420, hint: "文章內文" },
+  text: { accent: "#3b82f6", icon: "notes", width: 420, hint: "改文字、對齊、字級、顏色" },
   image: { accent: "#0ea5e9", icon: "image", width: 340, hint: "上傳或貼網址" },
   video: { accent: "#ef4444", icon: "videocam", width: 340, hint: "上傳或 YouTube" },
   button: { accent: "#2563eb", icon: "smart_button", width: 380, hint: "按鈕顏色、圓角、寬度" },
@@ -47,7 +47,9 @@ export const WIDGET_CHROME = {
   rating: { accent: "#eab308", icon: "star", width: 300, hint: "星等" },
   social: { accent: "#38bdf8", icon: "share", width: 360, hint: "社群連結按鈕" },
   share: { accent: "#1877F2", icon: "ios_share", width: 380, hint: "分享到社群、複製連結" },
-  "social-post": { accent: "#e1306c", icon: "photo_camera", width: 400, hint: "自動排版或輪播" },
+  "social-post": { accent: "#e1306c", icon: "photo_camera", width: 400, hint: "列表可只嵌一則；同作者其他貼文填下方供燈箱切換" },
+  "facebook-post": { accent: "#1877F2", icon: "thumb_up", width: 400, hint: "Facebook 貼文" },
+  "threads-post": { accent: "#111111", icon: "alternate_email", width: 400, hint: "Threads 公開貼文" },
   map: { accent: "#16a34a", icon: "map", width: 340, hint: "Google 地圖" },
   carousel: { accent: "#f43f5e", icon: "view_carousel", width: 380, hint: "輪播樣式與效果" },
   products: { accent: "#0ea5e9", icon: "inventory_2", width: 400, hint: "卡片／分頁／輪播" },
@@ -66,6 +68,14 @@ function Field({ label, children }) {
 
 const inputCls =
   "w-full bg-[#2b2c31] border border-white/10 rounded px-2.5 py-2 text-[13px] text-white placeholder:text-white/30 focus:outline-none focus:border-[#e2498e]";
+
+/** 多檔上傳回傳 string[]；單檔相容 string */
+function appendMediaUrls(existing, incoming, max = 24) {
+  const add = (Array.isArray(incoming) ? incoming : [incoming])
+    .map((s) => String(s || "").trim())
+    .filter(Boolean);
+  return [...existing, ...add].slice(0, max);
+}
 
 function Seg({ value, onChange, options }) {
   return (
@@ -245,19 +255,33 @@ function ColorAccordion({ items }) {
 }
 
 function DesignFields({ p, set, type }) {
-  const showMinH = !["carousel", "spacer", "video"].includes(type);
-  const showGap = ["social-post", "gallery", "icon-list", "products", "social"].includes(
-    type,
-  );
+  const textFlow = TEXT_FLOW_DESIGN.has(type);
+  const showMinH =
+    !textFlow && !["carousel", "spacer", "video"].includes(type);
+  const showGap = [
+    "social-post",
+    "facebook-post",
+    "threads-post",
+    "gallery",
+    "icon-list",
+    "products",
+    "social",
+  ].includes(type);
   const splitCard = CARD_DESIGN_TYPES.has(type);
   return (
     <div className="mt-4 pt-3 border-t border-white/10">
       <p className="text-[10px] font-black tracking-widest text-white/35 mb-2">
         {splitCard ? "外觀 · 整體" : "外觀"}
       </p>
+      {textFlow ? (
+        <p className="text-[10px] text-white/45 mb-2 leading-relaxed">
+          進階外觀（陰影／內距）。文字色、對齊、字級請用上方區塊。
+        </p>
+      ) : null}
+      {type === "text" ? null : (
       <ColorAccordion
         items={[
-          !splitCard
+          !splitCard && type !== "heading"
             ? {
                 id: "fill",
                 label: type === "table" ? "表頭底色" : "主色／填滿",
@@ -277,14 +301,18 @@ function DesignFields({ p, set, type }) {
             value: p.bg || "",
             onChange: (v) => set("bg", v),
           },
-          {
-            id: "border",
-            label: type === "table" ? "格線色" : "邊框色",
-            value: p.border || "",
-            onChange: (v) => set("border", v),
-          },
+          !textFlow
+            ? {
+                id: "border",
+                label: type === "table" ? "格線色" : "邊框色",
+                value: p.border || "",
+                onChange: (v) => set("border", v),
+              }
+            : null,
         ]}
       />
+      )}
+      {!textFlow ? (
       <Field label={`${type === "table" ? "格線粗細" : "邊框粗細"} ${p.border_w || (type === "table" ? 1 : 0)}px`}>
         <input
           type="range"
@@ -295,6 +323,8 @@ function DesignFields({ p, set, type }) {
           className="w-full"
         />
       </Field>
+      ) : null}
+      {!textFlow ? (
       <Field label="對齊">
         <Seg
           value={p.align || "left"}
@@ -306,6 +336,9 @@ function DesignFields({ p, set, type }) {
           ]}
         />
       </Field>
+      ) : null}
+      {!textFlow ? (
+      <>
       <Field label={splitCard ? "整體圓角" : "圓角"}>
         <Seg
           value={String(p.radius || "0")}
@@ -348,6 +381,8 @@ function DesignFields({ p, set, type }) {
             className="w-full"
           />
         </Field>
+      ) : null}
+      </>
       ) : null}
       {showMinH ? (
         <>
@@ -473,6 +508,178 @@ function DesignFields({ p, set, type }) {
 
 const SKIP_DESIGN = new Set(["spacer", "html", "columns", "grid"]);
 
+/** 段落文字流：隱藏寬度／高度，避免小白誤設後內容被切掉 */
+const TEXT_FLOW_DESIGN = new Set([
+  "text",
+  "heading",
+  "quote",
+  "alert",
+  "icon-list",
+  "accordion",
+  "tabs",
+  "testimonial",
+  "cta",
+  "icon-box",
+]);
+
+function htmlToPlainEditable(html) {
+  if (!html) return "";
+  if (typeof document === "undefined") {
+    return String(html)
+      .replace(/<\/(p|div|h[1-6]|li|br)\s*>/gi, "\n")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+  const el = document.createElement("div");
+  el.innerHTML = String(html);
+  return (el.innerText || el.textContent || "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function plainToSimpleHtml(text) {
+  const raw = String(text || "").replace(/\r\n/g, "\n").trim();
+  if (!raw) return "";
+  return raw
+    .split(/\n{2,}/)
+    .map((para) => {
+      const line = para
+        .split("\n")
+        .map((l) =>
+          l
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;"),
+        )
+        .join("<br>");
+      return `<p>${line || "<br>"}</p>`;
+    })
+    .join("");
+}
+
+const TEXT_SIZE_PRESETS = [
+  { id: "", label: "預設" },
+  { id: "15px", label: "小" },
+  { id: "17px", label: "中" },
+  { id: "19px", label: "大" },
+  { id: "22px", label: "更大" },
+];
+
+const TEXT_COLOR_PRESETS = [
+  "#111827",
+  "#334155",
+  "#1E4AD1",
+  "#93003c",
+  "#0A6CD0",
+  "#047857",
+];
+
+/** 右側文字編輯：本機草稿避免游標跳动；對齊／字級／顏色真的會套到畫布 */
+function TextBlockEditor({ p, set }) {
+  const [draft, setDraft] = useState(() => htmlToPlainEditable(p.html || ""));
+  const lastHtmlRef = useRef(p.html || "");
+
+  useEffect(() => {
+    const next = p.html || "";
+    if (next === lastHtmlRef.current) return;
+    lastHtmlRef.current = next;
+    setDraft(htmlToPlainEditable(next));
+  }, [p.html]);
+
+  const commitPlain = (plain) => {
+    setDraft(plain);
+    const html = plainToSimpleHtml(plain);
+    lastHtmlRef.current = html;
+    set("html", html);
+  };
+
+  const fontSize = p.font_size || "";
+  const color = p.color || "";
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[11px] text-white/55 leading-relaxed">
+        在下方改文字會同步到畫布。粗體／超連結請在畫布
+        <strong className="text-white/85">選取文字</strong>
+        後用浮動工具列。
+      </p>
+      <textarea
+        className={`${inputCls} min-h-[200px] text-[13px] leading-relaxed`}
+        value={draft}
+        onChange={(e) => commitPlain(e.target.value)}
+        placeholder={"在這裡撰寫段落…\n\n空一行可分段"}
+      />
+      <Field label="對齊">
+        <Seg
+          value={p.align || "left"}
+          onChange={(id) => set("align", id)}
+          options={[
+            { id: "left", label: "左" },
+            { id: "center", label: "中" },
+            { id: "right", label: "右" },
+          ]}
+        />
+      </Field>
+      <Field label="整段字級">
+        <Seg
+          value={fontSize || ""}
+          onChange={(id) => set("font_size", id)}
+          options={TEXT_SIZE_PRESETS}
+        />
+      </Field>
+      <Field label="整段文字色">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {TEXT_COLOR_PRESETS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              title={c}
+              onClick={() => set("color", c)}
+              className={`w-6 h-6 rounded-full border ${
+                color === c ? "border-white ring-2 ring-white/40" : "border-white/25"
+              }`}
+              style={{ background: c }}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={() => set("color", "")}
+            className="h-6 px-2 rounded text-[10px] font-bold bg-white/10 text-white/70 hover:bg-white/15"
+          >
+            還原
+          </button>
+        </div>
+      </Field>
+      <Field label="底色">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {["#ffffff", "#f8fafc", "#fef3c7", "#dbeafe", "#fce7f3"].map((c) => (
+            <button
+              key={c}
+              type="button"
+              title={c}
+              onClick={() => set("bg", c)}
+              className={`w-6 h-6 rounded border ${
+                (p.bg || "") === c ? "border-white ring-2 ring-white/40" : "border-white/25"
+              }`}
+              style={{ background: c }}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={() => set("bg", "")}
+            className="h-6 px-2 rounded text-[10px] font-bold bg-white/10 text-white/70 hover:bg-white/15"
+          >
+            透明
+          </button>
+        </div>
+      </Field>
+    </div>
+  );
+}
+
 function GapField({ value, onChange }) {
   return (
     <Field label="間距">
@@ -509,15 +716,15 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
             value={p.text || ""}
             onChange={(e) => set("text", e.target.value)}
           />
-          <Field label="層級">
+          <Field label="標題大小">
             <Seg
               value={p.tag || "h2"}
               onChange={(id) => set("tag", id)}
               options={[
-                { id: "h1", label: "H1" },
-                { id: "h2", label: "H2" },
-                { id: "h3", label: "H3" },
-                { id: "h4", label: "H4" },
+                { id: "h1", label: "大" },
+                { id: "h2", label: "中" },
+                { id: "h3", label: "小" },
+                { id: "h4", label: "更小" },
               ]}
             />
           </Field>
@@ -535,14 +742,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
         </>
       );
     case "text":
-      return (
-        <textarea
-          className={`${inputCls} min-h-[220px] text-[13px] leading-relaxed`}
-          value={p.html || ""}
-          onChange={(e) => set("html", e.target.value)}
-          placeholder="撰寫段落，可貼簡易 HTML"
-        />
-      );
+      return <TextBlockEditor p={p} set={set} />;
     case "image":
       return (
         <>
@@ -838,7 +1038,10 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
           <MediaUploadField
             kind="image"
             multiple
-            onUploaded={(url) => set("urls", [...urls, url].join("\n"))}
+            maxFiles={24}
+            onUploaded={(incoming) =>
+              set("urls", appendMediaUrls(urls, incoming, 24).join("\n"))
+            }
           />
           {urls.length ? (
             <div className="grid grid-cols-3 gap-1 mb-3">
@@ -876,7 +1079,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
           </Field>
           <Field label="拼貼寬度">
             <Seg
-              value={p.wide ? "wide" : "normal"}
+              value={p.wide !== false ? "wide" : "normal"}
               onChange={(id) => set("wide", id === "wide")}
               options={[
                 { id: "normal", label: "一般" },
@@ -901,7 +1104,8 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
               value={p.width || "full"}
               onChange={(id) => set("width", id)}
               options={[
-                { id: "full", label: "閱讀寬" },
+                { id: "full", label: "滿版" },
+                { id: "read", label: "閱讀寬" },
                 { id: "75", label: "75%" },
                 { id: "50", label: "50%" },
                 { id: "custom", label: "自訂" },
@@ -939,25 +1143,31 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
           <MediaUploadField
             kind="image"
             multiple
-            onUploaded={(url) => set("urls", [...urls, url].slice(0, 24).join("\n"))}
+            maxFiles={24}
+            onUploaded={(incoming) =>
+              set("urls", appendMediaUrls(urls, incoming, 24).join("\n"))
+            }
           />
           {urls.length ? (
-            <div className="grid grid-cols-4 gap-1 mb-3">
-              {urls.slice(0, 8).map((u, i) => (
-                <div key={`${u}-${i}`} className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={u} alt="" className="h-12 w-full object-cover rounded" />
-                  <button
-                    type="button"
-                    className="absolute top-0.5 right-0.5 w-4 h-4 rounded bg-black/60 text-white text-[10px] leading-none"
-                    onClick={() =>
-                      set("urls", urls.filter((_, j) => j !== i).join("\n"))
-                    }
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+            <div className="mb-3">
+              <p className="mb-1 text-[10px] text-white/45">已選 {urls.length}／24 張</p>
+              <div className="grid max-h-40 grid-cols-4 gap-1 overflow-y-auto">
+                {urls.map((u, i) => (
+                  <div key={`${u}-${i}`} className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={u} alt="" className="h-12 w-full object-cover rounded" />
+                    <button
+                      type="button"
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded bg-black/60 text-white text-[10px] leading-none"
+                      onClick={() =>
+                        set("urls", urls.filter((_, j) => j !== i).join("\n"))
+                      }
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : null}
           <textarea
@@ -1332,8 +1542,28 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
         </>
       );
     }
-    case "social-post": {
-      const lines = String(p.urls || "").split("\n");
+    case "social-post":
+    case "facebook-post":
+    case "threads-post": {
+      const platform = socialEmbedPlatform(block.type);
+      const ph =
+        platform === "facebook"
+          ? "https://www.facebook.com/.../posts/...\nhttps://www.facebook.com/reel/..."
+          : platform === "threads"
+            ? "https://www.threads.net/@user/post/xxxxx/\nhttps://www.threads.com/t/xxxxx/"
+            : "https://www.instagram.com/p/xxxxx/\nhttps://www.instagram.com/reel/xxxxx/";
+      const hint =
+        platform === "facebook"
+          ? "每行一個 Facebook 貼文網址，最多 12 則。公開貼文較易正常顯示。"
+          : platform === "threads"
+            ? "每行一個 Threads 公開貼文網址。僅公開貼文可嵌入；追蹤者限定無法顯示。"
+            : "每行一個 Instagram 貼文／Reels 網址，最多 12 則。";
+      const failHint =
+        platform === "facebook"
+          ? "無法辨識，請貼完整 Facebook 貼文連結"
+          : platform === "threads"
+            ? "無法辨識，請貼完整 Threads 公開貼文連結"
+            : "無法辨識，請貼完整 Instagram 貼文連結";
       return (
         <>
           <Field label="版型">
@@ -1391,23 +1621,60 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
               />
             </>
           ) : null}
-          <p className="text-[11px] text-white/50 mb-2 leading-relaxed">
-            每行一個貼文網址，最多 12 則。畫面一次最多顯示 4 則，前台可拖曳與自動輪播。
-          </p>
-          <Field label="貼文網址">
+          <p className="text-[11px] text-white/50 mb-2 leading-relaxed">{hint}</p>
+          <Field label="列表顯示的貼文網址">
             <textarea
               className={`${inputCls} min-h-[110px] font-mono text-[12px]`}
               value={p.urls || ""}
-              placeholder={"https://www.instagram.com/p/xxxxx/\nhttps://www.facebook.com/.../posts/..."}
+              placeholder={ph}
               onChange={(e) => set("urls", e.target.value)}
             />
           </Field>
+          <Field
+            label={
+              platform === "instagram"
+                ? "同作者其他貼文（燈箱左右切換，可不顯示在列表）"
+                : "更多貼文（燈箱左右切換，可不顯示在列表）"
+            }
+          >
+            <textarea
+              className={`${inputCls} min-h-[90px] font-mono text-[12px]`}
+              value={p.nav_urls || ""}
+              placeholder={
+                platform === "instagram"
+                  ? "同一帳號的其他貼文／Reels 網址，每行一則\n（Instagram 不開放自動抓取作者全部貼文，需手動貼上）"
+                  : "其他貼文網址，每行一則（僅燈箱切換用）"
+              }
+              onChange={(e) => set("nav_urls", e.target.value)}
+            />
+            <p className="text-[10px] text-white/40 mt-1 leading-relaxed">
+              {platform === "instagram"
+                ? "Meta 不提供「同作者全部貼文」公開 API。列表可只嵌 1 則，把同帳號其他連結貼在這裡，前台燈箱就能左右切換且留在本站。"
+                : "列表可不顯示這些網址；點開燈箱後可用左右鍵／按鈕切換。"}
+            </p>
+          </Field>
+          {platform === "instagram" ? (
+            <Field label="本機播放影片（選填，與「列表顯示」網址逐行對應）">
+              <textarea
+                className={`${inputCls} min-h-[72px] font-mono text-[12px]`}
+                value={p.video_urls || ""}
+                placeholder={
+                  "https://…/video1.mp4\n（第 2 行對應第 2 則 IG；有填才保證本頁自動播放）"
+                }
+                onChange={(e) => set("video_urls", e.target.value)}
+              />
+              <p className="text-[10px] text-white/40 mt-1 leading-relaxed">
+                一般使用官方嵌入即可站內播放。若該則因版權音樂顯示「在 Instagram
+                觀看」，可另上傳 mp4 填在此行以保證本頁播放。
+              </p>
+            </Field>
+          ) : null}
           <div className="space-y-1">
-            {lines
+            {[...(p.urls || "").split("\n"), ...(p.nav_urls || "").split("\n")]
               .map((s) => s.trim())
               .filter(Boolean)
               .map((line) => {
-                const hit = parseSocialPostUrl(line);
+                const hit = parseSocialPostUrl(line, { platform });
                 return (
                   <p
                     key={line}
@@ -1415,7 +1682,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
                       hit ? "text-emerald-300" : "text-amber-300"
                     }`}
                   >
-                    {hit ? `已辨識 ${hit.label}` : "無法辨識，請貼完整 IG／FB 貼文連結"}
+                    {hit ? `已辨識 ${hit.label}` : failHint}
                   </p>
                 );
               })}
@@ -1516,7 +1783,10 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
           <MediaUploadField
             kind="image"
             multiple
-            onUploaded={(url) => set("urls", [...urls, url].join("\n"))}
+            maxFiles={24}
+            onUploaded={(incoming) =>
+              set("urls", appendMediaUrls(urls, incoming, 24).join("\n"))
+            }
           />
           <textarea
             className={`${inputCls} min-h-[80px] font-mono text-xs`}

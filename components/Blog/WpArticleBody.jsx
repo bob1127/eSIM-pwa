@@ -41,7 +41,8 @@ function prepareWpContentHtml(html) {
 }
 
 function WpArticleBodyInner({ prepared, replaceExtras }) {
-  const { openAt } = useBlogLightbox();
+  const lightbox = useBlogLightbox();
+  const openAt = lightbox?.openAt;
   const extras =
     typeof replaceExtras === "function" ? replaceExtras() : replaceExtras || {};
 

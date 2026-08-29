@@ -46,6 +46,8 @@ import {
   ChatBubbleLeftRightIcon,
   UserGroupIcon,
   ArrowRightOnRectangleIcon,
+  XMarkIcon,
+  BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
 
 // --- 1. 定義資料型別 ---
@@ -357,7 +359,7 @@ export default function Navbar({ className }: NavbarProps) {
             aria-hidden="true"
             className={cn(
               "fixed inset-0 bg-black/40 backdrop-blur-[2px] cursor-pointer",
-              mobileOpen ? "z-[9999]" : "z-[998]",
+              mobileOpen ? "z-[10075]" : "z-[998]",
             )}
           />
         )}
@@ -376,7 +378,8 @@ export default function Navbar({ className }: NavbarProps) {
           mass: 0.85,
         }}
         className={cn(
-          "fixed top-0 left-0 w-full z-[1000] transition-[padding] duration-300 pointer-events-none",
+          "fixed top-0 left-0 w-full transition-[padding] duration-300 pointer-events-none",
+          mobileOpen ? "z-[10082]" : "z-[1000]",
           isScrolled ? "pt-2 px-2 md:px-4" : "pt-4 px-4 md:pt-6 md:px-6",
           className,
         )}
@@ -438,6 +441,12 @@ export default function Navbar({ className }: NavbarProps) {
                         <UserIcon className="w-4 h-4" />
                         會員中心 / 訂單
                       </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => router.push("/partner/dashboard")}
+                      >
+                        <BuildingStorefrontIcon className="w-4 h-4" />
+                        合作夥伴後台
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         variant="destructive"
@@ -482,26 +491,24 @@ export default function Navbar({ className }: NavbarProps) {
                 aria-controls="mobile-nav-menu"
                 className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors ml-1"
               >
-                <div className="relative w-4 h-3">
-                  <span
-                    className={cn(
-                      "absolute block h-[2px] w-4 bg-[#0A6CD0] transition-all duration-300",
-                      mobileOpen ? "top-1.5 rotate-45" : "top-0",
-                    )}
+                {mobileOpen ? (
+                  <XMarkIcon
+                    className="w-5 h-5 text-[#0A6CD0]"
+                    aria-hidden
                   />
-                  <span
-                    className={cn(
-                      "absolute top-1.5 block h-[2px] w-4 bg-[#0A6CD0] transition-all duration-300",
-                      mobileOpen && "opacity-0",
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "absolute block h-[2px] w-4 bg-[#0A6CD0] transition-all duration-300",
-                      mobileOpen ? "top-1.5 -rotate-45" : "top-3",
-                    )}
-                  />
-                </div>
+                ) : (
+                  <div className="relative w-4 h-3">
+                    <span
+                      className="absolute top-0 block h-[2px] w-4 bg-[#0A6CD0] transition-all duration-300"
+                    />
+                    <span
+                      className="absolute top-1.5 block h-[2px] w-4 bg-[#0A6CD0] transition-all duration-300"
+                    />
+                    <span
+                      className="absolute top-3 block h-[2px] w-4 bg-[#0A6CD0] transition-all duration-300"
+                    />
+                  </div>
+                )}
               </button>
             </div>
           </div>
@@ -638,7 +645,7 @@ export default function Navbar({ className }: NavbarProps) {
             }}
             id="mobile-nav-menu"
             aria-label="手機選單"
-            className="fixed top-[80px] left-0 right-0 w-[94%] mx-auto z-[10001] lg:hidden rounded-2xl bg-white shadow-2xl border border-black/5 p-5 overflow-y-auto max-h-[80vh]"
+            className="fixed top-[80px] left-0 right-0 w-[94%] mx-auto z-[10080] lg:hidden rounded-2xl bg-white shadow-2xl border border-black/5 p-5 overflow-y-auto max-h-[80vh]"
           >
             <div className="flex flex-col gap-6">
               {/* 全站即時搜尋（手機） */}
@@ -809,25 +816,35 @@ export default function Navbar({ className }: NavbarProps) {
                 </Link>
 
                 {isLoggedIn ? (
-                  <div className="flex gap-3">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-3">
+                      <Link
+                        href="/account"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#F2F4F7] text-[#0A6CD0] py-3.5 text-sm font-bold shadow-sm transition-opacity active:opacity-80"
+                      >
+                        <UserIcon className="w-5 h-5" />
+                        會員中心
+                      </Link>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleLogout();
+                        }}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-50 text-red-600 border border-red-100 py-3.5 text-sm font-bold shadow-sm transition-opacity active:opacity-80"
+                      >
+                        <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                        安全登出
+                      </button>
+                    </div>
                     <Link
-                      href="/account"
+                      href="/partner/dashboard"
                       onClick={() => setMobileOpen(false)}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#F2F4F7] text-[#0A6CD0] py-3.5 text-sm font-bold shadow-sm transition-opacity active:opacity-80"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#0A6CD0]/20 bg-white text-[#0A6CD0] py-3 text-sm font-bold shadow-sm transition-opacity active:opacity-80"
                     >
-                      <UserIcon className="w-5 h-5" />
-                      會員中心
+                      <BuildingStorefrontIcon className="w-5 h-5" />
+                      合作夥伴後台
                     </Link>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleLogout();
-                      }}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-50 text-red-600 border border-red-100 py-3.5 text-sm font-bold shadow-sm transition-opacity active:opacity-80"
-                    >
-                      <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                      安全登出
-                    </button>
                   </div>
                 ) : (
                   <Link

@@ -19,9 +19,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import InfiniteCarousel from "@/components/InfiniteCarousel"; // 🌟 引入剛剛建好的組件
 import CarRentalCharterSection from "../components/CarRentalCharterSection.jsx";
 import JekoRecommendSection from "../components/JekoRecommendSection.jsx";
-import AccommodationRecommendSection from "../components/AccommodationRecommendSection.jsx";
-import KKdayTicketSection from "../components/KKdayTicketSection.jsx";
-import TransportTicketSection from "../components/TransportTicketSection.jsx";
+import JekoTravelDealsSection from "../components/JekoTravelDealsSection.jsx";
 import MobileHomePage from "../components/MobileHomePage.jsx";
 const VuckoScroll = dynamic(() => import("@/components/CodegridScroll"), {
   ssr: false,
@@ -623,9 +621,7 @@ export default function Home() {
 
         <JekoRecommendSection />
         <CarRentalCharterSection />
-        <AccommodationRecommendSection />
-        <KKdayTicketSection />
-        <TransportTicketSection />
+        <JekoTravelDealsSection />
       </div>
       {/* ══ 以上桌機專屬；以下區塊手機＋桌機共用顯示 ══ */}
 

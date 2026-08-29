@@ -6,16 +6,22 @@ import {
   galleryUrls,
   parseSocialPostUrls,
   safeHref,
+  socialEmbedPlatform,
   youtubeEmbed,
 } from "@/lib/partnerBlogBlocks";
-import { designControlStyle, designShellStyle, designHeightPx, gapCss, designCardStyle, photoWallFrameStyle } from "@/lib/partnerBlogDesign";
+import { designControlStyle, designShellStyle, gapCss, designCardStyle, photoWallFrameStyle } from "@/lib/partnerBlogDesign";
 import PartnerShareButtons from "@/components/Shop/PartnerShareButtons";
 import WpPhotoWall from "@/components/Blog/WpPhotoWall";
 import WpArticleBody from "@/components/Blog/WpArticleBody";
 import { useBlogLightbox } from "@/components/Blog/BlogArticleLightbox";
+import SocialPostsLightbox from "@/components/Blog/SocialPostsLightbox";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
 import CanvasEditable from "./CanvasEditable";
 import ItsHoverIcon from "@/components/icons/ItsHoverIcon";
+import {
+  ensureThreadsEmbeds,
+  normalizeThreadsPermalink,
+} from "@/lib/threadsEmbed";
 
 function useBlockImageLightbox() {
   const ctx = useBlogLightbox();
@@ -688,13 +694,49 @@ function SocialPublic({ props: p, editable, onPatch }) {
   );
 }
 
-function socialNativeSize(platform) {
-  if (platform === "facebook") return { w: 500, h: 640 };
-  return { w: 540, h: 720 };
+const SOCIAL_CARD_MIN = 220;
+const SOCIAL_CARD_MAX = 300; // 多則並排時勿過寬，避免看起來被橫向拉扁
+/** 直式比例（高／寬），Reels／貼文預覽統一 */
+const SOCIAL_PORTRAIT_HW = 16 / 9;
+/** IG 官方 embed 底部「新增留言」列（以 540 寬估算），用裁切藏起來 */
+const IG_COMMENT_CROP_NATIVE = 72;
+const IG_NATIVE_W = 540;
+const IG_NATIVE_H = Math.round(IG_NATIVE_W * SOCIAL_PORTRAIT_HW) + IG_COMMENT_CROP_NATIVE;
+/** FB plugin 畫布；外框限寬，內容 cover 撐滿避免黑邊 */
+const FB_NATIVE_W = 500;
+const FB_NATIVE_H = 620;
+const FB_CARD_HW = 5 / 4; // 略扁於 9:16，貼近一般貼文
+
+function socialNativeSize(post) {
+  if (post?.platform === "facebook" || post?.kind === "facebook") {
+    return { w: FB_NATIVE_W, h: FB_NATIVE_H };
+  }
+  if (post?.platform === "threads" || post?.kind === "threads") {
+    return { w: 540, h: 960 };
+  }
+  // IG：畫布比 9:16 略高，卡片裁掉底部留言列
+  return { w: IG_NATIVE_W, h: IG_NATIVE_H };
 }
 
-const SOCIAL_CARD_MIN = 260;
-const SOCIAL_CARD_MAX = 400;
+function socialCardSize(slotW, maxH, platform) {
+  let dw = Math.min(
+    SOCIAL_CARD_MAX,
+    Math.max(SOCIAL_CARD_MIN, Number(slotW) || SOCIAL_CARD_MAX),
+  );
+  const ratio = platform === "facebook" ? FB_CARD_HW : SOCIAL_PORTRAIT_HW;
+  let dh = Math.round(dw * ratio);
+  if (Number(maxH) > 0 && dh > maxH) {
+    dh = Math.round(maxH);
+    dw = Math.round(dh / ratio);
+    dw = Math.max(160, dw);
+    dh = Math.round(dw * ratio);
+    if (dh > maxH) {
+      dh = Math.round(maxH);
+      dw = Math.round(dh / ratio);
+    }
+  }
+  return { dw, dh };
+}
 
 function useElementWidth() {
   const ref = useRef(null);
@@ -711,50 +753,282 @@ function useElementWidth() {
   return [ref, w];
 }
 
-/** 整張 IG/FB 卡等比縮放：高度與寬度對齊 native 比例，不裁切、不留黑邊 */
-function SocialEmbedCard({ post, slotW, maxH, cardStyle, blockIframe }) {
-  const { w: nw, h: nh } = socialNativeSize(post.platform);
-  const availW = Math.max(120, Number(slotW) || nw);
-  const availH = Number(maxH) > 0 ? maxH : nh;
-  const scale = Math.min(availW / nw, availH / nh, 1);
-  const dw = Math.round(nw * scale);
-  const dh = Math.round(nh * scale);
+function socialCardChrome(cardStyle) {
   const skin = designCardStyle(cardStyle || {});
   const hideDefaultShadow =
     cardStyle?.card_shadow === "none" ||
     cardStyle?.card_shadow === "sm" ||
     cardStyle?.card_shadow === "md";
+  // 設計定案：淺灰邊 + 8px 圓角（不跟舊的黑邊設定）
+  return {
+    skin,
+    hideDefaultShadow,
+    borderW: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+  };
+}
+
+/**
+ * Threads 預覽卡：進視窗才跑官方 embed（與 IG 卡一樣顯示真實貼文）
+ */
+function ThreadsEmbedCard({
+  post,
+  slotW,
+  maxH,
+  cardStyle,
+  blockIframe,
+  onOpen,
+  editable,
+}) {
+  const rootRef = useRef(null);
+  const [inView, setInView] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const { w: nw, h: nh } = socialNativeSize(post);
+  const { dw, dh } = socialCardSize(slotW, maxH, "threads");
+  const { skin, hideDefaultShadow, borderW, borderColor, borderRadius } =
+    socialCardChrome(cardStyle);
+  const href = normalizeThreadsPermalink(post.permalink) || post.permalink;
+  const scale = dw / nw;
+  const scaledH = nh * scale;
+  const oy = Math.min(0, Math.round((dh - scaledH) / 2));
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return undefined;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setInView(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "120px", threshold: 0.05 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!inView || !href) return undefined;
+    let cancelled = false;
+    const root = rootRef.current;
+    const markReady = () => {
+      if (cancelled) return;
+      if (root?.querySelector("iframe")) setReady(true);
+    };
+    const mo = new MutationObserver(markReady);
+    if (root) mo.observe(root, { childList: true, subtree: true });
+
+    (async () => {
+      await new Promise((r) => requestAnimationFrame(() => r()));
+      if (cancelled) return;
+      const ok = await ensureThreadsEmbeds(rootRef.current, {
+        retries: 8,
+        gapMs: 280,
+      });
+      if (cancelled) return;
+      markReady();
+      window.setTimeout(() => {
+        if (cancelled) return;
+        if (!rootRef.current?.querySelector("iframe")) setFailed(true);
+        else setReady(true);
+      }, 4500);
+      if (!ok) {
+        window.setTimeout(() => {
+          if (!cancelled && !rootRef.current?.querySelector("iframe")) {
+            setFailed(true);
+          }
+        }, 800);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      mo.disconnect();
+    };
+  }, [inView, href]);
+
   return (
     <div
-      className={`relative mx-auto ${cardStyle?.card_bg ? "" : "bg-white"} ${
-        hideDefaultShadow ? "" : "shadow-sm"
-      }`}
+      ref={rootRef}
+      className={`relative overflow-hidden ${
+        cardStyle?.card_bg ? "" : "bg-white"
+      } ${hideDefaultShadow ? "" : "shadow-sm"}`}
+      data-social-open={post.permalink}
       style={{
         width: dw,
         height: dh,
-        ...skin,
+        aspectRatio: "9 / 16",
+        border: `${borderW}px solid ${borderColor}`,
+        borderRadius,
+        background: skin.background || "#fff",
+        boxShadow: skin.boxShadow,
+        boxSizing: "border-box",
+      }}
+    >
+      {!ready && !failed ? (
+        <div className="absolute inset-0 z-[1] flex flex-col items-center justify-center gap-2 bg-slate-50 text-slate-500">
+          <MaterialIcon name="autorenew" size={28} className="animate-spin" />
+          <span className="text-[11px]">Threads 載入中…</span>
+        </div>
+      ) : null}
+      {failed && !ready ? (
+        <div className="absolute inset-0 z-[1] flex flex-col items-center justify-center gap-2 bg-slate-50 px-3 text-center">
+          <MaterialIcon name="alternate_email" size={28} className="text-slate-600" />
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] font-bold text-[#0095f6] underline"
+          >
+            在 Threads 開啟
+          </a>
+        </div>
+      ) : null}
+      <div
+        className="pointer-events-none absolute left-0 overflow-hidden"
+        style={{
+          top: oy,
+          width: nw,
+          height: nh,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+      >
+        {inView && href ? (
+          <blockquote
+            className="text-post-media"
+            data-text-post-permalink={href}
+            data-text-post-version="0"
+            style={{
+              margin: 0,
+              background: "#fff",
+              minWidth: nw,
+              width: nw,
+            }}
+          >
+            {/* 勿放可見文案，避免 embed 後殘留「載入中」 */}
+            <a href={href} style={{ display: "none" }} aria-hidden="true">
+              Threads
+            </a>
+          </blockquote>
+        ) : null}
+      </div>
+      {!editable ? (
+        <button
+          type="button"
+          className={`absolute inset-0 z-[2] bg-transparent ${
+            blockIframe ? "cursor-grab" : "cursor-pointer"
+          }`}
+          aria-label="開啟 Threads 貼文"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onOpen?.(post);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * IG/FB：外框限寬；IG 裁掉底部「新增留言」；FB cover 撐滿、白底無黑邊
+ */
+function SocialEmbedCard({
+  post,
+  slotW,
+  maxH,
+  cardStyle,
+  blockIframe,
+  onOpen,
+  editable,
+}) {
+  if (post.embedMode === "threads" || post.platform === "threads") {
+    return (
+      <ThreadsEmbedCard
+        post={post}
+        slotW={slotW}
+        maxH={maxH}
+        cardStyle={cardStyle}
+        blockIframe={blockIframe}
+        onOpen={onOpen}
+        editable={editable}
+      />
+    );
+  }
+
+  const isFb = post.platform === "facebook" || post.kind === "facebook";
+  const { w: nw, h: nh } = socialNativeSize(post);
+  const { dw, dh } = socialCardSize(slotW, maxH, isFb ? "facebook" : "instagram");
+  const { skin, hideDefaultShadow, borderW, borderColor, borderRadius } =
+    socialCardChrome(cardStyle);
+
+  // FB：cover 撐滿外框；IG：依寬縮放、置頂裁底留言列
+  const scale = isFb ? Math.max(dw / nw, dh / nh) : dw / nw;
+  const scaledW = nw * scale;
+  const scaledH = nh * scale;
+  const ox = isFb ? Math.round((dw - scaledW) / 2) : 0;
+  const oy = isFb ? Math.round((dh - scaledH) / 2) : 0;
+
+  const frameBg = isFb
+    ? skin.background || "#fff"
+    : skin.background || "#000";
+
+  return (
+    <div
+      className={`relative mx-auto overflow-hidden ${hideDefaultShadow ? "" : "shadow-sm"}`}
+      data-social-open={post.permalink}
+      style={{
+        width: dw,
+        height: dh,
+        aspectRatio: isFb ? `${1 / FB_CARD_HW}` : "9 / 16",
+        border: `${borderW}px solid ${borderColor}`,
+        borderRadius,
+        background: frameBg,
+        boxShadow: skin.boxShadow,
+        boxSizing: "border-box",
       }}
     >
       <iframe
         title={post.label}
-        src={post.embedSrc}
-        className={blockIframe ? "pointer-events-none" : undefined}
+        src={
+          isFb
+            ? post.embedSrc.replace(/([?&])width=\d+/i, `$1width=${FB_NATIVE_W}`) ||
+              post.embedSrc
+            : post.embedSrc
+        }
+        className="pointer-events-none"
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
+          top: oy,
+          left: ox,
           width: nw,
           height: nh,
           border: 0,
           transform: `scale(${scale})`,
           transformOrigin: "top left",
+          background: isFb ? "#fff" : "#000",
         }}
         loading="lazy"
         scrolling="no"
-        allow="encrypted-media; clipboard-write"
+        referrerPolicy="strict-origin-when-cross-origin"
       />
-      {blockIframe ? (
-        <div className="absolute inset-0 z-[1] cursor-grab" aria-hidden />
+      {!editable ? (
+        <button
+          type="button"
+          className={`absolute inset-0 z-[2] bg-transparent ${
+            blockIframe ? "cursor-grab" : "cursor-pointer"
+          }`}
+          aria-label="放大播放"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onOpen?.(post);
+          }}
+        />
       ) : null}
     </div>
   );
@@ -776,7 +1050,7 @@ function socialSlotWidth(boxW, gapPx, shown) {
   return Math.min(SOCIAL_CARD_MAX, Math.max(SOCIAL_CARD_MIN, raw));
 }
 
-function useDragScroll(ref, enabled, dragFlagRef, onTapRef) {
+function useDragScroll(ref, enabled, dragFlagRef, onTapRef, suppressClickRef) {
   useEffect(() => {
     const el = ref.current;
     if (!el || !enabled) return undefined;
@@ -810,6 +1084,12 @@ function useDragScroll(ref, enabled, dragFlagRef, onTapRef) {
       if (moved > 8) {
         e.preventDefault();
         e.stopPropagation();
+        if (suppressClickRef) {
+          suppressClickRef.current = true;
+          window.setTimeout(() => {
+            suppressClickRef.current = false;
+          }, 120);
+        }
       } else {
         onTapRef?.current?.(e);
       }
@@ -824,11 +1104,41 @@ function useDragScroll(ref, enabled, dragFlagRef, onTapRef) {
       window.removeEventListener("pointercancel", up);
       window.removeEventListener("pointerup", up);
     };
-  }, [enabled, dragFlagRef, onTapRef, ref]);
+  }, [enabled, dragFlagRef, onTapRef, suppressClickRef, ref]);
+}
+
+function socialAuthorKey(post) {
+  const fromProfile = String(post?.profileUrl || "")
+    .replace(/\/+$/, "")
+    .toLowerCase();
+  if (fromProfile) return fromProfile;
+  const m = String(post?.permalink || "").match(
+    /(?:instagram\.com|threads\.com|threads\.net)\/(@?[^/?#]+)/i,
+  );
+  return m ? `https://www.instagram.com/${m[1].replace(/^@/, "")}`.toLowerCase() : "";
+}
+
+function mergeLightboxPosts(displayPosts, navPosts) {
+  const map = new Map();
+  [...displayPosts, ...navPosts].forEach((post) => {
+    const key = post.permalink || post.embedSrc;
+    if (!key || map.has(key)) return;
+    map.set(key, post);
+  });
+  return Array.from(map.values());
+}
+
+function postsSameAuthor(allPosts, current) {
+  const key = socialAuthorKey(current);
+  if (!key) return allPosts;
+  const same = allPosts.filter((p) => socialAuthorKey(p) === key);
+  return same.length ? same : allPosts;
 }
 
 function SocialPostPublic({
   urls,
+  navUrls = "",
+  videoUrls = "",
   layout = "carousel",
   gap = "md",
   visible = 4,
@@ -838,30 +1148,80 @@ function SocialPostPublic({
   minH,
   cardStyle,
   editable,
+  platform = "instagram",
 }) {
-  const posts = parseSocialPostUrls(urls);
+  const videoLines = String(videoUrls || "")
+    .split(/\n+/)
+    .map((s) => s.trim());
+  const posts = parseSocialPostUrls(urls, { platform }).map((post, i) => ({
+    ...post,
+    videoUrl: safeHref(videoLines[i] || "", "") || "",
+  }));
+  const navPosts = parseSocialPostUrls(navUrls, { platform }).map((post) => ({
+    ...post,
+    videoUrl: "",
+  }));
+  const allPosts = mergeLightboxPosts(posts, navPosts);
   const [boxRef, boxW] = useElementWidth();
   const scrollerRef = useRef(null);
   const draggingRef = useRef(false);
   const hoverRef = useRef(false);
   const onTapRef = useRef(null);
+  const dragSuppressRef = useRef(false);
   const [page, setPage] = useState(0);
+  const [lbOpen, setLbOpen] = useState(false);
+  const [lbIndex, setLbIndex] = useState(0);
+  const [lbPosts, setLbPosts] = useState([]);
   const gapPx = gapCss(gap);
-  const maxH = designHeightPx({ height_mode: heightMode, min_h: minH }) || 0;
   const n = posts.length;
   const wanted = Math.min(4, Math.max(1, Number(visible) || 4));
   const shown = fitSocialCount(boxW, gapPx, wanted, Math.max(1, n));
   const slotW = socialSlotWidth(boxW, gapPx, shown);
+  // 社群卡強制直式，不吃外層 height_mode（避免被壓成橫式）
+  const maxH = 0;
   const step = slotW + gapPx;
   const isCarousel = layout !== "stack" && n > 1;
   const loop = isCarousel && !editable ? [...posts, ...posts] : posts;
 
+  const emptyHint =
+    platform === "facebook"
+      ? "貼上 Facebook 貼文網址"
+      : platform === "threads"
+        ? "貼上 Threads 公開貼文網址"
+        : "貼上 Instagram 貼文／Reels 網址";
+
+  const openLightbox = useCallback(
+    (post) => {
+      if (editable || !post) return;
+      if (dragSuppressRef.current) return;
+      const pool = postsSameAuthor(allPosts, post);
+      const i = pool.findIndex(
+        (p) => p.permalink === post.permalink || p.embedSrc === post.embedSrc,
+      );
+      setLbPosts(pool);
+      setLbIndex(i >= 0 ? i : 0);
+      setLbOpen(true);
+    },
+    [editable, allPosts],
+  );
+
   onTapRef.current = (e) => {
-    const node = e.target?.closest?.("[data-permalink]");
-    const href = node?.getAttribute("data-permalink");
-    if (href) window.open(href, "_blank", "noopener,noreferrer");
+    if (editable) return;
+    const node = e.target?.closest?.("[data-social-open]");
+    const key = node?.getAttribute("data-social-open");
+    if (!key) return;
+    const post =
+      posts.find((p) => p.permalink === key) ||
+      posts.find((p) => p.embedSrc === key);
+    if (post) openLightbox(post);
   };
-  useDragScroll(scrollerRef, isCarousel && !editable, draggingRef, onTapRef);
+  useDragScroll(
+    scrollerRef,
+    isCarousel && !editable,
+    draggingRef,
+    onTapRef,
+    dragSuppressRef,
+  );
 
   useEffect(() => {
     if (!isCarousel || editable || autoplay === false || n < 2) return undefined;
@@ -869,12 +1229,12 @@ function SocialPostPublic({
     if (!el) return undefined;
     const ms = Math.max(2, Number(interval) || 4) * 1000;
     const t = window.setInterval(() => {
-      if (draggingRef.current || hoverRef.current) return;
+      if (draggingRef.current || hoverRef.current || lbOpen) return;
       if (n * step <= 0) return;
       el.scrollTo({ left: el.scrollLeft + step, behavior: "smooth" });
     }, ms);
     return () => window.clearInterval(t);
-  }, [isCarousel, editable, autoplay, interval, n, step]);
+  }, [isCarousel, editable, autoplay, interval, n, step, lbOpen]);
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -893,7 +1253,7 @@ function SocialPostPublic({
   if (!n) {
     return (
       <div className="bg-slate-100 text-slate-400 text-sm py-12 text-center rounded-xl border border-dashed border-slate-300">
-        貼上 Instagram 或 Facebook 貼文網址
+        {emptyHint}
       </div>
     );
   }
@@ -906,19 +1266,45 @@ function SocialPostPublic({
       maxH={maxH}
       cardStyle={cardStyle}
       blockIframe={isCarousel && !editable}
+      onOpen={openLightbox}
+      editable={editable}
+    />
+  );
+
+  const lightbox = (
+    <SocialPostsLightbox
+      isOpen={lbOpen}
+      onClose={() => setLbOpen(false)}
+      posts={lbPosts.length ? lbPosts : posts}
+      initialIndex={lbIndex}
+      title={
+        platform === "facebook"
+          ? "Facebook 貼文"
+          : platform === "threads"
+            ? "Threads 貼文"
+            : "Instagram 貼文"
+      }
     />
   );
 
   if (layout === "stack") {
     return (
-      <div ref={boxRef} className="w-full flex flex-col items-center" style={{ gap: gapPx }}>
-        {posts.map((post) => card(post, post.embedSrc))}
-      </div>
+      <>
+        <div
+          ref={boxRef}
+          className="w-full flex flex-col items-center"
+          style={{ gap: gapPx }}
+        >
+          {posts.map((post) => card(post, post.permalink || post.embedSrc))}
+        </div>
+        {lightbox}
+      </>
     );
   }
 
   if (isCarousel) {
     return (
+      <>
       <div
         ref={boxRef}
         className="relative w-full min-w-0"
@@ -942,15 +1328,15 @@ function SocialPostPublic({
         >
           {loop.map((post, idx) => (
             <div
-              key={`${post.embedSrc}-${idx}`}
-              data-permalink={post.permalink}
-              className="shrink-0"
+              key={`${post.permalink || post.embedSrc}-${idx}`}
+              data-social-open={post.permalink}
+              className="shrink-0 flex justify-start"
               style={{
                 width: slotW,
                 scrollSnapAlign: "start",
               }}
             >
-              {card(post, `${post.embedSrc}-${idx}`)}
+              {card(post, `${post.permalink || post.embedSrc}-${idx}`)}
             </div>
           ))}
         </div>
@@ -974,10 +1360,13 @@ function SocialPostPublic({
           </div>
         ) : null}
       </div>
+      {lightbox}
+      </>
     );
   }
 
   return (
+    <>
     <div
       ref={boxRef}
       className="w-full min-w-0"
@@ -989,8 +1378,10 @@ function SocialPostPublic({
         justifyItems: "center",
       }}
     >
-      {posts.map((post) => card(post, post.embedSrc))}
+      {posts.map((post) => card(post, post.permalink || post.embedSrc))}
     </div>
+    {lightbox}
+    </>
   );
 }
 
@@ -1106,6 +1497,8 @@ export function PartnerBlogBlockView({
   const p = block.props || {};
   const stretch =
     block.type !== "social-post" &&
+    block.type !== "facebook-post" &&
+    block.type !== "threads-post" &&
     Boolean(p.height_mode && p.height_mode !== "auto");
   return (
     <div
@@ -1162,19 +1555,26 @@ function PartnerBlogBlockBody({
     case "text":
       if (!editable) {
         return (
-          <WpArticleBody html={p.html || ""} className={RICH_TEXT_PROSE} nested />
+          <Align value={p.align}>
+            <div style={p.font_size ? { fontSize: p.font_size } : undefined}>
+              <WpArticleBody html={p.html || ""} className={RICH_TEXT_PROSE} nested />
+            </div>
+          </Align>
         );
       }
       return (
-        <CanvasEditable
-          enabled={editable}
-          as="div"
-          className={RICH_TEXT_PROSE}
-          value={p.html || ""}
-          html
-          placeholder="在這裡撰寫段落"
-          onChange={(v) => patch({ html: v })}
-        />
+        <Align value={p.align}>
+          <CanvasEditable
+            enabled={editable}
+            as="div"
+            className={RICH_TEXT_PROSE}
+            style={p.font_size ? { fontSize: p.font_size } : undefined}
+            value={p.html || ""}
+            html
+            placeholder="在這裡撰寫段落"
+            onChange={(v) => patch({ html: v })}
+          />
+        </Align>
       );
     case "image":
       if (!p.src) {
@@ -1412,7 +1812,7 @@ function PartnerBlogBlockBody({
           <div className="photo-wall-frame min-w-0" style={wallBox.frame}>
             <WpPhotoWall
               images={urls.map((src) => ({ src, href: src, alt: "" }))}
-              isWide={p.wide === true}
+              isWide={p.wide !== false}
               size={p.size || "md"}
               align={p.align || "left"}
               layout={p.layout === "square" ? "square" : "mosaic"}
@@ -1748,9 +2148,13 @@ function PartnerBlogBlockBody({
         />
       );
     case "social-post":
+    case "facebook-post":
+    case "threads-post":
       return (
         <SocialPostPublic
           urls={p.urls}
+          navUrls={p.nav_urls}
+          videoUrls={p.video_urls}
           layout={p.layout}
           gap={p.gap}
           visible={p.visible}
@@ -1760,6 +2164,7 @@ function PartnerBlogBlockBody({
           minH={p.min_h}
           cardStyle={p}
           editable={editable}
+          platform={socialEmbedPlatform(block.type)}
         />
       );
     case "map":

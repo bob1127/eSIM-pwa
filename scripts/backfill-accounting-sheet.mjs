@@ -79,9 +79,11 @@ function parseArgs() {
     channel: "all",
     limit: 30,
     dashboardOnly: false,
+    force: false,
   };
   for (const a of args) {
     if (a === "--dashboard-only") out.dashboardOnly = true;
+    else if (a === "--force") out.force = true;
     else if (a.startsWith("--channel=")) out.channel = a.split("=")[1];
     else if (a.startsWith("--limit=")) out.limit = Number(a.split("=")[1]) || 30;
   }
@@ -153,6 +155,13 @@ function orderToPayload(order) {
   };
 }
 
+function isTestPurchaseOrder(order) {
+  const items = Array.isArray(order?.items) ? order.items : [];
+  return items.some((it) =>
+    String(it.product_title || it.title || it.name || "").includes("測試購買"),
+  );
+}
+
 function matchesChannel(order, channel) {
   const payload = orderToPayload(order);
   const ch = resolveAccountingChannel(payload);
@@ -184,6 +193,7 @@ async function main() {
   const orders = await fetchOrders(token);
   const candidates = orders
     .filter(isPaidOrder)
+    .filter((o) => !isTestPurchaseOrder(o))
     .filter((o) => matchesChannel(o, opts.channel))
     .slice(0, opts.limit);
 
@@ -196,7 +206,7 @@ async function main() {
   for (const order of candidates) {
     const payload = orderToPayload(order);
     const ch = resolveAccountingChannel(payload);
-    const result = await appendAccountingRow(payload);
+    const result = await appendAccountingRow(payload, { force: opts.force });
     const tag = result.skipped ? "skip" : "ok";
     if (result.skipped) skipped += 1;
     else imported += 1;

@@ -358,10 +358,25 @@ function KKdayCard({ item, onClick }) {
 /* ─────────────────────────────────────────────── */
 /* 主元件                                           */
 /* ─────────────────────────────────────────────── */
-export default function TransportTicketSection() {
-  const [activeTab, setActiveTab] = useState("thailand");
+export default function TransportTicketSection({
+  embedded = false,
+  countryId: countryIdProp,
+  onCountryChange,
+  hideHeader = false,
+  hideCountryTabs = false,
+} = {}) {
+  const [internalTab, setInternalTab] = useState("thailand");
+  const activeTab = countryIdProp ?? internalTab;
+  const setActiveTab = (id) => {
+    if (onCountryChange) onCountryChange(id);
+    else setInternalTab(id);
+  };
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    setShowAll(false);
+  }, [activeTab]);
 
   const filtered = useMemo(
     () => TICKETS.filter((t) => t.countryId === activeTab),
@@ -381,21 +396,20 @@ export default function TransportTicketSection() {
             ? kkdayAff("https://www.kkday.com/zh-tw/destination/vn-vietnam")
             : kkdayAff("https://www.kkday.com/zh-tw/destination/jp-japan");
 
-  return (
-    <section
-      id="transport-ticket-recommend"
-      className="w-full bg-[#f0f1f3] pb-12 lg:pb-16 pt-4 scroll-mt-28"
-    >
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        <HomeSectionHeader
-          eyebrow="包車 / 船票 / 接駁"
-          title="Jeko 交通票券"
-          href={listingUrl}
-          moreLabel="查看更多交通票券"
-          external
-        />
+  const body = (
+    <>
+        {!hideHeader ? (
+          <HomeSectionHeader
+            eyebrow="包車 / 船票 / 接駁"
+            title="Jeko 交通票券"
+            href={listingUrl}
+            moreLabel="查看更多交通票券"
+            external
+          />
+        ) : null}
 
         {/* 國家 Tab — Google 底線風格 */}
+        {!hideCountryTabs ? (
         <div className="flex gap-6 sm:gap-8 mb-8 border-b border-gray-200/80 overflow-x-auto scrollbar-none">
           {COUNTRY_TABS.map((tab) => {
             const active = activeTab === tab.id;
@@ -422,6 +436,7 @@ export default function TransportTicketSection() {
             );
           })}
         </div>
+        ) : null}
 
         {/* 手機版輪播 */}
         <AnimatePresence mode="wait">
@@ -497,15 +512,26 @@ export default function TransportTicketSection() {
             查看更多交通票券
           </a>
         </div>
-      </div>
 
-      {/* Modal */}
       {selectedItem && (
         <TicketModal
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
         />
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="w-full">{body}</div>;
+  }
+
+  return (
+    <section
+      id="transport-ticket-recommend"
+      className="w-full bg-[#f0f1f3] pb-12 lg:pb-16 pt-4 scroll-mt-28"
+    >
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">{body}</div>
     </section>
   );
 }

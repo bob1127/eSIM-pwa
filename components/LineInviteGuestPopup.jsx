@@ -111,9 +111,9 @@ export default function LineInviteGuestPopup() {
               享 50 元折扣金
             </h2>
             <p className="mt-3 text-[13px] text-slate-500 leading-relaxed">
-              先加好友、再註冊成為會員即可領用。
+              加官方 LINE 或註冊會員，擇一即可領 50 元（同一 LINE／會員僅一次）。
               <br />
-              僅加 LINE 不會發券；終身限領一次。
+              先加 LINE 會在對話收到折扣碼；註冊後同一碼會出現在會員中心。
             </p>
           </div>
 
@@ -131,7 +131,7 @@ export default function LineInviteGuestPopup() {
         </div>
 
         <p className="mt-5 text-center px-2 text-[13px] font-medium text-white leading-snug">
-          注意：仍須加入會員後才能領用 50 元折扣
+          加 LINE 即收到折扣碼；註冊會員後也會同步至會員中心
         </p>
 
         <div className="mt-3 flex items-center gap-2">

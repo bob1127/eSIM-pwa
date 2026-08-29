@@ -13,11 +13,16 @@ import { SHOPIFY_UI } from "@/lib/shopifyUi";
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip);
 
 /** 比照圖二 Primary Clients：滿版甜甜圈 + 置中大數字（分潤占營收比） */
-export function RevenueSplitDonut({ profit = 0, cost = 0, other = 0 }) {
+export function RevenueSplitDonut({
+  profit = 0,
+  cost = 0,
+  other = 0,
+  costLabel = "底價成本",
+}) {
   const total = profit + cost + other;
   const rate = total > 0 ? Math.round((profit / (profit + cost || 1)) * 100) : 0;
   const data = {
-    labels: ["分潤", "底價成本", "其他"],
+    labels: ["分潤", costLabel, "其他"],
     datasets: [
       {
         data: [profit, cost, Math.max(other, 0)],
@@ -60,7 +65,7 @@ export function RevenueSplitDonut({ profit = 0, cost = 0, other = 0 }) {
       <ul className="space-y-1.5 flex-1 min-w-0 text-xs">
         {[
           ["分潤", profit, "#2c6ecb"],
-          ["底價成本", cost, "#8c9196"],
+          [costLabel, cost, "#8c9196"],
         ].map(([label, val, color]) => (
           <li key={label} className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />

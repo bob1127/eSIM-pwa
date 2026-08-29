@@ -5,10 +5,10 @@
 // 的 NEWEBPAY_HASH_KEY / NEWEBPAY_HASH_IV 保持一致。
 //
 // 用法：
-//   node scripts/mock-newebpay-notify.cjs <MERCHANT_ORDER_NO> [BACKEND_URL] [PAYMENT_TYPE]
+//   node scripts/mock-newebpay-notify.cjs <MERCHANT_ORDER_NO> [BACKEND_URL] [PAYMENT_TYPE] [AMT]
 //
 // 例：
-//   node scripts/mock-newebpay-notify.cjs 01J8X7ZQK3YV2E9T3RCEXAMPLE http://localhost:9000 CREDIT
+//   node scripts/mock-newebpay-notify.cjs 01J8X7ZQK3YV2E9T3RCEXAMPLE http://localhost:9000 CREDIT 242
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
@@ -59,6 +59,7 @@ function shaEncrypt(encryptedText, key, iv) {
 const MERCHANT_ORDER_NO = process.argv[2];
 const BASE = (process.argv[3] || "http://localhost:9000").replace(/\/$/, "");
 const PAYMENT_TYPE = (process.argv[4] || "CREDIT").toUpperCase();
+const AMT = Math.max(1, Math.round(Number(process.argv[5] || 100)));
 
 if (!MERCHANT_ORDER_NO) {
   console.error(
@@ -72,7 +73,7 @@ const basePayload = {
   MerchantID: process.env.NEWEBPAY_MERCHANT_ID || "MSxxxxxxxxxx",
   MerchantOrderNo: MERCHANT_ORDER_NO,
   RespondType: "JSON",
-  Amt: 100,
+  Amt: AMT,
   TradeNo: `TEST-TNO-${Date.now()}`,
   ItemDesc: "測試商品",
 };
@@ -100,7 +101,7 @@ const payload = { Status: "SUCCESS", Message: "TEST-NOTIFY", Result: result };
     const body = qs.stringify({ TradeInfo, TradeSha });
 
     const url = `${BASE}/newebpay/notify`;
-    console.log(`→ POST ${url} (PaymentType=${PAYMENT_TYPE}, MerchantOrderNo=${MERCHANT_ORDER_NO})`);
+    console.log(`→ POST ${url} (PaymentType=${PAYMENT_TYPE}, MerchantOrderNo=${MERCHANT_ORDER_NO}, Amt=${AMT})`);
 
     const resp = await axios.post(url, body, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },

@@ -349,10 +349,25 @@ function HotelCard({ item, onClick }) {
   );
 }
 
-export default function AccommodationRecommendSection() {
-  const [activeTab, setActiveTab] = useState("japan");
+export default function AccommodationRecommendSection({
+  embedded = false,
+  countryId: countryIdProp,
+  onCountryChange,
+  hideHeader = false,
+  hideCountryTabs = false,
+} = {}) {
+  const [internalTab, setInternalTab] = useState("japan");
+  const activeTab = countryIdProp ?? internalTab;
+  const setActiveTab = (id) => {
+    if (onCountryChange) onCountryChange(id);
+    else setInternalTab(id);
+  };
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    setShowAll(false);
+  }, [activeTab]);
 
   const filtered = useMemo(
     () => KLOOK_HOTELS.filter((h) => h.countryId === activeTab),
@@ -380,24 +395,23 @@ export default function AccommodationRecommendSection() {
                 )
               : klookHotelAff("https://www.klook.com/zh-TW/hotels/city/29-tokyo-hotels/");
 
-  return (
-    <section
-      id="accommodation-recommend"
-      className="w-full bg-[#f0f1f3] pb-12 lg:pb-16 pt-4 scroll-mt-28"
-    >
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        <HomeSectionHeader
-          eyebrow="住宿推薦"
-          title={
-            <>
-              Jeko <span className="text-[#00B259]">×</span> Klook
-            </>
-          }
-          href={listingUrl}
-          moreLabel="住宿 / 飯店推薦"
-          external
-        />
+  const body = (
+    <>
+        {!hideHeader ? (
+          <HomeSectionHeader
+            eyebrow="住宿推薦"
+            title={
+              <>
+                Jeko <span className="text-[#00B259]">×</span> Klook
+              </>
+            }
+            href={listingUrl}
+            moreLabel="住宿 / 飯店推薦"
+            external
+          />
+        ) : null}
 
+        {!hideCountryTabs ? (
         <div className="flex gap-6 sm:gap-8 mb-8 border-b border-gray-200/80 overflow-x-auto scrollbar-none">
           {COUNTRY_TABS.map((tab) => {
             const active = activeTab === tab.id;
@@ -424,6 +438,7 @@ export default function AccommodationRecommendSection() {
             );
           })}
         </div>
+        ) : null}
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -496,11 +511,23 @@ export default function AccommodationRecommendSection() {
             Klook 查看更多住宿
           </a>
         </div>
-      </div>
 
       {selectedItem && (
         <HotelModal item={selectedItem} onClose={() => setSelectedItem(null)} />
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="w-full">{body}</div>;
+  }
+
+  return (
+    <section
+      id="accommodation-recommend"
+      className="w-full bg-[#f0f1f3] pb-12 lg:pb-16 pt-4 scroll-mt-28"
+    >
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">{body}</div>
     </section>
   );
 }
