@@ -10,8 +10,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { buildLoginUrl } from "@/lib/authRedirect";
 import { resolveMemberEmail } from "@/lib/memberIdentity";
 import { parseQrcodeData } from "@/lib/esimOrderExtract";
-import { formatExpiryTaiwan } from "@/lib/esimUsageFormat";
-import { inferEsimInstalled } from "@/lib/esimInstallStatus";
+import {
+  isEsimUsageExpired,
+  resolveEsimExpiryDisplay,
+} from "@/lib/esimUsageFormat";
+import { formatEsimValidityLinesZh } from "@/lib/esimDisplayZh";
+import { inferEsimInstalled, isEsimNotInstalledForUsage, canShowEsimUsageStats } from "@/lib/esimInstallStatus";
 import { getPushEndpoint } from "@/lib/pushBind";
 import { subscribeToPush } from "@/lib/pushSubscribe";
 import { detectPushSupport, getBrowserContext } from "@/lib/pushSupport";
@@ -21,6 +25,7 @@ import {
 } from "@/lib/pushNotifySync";
 import { detectDeviceLabel } from "@/lib/deviceDetect";
 import {
+  hydrateEsimProfileFields,
   parseLpaString,
   pickInstallUrlForOs,
   resolveInstallUrls,
@@ -174,6 +179,9 @@ export function extractQrPlansFromOrders(orders = []) {
         androidCode,
         iosInstallUrl: install.iosInstallUrl,
         androidInstallUrl: install.androidInstallUrl,
+        serviceDays: item.serviceDays || item.day || "",
+        validityPeriod: item.validityPeriod || item.validity_period || "",
+        dataAllowance: item.dataAllowance || item.flow || "",
       });
     });
   }
@@ -205,18 +213,87 @@ function isUnlimitedStyleUsage(usage, planName) {
   return false;
 }
 
+function usagePlanContext(usage, plan = null) {
+  if (!usage && !plan) return null;
+  const anchor = usage?.provisionedAt || usage?.createdAt || plan?.orderDate || null;
+  return {
+    ...(usage || {}),
+    validityPeriod: usage?.validityPeriod || plan?.validityPeriod || null,
+    serviceDays: usage?.serviceDays || plan?.serviceDays || null,
+    productName: usage?.productName || plan?.name || null,
+    sku: usage?.sku || plan?.planOfficialName || null,
+    createdAt: usage?.createdAt || anchor,
+    provisionedAt: usage?.provisionedAt || anchor,
+  };
+}
+
+function usageExpiryOptions(plan) {
+  return {
+    validityPeriod: plan?.validityPeriod || null,
+    serviceDays: plan?.serviceDays || null,
+  };
+}
+
 /** 僅在有「已使用」證據時顯示圖表（與一鍵安裝鈕判斷一致） */
-function UsageAwaitingInstallNotice({ expiresAt = null }) {
+function UsageAwaitingInstallNotice({ usage = null, plan = null }) {
+  const validityLines = formatEsimValidityLinesZh({
+    validityPeriod: plan?.validityPeriod,
+    serviceDays: plan?.serviceDays,
+  });
+  const ctx = usagePlanContext(usage, plan);
+  const expiry = resolveEsimExpiryDisplay(ctx, {
+    installed: false,
+    ...usageExpiryOptions(plan),
+  });
   return (
     <div className="rounded-2xl bg-slate-50 px-3 py-6 text-center ring-1 ring-slate-200/80">
       <p className="text-[14px] font-bold text-slate-700">尚未安裝或尚未使用</p>
       <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
         請先一鍵安裝或掃描上方 QR；產生用量後才會顯示流量圖表
       </p>
-      {expiresAt ? (
-        <p className="mt-2 text-[11px] font-semibold text-slate-400">
-          效期至 {formatExpiryTaiwan(expiresAt)}
+      {validityLines.length ? (
+        <div className="mt-3 space-y-1 text-left rounded-xl bg-white/80 px-3 py-2.5 ring-1 ring-slate-200/60">
+          {validityLines.map((line) => (
+            <p key={line} className="text-[11px] leading-relaxed text-slate-600">
+              {line}
+            </p>
+          ))}
+        </div>
+      ) : null}
+      {expiry.line ? (
+        <p className="mt-2 text-[11px] font-semibold text-slate-500">
+          {expiry.line}
         </p>
+      ) : null}
+    </div>
+  );
+}
+
+function ExpiredUsageNotice({ usage = null, plan = null }) {
+  const ctx = usagePlanContext(usage, plan);
+  const expiry = resolveEsimExpiryDisplay(ctx, usageExpiryOptions(plan));
+  return (
+    <div className="rounded-2xl bg-slate-100 px-3 py-6 text-center ring-1 ring-slate-200">
+      <p className="text-[14px] font-bold text-slate-500">此 eSIM 已過期</p>
+      <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+        無法再查詢流量、安裝或開啟提醒。請另行購買新方案。
+      </p>
+      {expiry.line ? (
+        <p className="mt-2 text-[11px] font-semibold text-slate-400">
+          {expiry.line}
+        </p>
+      ) : null}
+      {plan?.validityPeriod || plan?.serviceDays ? (
+        <div className="mt-3 space-y-1 text-left rounded-xl bg-white/60 px-3 py-2.5 ring-1 ring-slate-200/60 opacity-80">
+          {formatEsimValidityLinesZh({
+            validityPeriod: plan.validityPeriod,
+            serviceDays: plan.serviceDays,
+          }).map((line) => (
+            <p key={line} className="text-[10px] leading-relaxed text-slate-500">
+              {line}
+            </p>
+          ))}
+        </div>
       ) : null}
     </div>
   );
@@ -270,15 +347,13 @@ function EsimDetailAccordion({ plan }) {
 
   const rows = useMemo(() => {
     if (!plan) return [];
-    const smdp = String(plan.smdp || "").trim();
-    const code = String(plan.activationCode || "").trim();
-    const lpa =
-      String(plan.lpa || "").trim() ||
-      (smdp && code ? `LPA:1$${smdp}$${code}` : "");
-    const android =
-      String(plan.androidCode || "").trim() || lpa;
+    const hydrated = hydrateEsimProfileFields(plan);
+    const smdp = String(hydrated.smdp || "").trim();
+    const code = String(hydrated.activationCode || "").trim();
+    const lpa = String(hydrated.lpa || "").trim();
+    const android = String(hydrated.androidCode || lpa || "").trim();
     return [
-      { key: "iccid", label: "ICCID", value: plan.iccid },
+      { key: "iccid", label: "ICCID", value: hydrated.iccid },
       { key: "smdp", label: "SM-DP+ 位址", value: smdp },
       { key: "code", label: "激活碼", value: code },
       { key: "android", label: "Android 激活碼", value: android },
@@ -286,7 +361,16 @@ function EsimDetailAccordion({ plan }) {
     ].filter((r) => String(r.value || "").trim());
   }, [plan]);
 
-  if (!rows.length) return null;
+  const validityLines = useMemo(
+    () =>
+      formatEsimValidityLinesZh({
+        validityPeriod: plan?.validityPeriod,
+        serviceDays: plan?.serviceDays,
+      }),
+    [plan],
+  );
+
+  if (!rows.length && !validityLines.length) return null;
 
   const onCopy = async (row) => {
     const ok = await copyTextToClipboard(row.value);
@@ -317,6 +401,21 @@ function EsimDetailAccordion({ plan }) {
       </button>
       {open ? (
         <div className="border-t border-slate-100 px-3 pb-3 pt-1 space-y-2">
+          {validityLines.length ? (
+            <div className="rounded-lg bg-sky-50/80 px-2.5 py-2 ring-1 ring-sky-100">
+              <p className="text-[10px] font-bold text-sky-900 tracking-wide">
+                效期說明
+              </p>
+              {validityLines.map((line) => (
+                <p
+                  key={line}
+                  className="mt-1 text-[11px] leading-relaxed text-sky-950/80"
+                >
+                  {line}
+                </p>
+              ))}
+            </div>
+          ) : null}
           {rows.map((row) => (
             <div
               key={row.key}
@@ -404,7 +503,7 @@ function RefreshUsageButton({ loading, onClick, className = "" }) {
   );
 }
 
-function PlanPillTabs({ plans, activeIdx, onSelect, className = "" }) {
+function PlanPillTabs({ plans, activeIdx, onSelect, usageMap, className = "" }) {
   const pillRefs = useRef([]);
 
   useEffect(() => {
@@ -422,24 +521,38 @@ function PlanPillTabs({ plans, activeIdx, onSelect, className = "" }) {
       className={`flex gap-2 overflow-x-auto px-4 pb-3 ${className}`}
       style={{ scrollbarWidth: "none" }}
     >
-      {plans.map((p, i) => (
-        <button
-          key={p.id}
-          ref={(el) => {
-            pillRefs.current[i] = el;
-          }}
-          type="button"
-          onClick={() => onSelect(i)}
-          aria-pressed={i === activeIdx}
-          className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-bold transition-colors ${
-            i === activeIdx
-              ? "border-[#1E4AD1] bg-[#1E4AD1] text-white"
-              : "border-gray-200 bg-white text-gray-600"
-          }`}
-        >
-          {p.name.length > 14 ? `${p.name.slice(0, 14)}…` : p.name}
-        </button>
-      ))}
+      {plans.map((p, i) => {
+        const expired = isEsimUsageExpired(usageForPlan(p, usageMap));
+        const label =
+          p.name.length > 14 ? `${p.name.slice(0, 14)}…` : p.name;
+        return (
+          <button
+            key={p.id}
+            ref={(el) => {
+              pillRefs.current[i] = el;
+            }}
+            type="button"
+            disabled={expired}
+            onClick={() => {
+              if (expired) return;
+              onSelect(i);
+            }}
+            aria-pressed={i === activeIdx}
+            title={
+              expired ? "此 eSIM 已過期，無法查詢或安裝" : p.name
+            }
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-bold transition-colors ${
+              expired
+                ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-70"
+                : i === activeIdx
+                  ? "border-[#1E4AD1] bg-[#1E4AD1] text-white"
+                  : "border-gray-200 bg-white text-gray-600"
+            }`}
+          >
+            {expired ? `已過期 · ${label}` : label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -455,26 +568,42 @@ function PlanUsageBlock({
   onToggleBind,
 }) {
   const usage = usageForPlan(plan, usageMap);
+  const ctx = usagePlanContext(usage, plan);
+  const expiryOpts = usageExpiryOptions(plan);
   const unlimitedStyle = isUnlimitedStyleUsage(usage, plan?.name);
-  const showUsageChart = inferEsimInstalled(usage) === true;
+  const expired = isEsimUsageExpired(ctx, expiryOpts);
+  const showUsageChart = !expired && inferEsimInstalled(usage) === true;
+  const expiryFooter = resolveEsimExpiryDisplay(ctx, expiryOpts).footer;
 
   return (
-    <div className="mt-4 w-full bg-[#f7f8fa] rounded-2xl p-4">
+    <div
+      className={`mt-4 w-full rounded-2xl p-4 ${
+        expired ? "bg-slate-100/90 opacity-90" : "bg-[#f7f8fa]"
+      }`}
+    >
       <div className="flex items-start gap-2">
-        <p className="min-w-0 flex-1 text-[15px] font-bold text-gray-900 leading-snug">
+        <p
+          className={`min-w-0 flex-1 text-[15px] font-bold leading-snug ${
+            expired ? "text-slate-500" : "text-gray-900"
+          }`}
+        >
           {plan.name}
         </p>
-        <RefreshUsageButton
-          loading={usageLoading}
-          onClick={() => onRefresh?.(plan)}
-          className="shrink-0 mt-0.5"
-        />
+        {!expired ? (
+          <RefreshUsageButton
+            loading={usageLoading}
+            onClick={() => onRefresh?.(plan)}
+            className="shrink-0 mt-0.5"
+          />
+        ) : null}
       </div>
       <div className="mt-3">
-        {usageLoading && (plan.topupId || plan.iccid) && !usage ? (
+        {expired ? (
+          <ExpiredUsageNotice usage={usage} plan={plan} />
+        ) : usageLoading && (plan.topupId || plan.iccid) && !usage ? (
           <p className="text-[13px] text-gray-400 text-center py-6">查詢中…</p>
         ) : !showUsageChart ? (
-          <UsageAwaitingInstallNotice expiresAt={usage?.expiresAt || null} />
+          <UsageAwaitingInstallNotice usage={usage} plan={plan} />
         ) : usage?.remainingMb != null &&
           usage?.totalMb != null &&
           Number(usage.totalMb) > 0 &&
@@ -483,7 +612,7 @@ function PlanUsageBlock({
             remainingMb={Number(usage.remainingMb)}
             totalMb={Number(usage.totalMb)}
             usedMb={usage.usedMb}
-            expiresAt={usage.expiresAt || null}
+            expiryFooter={expiryFooter}
             dailyUsedMb={
               Array.isArray(usage.dailyUsedMb) ? usage.dailyUsedMb : null
             }
@@ -492,14 +621,14 @@ function PlanUsageBlock({
         ) : (
           <UsageRingPreview
             usedMb={usage?.usedMb != null ? Number(usage.usedMb) : 0}
-            expiresAt={usage?.expiresAt || null}
+            expiryFooter={expiryFooter}
             variant="muted"
           />
         )}
       </div>
       <EsimBindSwitchRow
         plan={plan}
-        trafficOn={trafficOn}
+        trafficOn={trafficOn && !expired}
         boundTopupId={boundTopupId}
         bindBusy={bindBusy}
         onToggleBind={onToggleBind}
@@ -587,6 +716,7 @@ function QrPanel({
         plans={plans}
         activeIdx={activeIdx}
         onSelect={selectPlan}
+        usageMap={usageMap}
       />
 
       {/* 橫向滑動：QR + 用量同一頁 */}
@@ -596,10 +726,14 @@ function QrPanel({
         className="flex overflow-x-auto snap-x snap-mandatory"
         style={{ scrollbarWidth: "none" }}
       >
-        {plans.map((p) => (
+        {plans.map((p) => {
+          const planExpired = isEsimUsageExpired(usageForPlan(p, usageMap));
+          return (
           <div
             key={p.id}
-            className="snap-center shrink-0 w-full flex flex-col items-center px-4"
+            className={`snap-center shrink-0 w-full flex flex-col items-center px-4 ${
+              planExpired ? "opacity-80 grayscale-[0.15]" : ""
+            }`}
           >
             <div className="bg-white border border-gray-100 rounded-2xl p-3 w-[200px] h-[200px] flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -626,7 +760,8 @@ function QrPanel({
               onToggleBind={onToggleBind}
             />
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -877,7 +1012,9 @@ export default function EsimBottomSheet() {
       });
       const data = await res.json();
       if (res.ok && key) {
-        setUsageMap((prev) => ({ ...prev, [key]: data }));
+        if (!isEsimNotInstalledForUsage(data)) {
+          setUsageMap((prev) => ({ ...prev, [key]: data }));
+        }
       }
     } catch {
       /* ignore */
@@ -958,7 +1095,9 @@ export default function EsimBottomSheet() {
 
   const activePlan = plans[activeIdx] || null;
   const activeUsage = usageForPlan(activePlan, usageMap);
-  const esimAlreadyInUse = inferEsimInstalled(activeUsage) === true;
+  const esimExpired = isEsimUsageExpired(activeUsage);
+  const esimAlreadyInUse =
+    !esimExpired && inferEsimInstalled(activeUsage) === true;
   const esimInstallUrl = useMemo(
     () => (activePlan ? pickInstallUrlForOs(deviceOs, activePlan) : ""),
     [activePlan, deviceOs],
@@ -968,7 +1107,7 @@ export default function EsimBottomSheet() {
   );
 
   const handleEsimOneClickInstall = useCallback(() => {
-    if (esimAlreadyInUse) return;
+    if (esimExpired || esimAlreadyInUse) return;
     if (esimInstallUrl) {
       window.open(esimInstallUrl, "_blank", "noopener,noreferrer");
       return;
@@ -980,7 +1119,7 @@ export default function EsimBottomSheet() {
     }
     alert("此方案尚無一鍵安裝連結，請掃描上方 QR Code 安裝。");
     setPanel("qr");
-  }, [esimAlreadyInUse, esimInstallUrl, hasEsimInstallLinks]);
+  }, [esimExpired, esimAlreadyInUse, esimInstallUrl, hasEsimInstallLinks]);
 
   const closeBindHint = useCallback(async () => {
     setShowBindHint(false);
@@ -1064,7 +1203,7 @@ export default function EsimBottomSheet() {
     if (!authReady) return;
 
     if (isGuest || !isLoggedIn) {
-      alert("請先登入，登入後會自動幫您開啟流量通知。");
+      alert("請先註冊或登入會員，才能開啟流量通知。");
       const path =
         typeof window !== "undefined"
           ? `${window.location.pathname}?enableTraffic=1`
@@ -1214,6 +1353,10 @@ export default function EsimBottomSheet() {
   const toggleEsimBind = useCallback(
     async (plan) => {
       if (bindBusy || !trafficOn || !plan?.topupId) return;
+      if (isEsimUsageExpired(usageForPlan(plan, usageMap))) {
+        alert("此 eSIM 已過期，無法開啟流量綁定。");
+        return;
+      }
       setBindBusy(true);
       try {
         const endpoint = await getPushEndpoint();
@@ -1279,7 +1422,7 @@ export default function EsimBottomSheet() {
         setBindBusy(false);
       }
     },
-    [bindBusy, trafficOn, boundTopupId, token],
+    [bindBusy, trafficOn, boundTopupId, token, usageMap],
   );
 
   // 登入後帶 ?enableTraffic=1 → 自動開啟
@@ -1787,6 +1930,16 @@ export default function EsimBottomSheet() {
                       >
                         購買 eSIM
                       </JekoPillButton>
+                    ) : esimExpired ? (
+                      <JekoPillButton
+                        type="button"
+                        size="sm"
+                        className="flex-1 min-w-0 basis-0 !min-h-[42px] !bg-slate-300 !text-slate-600 !shadow-none opacity-90 pointer-events-none"
+                        disabled
+                        title="此 eSIM 已過期"
+                      >
+                        此 eSIM 已過期
+                      </JekoPillButton>
                     ) : esimAlreadyInUse ? (
                       <JekoPillButton
                         type="button"
@@ -1845,7 +1998,9 @@ export default function EsimBottomSheet() {
                           ? "先安裝再開"
                           : "點右側開關開啟／關閉流量通知"
                       : [
-                          esimAlreadyInUse
+                          esimExpired
+                            ? "此 eSIM 已過期"
+                            : esimAlreadyInUse
                             ? "左側已安裝（無需再點）"
                             : esimInstallUrl
                               ? deviceOs === "ios"

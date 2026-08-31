@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "./context/UserContext";
+import { useAuth } from "@/hooks/useAuth";
 import { buildLoginUrl } from "../lib/authRedirect";
 import {
   pushLog,
@@ -29,11 +30,12 @@ export default function PushButton({
   showDebugPanel = true,
   onSubscribed,
   onBeforeSubscribe,
-  requireLogin = false,
+  requireLogin = true,
   theme = "default",
 }) {
   const router = useRouter();
   const { token, user } = useUser();
+  const { isLoggedIn, isGuest } = useAuth();
 
   const [status, setStatus] = useState("idle"); // idle | warming | loading | subscribed | unsupported | error
   const [isSupported, setIsSupported] = useState(false);
@@ -101,9 +103,9 @@ export default function PushButton({
   const handleSubscribe = async () => {
     setLastError(null);
 
-    if (requireLogin && !token) {
+    if (requireLogin && (!isLoggedIn || isGuest)) {
       addLog("❌ 未登入");
-      alert("請先登入會員，才能開啟流量提醒通知喔！");
+      alert("請先註冊或登入會員，才能開啟流量提醒通知喔！");
       router.push(buildLoginUrl(router.asPath));
       return;
     }

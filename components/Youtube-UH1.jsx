@@ -8,10 +8,7 @@ const MyYouTubeComponent = () => {
     const videoId = 'y56UF58WsB0';
 
     // 當播放器準備好時的回調函數
-    const onReady = (event) => {
-        // 可以在這裡添加播放器準備好時的邏輯
-        console.log('播放器已準備就緒');
-    };
+    const onReady = () => {};
 
     // 影片播放狀態改變時的回調函數
     const onStateChange = (event) => {

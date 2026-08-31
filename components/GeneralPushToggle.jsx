@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import MaterialIcon from "./MaterialIcon";
 import { detectPushSupport } from "@/lib/pushSupport";
 import { getPushEndpoint } from "@/lib/pushBind";
@@ -9,7 +10,8 @@ import {
   broadcastPushNotifyState,
   subscribePushNotifySync,
 } from "@/lib/pushNotifySync";
-import { useUser } from "./context/UserContext";
+import { useAuth } from "@/hooks/useAuth";
+import { buildLoginUrl } from "@/lib/authRedirect";
 import { QuarterRing } from "@/components/ui/QuarterRing";
 import TrafficNotifyToggle from "@/components/ui/TrafficNotifyToggle";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
@@ -22,13 +24,15 @@ const SYNC_SOURCE = "general-push-toggle";
 /**
  * 首頁／會員區：推播通知 ON/OFF
  * 與 BottomSheet 流量通知共用訂閱狀態，開關會全站同步並跳出提示。
+ * 開啟需已登入會員；關閉不強制登入。
  */
 export default function GeneralPushToggle({
   className = "",
   compact = false,
   theme = "light",
 }) {
-  const { token } = useUser();
+  const router = useRouter();
+  const { token, isLoggedIn, isGuest, authReady } = useAuth();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [supported, setSupported] = useState(true);
@@ -123,10 +127,25 @@ export default function GeneralPushToggle({
 
   const handleToggle = async () => {
     if (busy) return;
+    const isOn = subscribed && enabled;
+
+    // 開啟：需先註冊／登入會員
+    if (!isOn) {
+      if (!authReady) return;
+      if (!isLoggedIn || isGuest) {
+        alert("請先註冊或登入會員，才能開啟推播通知。");
+        const path =
+          typeof window !== "undefined"
+            ? `${window.location.pathname}${window.location.search || ""}`
+            : "/";
+        router.push(buildLoginUrl(path || "/"));
+        return;
+      }
+    }
+
     setBusy(true);
     setError("");
     try {
-      const isOn = subscribed && enabled;
       if (isOn) await disablePush();
       else await enablePush();
     } catch (e) {

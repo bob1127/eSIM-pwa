@@ -10,6 +10,12 @@ import { DATA_PLANS, USAGE_ROWS } from "@/lib/dataUsageTable";
 import { ICCID_STORAGE_KEY, normalizeIccid } from "@/lib/pushBind";
 import { buildLoginUrl } from "@/lib/authRedirect";
 import { useAuth } from "@/hooks/useAuth";
+import { useLineBind } from "@/hooks/useLineBind";
+import {
+  canShowEsimUsageStats,
+  isEsimNotInstalledForUsage,
+  ESIM_NOT_INSTALLED_USAGE_MESSAGE,
+} from "@/lib/esimInstallStatus";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -26,7 +32,7 @@ const TABS = [
     label: "使用教學",
     short: "教學",
     icon: "menu_book",
-    headline: "三步驟搞懂用量與提醒",
+    headline: "四步驟搞懂用量與提醒",
     sub: "從查詢到開啟流量通知。",
   },
 ];
@@ -41,13 +47,20 @@ const HOW_IT_WORKS = [
   },
   {
     step: "02",
-    title: "查看剩餘流量",
-    desc: "顯示已用／剩餘流量與效期。用量更新通常需間隔 30–60 分鐘。",
+    title: "安裝並啟用 eSIM",
+    desc: "掃描 QR 安裝到手機並開啟行動數據／漫遊。未安裝前無法查詢流量。",
     tab: "query",
     tint: "bg-[#EEF1F6]",
   },
   {
     step: "03",
+    title: "查看剩餘流量",
+    desc: "安裝後約 30–60 分鐘可查到用量；手機顯示通常略高於網站數字。",
+    tab: "query",
+    tint: "bg-[#EEF1F6]",
+  },
+  {
+    step: "04",
     title: "開啟流量通知",
     desc: "在查詢用量列表點「開啟提醒」，流量偏低時會自動推播通知。",
     tab: "query",
@@ -317,6 +330,43 @@ function UsageTable() {
 function UsageResultSheet({ usageResult }) {
   if (!usageResult) return null;
 
+  if (isEsimNotInstalledForUsage(usageResult)) {
+    return (
+      <div className={cn(CARD, "mt-5 bg-amber-50 border-amber-200 overflow-hidden")}>
+        <SheetHandle />
+        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+              <MaterialIcon name="sim_card_alert" size={22} />
+            </div>
+            <div>
+              <h3 className="text-[17px] font-black text-amber-950">
+                尚未安裝 eSIM
+              </h3>
+              <p className="text-[13px] text-amber-900/90 mt-2 leading-relaxed">
+                {ESIM_NOT_INSTALLED_USAGE_MESSAGE}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canShowEsimUsageStats(usageResult)) {
+    return (
+      <div className={cn(CARD, "mt-5 bg-white overflow-hidden")}>
+        <SheetHandle />
+        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            {usageResult.note ||
+              "暫無法確認用量，請確認 eSIM 已安裝並稍後再試。"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const remaining = usageResult.remainingMb;
   const total = usageResult.totalMb;
   const hasMb = remaining != null;
@@ -397,6 +447,7 @@ function UsageResultSheet({ usageResult }) {
 
 export default function DataQueryPage() {
   const { authReady, isLoggedIn } = useAuth();
+  const { status: lineBindStatus, message: lineBindMessage } = useLineBind();
   const [activeTab, setActiveTab] = useState("query");
   const [iccid, setIccid] = useState("");
   const [queryLoading, setQueryLoading] = useState(false);
@@ -436,7 +487,7 @@ export default function DataQueryPage() {
     }
 
     // 舊連結 ?setup=traffic → 留在查詢用量，直接操作「開啟提醒」
-    if (params.get("setup") === "traffic") {
+    if (params.get("setup") === "traffic" || params.get("bind") === "ok") {
       setActiveTab("query");
       window.setTimeout(() => {
         document
@@ -462,6 +513,11 @@ export default function DataQueryPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.detail || "查詢失敗");
+      if (isEsimNotInstalledForUsage(data)) {
+        setUsageResult(data);
+        setQueryError(ESIM_NOT_INSTALLED_USAGE_MESSAGE);
+        return;
+      }
       setUsageResult(data);
     } catch (err) {
       setQueryError(err.message || "查詢失敗");
@@ -522,6 +578,20 @@ export default function DataQueryPage() {
               })}
             </div>
           </motion.header>
+
+          {lineBindMessage ? (
+            <div
+              className={cn(
+                "mb-4 rounded-2xl border px-4 py-3 text-[13px] font-semibold leading-relaxed",
+                lineBindStatus === "error"
+                  ? "border-rose-200 bg-rose-50 text-rose-800"
+                  : "border-[#1e4ad1]/15 bg-[#EAF0FB] text-[#1e4ad1]",
+              )}
+              role="status"
+            >
+              {lineBindMessage}
+            </div>
+          ) : null}
 
           <AnimatePresence mode="wait">
             <motion.div

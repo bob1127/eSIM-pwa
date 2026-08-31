@@ -5,10 +5,10 @@ import dynamic from "next/dynamic";
 import MaterialIcon from "@/components/MaterialIcon";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { useAuth } from "@/hooks/useAuth";
-import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
+import { formatMb, usagePercent, isEsimUsageExpired, resolveEsimExpiryDisplay } from "@/lib/esimUsageFormat";
 import { detectDeviceLabel } from "@/lib/deviceDetect";
 import { pickInstallUrlForOs } from "@/lib/esimInstallLinks";
-import { inferEsimInstalled } from "@/lib/esimInstallStatus";
+import { inferEsimInstalled, isEsimNotInstalledForUsage, canShowEsimUsageStats, canEnableTrafficAlertForUsage, ESIM_NOT_INSTALLED_USAGE_MESSAGE } from "@/lib/esimInstallStatus";
 import { getPushEndpoint } from "@/lib/pushBind";
 import { subscribeToPush } from "@/lib/pushSubscribe";
 import { detectPushSupport, getBrowserContext } from "@/lib/pushSupport";
@@ -81,14 +81,14 @@ export const QUERY_DEMO_USAGE = {
     note: "假資料預覽",
   },
   "Topup-DEMO-JP-5D": {
-    remainingMb: 1024,
+    remainingMb: 0,
     totalMb: 1024,
-    usedMb: 0,
-    status: "Unused",
+    usedMb: 1024,
+    status: "Expired",
     expiresAt: "2026-08-28",
     productName: "【測試】日本 eSIM 5日 吃到飽",
     iccid: "8946200100000000002",
-    note: "假資料預覽",
+    note: "假資料預覽 · 已過期",
   },
   "Topup-DEMO-KR-7D": {
     remainingMb: 180,
@@ -110,11 +110,27 @@ function shortName(name = "") {
 }
 
 function statusTone(result) {
+  if (isEsimUsageExpired(result)) {
+    return { label: "已過期", tone: "slate" };
+  }
+  if (result && isEsimNotInstalledForUsage(result)) {
+    return { label: "尚未安裝", tone: "slate" };
+  }
   const pct = usagePercent(result?.remainingMb, result?.totalMb);
   if (pct == null) return null;
   if (pct <= 15) return { label: "流量偏低", tone: "amber" };
   if (pct <= 40) return { label: "用量正常", tone: "blue" };
   return { label: "剩餘充足", tone: "mint" };
+}
+
+function esimResultKey(esim) {
+  return String(esim?.topupId || esim?.iccid || "");
+}
+
+function resultForEsim(esim, results) {
+  const key = esimResultKey(esim);
+  if (!key) return null;
+  return results[key] ?? null;
 }
 
 function isDesktopOs(os) {
@@ -514,13 +530,19 @@ export default function MemberEsimQuerySheet({
 
   const queryUsage = useCallback(
     async (esim, opts = {}) => {
-      const { skipNotInstalledPopup = false } = opts;
+      const { skipNotInstalledPopup = false, force = false } = opts;
       const key = esim.topupId || esim.iccid;
       if (!key) {
         setQueryError("此方案缺少查詢編號");
         return;
       }
       const resultKey = String(key);
+      const existing = results[resultKey];
+      if (!force && isEsimUsageExpired(existing)) {
+        setSelectedId(resultKey);
+        setQueryError("");
+        return;
+      }
       setSelectedId(resultKey);
       setQueryingId(resultKey);
       setQueryError("");
@@ -531,7 +553,10 @@ export default function MemberEsimQuerySheet({
             QUERY_DEMO_USAGE[key] ||
             QUERY_DEMO_USAGE[QUERY_DEMO_ESIMS[0].topupId];
           setResults((prev) => ({ ...prev, [resultKey]: { ...fake } }));
-          if (!skipNotInstalledPopup && inferEsimInstalled(fake) === false) {
+          if (isEsimUsageExpired(fake)) {
+            return;
+          }
+          if (!skipNotInstalledPopup && isEsimNotInstalledForUsage(fake)) {
             setNotInstalledEsim(esim);
           }
           return;
@@ -575,22 +600,49 @@ export default function MemberEsimQuerySheet({
             }),
           );
         }
-        if (!skipNotInstalledPopup && inferEsimInstalled(data) === false) {
-          setNotInstalledEsim(esim);
+        if (isEsimUsageExpired(data)) {
+          return;
         }
+        if (isEsimNotInstalledForUsage(data)) {
+          if (!skipNotInstalledPopup) setNotInstalledEsim(esim);
+          setQueryError(ESIM_NOT_INSTALLED_USAGE_MESSAGE);
+          return;
+        }
+        setQueryError("");
       } catch (e) {
         setQueryError(e.message || "查詢失敗");
       } finally {
         setQueryingId(null);
       }
     },
-    [authHeaders, demoMode],
+    [authHeaders, demoMode, results],
   );
 
   const enableTrafficAlert = useCallback(
     async (esim) => {
       const key = esim.topupId || esim.iccid;
       if (!key || alertBusyId) return;
+
+      const existing = results[String(key)];
+      if (isEsimUsageExpired(existing)) {
+        setQueryError("此 eSIM 已過期，無法開啟流量提醒。");
+        return;
+      }
+      if (!existing || isEsimNotInstalledForUsage(existing)) {
+        if (existing && isEsimNotInstalledForUsage(existing)) {
+          setNotInstalledEsim(esim);
+        }
+        setQueryError(
+          existing
+            ? ESIM_NOT_INSTALLED_USAGE_MESSAGE
+            : "請先查詢流量，確認 eSIM 已安裝後再開啟提醒。",
+        );
+        return;
+      }
+      if (!canEnableTrafficAlertForUsage(existing)) {
+        setQueryError("尚無可用用量資料，請稍後再試。");
+        return;
+      }
 
       if (demoMode) {
         setAlertBusyId(key);
@@ -676,22 +728,32 @@ export default function MemberEsimQuerySheet({
         setAlertBusyId(null);
       }
     },
-    [alertBusyId, demoMode, isLoggedIn, token, authHeaders],
+    [alertBusyId, demoMode, isLoggedIn, token, authHeaders, results],
   );
 
   const handleQueryClick = useCallback(
     (esim) => {
       const key = esim?.topupId || esim?.iccid;
+      const existing = key ? results[String(key)] : null;
+      if (isEsimUsageExpired(existing)) return;
+      if (isEsimNotInstalledForUsage(existing)) {
+        setNotInstalledEsim(esim);
+        setQueryError(ESIM_NOT_INSTALLED_USAGE_MESSAGE);
+        return;
+      }
       if (key) {
         setManualQueryIds((prev) => new Set(prev).add(String(key)));
       }
       queryUsage(esim);
     },
-    [queryUsage],
+    [queryUsage, results],
   );
 
   const handleInstallClick = useCallback(
     (esim) => {
+      const key = esim?.topupId || esim?.iccid;
+      const existing = key ? results[String(key)] : null;
+      if (isEsimUsageExpired(existing)) return;
       const result = openEsimInstall(esim, deviceOs);
       if (result.reason === "show_qr") {
         setQueryError("");
@@ -710,7 +772,7 @@ export default function MemberEsimQuerySheet({
         queryUsage(esim);
       }
     },
-    [deviceOs, queryUsage],
+    [deviceOs, queryUsage, results],
   );
 
   const closeInstallQrModal = useCallback(() => {
@@ -796,16 +858,6 @@ export default function MemberEsimQuerySheet({
     };
   }, [demoMode, isLoggedIn, refreshBoundAlert]);
 
-  useEffect(() => {
-    if (loadingList || !esims.length || !selectedId) return;
-    if (autoQueriedRef.current) return;
-    if (results[selectedId] || queryingId) return;
-    const first = esims.find((e) => (e.topupId || e.iccid) === selectedId);
-    if (!first) return;
-    autoQueriedRef.current = true;
-    queryUsage(first);
-  }, [loadingList, esims, selectedId, results, queryingId, queryUsage]);
-
   const chartEsims = useMemo(
     () =>
       esims.map((e) => ({
@@ -885,7 +937,11 @@ export default function MemberEsimQuerySheet({
           ) : (
             <TrafficUsageCharts
               esims={chartEsims}
-              results={results}
+              results={Object.fromEntries(
+                Object.entries(results).filter(([, v]) =>
+                  canShowEsimUsageStats(v),
+                ),
+              )}
               selectedId={selectedId}
               loading={Boolean(queryingId) && !selectedResult}
             />
@@ -922,21 +978,37 @@ export default function MemberEsimQuerySheet({
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4 -mx-1 px-1">
               {esims.map((esim, i) => {
                 const id = esim.topupId || esim.iccid;
-                const active = id === selectedId;
+                const idStr = String(id || "");
+                const active = idStr === String(selectedId || "");
+                const expired = isEsimUsageExpired(
+                  results[idStr] ?? results[id],
+                );
                 return (
                   <button
                     key={id || i}
                     type="button"
-                    onClick={() => queryUsage(esim)}
+                    disabled={expired}
+                    onClick={() => {
+                      if (expired) return;
+                      setSelectedId(id);
+                    }}
+                    title={
+                      expired
+                        ? "此 eSIM 已過期，無法查詢或開啟提醒"
+                        : shortName(esim.productName)
+                    }
                     className={cn(
                       "shrink-0 rounded-full px-3.5 py-2 text-[12px] font-bold border transition",
-                      active
-                        ? "border-[#1e8fff] bg-[#EAF0FB] text-[#1e4ad1] shadow-sm"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
+                      expired
+                        ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-70"
+                        : active
+                          ? "border-[#1e8fff] bg-[#EAF0FB] text-[#1e4ad1] shadow-sm"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
                     )}
                   >
-                    {i === 0 && active ? "選取 · " : ""}
-                    {shortName(esim.productName)}
+                    {expired
+                      ? `已過期 · ${shortName(esim.productName)}`
+                      : `${i === 0 && active ? "選取 · " : ""}${shortName(esim.productName)}`}
                   </button>
                 );
               })}
@@ -952,69 +1024,108 @@ export default function MemberEsimQuerySheet({
                 const idStr = String(id || "");
                 const active = idStr === String(selectedId || "");
                 const r = results[idStr] ?? results[id];
+                const expired = isEsimUsageExpired(r);
+                const notInstalled = isEsimNotInstalledForUsage(r);
+                const canShowUsage = canShowEsimUsageStats(r);
                 const tone = statusTone(r);
                 const remaining =
-                  r?.remainingMb != null ? formatMb(r.remainingMb) : null;
+                  canShowUsage && r?.remainingMb != null
+                    ? formatMb(r.remainingMb)
+                    : null;
                 const isQuerying = String(queryingId || "") === idStr;
-                const queriedOk = Boolean(r);
+                const queriedOk = Boolean(r) && canShowUsage;
                 const queryActive =
-                  manualQueryIds.has(idStr) && queriedOk && !isQuerying;
+                  !expired &&
+                  !notInstalled &&
+                  manualQueryIds.has(idStr) &&
+                  queriedOk &&
+                  !isQuerying;
                 const installed = inferEsimInstalled(r);
                 // 僅在有實際用量／使用中證據時標「已開通」；勿用 active_time（未掃 QR 也可能有）
-                const installSuccess = installed === true;
+                const installSuccess = !expired && installed === true;
                 const alertOn =
+                  !expired &&
                   boundTopupId != null &&
                   (String(boundTopupId) === idStr ||
                     String(boundTopupId) === String(esim.topupId || ""));
                 const alertLoading = alertBusyId === id;
-                const dotColor = i === 0 ? "#1e8fff" : "#22c55e";
+                const dotColor = expired
+                  ? "#94a3b8"
+                  : i === 0
+                    ? "#1e8fff"
+                    : "#22c55e";
+                const expiry = resolveEsimExpiryDisplay(r);
+                const expirySuffix = expiry.shortLine ? ` · ${expiry.shortLine}` : "";
 
                 return (
                   <div
                     key={id || i}
+                    aria-disabled={expired}
                     className={cn(
                       "relative w-full rounded-2xl border px-3.5 py-3 transition flex items-center gap-2 sm:gap-3",
-                      active
-                        ? "border-[#1e8fff] bg-[#F7FAFF] shadow-[0_8px_24px_-16px_rgba(30,74,209,0.45)]"
-                        : "border-slate-200 bg-white hover:border-slate-300",
+                      expired
+                        ? "border-slate-200 bg-slate-100/90 opacity-70 grayscale"
+                        : active
+                          ? "border-[#1e8fff] bg-[#F7FAFF] shadow-[0_8px_24px_-16px_rgba(30,74,209,0.45)]"
+                          : "border-slate-200 bg-white hover:border-slate-300",
                     )}
                   >
                     <button
                       type="button"
-                      onClick={() => setSelectedId(id)}
-                      className="relative flex min-w-0 flex-1 items-center gap-3 text-left"
+                      disabled={expired}
+                      onClick={() => {
+                        if (expired) return;
+                        setSelectedId(id);
+                      }}
+                      className={cn(
+                        "relative flex min-w-0 flex-1 items-center gap-3 text-left",
+                        expired && "cursor-not-allowed",
+                      )}
                     >
                       <span
                         className="relative z-[1] flex h-5 w-5 shrink-0 items-center justify-center rounded-full ring-4 ring-white"
                         style={{ backgroundColor: dotColor }}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="text-[14px] font-bold text-slate-900 truncate">
+                        <p
+                          className={cn(
+                            "text-[14px] font-bold truncate",
+                            expired ? "text-slate-500" : "text-slate-900",
+                          )}
+                        >
                           {esim.productName || "eSIM 方案"}
                         </p>
                         <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-                          {isQuerying
-                            ? "查詢流量中…"
-                            : remaining
-                              ? `剩餘 ${remaining}${r?.expiresAt ? ` · 效期 ${String(r.expiresAt).slice(0, 10)}` : ""}`
-                              : queriedOk &&
-                                  r?.usedMb != null &&
-                                  Number(r.usedMb) > 0
-                                ? `已用 ${formatMb(r.usedMb)}${r?.expiresAt ? ` · 效期至 ${String(r.expiresAt).slice(0, 10)}` : ""}`
-                                : queriedOk && installSuccess
-                                  ? `使用中${r?.expiresAt ? ` · 效期至 ${String(r.expiresAt).slice(0, 10)}` : ""}`
-                                  : queriedOk && r?.status
-                                    ? `狀態 ${r.status}${esim.iccid ? ` · 訂單 …${String(esim.iccid).slice(-6)}` : ""}`
-                                    : esim.iccid
-                                      ? `訂單 ICCID …${String(esim.iccid).slice(-6)} · 點右側查流量`
-                                      : "選擇後點右側查詢流量"}
+                          {expired
+                            ? `已過期${expirySuffix}${r?.usedMb != null && Number(r.usedMb) > 0 ? ` · 已用 ${formatMb(r.usedMb)}` : ""}`
+                            : isQuerying
+                              ? "查詢流量中…"
+                              : notInstalled
+                                ? "尚未安裝 · 請先安裝後再查詢"
+                                : remaining
+                                  ? `剩餘 ${remaining}${expirySuffix}`
+                                  : queriedOk &&
+                                      r?.usedMb != null &&
+                                      Number(r.usedMb) > 0
+                                    ? `已用 ${formatMb(r.usedMb)}${expirySuffix}`
+                                    : queriedOk && installSuccess
+                                      ? `使用中${expirySuffix}`
+                                      : queriedOk && r?.status
+                                        ? `狀態 ${r.status}${esim.iccid ? ` · 訂單 …${String(esim.iccid).slice(-6)}` : ""}`
+                                        : queriedOk && expiry.shortLine
+                                          ? expiry.shortLine
+                                          : esim.iccid
+                                            ? `訂單 ICCID …${String(esim.iccid).slice(-6)} · 點右側查流量`
+                                            : "選擇後點右側查詢流量"}
                         </p>
                         {esim.iccid ? (
                           <p className="text-[10px] font-mono text-slate-400 mt-0.5 truncate">
                             訂單 ICCID …{String(esim.iccid).slice(-6)}
-                            {installSuccess
-                              ? " · 已偵測到用量"
-                              : " · 本機「關於本機」可能顯示不同設備 ICCID（正常）"}
+                            {expired
+                              ? " · 方案已結束"
+                              : installSuccess
+                                ? " · 已偵測到用量"
+                                : " · 本機「關於本機」可能顯示不同設備 ICCID（正常）"}
                           </p>
                         ) : null}
                         {tone ? (
@@ -1027,10 +1138,18 @@ export default function MemberEsimQuerySheet({
                                 "bg-emerald-100 text-emerald-700",
                               tone.tone === "blue" &&
                                 "bg-[#EAF0FB] text-[#1e4ad1]",
+                              tone.tone === "slate" &&
+                                "bg-slate-200 text-slate-600",
                             )}
                           >
                             {tone.label}
                           </span>
+                        ) : null}
+                        {expired ? (
+                          <p className="mt-1.5 text-[11px] font-semibold text-slate-500 leading-snug">
+                            此 eSIM
+                            已過期，無法再查詢流量、安裝或開啟提醒。請另行購買新方案。
+                          </p>
                         ) : null}
                       </div>
                     </button>
@@ -1039,29 +1158,55 @@ export default function MemberEsimQuerySheet({
                       <CircleAction
                         icon="add"
                         label="查詢流量"
-                        loading={isQuerying && manualQueryIds.has(idStr)}
+                        loading={
+                          !expired &&
+                          isQuerying &&
+                          manualQueryIds.has(idStr)
+                        }
                         active={queryActive}
-                        disabled={isQuerying}
+                        disabled={expired || isQuerying || notInstalled}
+                        title={
+                          expired
+                            ? "已過期，無法查詢"
+                            : notInstalled
+                              ? "尚未安裝，請先安裝 eSIM"
+                              : "查詢流量"
+                        }
                         onClick={() => handleQueryClick(esim)}
                       />
 
                       <CircleAction
-                        icon={installSuccess ? "check" : "sim_card_download"}
-                        label={installSuccess ? "使用中" : "安裝 eSIM"}
+                        icon={
+                          expired
+                            ? "event_busy"
+                            : installSuccess
+                              ? "check"
+                              : "sim_card_download"
+                        }
+                        label={
+                          expired
+                            ? "已過期"
+                            : installSuccess
+                              ? "使用中"
+                              : "安裝 eSIM"
+                        }
                         active={installSuccess}
+                        disabled={expired}
                         title={
-                          installSuccess
-                            ? "供應商已偵測到用量，方案使用中"
-                            : isDesktopOs(deviceOs)
-                              ? "顯示安裝 QR Code"
-                              : installOsLabel
-                                ? `一鍵安裝（${installOsLabel}）`
-                                : "一鍵安裝 eSIM"
+                          expired
+                            ? "此方案已過期"
+                            : installSuccess
+                              ? "供應商已偵測到用量，方案使用中"
+                              : isDesktopOs(deviceOs)
+                                ? "顯示安裝 QR Code"
+                                : installOsLabel
+                                  ? `一鍵安裝（${installOsLabel}）`
+                                  : "一鍵安裝 eSIM"
                         }
                         onClick={() => handleInstallClick(esim)}
                       />
 
-                      {iosNeedsPwa ? (
+                      {iosNeedsPwa && !expired ? (
                         <CircleAction
                           icon="install_mobile"
                           label="安裝 App"
@@ -1070,11 +1215,33 @@ export default function MemberEsimQuerySheet({
                         />
                       ) : (
                         <CircleAction
-                          icon={alertOn ? "notifications" : "notifications_active"}
-                          label={alertOn ? "已開提醒" : "開啟提醒"}
-                          loading={alertLoading}
+                          icon={
+                            alertOn ? "notifications" : "notifications_active"
+                          }
+                          label={
+                            expired
+                              ? "無法提醒"
+                              : alertOn
+                                ? "已開提醒"
+                                : "開啟提醒"
+                          }
+                          loading={!expired && alertLoading}
                           active={alertOn && !alertLoading}
-                          disabled={Boolean(alertBusyId)}
+                          disabled={
+                            expired ||
+                            Boolean(alertBusyId) ||
+                            notInstalled ||
+                            !canShowUsage
+                          }
+                          title={
+                            expired
+                              ? "已過期，無法開啟流量提醒"
+                              : notInstalled || !canShowUsage
+                                ? "請先安裝 eSIM 並查詢到用量後再開啟"
+                                : alertOn
+                                  ? "已開啟流量提醒"
+                                  : "開啟流量提醒"
+                          }
                           onClick={() => enableTrafficAlert(esim)}
                         />
                       )}
@@ -1084,7 +1251,33 @@ export default function MemberEsimQuerySheet({
               })}
             </div>
 
-            {selected && selectedResult && (
+            {selected && selectedResult && isEsimUsageExpired(selectedResult) && (
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-100 px-3.5 py-3">
+                <p className="text-[13px] font-bold text-slate-700 flex items-center gap-1.5">
+                  <MaterialIcon name="event_busy" size={16} />
+                  此 eSIM 已過期
+                </p>
+                <p className="mt-1 text-[12px] text-slate-500 leading-relaxed">
+                  {resolveEsimExpiryDisplay(selectedResult).line ||
+                    "方案已結束"}
+                  。無法再查詢流量、安裝或開啟提醒，請另行購買新方案。
+                </p>
+              </div>
+            )}
+
+            {selected && selectedResult && !isEsimUsageExpired(selectedResult) && isEsimNotInstalledForUsage(selectedResult) && (
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3">
+                <p className="text-[13px] font-bold text-amber-900 flex items-center gap-1.5">
+                  <MaterialIcon name="sim_card_alert" size={16} />
+                  尚未安裝 eSIM
+                </p>
+                <p className="mt-1 text-[12px] text-amber-800 leading-relaxed">
+                  {ESIM_NOT_INSTALLED_USAGE_MESSAGE}
+                </p>
+              </div>
+            )}
+
+            {selected && selectedResult && canShowEsimUsageStats(selectedResult) && (
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-700">
                   <MaterialIcon name="data_usage" size={14} />
@@ -1138,7 +1331,8 @@ export default function MemberEsimQuerySheet({
                 {selectedResult.expiresAt && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-700">
                     <MaterialIcon name="event" size={14} />
-                    {String(selectedResult.expiresAt).slice(0, 10)}
+                    {resolveEsimExpiryDisplay(selectedResult).line ||
+                      String(selectedResult.expiresAt).slice(0, 10)}
                   </span>
                 )}
               </div>

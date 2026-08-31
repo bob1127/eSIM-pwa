@@ -337,7 +337,6 @@ const CheckoutForm = ({
     const normalizedForm = getNormalizedFormData();
 
     if (isSubmittingLock) {
-      console.log("⏳ 系統處理中，已攔截重複點擊！");
       return;
     }
 
@@ -347,7 +346,6 @@ const CheckoutForm = ({
 
     try {
       await persistProfileIfNeeded();
-      console.log("🚀 1. 開始呼叫 Next.js 中間層 API...");
 
       // 推薦歸因改由後端直接讀取伺服器簽章的 HttpOnly Cookie
       // （見 lib/referralSignature.js），瀏覽器端不再讀取／傳遞代碼，
@@ -367,7 +365,6 @@ const CheckoutForm = ({
       });
 
       const orderResult = await orderRes.json();
-      console.log("📦 2. Next.js 建立訂單結果:", orderResult);
 
       if (!orderResult.success) {
         if (orderResult.code === "CART_COMPLETED") {
@@ -391,11 +388,6 @@ const CheckoutForm = ({
       }
 
       const { orderId, amount } = orderResult;
-      console.log(
-        "✅ 3. 拿到 Medusa Order ID:",
-        orderId,
-        `準備跳轉 ${paymentLabel}…`,
-      );
 
       localStorage.removeItem("medusa_cart_id");
 
@@ -449,7 +441,6 @@ const CheckoutForm = ({
     const normalizedForm = getNormalizedFormData();
 
     if (isSubmittingLock) {
-      console.log("⏳ 系統處理中，已攔截重複點擊！");
       return;
     }
 

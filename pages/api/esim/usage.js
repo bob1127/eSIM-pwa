@@ -1,4 +1,5 @@
 import { queryEsimUsage, normalizeUsageIccid } from "../../../lib/esimUsageService";
+import { resolveEsimInstallState } from "../../../lib/esimInstallStatus";
 
 /**
  * POST /api/esim/usage
@@ -17,5 +18,8 @@ export default async function handler(req, res) {
   if (!result.ok) {
     return res.status(result.status || 500).json({ error: result.error });
   }
-  return res.status(200).json(result.data);
+  return res.status(200).json({
+    ...result.data,
+    installState: resolveEsimInstallState(result.data),
+  });
 }

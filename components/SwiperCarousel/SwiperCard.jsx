@@ -58,8 +58,6 @@ export default () => {
           navigation
           autoplay
           pagination={{ clickable: false }}
-          onSwiper={(swiper) => console.log(swiper)}
-          onSlideChange={() => console.log("slide change")}
         >
           <SwiperSlide className="  ">
             <div className="relative w-full aspect-[16/9] ">

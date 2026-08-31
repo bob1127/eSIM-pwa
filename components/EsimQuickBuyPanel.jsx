@@ -1035,9 +1035,13 @@ export default function EsimQuickBuyPanel({ onCloseSheet } = {}) {
 
   const continueAfterCoverage = useCallback(() => {
     if (!pendingBuy) return;
-    const { product, attrs } = pendingBuy;
+    const { product, variant, attrs } = pendingBuy;
     if (product?.id) markCoverageAck(product.id);
-    const next = getPostCoverageReminder({ telecom: attrs?.telecom });
+    const next = getPostCoverageReminder({
+      telecom: attrs?.telecom,
+      variation: variant,
+      product,
+    });
     if (next) {
       setReminderKind(next);
       return;

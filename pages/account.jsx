@@ -245,11 +245,6 @@ export default function AccountPage() {
 
           const data = await res.json();
           if (data.success && data.medusaCustomerId) {
-            console.log(
-              "✅ [背景同步] Medusa 綁定成功！Customer ID:",
-              data.medusaCustomerId,
-            );
-            // 存進 localStorage，等一下結帳 API 可以抓出來用
             localStorage.setItem("medusa_customer_id", data.medusaCustomerId);
           }
         }
@@ -302,8 +297,8 @@ export default function AccountPage() {
         setPartnerData(partner);
         loadPartnerData(partner.id, authUserId);
       }
-    } catch (err) {
-      console.log("此用戶非分店夥伴");
+    } catch {
+      /* 非夥伴帳號 */
     }
   };
 

@@ -12,6 +12,7 @@ import MobileCardCarousel from "./MobileCardCarousel";
 import MaterialIcon from "@/components/MaterialIcon";
 import { buildLoginUrl } from "@/lib/authRedirect";
 import { buildInstallHintText } from "@/lib/deviceDetect";
+import { useAuth } from "@/hooks/useAuth";
 import { usePWAInstall } from "./usePWAInstall";
 import AppInstallGuideModal from "./AppInstallGuideModal";
 import HeroCountryPlanPicker from "./HeroCountryPlanPicker";
@@ -159,14 +160,24 @@ function MobileHeroCarousel() {
               <img
                 src={slide.image}
                 alt={`Jeko eSIM Banner ${idx + 1}`}
-                className="w-full h-full object-cover object-[center_55%]"
+                className="w-full h-full object-cover"
+                style={{
+                  objectPosition:
+                    slide.objectPosition ||
+                    (idx === 1 ? "center 34%" : "center 55%"),
+                }}
               />
             </picture>
           ) : (
             <img
               src={slide.image}
               alt={`Jeko eSIM Banner ${idx + 1}`}
-              className="w-full h-full object-cover object-[center_55%]"
+              className="w-full h-full object-cover"
+              style={{
+                objectPosition:
+                  slide.objectPosition ||
+                  (idx === 1 ? "center 34%" : "center 55%"),
+              }}
             />
           )}
         </div>
@@ -189,20 +200,6 @@ function MobileHeroCarousel() {
           <MaterialIcon name="arrow_forward" size={16} />
         </Link>
       </div>
-
-      <div className="absolute left-5 bottom-14 z-20 flex items-center gap-1.5">
-        {HERO_SLIDES.map((_, idx) => (
-          <button
-            key={`dot-${idx}`}
-            type="button"
-            aria-label={`切換至第 ${idx + 1} 張`}
-            onClick={() => setActive(idx)}
-            className={`rounded-full transition-all duration-300 ${
-              active === idx ? "w-2 h-2 bg-white" : "w-1.5 h-1.5 bg-white/50"
-            }`}
-          />
-        ))}
-      </div>
     </section>
   );
 }
@@ -210,6 +207,7 @@ function MobileHeroCarousel() {
 /** 圖二：APP 與推播 + 選擇國家方案（手機疊在 hero 下方） */
 function MobileHeroDock() {
   const router = useRouter();
+  const { isLoggedIn, isGuest, authReady } = useAuth();
   const { isInstallable, installPWA, deviceType, isStandalone } =
     usePWAInstall();
   const [showPrompt, setShowPrompt] = useState(false);
@@ -223,6 +221,14 @@ function MobileHeroDock() {
     !isStandalone && (deviceType === "ios" || deviceType === "mac");
 
   const handleTrafficAlert = () => {
+    if (!authReady) return;
+    if (!isLoggedIn || isGuest) {
+      alert("請先註冊或登入會員，才能開啟流量提醒。");
+      router.push(
+        buildLoginUrl("/data-query?setup=traffic#push-notification-section"),
+      );
+      return;
+    }
     if (needsAppleInstall) {
       setShowPrompt(true);
       return;

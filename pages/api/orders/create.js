@@ -54,9 +54,6 @@ export default async function handler(req, res) {
   };
 
   try {
-    console.log(`\n==========================================`);
-    console.log(`[Next.js API] 🚀 開始處理結帳流程（地址/運費），Cart ID: ${cartId}`);
-
     const cartCheck = await fetchMedusa("取得購物車", `${MEDUSA_URL}/store/carts/${cartId}?fields=*items,*items.metadata,*items.variant,*items.variant.sku,*items.variant.metadata,*items.product`, { headers });
     if (cartCheck.cart?.completed_at) {
       return res.status(400).json({
@@ -103,7 +100,6 @@ export default async function handler(req, res) {
       }
     }
 
-    console.log(`[Next.js API] 📍 步驟 1: 更新地址...`);
     await fetchMedusa("更新地址", `${MEDUSA_URL}/store/carts/${cartId}`, {
       method: "POST",
       headers,
@@ -117,7 +113,6 @@ export default async function handler(req, res) {
       }),
     });
 
-    console.log(`[Next.js API] 🚚 步驟 2: 抓取並設定運費方案...`);
     const shipOptionsData = await fetchMedusa("取得運費選項", `${MEDUSA_URL}/store/shipping-options?cart_id=${cartId}`, { headers });
     if (!shipOptionsData.shipping_options || shipOptionsData.shipping_options.length === 0) {
       throw new Error(
@@ -132,7 +127,6 @@ export default async function handler(req, res) {
     const storeId = orderInfo?.store_id || orderInfo?.storeId || null;
     if (storeId) {
       try {
-        console.log(`[Next.js API] 🏪 夥伴店定價覆寫（store_id=${storeId}）...`);
         await applyPartnerCheckoutPricing({ cartId, storeId });
       } catch (pricingErr) {
         if (pricingErr instanceof PricingError) {
@@ -146,11 +140,8 @@ export default async function handler(req, res) {
       }
     }
 
-    console.log(`[Next.js API] 💰 步驟 3: 取得最終金額...`);
     const cartData = await fetchMedusa("取得購物車", `${MEDUSA_URL}/store/carts/${cartId}`, { headers });
     const finalAmount = cartData.cart.total || 0;
-
-    console.log(`[Next.js API] ✅ 地址/運費設定完成，交給 /api/newebpay-generate-form 建單+產生付款表單。`);
 
     // orderId 這裡等於 cartId，藍新表單那一步（呼叫 esim-backend /store/newebpay-checkout）
     // 才會真正把 cart complete 成 Medusa order。

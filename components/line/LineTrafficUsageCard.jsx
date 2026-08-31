@@ -9,7 +9,7 @@ import {
   BarElement,
 } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
-import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
+import { formatMb, usagePercent, resolveEsimExpiryDisplay } from "@/lib/esimUsageFormat";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 ChartJS.register(ArcElement, Tooltip, CategoryScale, LinearScale, BarElement);
@@ -216,7 +216,8 @@ export default function LineTrafficUsageCard({
               </li>
               {usage?.expiresAt ? (
                 <li className="text-[11px] text-[#888888]">
-                  到期 {String(usage.expiresAt).slice(0, 10)}
+                  {resolveEsimExpiryDisplay(usage).line ||
+                    `到期 ${String(usage.expiresAt).slice(0, 16)}`}
                 </li>
               ) : null}
             </ul>

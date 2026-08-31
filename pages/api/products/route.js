@@ -31,21 +31,10 @@ export async function GET(req) {
     // 第一步：通过分类 ID 获取产品
     const productsUrl = `${NEXT_PUBLIC_WP_API_BASE_URL}/wp-json/wc/v3/products?consumer_key=${NEXT_PUBLIC_WC_CONSUMER_KEY}&consumer_secret=${NEXT_PUBLIC_WC_CONSUMER_SECRET}&category=${categoryId}&timestamp=${timestamp}&per_page=100`;
 
-    // 打印请求的 URL，确保 URL 正确
-    console.log('Request URL for products:', productsUrl);
-
     // 使用 axios 获取产品数据
     const response = await axios.get(productsUrl);
 
-    // 打印响应数据，查看是否正确筛选了产品
-    console.log('Fetched products:', response.data);
-
     let products = response.data;
-
-    // 如果没有产品，返回一个提示
-    if (products.length === 0) {
-      console.log('No products found for this category.');
-    }
 
     // 返回筛选后的产品数据
     return new Response(JSON.stringify(products), { status: 200 });

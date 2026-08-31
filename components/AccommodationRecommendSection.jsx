@@ -305,7 +305,7 @@ function HotelCard({ item, onClick }) {
           onClick();
         }
       }}
-      className="group flex flex-col bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-[#00B259]/25 transition-all duration-200 overflow-hidden h-full text-left w-full cursor-pointer"
+      className="group flex flex-col bg-white rounded-2xl border border-gray-200 hover:border-gray-300 transition-colors duration-200 overflow-hidden h-full text-left w-full cursor-pointer"
     >
       <div className="relative overflow-hidden">
         <HotelImageCarousel item={item} aspectClass="aspect-[4/3]" />

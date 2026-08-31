@@ -100,7 +100,7 @@ export default function CarRentalCharterSection() {
   return (
     <section
       id="car-rental-charter"
-      className="w-full bg-[#f0f1f3] pt-12 lg:pt-14 pb-4 scroll-mt-28"
+      className="w-full bg-white pt-12 lg:pt-14 pb-4 scroll-mt-28"
     >
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <HomeSectionHeader

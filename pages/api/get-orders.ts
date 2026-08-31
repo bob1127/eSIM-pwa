@@ -80,12 +80,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!Array.isArray(list)) list = [];
 
-    // 除錯列印
-    console.log("✅ WooCommerce 訂單清單（列表）:");
-    list.forEach((o) =>
-      console.log(`- #${o.id} | 狀態：${o.status} | customer_id: ${o.customer_id}`)
-    );
-
     // 3) 逐筆抓「單筆詳情」，確保 meta_data / line_items 完整
     const full = await Promise.all(
       list.map(async (o) => {

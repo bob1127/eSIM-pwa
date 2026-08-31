@@ -41,8 +41,6 @@ export default async function handler(req, res) {
       return res.status(401).json({ message: "身分驗證失敗，無法同步至商店" });
     }
 
-    console.log(`[Medusa Sync] 準備同步會員: ${validatedEmail}`);
-
     // 🚀 向 Medusa 查詢或建立顧客
     // 1. 先查
     const checkRes = await fetch(`${MEDUSA_URL}/store/customers?email=${validatedEmail}`);
@@ -51,7 +49,6 @@ export default async function handler(req, res) {
 
     // 2. 沒找到就建一筆
     if (!customer) {
-      console.log(`[Medusa Sync] 建立新會員中...`);
       const createRes = await fetch(`${MEDUSA_URL}/store/customers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

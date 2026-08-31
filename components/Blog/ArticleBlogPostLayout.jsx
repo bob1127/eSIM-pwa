@@ -539,28 +539,28 @@ export default function ArticleBlogPostLayout({
   return (
     <div className="bg-white min-h-screen pt-10 pb-20 font-sans text-[#333]">
       <div className="max-w-[1280px] w-[92%] mx-auto pt-6 md:pt-10">
+        {/* 精選圖：主欄＋側欄同寬滿版、橫式 21:9 */}
+        <div className="relative w-full aspect-[21/9] overflow-hidden bg-[#f0f0f0] mb-6 md:mb-8">
+          <img
+            src={bannerImage}
+            alt={titleText}
+            className="absolute inset-0 block h-full w-full object-cover"
+          />
+          <div className="absolute top-4 left-4 flex flex-col gap-2 items-start pointer-events-none z-10">
+            <span className="bg-black/70 text-white text-[11px] font-bold px-2.5 py-1 rounded-full tracking-wide">
+              {primaryCat}
+            </span>
+            {articleCountry && articleCountry !== primaryCat && (
+              <span className="bg-white text-[#111] text-[12px] font-bold px-2.5 py-1">
+                {articleCountry}
+              </span>
+            )}
+          </div>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-12 items-start">
           {/* ── 主欄 ── */}
           <main className="w-full lg:flex-1 min-w-0">
-            {/* 特色圖 */}
-            <div className="relative w-full aspect-[16/9] md:aspect-[2/1] overflow-hidden bg-[#f0f0f0] mb-6 md:mb-8">
-              <img
-                src={bannerImage}
-                alt={titleText}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute top-4 left-4 flex flex-col gap-2 items-start">
-                <span className="bg-black/70 text-white text-[11px] font-bold px-2.5 py-1 rounded-full tracking-wide">
-                  {primaryCat}
-                </span>
-                {articleCountry && articleCountry !== primaryCat && (
-                  <span className="bg-white text-[#111] text-[12px] font-bold px-2.5 py-1">
-                    {articleCountry}
-                  </span>
-                )}
-              </div>
-            </div>
-
             {/* 標題 — 字級照舊 */}
             <h1
               className="seo-speakable-title text-[24px] md:text-[28px] font-bold text-[#111] leading-[1.5] mb-4 tracking-tight"

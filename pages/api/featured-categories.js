@@ -16,8 +16,6 @@ const getWooCommerceUrl = (endpoint, params = {}) => {
 
 export default async function handler(req, res) {
   try {
-    console.log("🚀 [API] 正在抓取所有分類 (排除未分類模式)...");
-
     const url = getWooCommerceUrl("products/categories", {
       per_page: 100,      // 抓取上限 100 個
       hide_empty: false,  // 強制顯示沒商品的分類
@@ -45,8 +43,6 @@ export default async function handler(req, res) {
 
     // 依照商品數量排序 (多的排前面)
     const sortedCategories = filteredCategories.sort((a, b) => b.count - a.count);
-
-    console.log(`✅ [API] 成功回傳 ${sortedCategories.length} 個分類 (已排除未分類)`);
 
     res.status(200).json(sortedCategories);
 

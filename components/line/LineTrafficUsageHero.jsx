@@ -10,7 +10,7 @@ import {
 } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import { motion } from "framer-motion";
-import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
+import { formatMb, usagePercent, resolveEsimExpiryDisplay } from "@/lib/esimUsageFormat";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 ChartJS.register(ArcElement, Tooltip, CategoryScale, LinearScale, BarElement);
@@ -111,7 +111,7 @@ export default function LineTrafficUsageHero({
             <p className="mt-0.5 text-[12px] text-[#3A5A8C]">
               已用 {formatMb(used)} · 總量 {formatMb(total)}
               {usage?.expiresAt
-                ? ` · 到期 ${String(usage.expiresAt).slice(0, 10)}`
+                ? ` · ${resolveEsimExpiryDisplay(usage).shortLine || `到期 ${String(usage.expiresAt).slice(0, 16)}`}`
                 : ""}
             </p>
             {onRefresh ? (

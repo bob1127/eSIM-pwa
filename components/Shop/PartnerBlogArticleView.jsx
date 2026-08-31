@@ -319,6 +319,7 @@ export default function PartnerBlogArticleView({
                 store={store}
                 posts={sidebarPosts}
                 active="article"
+                variant={isMain ? "main" : "partner"}
                 articleHref={articleHref}
                 listHref={listHref}
                 showSearch={false}
@@ -360,11 +361,22 @@ export default function PartnerBlogArticleView({
               </p>
               <div className="mt-4">
                 <Link
-                  href={`/p/${domain}/`}
+                  href={isMain ? "/" : `/p/${domain}/`}
                   className="text-[12px] text-[#0A6CD0] hover:underline"
                 >
-                  賣場首頁
+                  {isMain ? "官網首頁" : "賣場首頁"}
                 </Link>
+                {isMain ? (
+                  <>
+                    <span className="mx-2 text-slate-300">·</span>
+                    <Link
+                      href="/blog/"
+                      className="text-[12px] text-[#0A6CD0] hover:underline"
+                    >
+                      旅遊文章
+                    </Link>
+                  </>
+                ) : null}
               </div>
             </div>
           ) : null}

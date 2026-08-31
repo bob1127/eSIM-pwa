@@ -33,7 +33,7 @@ import CoveragePromptModal, {
   markCoverageAck,
 } from "../../../components/product/CoveragePromptModal";
 import IijApnReminderModal, {
-  isIijDocomoTelecom,
+  needsIijManualApnReminder,
 } from "../../../components/product/IijApnReminderModal";
 import AuKddiApnReminderModal, {
   needsAuKddiManualApnReminder,
@@ -139,6 +139,8 @@ import {
   formatDataAmountMain,
   getVariationOptionAttrs,
   inferDefaultTelecomFromVariations,
+  personalizeIntroBulletsForDataAmount,
+  injectHighSpeedQuotaIntoFupNotice,
 } from "@/lib/dataAmountLabel";
 import { hasCarrierContentMap } from "../../../lib/productCarrierMetaFallback";
 import { buildLoginUrl } from "@/lib/authRedirect";
@@ -3069,7 +3071,13 @@ export default function ProductPage({
   /** 涵蓋確認後／略過涵蓋後：IIJ / SoftBank 手動 APN 再跳提醒 */
   const continueAfterCoverageOrDirect = (action) => {
     const telecom = selectedAttributes?.telecom;
-    if (isIijDocomoTelecom(telecom)) {
+    if (
+      needsIijManualApnReminder(
+        telecom,
+        currentVariation,
+        product?.slug || product?.handle,
+      )
+    ) {
       setPendingPurchaseAction(action);
       setIijApnPromptOpen(true);
       return;
@@ -3107,7 +3115,13 @@ export default function ProductPage({
       setAuApnPromptOpen(true);
       return;
     }
-    if (isIijDocomoTelecom(telecom)) {
+    if (
+      needsIijManualApnReminder(
+        telecom,
+        currentVariation,
+        product?.slug || product?.handle,
+      )
+    ) {
       setPendingPurchaseAction(action);
       setIijApnPromptOpen(true);
       return;
@@ -3160,9 +3174,29 @@ export default function ProductPage({
   const activeCarrierInfo =
     CARRIER_INFO_MAP[carrierName] || CARRIER_INFO_MAP.default;
   const marketingConfig = activeCarrierInfo.marketingBox;
-  const introBullets = resolveIntroBullets(product, carrierName);
+  const selectedDataAmount =
+    selectedAttributes.data_amount ||
+    getVariationOptionAttrs(currentVariation).data_amount;
+  const introBullets = useMemo(() => {
+    const base = resolveIntroBullets(product, carrierName);
+    return personalizeIntroBulletsForDataAmount(base, selectedDataAmount);
+  }, [product, carrierName, selectedDataAmount]);
   const actualExperience = resolveActualExperience(product, carrierName);
-  const overviewNotices = resolveOverviewNotices(product, carrierName);
+  const overviewNotices = useMemo(() => {
+    const base = resolveOverviewNotices(product, carrierName);
+    if (!base || !selectedDataAmount) return base;
+    return {
+      ...base,
+      ...(base.fup_notice
+        ? {
+            fup_notice: injectHighSpeedQuotaIntoFupNotice(
+              base.fup_notice,
+              selectedDataAmount,
+            ),
+          }
+        : {}),
+    };
+  }, [product, carrierName, selectedDataAmount]);
   const carrierSpecItems = useMemo(() => {
     const specs = resolveCarrierSpecs(product, carrierName, currentVariation);
     return buildCarrierSpecDisplayItems(specs);

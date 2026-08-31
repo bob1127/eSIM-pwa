@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
-import { formatMb } from "@/lib/esimUsageFormat";
+import { formatMb, resolveEsimExpiryDisplay } from "@/lib/esimUsageFormat";
 
 /**
  * LINE「開啟流量提醒」— 仿叫車介面
@@ -535,7 +535,10 @@ export default function LineIccidScreen({
                           <p>已用 {formatMb(viewUsage.usedMb)}</p>
                         ) : null}
                         {viewUsage.expiresAt ? (
-                          <p>到期 {String(viewUsage.expiresAt).slice(0, 10)}</p>
+                          <p>
+                            {resolveEsimExpiryDisplay(viewUsage).line ||
+                              `到期 ${String(viewUsage.expiresAt).slice(0, 16)}`}
+                          </p>
                         ) : null}
                         {viewEsim?.productName ? (
                           <p className="text-[12px] text-white/75">

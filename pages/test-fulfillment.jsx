@@ -18,8 +18,6 @@ export default function TestFulfillmentPage() {
     setResult(null);
 
     try {
-      console.log(`🚀 開始手動觸發訂單 ${orderId} 的發貨流程...`);
-
       const res = await fetch("/api/fulfillment/send-esim", {
         method: "POST",
         headers: {

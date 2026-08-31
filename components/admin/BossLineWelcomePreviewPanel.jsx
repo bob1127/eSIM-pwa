@@ -9,7 +9,6 @@ import {
 } from "@/lib/lineWelcomeCopy";
 import {
   DEFAULT_LINE_WELCOME_SETTINGS,
-  buildWelcomeFollowTextFromSettings,
   flexPreviewFromSettings,
 } from "@/lib/lineWelcomeSettings";
 import { QuarterRing } from "@/components/ui/QuarterRing";
@@ -67,14 +66,6 @@ export default function BossLineWelcomePreviewPanel() {
   }, [load]);
 
   const state = useMemo(() => getWelcomeScenarioState(scenario), [scenario]);
-  const welcomeText = useMemo(
-    () =>
-      buildWelcomeFollowTextFromSettings(draft, {
-        siteUrl: "https://www.jeko-esim.com.tw",
-        ...state,
-      }),
-    [draft, state],
-  );
   const chips = useMemo(
     () =>
       getWelcomeQuickReplyLabels({
@@ -92,7 +83,7 @@ export default function BossLineWelcomePreviewPanel() {
     [draft.offHours],
   );
 
-  const messageCount = 4 + (showOffHours ? 1 : 0);
+  const messageCount = 2 + (showOffHours ? 1 : 0);
 
   const patch = (partial) => setDraft((prev) => ({ ...prev, ...partial }));
   const patchCard = (idx, partial) => {
@@ -172,11 +163,13 @@ export default function BossLineWelcomePreviewPanel() {
               加好友歡迎訊息 · 設計與編輯
             </h2>
             <p className="mt-1.5 text-sm text-slate-600 leading-relaxed max-w-2xl">
-              左側即時預覽，右側可改文案與圖片。儲存後寫入{" "}
+              加好友僅發<strong className="mx-0.5">輪播 + ICCID 卡</strong>
+              （不另發歡迎長文；新會員 50 元券仍會背景發放）。請關閉 LINE
+              OA「自動回應」，避免重複訊息。儲存後寫入{" "}
               <code className="text-[11px] bg-slate-100 px-1 rounded">
                 platform_settings
               </code>
-              ，webhook 加好友時會套用。
+              。
             </p>
             {meta?.updatedAt ? (
               <p className="mt-1 text-[11px] text-slate-400">
@@ -261,9 +254,8 @@ export default function BossLineWelcomePreviewPanel() {
         {/* 預覽 */}
         <div className="flex justify-center xl:justify-start xl:sticky xl:top-4 xl:self-start">
           <PhonePreview
-            welcomeText={welcomeText}
             chips={chips}
-            carouselTitle={draft.carouselTitle || "Jeko 推薦 原生eSIM"}
+            carouselTitle={draft.carouselTitle || "精選 eSIM 方案"}
             cards={draft.cards || []}
             iccidPreview={iccidPreview}
             offPreview={offPreview}
@@ -273,71 +265,18 @@ export default function BossLineWelcomePreviewPanel() {
 
         {/* 編輯器 */}
         <div className="space-y-4">
-          <EditorCard title="① 歡迎詞文字">
-            <Field label="開頭問候">
-              <input
-                className={inputCls}
-                value={draft.greetingLead || ""}
-                onChange={(e) => patch({ greetingLead: e.target.value })}
-              />
-            </Field>
-            <Field
-              label="優惠區塊（首次）"
-              hint="可用 {{code}} 代入折扣碼"
-            >
-              <textarea
-                className={`${inputCls} min-h-[110px] font-sans`}
-                value={draft.promoFirst || ""}
-                onChange={(e) => patch({ promoFirst: e.target.value })}
-              />
-            </Field>
-            <Field label="優惠區塊（重加好友）" hint="可用 {{code}}">
-              <textarea
-                className={`${inputCls} min-h-[110px] font-sans`}
-                value={draft.promoRefollow || ""}
-                onChange={(e) => patch({ promoRefollow: e.target.value })}
-              />
-            </Field>
-            <Field label="已核銷／發券失敗">
-              <div className="grid sm:grid-cols-2 gap-3">
-                <textarea
-                  className={`${inputCls} min-h-[90px] font-sans`}
-                  value={draft.promoRedeemed || ""}
-                  onChange={(e) => patch({ promoRedeemed: e.target.value })}
-                  placeholder="已核銷"
-                />
-                <textarea
-                  className={`${inputCls} min-h-[90px] font-sans`}
-                  value={draft.promoNocode || ""}
-                  onChange={(e) => patch({ promoNocode: e.target.value })}
-                  placeholder="發券失敗"
-                />
-              </div>
-            </Field>
-            <Field label="怎麼查流量說明">
-              <textarea
-                className={`${inputCls} min-h-[100px] font-sans`}
-                value={draft.howtoText || ""}
-                onChange={(e) => patch({ howtoText: e.target.value })}
-              />
-            </Field>
-            <Field label="結尾（三種花 emoji）">
-              <input
-                className={inputCls}
-                value={draft.closingLine || ""}
-                onChange={(e) => patch({ closingLine: e.target.value })}
-                placeholder="🌼🌻🌼"
-              />
-            </Field>
-          </EditorCard>
+          <div className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-950 leading-relaxed">
+            歡迎長文（問候、折扣碼、查流量說明）已停用，不再由 webhook 發送。
+            新會員 50 元折抵仍會自動建立；客人可從快捷按鈕或會員中心使用。
+          </div>
 
-          <EditorCard title="② Jeko 推薦 原生eSIM 輪播">
+          <EditorCard title="① 精選 eSIM 輪播">
             <Field label="輪播標題（使用者看到的名稱）">
               <input
                 className={inputCls}
                 value={draft.carouselTitle || ""}
                 onChange={(e) => patch({ carouselTitle: e.target.value })}
-                placeholder="Jeko 推薦 原生eSIM"
+                placeholder="精選 eSIM 方案（僅輪播 alt，不另發文字）"
               />
             </Field>
             {(draft.cards || []).map((card, idx) => (
@@ -430,7 +369,7 @@ export default function BossLineWelcomePreviewPanel() {
             ))}
           </EditorCard>
 
-          <EditorCard title="③ ICCID 流量提醒 Flex">
+          <EditorCard title="② ICCID 流量提醒 Flex">
             <div className="grid sm:grid-cols-2 gap-2">
               <Field label="標題">
                 <input
@@ -467,7 +406,7 @@ export default function BossLineWelcomePreviewPanel() {
             </Field>
           </EditorCard>
 
-          <EditorCard title="④ 非營業時間引導">
+          <EditorCard title="③ 非營業時間引導">
             <div className="grid sm:grid-cols-2 gap-2">
               <Field label="標題">
                 <input
@@ -521,7 +460,6 @@ export default function BossLineWelcomePreviewPanel() {
 }
 
 function PhonePreview({
-  welcomeText,
   chips,
   carouselTitle,
   cards,
@@ -541,22 +479,25 @@ function PhonePreview({
         </div>
       </div>
       <div className="h-[640px] overflow-y-auto px-3 py-4 space-y-4 bg-[linear-gradient(180deg,#8BA4BE_0%,#7494B4_40%,#6A8AAB_100%)]">
-        <MsgLabel n={1} title="歡迎詞＋快捷按鈕" />
-        <TextBubble text={welcomeText} chips={chips} />
-        <MsgLabel n={2} title={carouselTitle} />
-        <div className="max-w-[92%]">
-          <div className="rounded-2xl rounded-tl-md bg-white px-3.5 py-2.5 shadow-sm">
-            <p className="text-[13px] font-bold text-slate-900">
-              {carouselTitle}
-            </p>
-          </div>
-        </div>
+        <MsgLabel n={1} title={carouselTitle || "精選 eSIM 輪播"} />
         <CarouselPreview cards={cards} />
-        <MsgLabel n={3} title={iccidPreview.headerTitle || "流量提醒"} />
+        <MsgLabel n={2} title={iccidPreview.headerTitle || "流量提醒"} />
         <FlexCardPreview data={iccidPreview} />
+        {chips?.length ? (
+          <div className="flex flex-wrap gap-1.5 px-1">
+            {chips.map((label) => (
+              <span
+                key={label}
+                className="rounded-full border border-white/40 bg-white/90 px-2.5 py-1 text-[11px] font-bold text-slate-700"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        ) : null}
         {showOffHours ? (
           <>
-            <MsgLabel n={4} title={offPreview.headerTitle || "非營業時間"} />
+            <MsgLabel n={3} title={offPreview.headerTitle || "非營業時間"} />
             <FlexCardPreview data={offPreview} secondary />
           </>
         ) : null}

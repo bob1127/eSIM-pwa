@@ -14,6 +14,12 @@ const supabaseAdmin =
     : null;
 
 function log(step: string, detail?: unknown) {
+  if (
+    process.env.NODE_ENV !== "development" &&
+    process.env.AUTH_DEBUG !== "1"
+  ) {
+    return;
+  }
   const ts = new Date().toISOString();
   if (detail !== undefined) {
     console.log(`[Auth Debug] ${ts} | ${step}`, detail);

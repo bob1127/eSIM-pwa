@@ -9,6 +9,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import MaterialIcon from "@/components/MaterialIcon";
 import { buildLoginUrl } from "@/lib/authRedirect";
 import { buildInstallHintText } from "@/lib/deviceDetect";
+import { useAuth } from "@/hooks/useAuth";
 import { usePWAInstall } from "./usePWAInstall";
 import AppInstallGuideModal from "./AppInstallGuideModal";
 import HeroCountryPlanPicker from "./HeroCountryPlanPicker";
@@ -170,7 +171,9 @@ const slides = [
   { image: "/images/location/thailand-01.png" },
 ];
 
-function HeroSlideImage({ slide }) {
+function HeroSlideImage({ slide, isJapan = false }) {
+  const imgClass = isJapan ? "hero-slide-img hero-slide-img-jp" : "hero-slide-img";
+
   if (slide.imageMobile || slide.imageTablet) {
     return (
       <picture>
@@ -180,15 +183,22 @@ function HeroSlideImage({ slide }) {
         {slide.imageTablet ? (
           <source media="(max-width: 1023px)" srcSet={slide.imageTablet} />
         ) : null}
-        <img src={slide.image} alt="Hero Banner" />
+        <img src={slide.image} alt="Hero Banner" className={imgClass} />
       </picture>
     );
   }
-  return <img src={slide.image} alt="Hero Banner" />;
+  return (
+    <img
+      src={slide.image}
+      alt="Hero Banner"
+      className={isJapan ? "hero-slide-img hero-slide-img-jp" : "hero-slide-img"}
+    />
+  );
 }
 
 export default function Slider() {
   const router = useRouter();
+  const { isLoggedIn, isGuest, authReady } = useAuth();
   const containerRef = useRef(null);
   const imagesRef = useRef([]);
   const titleRef = useRef(null);
@@ -220,6 +230,14 @@ export default function Slider() {
   };
 
   const handleTrafficAlert = () => {
+    if (!authReady) return;
+    if (!isLoggedIn || isGuest) {
+      alert("請先註冊或登入會員，才能開啟流量提醒。");
+      router.push(
+        buildLoginUrl("/data-query?setup=traffic#push-notification-section"),
+      );
+      return;
+    }
     if (needsAppleInstall) {
       openInstallGuide();
       return;
@@ -380,17 +398,22 @@ export default function Slider() {
         .slide-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; will-change: transform, opacity; z-index: 0; overflow: hidden; }
         .slide-image img { width: 100%; height: 100%; object-fit: cover; object-position: center 55%; display: block; }
         .slide-image picture { display: block; width: 100%; height: 100%; }
+        @media (max-width: 1023px) {
+          .slide-image.hero-slide-1 .hero-slide-img-jp { object-position: center 40%; }
+        }
+        @media (max-width: 767px) {
+          .slide-image.hero-slide-1 .hero-slide-img-jp { object-position: center 34%; }
+        }
+        .slide-image.hero-slide-1 .hero-slide-img-jp { object-position: center 38%; }
         .overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.55) 100%); z-index: 10; pointer-events: none; }
         .hero-headline { position: absolute; top: 18%; left: 0; right: 0; z-index: 20; padding: 0 clamp(1.25rem, 4vw, 3rem); }
         .hero-headline-inner { max-width: 72rem; margin: 0 auto; }
         .title-group { width: 100%; text-align: left; }
         .hero-dock { position: relative; z-index: 60; isolation: isolate; }
-        .hero-slide-dots { position: absolute; left: clamp(1.25rem, 4vw, 3rem); bottom: clamp(7rem, 14vw, 10rem); z-index: 20; display: flex; align-items: center; gap-2; }
         .top-right-badge { position: absolute; top: 2.5rem; right: 0; z-index: 20; background-color: #2b65f6; padding: 0.6rem 1.5rem; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; }
         @media (max-width: 768px) {
           .hero-container { height: 95vh; height: 95svh; min-height: 420px; }
           .hero-headline { top: 14%; }
-          .hero-slide-dots { bottom: clamp(5rem, 12vw, 8rem); }
           .top-right-badge { top: 1.5rem; padding: 0.4rem 1rem; }
         }
       `}</style>
@@ -406,12 +429,12 @@ export default function Slider() {
             {slides.map((slide, idx) => (
               <div
                 key={`img-${idx}`}
-                className="slide-image"
+                className={`slide-image${idx === 1 ? " hero-slide-1" : ""}`}
                 ref={(el) => {
                   imagesRef.current[idx] = el;
                 }}
               >
-                <HeroSlideImage slide={slide} />
+                <HeroSlideImage slide={slide} isJapan={idx === 1} />
               </div>
             ))}
           </div>
@@ -444,19 +467,6 @@ export default function Slider() {
                 <MaterialIcon name="arrow_forward" size={18} />
               </Link>
             </div>
-          </div>
-
-          <div className="hero-slide-dots" aria-hidden>
-            {slides.map((_, idx) => (
-              <span
-                key={`dot-${idx}`}
-                className={`block rounded-full transition-all duration-300 ${
-                  activeSlide === idx
-                    ? "w-2 h-2 bg-white"
-                    : "w-1.5 h-1.5 bg-white/50"
-                }`}
-              />
-            ))}
           </div>
 
           <div className="side-indicators hidden">

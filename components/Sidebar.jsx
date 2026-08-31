@@ -20,7 +20,6 @@ const Sidebar = () => {
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
-    console.log("Toggle Sidebar, isOpen:", !isOpen);
   };
 
   useEffect(() => {
@@ -32,10 +31,6 @@ const Sidebar = () => {
       window.removeEventListener("open-cart-sidebar", handleOpenSidebar);
     };
   }, []);
-
-  useEffect(() => {
-    console.log("Sidebar state updated, isOpen:", isOpen);
-  }, [isOpen]);
 
   const getWooCommerceFormData = () => {
     const addToCartIds = [];
@@ -55,7 +50,6 @@ const Sidebar = () => {
     let url = "https://starislandbaby.com/test/Cart/?add-to-cart=";
     url += addToCartIds.join(",");
     url += "&quantity=" + quantities.join(",");
-    console.log("生成的 URL:", url);
     window.location.href = url;
   };
 
@@ -67,9 +61,6 @@ const Sidebar = () => {
           initial={{ x: "100%" }}
           animate={{ x: isOpen ? 0 : "100%" }}
           transition={{ duration: 0.3 }}
-          onAnimationComplete={() =>
-            console.log(`Sidebar animation completed. isOpen: ${isOpen}`)
-          }
         >
           <button
             onClick={toggleSidebar}

@@ -52,9 +52,9 @@ const LoginRegisterPage = () => {
   const [message, setMessage] = useState("");
   const [loggingIn, setLoggingIn] = useState(false);
 
-  // 除錯 log（僅輸出至 Console）
+  // 除錯 log（僅 development / AUTH_DEBUG）
   const addLog = (msg) => {
-    console.log(`[Auth Debug]`, msg);
+    authLog("login page", msg);
   };
 
   const isLoggedIn =

@@ -195,13 +195,13 @@ function GuestLoginGate({ embedded = false, className = "" }) {
         請先登入會員
       </h4>
       <p className="text-sm text-stone-500 leading-relaxed mb-4">
-        訪客無法開啟流量提醒。登入後可一鍵綁定本站訂單並啟用推播通知。
+        訪客無法開啟推播與流量提醒。請先註冊或登入會員後再啟用。
       </p>
       <Link
         href={loginHref}
         className="inline-flex w-full sm:w-auto items-center justify-center rounded-full bg-[#1d5cc5] hover:bg-[#174da8] text-white font-bold text-sm px-6 py-3 transition-colors"
       >
-        登入會員
+        註冊／登入會員
       </Link>
     </div>
   );

@@ -17,9 +17,9 @@ import LoadingIndicator from "@/components/ui/LoadingIndicator";
  * 官方帳號選單／圖文請放：
  *   https://liff.line.me/{LIFF_ID}
  *   或帶路徑：https://liff.line.me/{LIFF_ID}?path=%2Faccount
- * 圖文選單「開啟流量提醒」請用連結（一鍵綁定＋ICCID 查詢）：
- *   https://liff.line.me/{LIFF_ID}?path=%2Fline%2Ficcid
- *   若尚未設 LIFF：https://www.jeko-esim.com.tw/line/iccid
+ * 圖文選單「開啟流量提醒」請用連結（導向 data-query）：
+ *   https://liff.line.me/{LIFF_ID}?path=%2Fdata-query%3Fsetup%3Dtraffic
+ *   若尚未設 LIFF：http://localhost:3000/data-query（本機）或 https://www.jeko-esim.com.tw/data-query
  */
 export default function LiffEntryPage() {
   const router = useRouter();

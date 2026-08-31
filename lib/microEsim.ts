@@ -15,11 +15,6 @@ export async function fetchDataPlans() {
   const strToSign = `${ACCOUNT}${SECRET}${timestamp}${SALT}`; 
   const signature = crypto.createHash('md5').update(strToSign).digest('hex');
 
-  console.log("🔍 Debug API 參數:");
-  console.log("  - URL:", `${API_URL}/api/v1/public/package/list`); // 確認 API 路徑對不對
-  console.log("  - Timestamp:", timestamp);
-  console.log("  - Signature:", signature);
-
   try {
     const res = await fetch(`${API_URL}/api/v1/public/package/list`, {
       method: 'POST',
@@ -37,8 +32,6 @@ export async function fetchDataPlans() {
     // 這裡會印出 API 到底回傳了什麼錯誤訊息
     if (json.code !== 200 && json.code !== "200") {
       console.error("❌ API 回傳錯誤代碼:", json);
-    } else {
-      console.log("✅ API 成功:", json); // 看看結構是不是 data.data
     }
 
     return json.data || []; // 如果結構是 json.list 請改成 json.list

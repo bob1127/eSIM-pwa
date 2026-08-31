@@ -52,6 +52,7 @@ const REBUILD = process.argv.includes("--rebuild");
 
 const TELECOM_SB = "SoftBank / KDDI";
 const TELECOM_IIJ = "IIJ Docomo（注意：需手動設定 APN）";
+const TELECOM_SB_MANUAL = "SoftBank（注意：Android 通常需手動 APN）";
 const PROFIT_SB = 80;
 const PROFIT_IIJ = 95;
 
@@ -351,7 +352,7 @@ async function main() {
     country: "JP",
     is_native: true,
     plan_kind: "daily",
-    hot_sale_telecoms: [TELECOM_SB],
+    hot_sale_telecoms: [TELECOM_IIJ, TELECOM_SB_MANUAL],
     carrier_profit_by_carrier: {
       [TELECOM_SB]: PROFIT_SB,
       [TELECOM_IIJ]: PROFIT_IIJ,

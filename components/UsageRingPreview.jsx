@@ -36,6 +36,8 @@ export default function UsageRingPreview({
   totalMb = null,
   usedMb = null,
   expiresAt = null,
+  /** 由 resolveEsimExpiryDisplay().footer 傳入；優先於 expiresAt */
+  expiryFooter = null,
   dailyUsedMb = null,
   /** "quota" | "muted" — muted＝吃到飽或尚無比例可畫 */
   variant = "quota",
@@ -200,9 +202,11 @@ export default function UsageRingPreview({
             : total > 0
               ? `總量 ${formatMb(total)}`
               : "總量 —"}
-          {expiresAt
-            ? ` · 到期 ${formatExpiryTaiwan(expiresAt)}`
-            : ""}
+          {expiryFooter != null
+            ? expiryFooter
+            : expiresAt
+              ? ` · 到期 ${formatExpiryTaiwan(expiresAt)}`
+              : ""}
         </p>
       </div>
 

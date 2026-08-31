@@ -137,7 +137,7 @@ function isHomePath(path: string | null | undefined) {
 const navLinks = [
   { key: "categories", label: "精選eSIM", href: "/product", hasMega: true },
   { key: "shop", label: "Jeko 商城", href: "/shop", comingSoon: true },
-  { key: "blog", label: "旅遊須知", href: "/blog" },
+  { key: "blog", label: "旅遊回憶", href: "/blog" },
   { key: "tutorial", label: "啟用教學", href: "/operation-shopee" },
   { key: "about", label: "關於Jeko", href: "/about" },
   { key: "partner", label: "合作夥伴", href: "/cooperation" },
@@ -774,7 +774,7 @@ export default function Navbar({ className }: NavbarProps) {
                 </p>
                 <MobileSimpleNavItem
                   icon={<BookOpenIcon className="w-5 h-5" />}
-                  label="旅遊須知｜部落格"
+                  label="旅遊回憶｜部落格"
                   href="/blog"
                   onClick={() => setMobileOpen(false)}
                 />

@@ -5,7 +5,12 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import AccountIcon from "@/components/account/AccountIcon";
 import { extractEsimsFromOrders } from "@/lib/esimOrderExtract";
-import { formatMb, usagePercent } from "@/lib/esimUsageFormat";
+import { formatMb, usagePercent, resolveEsimExpiryDisplay } from "@/lib/esimUsageFormat";
+import {
+  isEsimNotInstalledForUsage,
+  canShowEsimUsageStats,
+  ESIM_NOT_INSTALLED_USAGE_MESSAGE,
+} from "@/lib/esimInstallStatus";
 import {
   detectPushSupport,
   getIosAddToHomeHint,
@@ -319,6 +324,11 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "查詢失敗");
+      if (isEsimNotInstalledForUsage(data)) {
+        setResults((prev) => ({ ...prev, [key]: data }));
+        setError(ESIM_NOT_INSTALLED_USAGE_MESSAGE);
+        return;
+      }
       setResults((prev) => ({ ...prev, [key]: data }));
     } catch (e) {
       setError(e.message || "查詢失敗");
@@ -378,10 +388,10 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
   const showPwaHint = pushSupport?.needsPWA && !standalone;
   const chartLoading = !!loadingId;
 
-  const queriedCount = esims.filter((e) => results[e.topupId]).length;
+  const queriedCount = esims.filter((e) => canShowEsimUsageStats(results[e.topupId])).length;
   const lowCount = esims.filter((e) => {
     const r = results[e.topupId];
-    if (!r) return false;
+    if (!canShowEsimUsageStats(r)) return false;
     const pct = usagePercent(r.remainingMb, r.totalMb);
     return pct != null && pct <= 15;
   }).length;
@@ -755,10 +765,18 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                           className="text-[10px] mt-2"
                           style={{ color: UI.soft }}
                         >
-                          更新 {formatDate(r.updatedAt || r.queriedAt || new Date())}
-                          {r.expiresAt
-                            ? ` · 到期 ${formatDateShort(r.expiresAt)}`
-                            : ""}
+                          {(() => {
+                            const expiry = resolveEsimExpiryDisplay(r);
+                            return (
+                              <>
+                                更新{" "}
+                                {formatDate(
+                                  r.updatedAt || r.queriedAt || new Date(),
+                                )}
+                                {expiry.shortLine ? ` · ${expiry.shortLine}` : ""}
+                              </>
+                            );
+                          })()}
                         </p>
                       ) : null}
                     </div>

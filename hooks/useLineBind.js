@@ -86,7 +86,7 @@ export function useLineBind({ onSuccess } = {}) {
         router.pathname === "/account" &&
         String(router.query.line_bind || "") === "start"
       ) {
-        router.replace("/line/iccid?bind=ok");
+        router.replace("/data-query?bind=ok");
         return;
       }
     } else {

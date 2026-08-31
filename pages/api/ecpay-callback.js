@@ -40,16 +40,9 @@ export default async function handler(req, res) {
     return res.status(400).send('0|FAIL');
   }
 
-  const { MerchantTradeNo, RtnCode, TradeNo, PaymentDate, TradeAmt } = req.body;
+  const { RtnCode } = req.body;
 
   if (parseInt(RtnCode) === 1) {
-    console.log("✅ 付款成功：", {
-      MerchantTradeNo,
-      TradeNo,
-      PaymentDate,
-      TradeAmt,
-    });
-
     // 🚀 這裡可以串接 WooCommerce API 寫入訂單/改變庫存
 
     return res.status(200).send('1|OK');

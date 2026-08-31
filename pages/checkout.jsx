@@ -55,8 +55,6 @@ const CheckoutPage = () => {
     setIsSubmitting(true);
 
     try {
-      console.log("🚀 1. 開始呼叫 /api/orders/create...");
-
       const orderRes = await fetch("/api/orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -68,7 +66,6 @@ const CheckoutPage = () => {
       });
 
       const orderResult = await orderRes.json();
-      console.log("📦 2. 建立訂單結果:", orderResult); // <-- 這裡會印出到底有沒有成功
 
       if (!orderResult.success) {
         throw new Error(orderResult.message || "建立訂單失敗");
@@ -78,8 +75,6 @@ const CheckoutPage = () => {
       if (!orderId) {
         throw new Error("後端回傳成功，但沒有給 orderId！");
       }
-
-      console.log("✅ 3. 拿到 Supabase UUID:", orderId, "準備呼叫藍新金流...");
 
       const res = await fetch("/api/newebpay-generate-form", {
         method: "POST",

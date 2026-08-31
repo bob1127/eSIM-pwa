@@ -98,18 +98,6 @@ export default function GlobalPlanScanner() {
       const data = await res.json();
       const allPlans = data.result || [];
 
-      // 🔥 Debug: 偷看這個特定方案 API 傳回來多少錢
-      // ID 5975 是您截圖中的韓國方案
-      const debugPlan = allPlans.find(
-        (p) => p.id === 5975 || (p.code && p.code.includes("Daily1GB-4")),
-      );
-      if (debugPlan) {
-        console.log("🔥 [DEBUG] 韓國方案 5975 原始資料:", debugPlan);
-        console.log("🔥 [DEBUG] 原始價格 (price):", debugPlan.price);
-      } else {
-        console.log("⚠️ [DEBUG] 找不到 ID 5975 的方案");
-      }
-
       setRawPlans(allPlans); // 儲存原始資料
       setLoading(false);
     } catch (err) {

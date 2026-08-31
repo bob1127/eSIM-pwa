@@ -16,7 +16,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import EsimFutureTrendsSection from "../components/EsimFutureTrendsSection";
 import CooperationInfoModal from "../components/cooperation/CooperationInfoModal";
-import PartnerVendorsSection from "../components/PartnerVendorsSection";
 import Copy from "@/components/MaskText";
 import JekoPillButton from "@/components/ui/JekoPillButton";
 
@@ -1037,8 +1036,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <PartnerVendorsSection className="z-20 border-t border-slate-100" />
 
       {/* Tailwind 自訂形狀用的 style */}
       <style jsx global>{`

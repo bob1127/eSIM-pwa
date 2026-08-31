@@ -5,8 +5,11 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import SVGIMAGE from "./SVGImage";
-// 註冊 GSAP Plugin
+
 gsap.registerPlugin(ScrollTrigger);
+
+const MOBILE_MQ = "(max-width: 800px)";
+const REDUCE_MOTION_MQ = "(prefers-reduced-motion: reduce)";
 
 export default function ScrollHero() {
   const containerRef = useRef(null);
@@ -24,6 +27,17 @@ export default function ScrollHero() {
 
   useGSAP(
     () => {
+      const isMobile = window.matchMedia(MOBILE_MQ).matches;
+      const reduceMotion = window.matchMedia(REDUCE_MOTION_MQ).matches;
+
+      // 手機／減少動態：不做 pin + scrub，避免捲動卡頓
+      if (isMobile || reduceMotion) {
+        if (progressBarRef.current) {
+          gsap.set(progressBarRef.current, { "--progress": 0 });
+        }
+        return;
+      }
+
       const sky = skyRef.current;
       const skyDim = skyDimRef.current;
       const heroContent = heroContentRef.current;
@@ -45,9 +59,7 @@ export default function ScrollHero() {
       const heroImgHeight = heroImg.offsetHeight;
       const heroImgMovedistance = heroImgHeight - viewportHeight;
 
-      const skyMoveDistance = sky
-        ? sky.offsetHeight - viewportHeight
-        : 0;
+      const skyMoveDistance = sky ? sky.offsetHeight - viewportHeight : 0;
 
       const ease = (x) => x * x * (3 - 2 * x);
 
@@ -61,7 +73,6 @@ export default function ScrollHero() {
         onUpdate: (self) => {
           const progress = self.progress;
 
-          // JeskoJets: window 1× → 4× (first 50% scroll)
           let windowScale;
           if (progress <= 0.5) {
             windowScale = 1 + (progress / 0.5) * 3;
@@ -72,7 +83,6 @@ export default function ScrollHero() {
             gsap.set(windowContainer, { scale: windowScale });
           }
 
-          // JeskoJets: sky parallax
           if (sky) {
             gsap.set(sky, { y: -progress * skyMoveDistance });
           }
@@ -100,7 +110,6 @@ export default function ScrollHero() {
 
           let heroMaskScale;
           let heroImgSaturation;
-          // 全程透黑 0.1；滾到 Active Locations／標記段 → 0.7
           let skyDimOpacity = 0.1;
           if (progress <= 0.42) {
             skyDimOpacity = 0.1;
@@ -211,7 +220,6 @@ export default function ScrollHero() {
             <img src="/sky.jpg" alt="" className="sky-bg" />
           </div>
 
-          {/* cloud.png 往左無限跑馬燈 */}
           <div className="cloud-mist" aria-hidden>
             <div className="cloud-marquee">
               <img src="/cloud.png" alt="" />
@@ -219,7 +227,6 @@ export default function ScrollHero() {
             </div>
           </div>
 
-          {/* 捲到地圖／標記階段時的透明黑遮罩 */}
           <div className="sky-dim-overlay" ref={skyDimRef} aria-hidden />
 
           <div className="hero-img" ref={heroImgRef}>
@@ -229,7 +236,7 @@ export default function ScrollHero() {
           <div className="hero-mask" ref={heroMaskRef} aria-hidden />
 
           <div className="hero-grid-overlay" ref={heroGridOverlayRef}>
-            <img src="/grid-overlay.svg" alt="Grid Overlay" />
+            <img src="/grid-overlay.svg" alt="" />
           </div>
 
           <div className="marker marker-1" ref={marker1Ref}>
@@ -243,11 +250,11 @@ export default function ScrollHero() {
           </div>
 
           <div
-            className="hero-content pt-[26vh] sm:pt-[28vh] overflow-visible"
+            className="hero-content pt-[22vh] sm:pt-[26vh] md:pt-[28vh] overflow-visible"
             ref={heroContentRef}
           >
             <SVGIMAGE />
-            <div className="hero-content-block is-inset-right is-copy-connect">
+            <div className="hero-content-block is-inset-right is-copy-connect is-desktop-only">
               <div className="hero-content-copy">
                 <h2>抵達即連線，旅途不中斷</h2>
                 <p>
@@ -257,25 +264,27 @@ export default function ScrollHero() {
                 </p>
               </div>
             </div>
-            <div className="hero-content-block is-inset-left">
+            <div className="hero-content-block is-inset-left is-desktop-only">
               <div className="hero-content-copy">
                 <h2>
-                  無論你去哪裡，<br></br>Jeko 陪你一路在線
+                  無論你去哪裡，
+                  <br />
+                  Jeko 陪你一路在線
                 </h2>
                 <p>
                   涵蓋全球多國熱門旅遊目的地，提供彈性流量與吃到飽方案。
-                  <br></br>
+                  <br />
                   支援主流 iPhone／Android，即買即用。
                 </p>
               </div>
             </div>
-            <div className="hero-content-block is-inset-center">
+            <div className="hero-content-block is-inset-center is-desktop-only">
               <div className="hero-content-copy">
                 <h2>服務覆蓋各地</h2>
                 <p>繼續往下探索，看看 Jeko eSIM 能帶你去哪裡。</p>
               </div>
             </div>
-            <div className="hero-content-block is-inset-right">
+            <div className="hero-content-block is-inset-right is-desktop-only">
               <div className="hero-content-copy">
                 <h2>連線，從這裡開始</h2>
                 <p>
@@ -286,7 +295,6 @@ export default function ScrollHero() {
             </div>
           </div>
 
-          {/* === 修改部分：飛機 Icon 容器 === */}
           <div className="hero-scroll-progress-bar" ref={progressBarRef}>
             <div className="plane-icon">
               <div className="plane-mask" />
@@ -298,7 +306,6 @@ export default function ScrollHero() {
           </div>
         </section>
 
-        {/* CSS Scoped to this component */}
         <style jsx>{`
           @import url("https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap");
 
@@ -380,7 +387,6 @@ export default function ScrollHero() {
             inset: 0;
             width: 100%;
             height: 100svh;
-            /* 必須低於透黑遮罩，雲霧在遮罩下方 */
             z-index: 1;
             overflow: hidden;
             pointer-events: none;
@@ -422,9 +428,7 @@ export default function ScrollHero() {
             background: #000;
             opacity: 0.1;
             pointer-events: none;
-            /* 蓋在雲霧之上 */
             z-index: 2;
-            will-change: opacity;
           }
 
           .window-container {
@@ -447,12 +451,6 @@ export default function ScrollHero() {
             transition: none;
           }
 
-          .window-container img:hover {
-            transform: none;
-            filter: none;
-          }
-
-          /* hero-img.jpg 本身也是飛機窗圖，疊在 window.png 孔洞後會形成窗中窗；隱藏以免重複 */
           .hero-img {
             position: absolute;
             bottom: 0;
@@ -475,11 +473,6 @@ export default function ScrollHero() {
             height: 100%;
             background-color: var(--dark);
             opacity: var(--overlay-opacity);
-            will-change: opacity;
-          }
-
-          .hero-img img {
-            will-change: filter;
           }
 
           .hero-mask {
@@ -495,7 +488,6 @@ export default function ScrollHero() {
               url("/mask.svg") center/50% no-repeat;
             mask-composite: subtract;
             -webkit-mask-composite: subtract;
-            will-change: transform, opacity;
             pointer-events: none;
             z-index: 10;
             opacity: 0;
@@ -507,8 +499,8 @@ export default function ScrollHero() {
             left: 50%;
             transform: translate(-50%, -50%);
             width: 55%;
-            will-change: opacity;
             z-index: 1;
+            opacity: 0;
           }
           .hero-grid-overlay img {
             opacity: 0.25;
@@ -520,8 +512,8 @@ export default function ScrollHero() {
             display: flex;
             align-items: center;
             gap: 1rem;
-            will-change: opacity;
             z-index: 5;
+            opacity: 0;
           }
           .marker-1 {
             top: 50svh;
@@ -590,14 +582,12 @@ export default function ScrollHero() {
             height: 400svh;
             display: flex;
             flex-direction: column;
-            will-change: transform;
             z-index: 2;
             overflow: visible;
           }
           .hero-content .hero-content-block {
             width: 100%;
             height: 100svh;
-            /* 兩側加大內縮，文字落在飛機窗可見區內，不貼窗框 */
             padding: 5rem clamp(4.5rem, 22vw, 15rem);
             display: flex;
             box-sizing: border-box;
@@ -630,7 +620,6 @@ export default function ScrollHero() {
             align-items: center;
           }
 
-          /* === Scroll Bar 樣式 === */
           .hero-scroll-progress-bar {
             position: absolute;
             top: 50%;
@@ -651,29 +640,21 @@ export default function ScrollHero() {
             background-color: var(--light);
             transform-origin: top;
             transform: scaleY(var(--progress));
-            will-change: transform;
           }
 
-          /* === 修改部分：飛機 Icon 容器定位 === */
           .plane-icon {
             position: absolute;
             left: 50%;
-            /* 根據進度計算 top 位置 */
             top: calc(100% * var(--progress));
-            /* 置中，並旋轉 180 度讓飛機頭朝下 (假設你的 SVG 預設是朝上的) */
             transform: translate(-50%, -50%) rotate(180deg);
             z-index: 21;
             pointer-events: none;
-            will-change: top;
           }
 
-          /* === 修改部分：使用 CSS Mask 製作純白飛機 === */
           .plane-mask {
             width: 1.5rem;
             height: 1.5rem;
-            /* 設定背景色為純白 */
             background-color: var(--light);
-            /* 使用 SVG 作為遮罩，這樣背景色只會顯示在飛機形狀內 */
             -webkit-mask: url("/images/airplane-svgrepo-com.svg") no-repeat
               center / contain;
             mask: url("/images/airplane-svgrepo-com.svg") no-repeat center /
@@ -681,44 +662,86 @@ export default function ScrollHero() {
           }
 
           @media (max-width: 800px) {
-            .hero-mask {
-              mask: linear-gradient(var(--light), var(--light)),
-                url("/mask.svg") center/75% no-repeat;
-              -webkit-mask: linear-gradient(var(--light), var(--light)),
-                url("/mask.svg") center/75% no-repeat;
-              mask-composite: subtract;
-              -webkit-mask-composite: subtract;
+            .hero {
+              perspective: none;
             }
-            .hero-grid-overlay {
+
+            .sky-container {
+              height: 100svh;
+              will-change: auto;
+            }
+
+            /* 手機停跑馬燈時勿卡在兩張接縫；改單張鋪滿，避免窗內直縫 */
+            .cloud-marquee {
+              animation: none;
+              will-change: auto;
+              width: 100%;
+              transform: none;
+            }
+
+            .cloud-marquee img {
+              width: 100%;
+              opacity: 0.5;
+            }
+
+            .cloud-marquee img + img {
+              display: none;
+            }
+
+            .window-container {
+              will-change: auto;
+            }
+
+            .sky-dim-overlay {
+              opacity: 0.22;
+            }
+
+            .hero-mask,
+            .hero-grid-overlay,
+            .marker,
+            .hero-scroll-progress-bar,
+            .hero-content .is-desktop-only {
+              display: none !important;
+            }
+
+            .hero-content {
+              height: 100svh;
+              justify-content: center;
+              align-items: center;
+              padding: 0;
+              /* 飛機窗孔約在畫面中上；文字垂直置中偏上 */
+              padding-top: min(18vh, 7.5rem);
+              padding-bottom: 2rem;
+              box-sizing: border-box;
+            }
+
+            .hero-content :global(.hero-container) {
               width: 100%;
             }
-            .marker-1 {
-              top: 52.5svh;
-              left: 50vw;
+
+            h2 {
+              font-size: 1.15rem;
+              letter-spacing: 0.03em;
             }
-            .marker-2 {
-              top: 45svh;
-              left: 70vw;
+
+            p {
+              font-size: 0.95rem;
+              line-height: 1.55;
             }
-            .hero-content .hero-content-block {
-              padding: 3.5rem clamp(2.75rem, 16vw, 5rem);
+          }
+
+          @media (max-width: 800px) and (max-height: 700px) {
+            .hero-content {
+              padding-top: min(14vh, 5rem);
             }
-            .hero-content .hero-content-block.is-inset-left {
-              padding-left: clamp(3rem, 18vw, 5.5rem);
-              padding-right: clamp(2.5rem, 14vw, 4rem);
-            }
-            .hero-content .hero-content-block.is-inset-right {
-              padding-right: clamp(3rem, 18vw, 5.5rem);
-              padding-left: clamp(2.5rem, 14vw, 4rem);
-            }
-            .hero-content .hero-content-block.is-copy-connect {
-              padding-right: clamp(5rem, 26vw, 8rem);
-            }
-            .hero-content .hero-content-copy {
-              width: min(78%, 18rem);
-            }
-            .hero-scroll-progress-bar {
-              right: 1rem;
+          }
+
+          @media (min-width: 801px) {
+            .hero-mask {
+              mask: linear-gradient(var(--light), var(--light)),
+                url("/mask.svg") center/50% no-repeat;
+              -webkit-mask: linear-gradient(var(--light), var(--light)),
+                url("/mask.svg") center/50% no-repeat;
             }
           }
         `}</style>

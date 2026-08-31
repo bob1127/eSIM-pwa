@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { partnerPagePaths } from "@/lib/partnerStorePages";
+import { partnerPagePaths, mainSitePagePaths } from "@/lib/partnerStorePages";
 
 function CategoryRow({ label, count, selected, onSelect, href }) {
   const cls = `w-full flex items-center justify-between gap-2 px-2.5 py-2 text-left text-[12px] transition-colors ${
@@ -62,19 +62,28 @@ export default function PartnerBlogSidebar({
   showSearch = true,
   showCategories = true,
   fillHeight = false,
+  /** partner = 賣場路徑；main = 主站路徑（夥伴供稿在 /blog 顯示時） */
+  variant = "partner",
 }) {
   const domain = store?.domain;
-  const paths = partnerPagePaths(domain);
+  const isMain = variant === "main";
+  const paths = isMain ? mainSitePagePaths() : partnerPagePaths(domain);
   const blogList = listHref || paths.blog;
   const postHref = (slug) =>
     typeof articleHref === "function"
       ? articleHref(slug)
-      : `${paths.blog}${slug}/`;
+      : isMain
+        ? `/blog/${slug}/`
+        : `${paths.blog}${slug}/`;
 
   const nav = [
     { key: "home", label: "首頁", href: paths.home },
     { key: "about", label: "關於我們", href: paths.about },
-    { key: "article", label: "旅遊文章", href: paths.blog },
+    {
+      key: "article",
+      label: isMain ? "夥伴文章" : "旅遊文章",
+      href: paths.blog,
+    },
     { key: "shop", label: "選購方案", href: paths.plans },
     { key: "terms", label: "服務條款", href: paths.terms },
     { key: "contact", label: "聯絡我們", href: paths.contact },

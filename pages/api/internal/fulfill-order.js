@@ -1,6 +1,8 @@
 // pages/api/internal/fulfill-order.js
 //
 // 受保護的內部 API：只給 esim-backend 的付款確認（LINE Pay / 藍新 notify）呼叫。
+// 禁止在此路徑 import sharp／canvas：Vercel 漏帶 linux-x64 binary 會整單 500。
+// QR 解碼見 lib/esimProfile.js（pngjs + jpeg-js + jsqr）；prebuild 有 assert。
 import axios from "axios";
 import FormData from "form-data";
 import { sendMail } from "../../../lib/mailTransporter";
@@ -212,6 +214,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, message: "訂單內沒有商品" });
   }
 
+  /** 已 subscribe 成功的 topup（即使後續炸也回傳，供備案 fulfill-from-topup） */
+  /** @type {{ topupId: string, productName: string }[]} */
+  const collectedTopupIds = [];
+
   try {
     const qrcodes = [];
     /** @type {any[]} */
@@ -298,6 +304,10 @@ export default async function handler(req, res) {
 
         if (result.code === 1 && result.result?.topup_id) {
           const topup_id = result.result.topup_id;
+          collectedTopupIds.push({
+            topupId: String(topup_id),
+            productName: item.name || "eSIM",
+          });
           const pollStarted = Date.now();
           let detail = null;
 
@@ -402,9 +412,19 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({ success: true, message: "發貨完成", qrcodes });
+    return res.status(200).json({
+      success: true,
+      message: "發貨完成",
+      qrcodes,
+      topupIds: collectedTopupIds,
+    });
   } catch (error) {
     console.error("🔥 [fulfill-order] 錯誤:", error.message);
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+      // 備案：已開卡就不要再 subscribe，改走 fulfill-from-topup
+      topupIds: collectedTopupIds,
+    });
   }
 }

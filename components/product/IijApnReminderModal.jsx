@@ -8,8 +8,33 @@ export const IIJ_DOCOMO_APN = "vmobile.jp";
 
 export function isIijDocomoTelecom(telecom) {
   const t = String(telecom || "");
-  // 供應商特殊說明：Need manually set APN to "vmobile.jp"
   return /IIJ/i.test(t);
+}
+
+/**
+ * 購買前是否強制跳 IIJ 手動 APN 視窗。
+ * 日本「總量型」（japan-total-esim／flow=Total*）多數裝置可自動帶入 APN，不擋結帳；
+ * 吃到飽／每日型等仍依供應商說明提醒 vmobile.jp。
+ */
+export function needsIijManualApnReminder(telecom, variation, productHandle) {
+  if (!isIijDocomoTelecom(telecom)) return false;
+
+  const handle = String(
+    productHandle ||
+      variation?.metadata?.product_handle ||
+      variation?.metadata?.handle ||
+      "",
+  ).trim();
+  if (/japan-total-esim/i.test(handle)) return false;
+
+  const meta = variation?.metadata || {};
+  const flow = String(meta.flow || "").trim();
+  if (/^Total/i.test(flow)) return false;
+
+  const sku = String(variation?.sku || meta.sku || "").trim();
+  if (/-Total/i.test(sku)) return false;
+
+  return true;
 }
 
 export default function IijApnReminderModal({

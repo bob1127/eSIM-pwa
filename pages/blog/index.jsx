@@ -1,20 +1,22 @@
-"use client";
-
 import React, { useEffect, useMemo, useState } from "react";
 import Layout from "../Layout";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import Carousel from "../../components/EmblaCarousel06/index";
+import { MapPinIcon } from "@heroicons/react/24/outline";
 import InfiniteCarousel from "@/components/InfiniteCarousel";
+import MobileCardCarousel from "@/components/MobileCardCarousel";
 import {
   buildBlogCategoryMaps,
   classifyBlogPost,
-  fetchWpCategoriesFromApi,
-  fetchWpPostsFromApi,
+  fetchWpCategories,
+  fetchWpPosts,
 } from "../../lib/wordpress";
+import {
+  fetchAllPublishedPartnerPostsForMain,
+  toMainBlogListCard,
+} from "@/lib/partnerBlogMain";
 import { stripHtml } from "@/lib/stripHtml";
-import LoadingIndicator from "@/components/ui/LoadingIndicator";
-import BlogCardMeta, { BlogDotTags } from "@/components/Blog/BlogCardMeta";
+import { BlogDotTags } from "@/components/Blog/BlogCardMeta";
 
 const GENERIC_TAGS = new Set([
   "綜合文章",
@@ -57,7 +59,7 @@ function BlogFilterSelects({
   subAriaLabel = "選擇地區",
 }) {
   const selectClass =
-    "w-full min-w-[10.5rem] appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-3.5 pr-9 text-sm font-semibold text-slate-800 shadow-sm outline-none transition hover:border-[#1f57b8]/40 focus:border-[#1f57b8] focus:ring-2 focus:ring-[#1f57b8]/20";
+    "w-full min-w-[10.5rem] appearance-none rounded-none border border-stone-300 bg-white py-2.5 pl-3.5 pr-9 text-sm font-semibold text-stone-800 outline-none transition hover:border-stone-500 focus:border-black focus:ring-0";
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full md:w-auto md:justify-end">
@@ -118,45 +120,143 @@ function SelectChevron() {
   );
 }
 
-const DESKTOP_PAGE_SIZE = 8;
+const DESKTOP_PAGE_SIZE = 9;
 const KNOWLEDGE_PAGE_SIZE = 8;
 
+const MONTH_ABBR = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+/** 參考圖格式：Mar 30.2021 */
+function formatBlogMetaDate(raw) {
+  if (!raw) return "";
+  const s = String(raw).trim();
+  let d = null;
+  const dotted = s.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/);
+  if (dotted) {
+    d = new Date(
+      Number(dotted[1]),
+      Number(dotted[2]) - 1,
+      Number(dotted[3]),
+    );
+  } else {
+    const parsed = new Date(s);
+    if (!Number.isNaN(parsed.getTime())) d = parsed;
+  }
+  if (!d || Number.isNaN(d.getTime())) return s;
+  return `${MONTH_ABBR[d.getMonth()]} ${d.getDate()}.${d.getFullYear()}`;
+}
+
+function formatHashTags(tags = []) {
+  return (tags || [])
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((t) => {
+      const cleaned = String(t).replace(/^#/, "").trim();
+      if (!cleaned) return null;
+      // 英文轉大寫；中文／混合保留原文
+      const label = /^[a-z0-9\s_-]+$/i.test(cleaned)
+        ? cleaned.toUpperCase().replace(/\s+/g, "")
+        : cleaned;
+      return `#${label}`;
+    })
+    .filter(Boolean);
+}
+
+/**
+ * NEWS／文章精選卡片 — 方圖黑框、作者大頭＋名稱、旅遊地點、標題、摘要、日期｜#標籤
+ */
 function BlogArticleCard({ slide }) {
+  const authorName = slide.authorName || "Jeko eSIM";
+  const authorAvatar = slide.authorAvatar || "/images/Logo/icon-192.png";
+  const location =
+    slide.location ||
+    (slide.tags?.[0] && slide.tags[0] !== "合作夥伴供稿"
+      ? slide.tags[0]
+      : null);
+  const hashTags = formatHashTags(
+    (slide.tags || []).filter(
+      (t) => t && t !== "合作夥伴供稿" && t !== location,
+    ),
+  );
+  const metaDate = formatBlogMetaDate(slide.date);
+
   return (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:border-gray-200 hover:shadow-md">
+    <article className="flex h-full flex-col bg-white text-left">
       <Link
         href={slide.link || "#"}
-        className="group/card flex h-full w-full flex-col text-black no-underline"
+        className="group/card flex h-full w-full flex-col text-inherit no-underline"
       >
-        <div className="w-full p-4 pb-0">
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl">
-            <img
-              src={slide.image}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-105"
-              loading="lazy"
-            />
-          </div>
+        <div className="relative aspect-square w-full overflow-hidden border border-black bg-stone-100">
+          <img
+            src={slide.image}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover/card:scale-[1.03]"
+            loading="lazy"
+          />
         </div>
-        <div className="flex flex-grow flex-col items-start p-6 text-left">
-          <BlogDotTags tags={slide.tags} />
+
+        <div className="flex flex-1 flex-col pt-3.5 sm:pt-4">
+          <div className="mb-2 flex items-center gap-2">
+            <img
+              src={authorAvatar}
+              alt=""
+              className="h-6 w-6 shrink-0 rounded-full object-cover bg-stone-100 ring-1 ring-stone-200"
+            />
+            <span className="truncate text-[12px] sm:text-[13px] font-semibold text-stone-800">
+              {authorName}
+            </span>
+          </div>
+
+          {location ? (
+            <p className="mb-1.5 flex items-center gap-1 text-[11px] sm:text-xs leading-snug text-stone-500">
+              <MapPinIcon
+                className="h-3.5 w-3.5 shrink-0 text-stone-500"
+                aria-hidden="true"
+              />
+              <span className="truncate">{location}</span>
+            </p>
+          ) : null}
+
           <h3
-            className="mb-3 line-clamp-2 text-lg font-bold leading-snug text-slate-800 transition-colors group-hover/card:text-[#1f57b8]"
+            className="mb-2 line-clamp-3 text-[15px] sm:text-base md:text-[17px] font-bold leading-snug text-black group-hover/card:opacity-80"
             dangerouslySetInnerHTML={{ __html: slide.title }}
           />
-          <p
-            className="mb-1 line-clamp-3 w-full flex-grow text-sm leading-relaxed text-slate-500"
-            dangerouslySetInnerHTML={{ __html: slide.description }}
-          />
-          <BlogCardMeta
-            date={slide.date}
-            authorName={slide.authorName}
-            authorAvatar={slide.authorAvatar}
-            showTags={false}
-          />
+
+          {slide.description ? (
+            <p
+              className="mb-3 line-clamp-2 text-[12px] sm:text-[13px] leading-relaxed text-stone-500"
+              dangerouslySetInnerHTML={{ __html: slide.description }}
+            />
+          ) : null}
+
+          <p className="mt-auto pt-1 text-[10px] sm:text-[11px] tracking-wide text-stone-500 uppercase">
+            {metaDate}
+            {hashTags.length ? (
+              <>
+                <span className="mx-1.5 text-stone-300" aria-hidden>
+                  |
+                </span>
+                <span className="normal-case sm:uppercase">
+                  {hashTags.join(" ")}
+                </span>
+              </>
+            ) : null}
+          </p>
         </div>
       </Link>
-    </div>
+    </article>
   );
 }
 
@@ -239,61 +339,27 @@ function BlogPagination({ page, totalPages, onChange }) {
   );
 }
 
-export default function InfoPage() {
-  const [posts, setPosts] = useState([]);
-  const [partnerCards, setPartnerCards] = useState([]);
-  const [categoryMaps, setCategoryMaps] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [apiError, setApiError] = useState(null);
+export default function InfoPage({
+  initialPosts = [],
+  initialCategories = [],
+  initialPartnerCards = [],
+  initialError = null,
+}) {
+  const [posts] = useState(initialPosts);
+  const [partnerCards] = useState(initialPartnerCards);
+  const [categoryMaps] = useState(() =>
+    buildBlogCategoryMaps(initialCategories || []),
+  );
+  const [apiError] = useState(initialError);
 
   const [activeArticleTab, setActiveArticleTab] = useState("全部");
   const [activeArticleSubTab, setActiveArticleSubTab] = useState("全部");
   const [articlePage, setArticlePage] = useState(1);
+  const [journalPage, setJournalPage] = useState(1);
   const [activeKnowledgeTab, setActiveKnowledgeTab] = useState("全部");
   const [activeKnowledgeSubTab, setActiveKnowledgeSubTab] = useState("全部");
   const [knowledgePage, setKnowledgePage] = useState(1);
   const [activeKnowledgeId, setActiveKnowledgeId] = useState(null);
-
-  useEffect(() => {
-    const loadBlogData = async () => {
-      try {
-        const [postsResult, categoriesResult, partnerResult] =
-          await Promise.allSettled([
-            fetchWpPostsFromApi({ per_page: 100 }),
-            fetchWpCategoriesFromApi(),
-            fetch("/api/blog/partner-contributions?limit=100", {
-              cache: "no-store",
-            }).then(async (r) => {
-              if (!r.ok) return [];
-              const data = await r.json();
-              return Array.isArray(data) ? data : [];
-            }),
-          ]);
-
-        if (postsResult.status === "fulfilled") {
-          setPosts(postsResult.value);
-        } else {
-          setApiError(postsResult.reason?.message || "無法載入 WordPress 文章");
-        }
-
-        if (categoriesResult.status === "fulfilled") {
-          setCategoryMaps(buildBlogCategoryMaps(categoriesResult.value));
-        } else {
-          setCategoryMaps(buildBlogCategoryMaps([]));
-        }
-
-        if (partnerResult.status === "fulfilled") {
-          setPartnerCards(partnerResult.value);
-        }
-      } catch (err) {
-        setApiError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadBlogData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
-  }, []);
 
   // 🌟 2. 核心分流邏輯 (修復 Tab 消失的 Bug)
   const { articlePosts, knowledgePosts, articleTabs, knowledgeTabs } =
@@ -310,9 +376,8 @@ export default function InfoPage() {
       const tempKnowledgePosts = [];
       const articleCatSet = new Set(maps.articleTabs || []);
       const knowledgeCatSet = new Set(maps.knowledgeTabs || []);
-      const wpSlugs = new Set();
 
-      if (posts?.length && categoryMaps) {
+      if (posts?.length) {
         posts.forEach((post) => {
           const {
             isArticle,
@@ -359,8 +424,6 @@ export default function InfoPage() {
             ...extractWpAuthor(post),
           };
 
-          if (post.slug) wpSlugs.add(post.slug);
-
           if (isArticle)
             tempArticlePosts.push({
               ...formattedPost,
@@ -378,31 +441,9 @@ export default function InfoPage() {
         });
       }
 
-      // 夥伴供稿：僅在主站尚無同 slug WP 文時併入文章精選
-      let hasPartnerContribution = false;
-      for (const card of partnerCards || []) {
-        if (!card?.slug || wpSlugs.has(card.slug)) continue;
-        hasPartnerContribution = true;
-        tempArticlePosts.push({
-          ...card,
-          tags: card.tags?.length ? card.tags : ["合作夥伴供稿"],
-          subCategories: ["合作夥伴供稿"],
-          country: null,
-          partnerContribution: true,
-          authorName:
-            card.authorName ||
-            card.partnerAuthorName ||
-            card.partnerStoreName ||
-            "合作夥伴",
-          authorAvatar: card.authorAvatar || "/images/Logo/icon-192.png",
-        });
-      }
-      if (hasPartnerContribution) {
-        articleCatSet.add("合作夥伴供稿");
-      }
-
-      // 依日期新到舊（partnerCards 已是新到舊；合併後再排一次）
-      tempArticlePosts.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+      tempArticlePosts.sort((a, b) =>
+        String(b.date).localeCompare(String(a.date)),
+      );
 
       return {
         articlePosts: tempArticlePosts,
@@ -410,7 +451,7 @@ export default function InfoPage() {
         articleTabs: ["全部", ...Array.from(articleCatSet)],
         knowledgeTabs: ["全部", ...Array.from(knowledgeCatSet)],
       };
-    }, [posts, categoryMaps, partnerCards]);
+    }, [posts, categoryMaps]);
 
   const articleSubTabs = useMemo(() => {
     if (!categoryMaps || activeArticleTab === "全部") return [];
@@ -450,8 +491,44 @@ export default function InfoPage() {
       authorName: item.authorName,
       authorAvatar: item.authorAvatar,
       tags: item.tags,
+      location: item.country || item.tags?.[0] || null,
     }));
   }, [displayArticleItems]);
+
+  /** 合作夥伴文章 → 旅遊札記（與 NEWS 同卡設計） */
+  const journalSlides = useMemo(() => {
+    return (partnerCards || []).map((card) => {
+      const storeTag = card.partnerStoreName || null;
+      const location =
+        card.location ||
+        card.country ||
+        (card.tags || []).find(
+          (t) => t && t !== "合作夥伴供稿" && t !== storeTag,
+        ) ||
+        null;
+      const tags = [
+        ...(storeTag ? [storeTag] : []),
+        ...((card.tags || []).filter(
+          (t) => t && t !== "合作夥伴供稿" && t !== location,
+        )),
+      ].slice(0, 3);
+      return {
+        image: card.image,
+        title: card.title,
+        description: card.plainExcerpt,
+        link: `/blog/${card.slug}`,
+        date: card.date,
+        authorName:
+          card.authorName ||
+          card.partnerAuthorName ||
+          card.partnerStoreName ||
+          "合作夥伴",
+        authorAvatar: card.authorAvatar || "/images/Logo/icon-192.png",
+        tags,
+        location,
+      };
+    });
+  }, [partnerCards]);
 
   const articleTotalPages = Math.max(
     1,
@@ -462,6 +539,16 @@ export default function InfoPage() {
     const start = (page - 1) * DESKTOP_PAGE_SIZE;
     return carouselSlides.slice(start, start + DESKTOP_PAGE_SIZE);
   }, [carouselSlides, articlePage, articleTotalPages]);
+
+  const journalTotalPages = Math.max(
+    1,
+    Math.ceil(journalSlides.length / DESKTOP_PAGE_SIZE),
+  );
+  const pagedJournalSlides = useMemo(() => {
+    const page = Math.min(journalPage, journalTotalPages);
+    const start = (page - 1) * DESKTOP_PAGE_SIZE;
+    return journalSlides.slice(start, start + DESKTOP_PAGE_SIZE);
+  }, [journalSlides, journalPage, journalTotalPages]);
 
   useEffect(() => {
     setArticlePage(1);
@@ -500,21 +587,6 @@ export default function InfoPage() {
     setActiveKnowledgeId(null);
   }, [activeKnowledgeTab, activeKnowledgeSubTab]);
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
-          <LoadingIndicator
-            layout="inline"
-            label="抓取最新文章中..."
-            size="lg"
-            labelClassName="font-bold tracking-widest text-gray-500"
-          />
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout>
       <div className="overflow-hidden">
@@ -529,23 +601,26 @@ export default function InfoPage() {
         </div>
 
         {/* ========================================== */}
-        {/* 第一區塊：文章精選 (Carousel) */}
+        {/* 第一區塊：NEWS／文章精選（方圖黑框網格） */}
         {/* ========================================== */}
-        <section className="flex relative  flex-col z-50 justify-end w-full pb-20 bg-white/70 backdrop-blur-2xl backdrop-saturate-150 ">
-          <div className="banner relative z-[99]   ">
+        <section className="relative z-50 w-full bg-white pb-16 sm:pb-20">
+          <div className="banner relative z-[99]">
             <InfiniteCarousel />
           </div>
-          <div className="w-full px-4 mx-auto max-w-[1500px] sm:w-[80%]">
-            <div className="title flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-              <div className="flex items-center justify-center">
-                <h2 className="text-6xl font-bold text-stone-700">NEWS</h2>
-                <div className="mx-4 text-slate-400">/</div>
-                <p className="text-[15px] text-stone-600 tracking-wider">
+          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 pt-10 sm:pt-14">
+            <div className="mb-8 flex flex-col gap-4 md:mb-10 md:flex-row md:items-end md:justify-between">
+              <div className="flex items-baseline gap-3">
+                <h2 className="text-4xl font-bold tracking-tight text-black sm:text-5xl md:text-6xl">
+                  NEWS
+                </h2>
+                <span className="text-stone-300" aria-hidden>
+                  /
+                </span>
+                <p className="text-sm tracking-wider text-stone-600 sm:text-[15px]">
                   文章精選
                 </p>
               </div>
 
-              {/* 文章區：分類／地區下拉 */}
               <BlogFilterSelects
                 tabs={articleTabs}
                 activeTab={activeArticleTab}
@@ -563,19 +638,38 @@ export default function InfoPage() {
 
             {displayArticleItems.length > 0 ? (
               <>
-                <div className="md:hidden">
-                  <Carousel slides={carouselSlides} />
+                {/* 手機：橫向輪播 */}
+                <div className="md:hidden -mx-4 sm:-mx-6">
+                  <MobileCardCarousel
+                    key={`news-m-${activeArticleTab}-${activeArticleSubTab}`}
+                    label="文章精選"
+                    slideClassName="box-border shrink-0 flex-[0_0_78%] min-w-[78%] max-w-[78%]"
+                    gap={14}
+                    align="start"
+                    loop={carouselSlides.length > 2}
+                    autoplay={carouselSlides.length > 1}
+                    className="px-4 sm:px-6"
+                  >
+                    {carouselSlides.map((slide, index) => (
+                      <BlogArticleCard
+                        key={slide.link || index}
+                        slide={slide}
+                      />
+                    ))}
+                  </MobileCardCarousel>
                 </div>
+
+                {/* 桌機：網格＋分頁 */}
                 <div className="hidden md:block">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={`${activeArticleTab}-${activeArticleSubTab}-${articlePage}`}
-                      initial={{ opacity: 0, y: 30 }}
+                      initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 30 }}
-                      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                      exit={{ opacity: 0, y: 12 }}
+                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                     >
-                      <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 xl:grid-cols-4">
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-12 lg:grid-cols-3">
                         {pagedArticleSlides.map((slide, index) => (
                           <BlogArticleCard
                             key={slide.link || index}
@@ -593,8 +687,85 @@ export default function InfoPage() {
                 </div>
               </>
             ) : (
-              <div className="text-center py-20 text-slate-500 font-medium bg-white/50 rounded-2xl border border-slate-200">
+              <div className="border border-stone-200 py-20 text-center text-sm font-medium text-stone-500">
                 此分類目前無文章...
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ========================================== */}
+        {/* 旅遊札記：合作夥伴文章（同 NEWS 卡片設計） */}
+        {/* ========================================== */}
+        <section className="relative z-50 w-full bg-white pb-16 sm:pb-20 border-t border-stone-100">
+          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 pt-10 sm:pt-14">
+            <div className="mb-8 flex flex-col gap-4 md:mb-10 md:flex-row md:items-end md:justify-between">
+              <div className="flex items-baseline gap-3">
+                <h2 className="text-4xl font-bold tracking-tight text-black sm:text-5xl md:text-6xl">
+                  JOURNAL
+                </h2>
+                <span className="text-stone-300" aria-hidden>
+                  /
+                </span>
+                <p className="text-sm tracking-wider text-stone-600 sm:text-[15px]">
+                  旅遊札記
+                </p>
+              </div>
+            </div>
+
+            {journalSlides.length > 0 ? (
+              <>
+                {/* 手機：橫向輪播 */}
+                <div className="md:hidden -mx-4 sm:-mx-6">
+                  <MobileCardCarousel
+                    key="journal-m"
+                    label="旅遊札記"
+                    slideClassName="box-border shrink-0 flex-[0_0_78%] min-w-[78%] max-w-[78%]"
+                    gap={14}
+                    align="start"
+                    loop={journalSlides.length > 2}
+                    autoplay={journalSlides.length > 1}
+                    className="px-4 sm:px-6"
+                  >
+                    {journalSlides.map((slide, index) => (
+                      <BlogArticleCard
+                        key={slide.link || index}
+                        slide={slide}
+                      />
+                    ))}
+                  </MobileCardCarousel>
+                </div>
+
+                {/* 桌機：網格＋分頁 */}
+                <div className="hidden md:block">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`journal-${journalPage}`}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 12 }}
+                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-12 lg:grid-cols-3">
+                        {pagedJournalSlides.map((slide, index) => (
+                          <BlogArticleCard
+                            key={slide.link || index}
+                            slide={slide}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+                  <BlogPagination
+                    page={Math.min(journalPage, journalTotalPages)}
+                    totalPages={journalTotalPages}
+                    onChange={setJournalPage}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="border border-stone-200 py-20 text-center text-sm font-medium text-stone-500">
+                目前尚無旅遊札記...
               </div>
             )}
           </div>
@@ -654,9 +825,6 @@ export default function InfoPage() {
             <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-8 sm:mb-12">
               <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3">
                 <div>
-                  <p className="text-sky-500 font-semibold tracking-wide text-sm sm:text-base">
-                    - 你所想知道的問題
-                  </p>
                   <h2 className="text-6xl sm:text-[44px] lg:text-[52px] leading-[1] font-extrabold text-stone-700">
                     Knowledge
                   </h2>
@@ -859,3 +1027,112 @@ const BLOG_MARQUEE_DOWN = [
     alt: "旅遊配件",
   },
 ];
+
+function jsonSafe(value) {
+  return JSON.parse(JSON.stringify(value ?? null));
+}
+
+/** 列表頁用：保留分類／封面／摘要／作者，去掉全文以利 ISR props */
+function slimWpPostForBlogIndex(post) {
+  if (!post) return null;
+  const mediaUrl =
+    post._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null;
+  const contentHtml = post.content?.rendered || "";
+  const inlineMatch = !mediaUrl
+    ? contentHtml.match(/<img[^>]+src=["']([^"']+)["']/i)
+    : null;
+  const cover = mediaUrl || inlineMatch?.[1] || null;
+  const author = post._embedded?.author?.[0];
+  const terms = (post._embedded?.["wp:term"] || []).map((group) =>
+    (group || [])
+      .filter(Boolean)
+      .map((t) => ({
+        id: t.id,
+        name: t.name,
+        slug: t.slug,
+        taxonomy: t.taxonomy,
+        parent: t.parent ?? 0,
+      })),
+  );
+
+  return {
+    id: post.id,
+    slug: post.slug,
+    date: post.date,
+    categories: Array.isArray(post.categories) ? post.categories : [],
+    title: { rendered: post.title?.rendered || "" },
+    excerpt: { rendered: post.excerpt?.rendered || "" },
+    content: { rendered: cover ? `<img src="${cover}" />` : "" },
+    _embedded: {
+      ...(cover
+        ? { "wp:featuredmedia": [{ source_url: cover }] }
+        : {}),
+      ...(author
+        ? {
+            author: [
+              {
+                name: author.name || null,
+                avatar_urls: author.avatar_urls || null,
+              },
+            ],
+          }
+        : {}),
+      ...(terms.length ? { "wp:term": terms } : {}),
+    },
+  };
+}
+
+/**
+ * SSG + ISR：首屏即有文章 HTML（SEO），背景定期再驗證
+ * revalidate=300 → 約 5 分鐘刷新一次
+ */
+export async function getStaticProps() {
+  let posts = [];
+  let categories = [];
+  let partnerCards = [];
+  let initialError = null;
+
+  const [postsResult, categoriesResult, partnerResult] =
+    await Promise.allSettled([
+      fetchWpPosts({ per_page: 100, embed: true }),
+      fetchWpCategories(),
+      fetchAllPublishedPartnerPostsForMain({ limit: 100 }),
+    ]);
+
+  if (postsResult.status === "fulfilled") {
+    posts = (postsResult.value || [])
+      .map(slimWpPostForBlogIndex)
+      .filter(Boolean);
+  } else {
+    initialError =
+      postsResult.reason?.message || "無法載入 WordPress 文章";
+    console.error("[blog getStaticProps] posts", postsResult.reason);
+  }
+
+  if (categoriesResult.status === "fulfilled") {
+    categories = categoriesResult.value || [];
+  } else {
+    console.error(
+      "[blog getStaticProps] categories",
+      categoriesResult.reason,
+    );
+  }
+
+  if (partnerResult.status === "fulfilled") {
+    partnerCards = (partnerResult.value || [])
+      .map(toMainBlogListCard)
+      .filter(Boolean);
+  } else {
+    console.error("[blog getStaticProps] partners", partnerResult.reason);
+  }
+
+  return {
+    props: {
+      initialPosts: jsonSafe(posts) || [],
+      initialCategories: jsonSafe(categories) || [],
+      initialPartnerCards: jsonSafe(partnerCards) || [],
+      initialError: initialError || null,
+    },
+    revalidate: 300,
+  };
+}

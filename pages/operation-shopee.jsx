@@ -5,11 +5,75 @@ import Layout from "./Layout.js";
 import Image from "next/image";
 import Carousel from "../components/ThreeHorizontalSlider.jsx";
 
+/** 蝦皮兌換碼 → QR Code 區塊（暫時隱藏，上線後改 true） */
+const SHOW_SHOPEE_REDEEM_SECTION = false;
+
 const SECTION_ANCHORS = [
-  { id: "prep", label: "事前準備" },
-  { id: "install", label: "安裝eSIM" },
-  { id: "shopee", label: "蝦皮兌換教學" },
+  { id: "prep", label: "事前準備", step: "01" },
+  { id: "install", label: "安裝 eSIM", step: "02" },
+  ...(SHOW_SHOPEE_REDEEM_SECTION
+    ? [{ id: "shopee", label: "蝦皮兌換", step: "03", fullLabel: "蝦皮兌換教學" }]
+    : []),
 ];
+
+function OperationSectionNav({ activeSection, onSelect }) {
+  return (
+    <nav
+      className="md:hidden sticky top-[64px] z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur-md shadow-[0_4px_20px_rgba(15,23,42,0.06)]"
+      aria-label="操作教學章節"
+    >
+      <div className="px-3 py-2.5">
+        <div
+          className={`grid gap-1 rounded-2xl bg-slate-100/90 p-1 ${
+            SECTION_ANCHORS.length === 2 ? "grid-cols-2" : "grid-cols-3"
+          }`}
+          role="tablist"
+        >
+          {SECTION_ANCHORS.map((item) => {
+            const isActive = activeSection === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                aria-current={isActive ? "true" : undefined}
+                aria-label={item.fullLabel || item.label}
+                onClick={() => onSelect(item.id)}
+                className={`relative flex min-h-[52px] flex-col items-center justify-center rounded-xl px-1.5 py-2 text-center transition-all duration-200 ${
+                  isActive
+                    ? "bg-white text-[#1a5ad1] shadow-sm ring-1 ring-slate-200/80"
+                    : "text-slate-500 hover:text-slate-700 active:scale-[0.98]"
+                }`}
+              >
+                <span
+                  className={`text-[10px] font-semibold tracking-[0.2em] ${
+                    isActive ? "text-[#1a5ad1]/70" : "text-slate-400"
+                  }`}
+                >
+                  {item.step}
+                </span>
+                <span
+                  className={`mt-0.5 text-[11px] leading-snug ${
+                    isActive ? "font-bold" : "font-medium"
+                  }`}
+                >
+                  {item.label}
+                </span>
+                {isActive ? (
+                  <span
+                    className="absolute bottom-1 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-[#1a5ad1]"
+                    aria-hidden
+                  />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </nav>
+  );
+}
 
 const CHECK_ESIM_SUPPORT_STEPS = [
   {
@@ -31,6 +95,11 @@ const CHECK_ESIM_SUPPORT_STEPS = [
 
 const ESIM_INSTALL_METHODS = [
   {
+    title: "長按 QR Code 啟用",
+    desc: "在郵件、LINE 或訂單頁長按 QR Code 圖片，選擇「加入行動方案」或「加入 eSIM」，即可開始安裝。",
+    image: "/images/how-to-install-esim/長按qrcode啟用.png",
+  },
+  {
     title: "使用行動條碼掃描",
     desc: "前往「設定」>「行動服務」>「加入 eSIM」，選擇「使用行動條碼」，掃描 Jeko 寄給您的 QR Code 即可完成安裝。",
     image: "/images/how-to-install-esim/使用行動條碼掃描.png",
@@ -39,11 +108,6 @@ const ESIM_INSTALL_METHODS = [
     title: "使用相機掃描 QR Code",
     desc: "開啟 iPhone 相機對準 QR Code，點擊畫面上方出現的「行動方案」通知，依指示加入 eSIM。",
     image: "/images/how-to-install-esim/使用相機掃描qrcode.png",
-  },
-  {
-    title: "長按 QR Code 啟用",
-    desc: "在郵件、LINE 或訂單頁長按 QR Code 圖片，選擇「加入行動方案」或「加入 eSIM」，即可開始安裝。",
-    image: "/images/how-to-install-esim/長按qrcode啟用.png",
   },
   {
     title: "手動安裝",
@@ -240,49 +304,37 @@ export default function Home() {
     <Layout>
       {/* <Carousel /> */}
       <div className="main pt-20">
-        {/* 手機：頂部橫向錨點 */}
-        <nav className="md:hidden sticky top-[64px] z-40 border-b border-gray-200 bg-white/95 backdrop-blur px-3 py-2">
-          <ul className="flex gap-1 overflow-x-auto">
-            {SECTION_ANCHORS.map((item) => (
-              <li key={item.id} className="shrink-0">
-                <button
-                  type="button"
-                  onClick={() => scrollToSection(item.id)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-bold tracking-wide transition ${
-                    activeSection === item.id
-                      ? "bg-[#1a5ad1] text-white"
-                      : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        {/* 手機：頂部章節導覽 */}
+        <OperationSectionNav
+          activeSection={activeSection}
+          onSelect={scrollToSection}
+        />
 
         <div className="flex flex-col md:flex-row">
           {/* 桌面：最左側 sticky 錨點 */}
           <aside className="hidden md:block md:w-[72px] lg:w-[96px] shrink-0 border-r border-gray-200 bg-white">
-            <nav className="sticky top-28 flex flex-col items-center gap-8 py-10 px-2">
-              {SECTION_ANCHORS.map((item, index) => {
+            <nav className="sticky top-28 flex flex-col items-center gap-6 py-10 px-2">
+              {SECTION_ANCHORS.map((item) => {
                 const isActive = activeSection === item.id;
                 return (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => scrollToSection(item.id)}
-                    className={`group flex flex-col items-center gap-2 transition ${
-                      isActive ? "text-[#1a5ad1]" : "text-stone-400 hover:text-stone-700"
+                    className={`group flex flex-col items-center gap-2 rounded-xl px-1 py-2 transition ${
+                      isActive
+                        ? "text-[#1a5ad1]"
+                        : "text-stone-400 hover:text-stone-700"
                     }`}
                     aria-current={isActive ? "true" : undefined}
+                    aria-label={item.fullLabel || item.label}
                   >
                     <span
-                      className={`text-[11px] tracking-[0.35em] font-medium ${
+                      className={`text-[11px] tracking-[0.35em] font-semibold ${
                         isActive ? "text-[#1a5ad1]" : "text-stone-300"
                       }`}
                     >
-                      {String(index + 1).padStart(2, "0")}
+                      {item.step}
                     </span>
                     <span
                       className={`[writing-mode:vertical-rl] [text-orientation:upright] text-sm lg:text-base font-bold tracking-[0.35em] leading-none py-1 border-l-2 pl-2 ${
@@ -302,7 +354,7 @@ export default function Home() {
           <div className="flex-1 min-w-0">
         <section
           id="prep"
-          className="operation-step scroll-mt-28 border-b border-gray-200"
+          className="operation-step scroll-mt-[7.75rem] md:scroll-mt-28 border-b border-gray-200"
         >
           {/* 右側主要內容卡片 */}
           <div className="w-full border border-gray-200 border-l-0 bg-white">
@@ -580,7 +632,7 @@ export default function Home() {
 
         <section
           id="install"
-          className="operation-step scroll-mt-28 border-b border-gray-200"
+          className="operation-step scroll-mt-[7.75rem] md:scroll-mt-28 border-b border-gray-200"
         >
           <div className="w-full border border-gray-200 border-l-0">
             <div className="border-b border-gray-200 bg-[#1a5ad1] px-6 md:px-16 lg:px-20 py-8 md:py-10 flex flex-col justify-center">
@@ -660,9 +712,10 @@ export default function Home() {
           </div>
         </section>
 
+        {SHOW_SHOPEE_REDEEM_SECTION ? (
         <section
           id="shopee"
-          className="operation-step scroll-mt-28"
+          className="operation-step scroll-mt-[7.75rem] md:scroll-mt-28"
         >
           <div className="w-full border border-gray-200 border-l-0 bg-white">
             <div className="border-b border-gray-200 bg-[#1a5ad1] px-6 md:px-16 lg:px-20 py-8 md:py-10 flex flex-col justify-center">
@@ -733,6 +786,7 @@ export default function Home() {
             </div>
           </div>
         </section>
+        ) : null}
           </div>
         </div>
       </div>
@@ -740,7 +794,7 @@ export default function Home() {
       {/* --------------------------------------- */}
       {/* 🔹 POPUP：支援機型與規格表 */}
       {/* --------------------------------------- */}
-      {isShopeeComingSoonOpen && (
+      {SHOW_SHOPEE_REDEEM_SECTION && isShopeeComingSoonOpen && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4"
           onClick={() => setIsShopeeComingSoonOpen(false)}

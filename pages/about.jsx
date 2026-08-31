@@ -105,13 +105,15 @@ export default function Home() {
           <div className="w-full lg:w-[50%] xl:w-[65%] lg:border-r border-gray-200 h-full p-6 md:p-10 xl:p-20">
             <div className="max-w-[600px]">
               <h2 className="text-3xl md:text-5xl lg:text-6xl font-normal leading-tight text-gray-900">
-                eSIM。
+                Jeko eSIM。
                 <br />
-                <span className="font-bold">您旅行的好夥伴</span>
+                <span className="font-bold">旅途不斷線的接口</span>
               </h2>
               <p className="leading-relaxed mt-6 text-stone-800 text-[16px]">
-                即掃即用，隨時上線。全新 eSIM 服務提供 24HR
-                快速發貨，讓你無須等待、無需實體卡，出國前後都能輕鬆啟用。無論工作、旅遊或日常上網，一掃即可連線世界，享受真正的即時便利與自由行動力。
+                Jeko eSIM
+                致力於打造一個以旅遊連線為核心的平台，讓旅人行動更方便，不必時刻為網路斷線煩惱而打亂旅程。從目的地
+                eSIM
+                即掃即用，到分享旅遊夥伴的實用文章與經驗，我們希望把「上網」變成旅程裡最省心的一環，讓你把注意力留在風景與行程上。
               </p>
 
               <button className="group/btn inline-flex items-center px-8 py-3 rounded-full mt-8 text-white font-semibold text-sm bg-gradient-to-r from-[#0059b8] via-[#0071cf] to-[#0095e6] shadow-md transition-all duration-300 hover:brightness-110 hover:shadow-lg hover:-translate-y-1">
@@ -138,17 +140,11 @@ export default function Home() {
           <div className="w-full lg:w-[45%] xl:w-[30%] h-full flex justify-center items-center border-t lg:border-t-0 border-gray-200">
             <div className="p-6 md:p-10 xl:p-20">
               <h3 className="text-xl md:text-3xl lg:text-4xl text-gray-800 font-medium mb-4">
-                無卡束縛，自由上線
+                即掃即用，隨時上線
               </h3>
               <p className="leading-relaxed text-stone-800 text-[16px] text-justify">
-                eSIM
-                讓連線變得更直覺、更自由。免插卡、免等待，只需掃描即可啟用，無論出國旅行或日常使用都能立即上線。
-                <span className="hidden md:inline">
-                  支援多門號切換，讓你在工作、生活間輕鬆管理不同方案；內建式設計也更安全、不怕遺失，更具耐用性。
-                </span>
-                <span className="block mt-2">
-                  同時減少實體塑料使用，是更環保、更現代的通信選擇。以更聰明的方式連線，讓你的行動力再進化。
-                </span>
+                全新 eSIM 服務提供 24HR
+                快速發貨，讓你無須等待、無需實體卡，出國前後都能輕鬆啟用。無論工作、旅遊或日常上網，一掃即可連線世界，享受真正的即時便利與自由行動力。
               </p>
             </div>
           </div>
@@ -158,50 +154,38 @@ export default function Home() {
       {/* ================= Section 3: 旅遊平台與合作 ================= */}
       <section className="section-company-intro">
         <div className="mx-auto w-full max-w-[1500px] px-6 lg:px-10 py-12 lg:py-16">
-          <p className="text-sm font-bold tracking-[0.2em] text-stone-500">
-            03 ／ PARTNERS
-          </p>
-          <h2 className="mt-3 text-3xl md:text-5xl font-bold text-gray-900 leading-tight">
-            給旅人一個接口，
+          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight">
+            全球旅遊 eSIM，
             <br />
-            也給夥伴一個舞台
+            落地就能上網
           </h2>
           <p className="mt-4 text-lg md:text-xl font-semibold text-stone-600">
-            從一張 eSIM，長成一整趟旅程的後勤。
+            熱門目的地方案齊全，即掃即用，旅途不斷線。
           </p>
 
           <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12 items-start">
             <div>
-              <p className="text-xs font-bold tracking-widest text-[#0A6CD0] mb-2">
-                01 ／ 旅客
-              </p>
               <h3 className="text-xl font-bold text-gray-900 mb-3 min-h-[1.75rem]">
-                出發前一次備齊
+                eSIM，即掃即用
               </h3>
               <p className="text-stone-700 text-[15px] leading-relaxed tracking-wide">
-                先選目的地 eSIM，再配住宿與包車。日本、韓國要原生高速吃到飽，東南亞與中港要穩定覆蓋——熱銷方案超過 200 種，讓行程少一個臨時找網的變數。
+                選好目的地與方案，購買後即可取得 QR Code，掃描安裝、免換卡、免等實體寄送。日本、韓國原生高速吃到飽，東南亞與中港穩定覆蓋——熱銷超過 200 種，落地就能上網。
               </p>
             </div>
             <div>
-              <p className="text-xs font-bold tracking-widest text-[#0A6CD0] mb-2">
-                02 ／ 夥伴
-              </p>
               <h3 className="text-xl font-bold text-gray-900 mb-3 min-h-[1.75rem]">
-                把你的服務接上來
+                有客服，不孤單
               </h3>
               <p className="text-stone-700 text-[15px] leading-relaxed tracking-wide">
-                民宿、司機、旅行社、地陪與內容創作者都歡迎。Jeko 希望做成適合旅遊夥伴一起接單、曝光與分潤的平台，而不是只賣一張卡。
+                台灣團隊在地支援，安裝、啟用與使用問題都能問。時差近、語言通，售後有人接，出國前後都安心。
               </p>
             </div>
             <div>
-              <p className="text-xs font-bold tracking-widest text-[#0A6CD0] mb-2">
-                03 ／ 合作
-              </p>
               <h3 className="text-xl font-bold text-gray-900 mb-3 min-h-[1.75rem]">
-                台灣團隊，好溝通
+                統編發票，合規報帳
               </h3>
               <p className="text-stone-700 text-[15px] leading-relaxed tracking-wide">
-                我們在台灣，時差、語言與售後都走得近。有通路、有車隊、有內容，或只是想讓旅客多一個可靠選項——來聊聊，我們一起把旅程接好。
+                合法合規的公司行號，可依需求開立統編發票。旅行社、民宿業者、租車業主與一般公司行號皆可洽詢，方便企業報帳與對帳。
               </p>
             </div>
           </div>

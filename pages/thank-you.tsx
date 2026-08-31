@@ -9,6 +9,7 @@ import {
   formatNetworksZh,
   formatSetupNotesZh,
 } from "@/lib/esimDisplayZh";
+import { hydrateEsimProfileFields } from "@/lib/esimInstallLinks";
 import JekoPillButton from "@/components/ui/JekoPillButton";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import CheckoutTicketReceipt, {
@@ -112,7 +113,7 @@ function CopyField({
 }
 
 function EsimProfileCard({
-  profile,
+  profile: rawProfile,
   index,
   total,
   onCopy,
@@ -128,6 +129,7 @@ function EsimProfileCard({
   /** 票券下方緊湊樣式 */
   compact?: boolean;
 }) {
+  const profile = hydrateEsimProfileFields(rawProfile) as QrcodeInfo;
   const [settingsOpen, setSettingsOpen] = useState(true);
   const notes = formatSetupNotesZh(
     [profile.specialDesc, profile.setupNotes].filter(Boolean).join("｜"),
@@ -300,6 +302,10 @@ export default function ThankYouPage() {
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
   const [offsiteInfo, setOffsiteInfo] = useState<OffsiteInfo | null>(null);
   const [qrcodes, setQrcodes] = useState<QrcodeInfo[]>([]);
+  const [fulfillmentFailed, setFulfillmentFailed] = useState(false);
+  const [fulfillmentStatus, setFulfillmentStatus] = useState<string | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [copiedHint, setCopiedHint] = useState("");
   const [printDone, setPrintDone] = useState(false);
@@ -401,10 +407,15 @@ export default function ThankYouPage() {
     if (!orderNo) return { ok: false };
     try {
       const res = await axios.get("/api/fetch-order", { params: { orderNo } });
-      const { qrcodes, orderInfo, offsiteInfo } = res.data ?? {};
+      const { qrcodes, orderInfo, offsiteInfo, fulfillmentFailed, fulfillmentStatus } =
+        res.data ?? {};
       setOrderInfo(orderInfo || null);
       setOffsiteInfo(offsiteInfo || null);
       setQrcodes(Array.isArray(qrcodes) ? qrcodes : []);
+      setFulfillmentFailed(Boolean(fulfillmentFailed));
+      setFulfillmentStatus(
+        fulfillmentStatus ? String(fulfillmentStatus) : null,
+      );
 
       if (!clearedOnceRef.current && isPaid(orderInfo)) {
         clearedOnceRef.current = true;
@@ -419,6 +430,7 @@ export default function ThankYouPage() {
         ok: true,
         paid: isPaid(orderInfo),
         hasQR: Array.isArray(qrcodes) && qrcodes.length > 0,
+        fulfillmentFailed: Boolean(fulfillmentFailed),
       };
     } catch (err) {
       console.error("❌ 抓取訂單資料失敗", err);
@@ -428,15 +440,19 @@ export default function ThankYouPage() {
 
   const triesRef = useRef(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  // 發貨可能含 MicroeSIM 重試（最長約 3 分鐘），多輪詢一陣子
-  const maxTries = 40;
+  // 發貨可能含 MicroeSIM 重試＋背景備案重試（約數分鐘），多輪詢一陣子
+  const maxTries = 72;
 
   const startPolling = useCallback(() => {
     if (timerRef.current || !orderNo) return;
     timerRef.current = setInterval(async () => {
       triesRef.current += 1;
       const r = await fetchOrderOnce();
-      if ((r.paid && r.hasQR) || triesRef.current >= maxTries) {
+      if (
+        (r.paid && r.hasQR) ||
+        r.fulfillmentFailed ||
+        triesRef.current >= maxTries
+      ) {
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
@@ -698,10 +714,39 @@ export default function ThankYouPage() {
           )}
 
           {!loading && isPaid(orderInfo) && qrcodes.length === 0 && (
-            <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-800">
-              付款完成，正在產生 eSIM 與發票，請稍候…（系統會自動更新）
+            <div
+              className={
+                fulfillmentFailed
+                  ? "rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"
+                  : "rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm text-blue-800"
+              }
+            >
+              {fulfillmentFailed ? (
+                <>
+                  <p className="font-bold">付款已成功，eSIM 正在由系統補發</p>
+                  <p className="mt-2 leading-relaxed">
+                    訂單已收款；若信箱稍後仍未收到 QR／安裝資訊，請帶訂單編號聯繫
+                    LINE 客服，我們會立即協助補發。您也可稍後重新整理本頁。
+                  </p>
+                </>
+              ) : fulfillmentStatus === "processing" ? (
+                <>付款完成，系統正在開通 eSIM（含自動重試），請稍候…本頁會自動更新</>
+              ) : (
+                <>付款完成，正在產生 eSIM 與發票，請稍候…（系統會自動更新）</>
+              )}
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                <JekoPillButton href={pendingHref} variant="primary" size="sm">
+                <JekoPillButton
+                  href={
+                    process.env.NEXT_PUBLIC_LINE_OA_URL ||
+                    "https://line.me/R/ti/p/@593gvyzn"
+                  }
+                  external
+                  variant="primary"
+                  size="sm"
+                >
+                  LINE 客服
+                </JekoPillButton>
+                <JekoPillButton href={pendingHref} variant="secondary" size="sm">
                   前往訂單追蹤
                 </JekoPillButton>
                 <JekoPillButton

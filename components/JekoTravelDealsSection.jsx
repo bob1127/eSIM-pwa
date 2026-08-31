@@ -118,7 +118,7 @@ export default function JekoTravelDealsSection() {
   return (
     <section
       id="jeko-travel-deals"
-      className="w-full bg-[#f0f1f3] pb-12 lg:pb-16 pt-4 scroll-mt-28"
+      className="w-full bg-white pb-12 lg:pb-16 pt-4 scroll-mt-28"
     >
       {/* 舊錨點相容（Slider / 手機捷徑） */}
       <span id="accommodation-recommend" className="block scroll-mt-28" />
@@ -137,9 +137,9 @@ export default function JekoTravelDealsSection() {
           external
         />
 
-        {/* 類別 Tab：分段控制 */}
+        {/* 類別 Tab：白底區塊上用淺灰軌道區隔 */}
         <div
-          className="mb-5 flex gap-1.5 rounded-2xl bg-white/80 p-1.5 shadow-[0_1px_0_rgba(15,23,42,0.04)] ring-1 ring-slate-200/80"
+          className="mb-5 flex gap-1.5 rounded-2xl bg-[#f0f1f3] p-1.5 ring-1 ring-slate-200/70"
           role="tablist"
           aria-label="旅遊推薦類別"
         >
@@ -155,20 +155,22 @@ export default function JekoTravelDealsSection() {
                 className={[
                   "relative min-w-0 flex-1 rounded-xl px-2 py-2.5 sm:px-3 sm:py-3 text-center transition-all",
                   active
-                    ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200"
-                    : "text-slate-500 hover:text-slate-800",
+                    ? "bg-white text-slate-900 shadow-sm ring-1 ring-black/5"
+                    : "text-slate-500 hover:bg-white/50 hover:text-slate-800",
                 ].join(" ")}
               >
                 <span
-                  className={[
-                    "block text-[13px] sm:text-[15px] font-black tracking-tight",
-                    active ? "" : "",
-                  ].join(" ")}
+                  className="block text-[13px] sm:text-[15px] font-black tracking-tight"
                   style={active ? { color: tab.accent } : undefined}
                 >
                   {tab.label}
                 </span>
-                <span className="mt-0.5 block text-[10px] sm:text-[11px] font-medium text-slate-400 leading-tight">
+                <span
+                  className={[
+                    "mt-0.5 block text-[10px] sm:text-[11px] font-medium leading-tight",
+                    active ? "text-slate-500" : "text-slate-400",
+                  ].join(" ")}
+                >
                   {tab.hint}
                 </span>
               </button>

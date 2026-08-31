@@ -47,12 +47,6 @@ export default function LinePayConfirmPage() {
                       return;
                     }
 
-                    console.log("LINE Pay confirm 回傳結果:", {
-                      httpStatus: res.status,
-                      raw: raw.slice(0, 500),
-                      result,
-                    });
-
                     if (result.success) {
                       setStatus("🎉 付款成功，前往完成頁...");
                       router.replace(

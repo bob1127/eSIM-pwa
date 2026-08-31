@@ -385,6 +385,7 @@ async function main() {
     country: "JP",
     is_native: true,
     plan_kind: "unlimited",
+    hot_sale_telecoms: [TELECOM_10],
     carrier_profit_by_carrier: {
       [TELECOM_10]: PROFIT,
     },

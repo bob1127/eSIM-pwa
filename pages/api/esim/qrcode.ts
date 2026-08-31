@@ -8,7 +8,6 @@ import {
   ESIM_BASE_URL,
   resolveChannelDataplanId,
   signMicroesimHeaders,
-  shouldForceTestPlan,
 } from "../../../lib/esim/microesimClient";
 import { guardEsimCatalog } from "../../../lib/esimCatalogGuard";
 
@@ -25,10 +24,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (!channel_dataplan_id || !number) {
     return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  if (shouldForceTestPlan()) {
-    console.log(`🧪 [esim/qrcode] 強制測試方案: ${channel_dataplan_id}`);
   }
 
   let active_type = "ACTIVEDBYDEVICE";

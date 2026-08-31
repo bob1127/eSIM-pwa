@@ -64,8 +64,6 @@ const MySwiperComponent = () => {
           className="m-0 p-0"
           navigation
           pagination={{ clickable: false }}
-          onSwiper={(swiper) => console.log(swiper)}
-          onSlideChange={() => console.log("slide change")}
         >
           {/* Add SwiperSlide components here */}
         </Swiper>

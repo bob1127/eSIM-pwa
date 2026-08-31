@@ -9,9 +9,7 @@ export async function addToCart(productId, quantity) {
     });
 
     const data = await res.json();
-    if (res.ok) {
-      console.log("✅ 加入購物車成功:", data);
-    } else {
+    if (!res.ok) {
       console.error("❌ 加入購物車失敗:", data);
     }
     return data;

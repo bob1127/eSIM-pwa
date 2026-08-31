@@ -45,6 +45,10 @@ Vercel → Project → Settings → Environment Variables：
 進會員中心範例：
   https://liff.line.me/{LIFF_ID}?path=%2Faccount
 
+開啟流量提醒（data-query）：
+  https://liff.line.me/{LIFF_ID}?path=%2Fdata-query%3Fsetup%3Dtraffic
+  本機可直接開：http://localhost:3000/data-query
+
 買 eSIM 首頁：
   https://liff.line.me/{LIFF_ID}
   或

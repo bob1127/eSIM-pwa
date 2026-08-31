@@ -33,6 +33,11 @@ const CHECK_ESIM_SUPPORT_IMAGES = [
 
 const ESIM_INSTALL_METHODS = [
   {
+    title: "長按 QR Code 啟用",
+    desc: "在郵件、LINE 或訂單頁長按 QR Code 圖片，選擇「加入行動方案」或「加入 eSIM」，即可開始安裝。",
+    image: "/images/how-to-install-esim/長按qrcode啟用.png",
+  },
+  {
     title: "使用行動條碼掃描",
     desc: "前往「設定」>「行動服務」>「加入 eSIM」，選擇「使用行動條碼」，掃描 Jeko 寄給您的 QR Code 即可完成安裝。",
     image: "/images/how-to-install-esim/使用行動條碼掃描.png",
@@ -41,11 +46,6 @@ const ESIM_INSTALL_METHODS = [
     title: "使用相機掃描 QR Code",
     desc: "開啟 iPhone 相機對準 QR Code，點擊畫面上方出現的「行動方案」通知，依指示加入 eSIM。",
     image: "/images/how-to-install-esim/使用相機掃描qrcode.png",
-  },
-  {
-    title: "長按 QR Code 啟用",
-    desc: "在郵件、LINE 或訂單頁長按 QR Code 圖片，選擇「加入行動方案」或「加入 eSIM」，即可開始安裝。",
-    image: "/images/how-to-install-esim/長按qrcode啟用.png",
   },
   {
     title: "手動安裝",

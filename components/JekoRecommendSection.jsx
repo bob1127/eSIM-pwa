@@ -92,7 +92,7 @@ export default function JekoRecommendSection() {
   return (
     <section
       id="jeko-recommend"
-      className="w-full bg-[#f0f1f3] pt-6 lg:pt-8 pb-4 scroll-mt-28"
+      className="w-full bg-white pt-6 lg:pt-8 pb-4 scroll-mt-28"
     >
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <HomeSectionHeader

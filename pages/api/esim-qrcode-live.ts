@@ -13,8 +13,6 @@ import {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Only POST allowed" });
 
-  console.log("👉 Incoming Body:", req.body);
-
   const rawPlanId = req.body?.planId || req.body?.channel_dataplan_id || ESIM_TEST_PLAN_ID;
   const channel_dataplan_id = resolveChannelDataplanId(rawPlanId, PLAN_ID_MAP);
   const quantity = parseInt(req.body?.quantity || req.body?.number || "1", 10);
