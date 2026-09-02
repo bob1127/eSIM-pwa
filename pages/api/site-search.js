@@ -1,12 +1,12 @@
 import { searchWpPosts } from "../../lib/wordpress";
-import { fetchMedusaStoreProductSummaries } from "../../lib/medusaStoreApi";
+import { getSiteSearchProducts } from "../../lib/siteSearchProductCache";
 import {
   SEARCH_SOURCE,
   searchStaticEntries,
   stripHtml,
   scoreFields,
   scoreMatch,
-  buildProductHref,
+  searchProductSummaries,
   compareSearchResults,
 } from "../../lib/siteSearch";
 
@@ -14,63 +14,8 @@ export const config = {
   api: { externalResolver: true },
 };
 
-const PRODUCT_CACHE_MS =
-  Number(process.env.SITE_SEARCH_PRODUCT_CACHE_MS) || 5 * 60 * 1000;
-let productCache = { at: 0, items: null };
-let productInFlight = null;
-
-async function getProductSummaries() {
-  const now = Date.now();
-  if (productCache.items && now - productCache.at < PRODUCT_CACHE_MS) {
-    return productCache.items;
-  }
-  if (productInFlight) return productInFlight;
-
-  productInFlight = (async () => {
-    try {
-      const items = await fetchMedusaStoreProductSummaries();
-      productCache = { at: Date.now(), items: items || [] };
-      return productCache.items;
-    } catch (err) {
-      console.error("[site-search] products", err?.message || err);
-      return productCache.items || [];
-    } finally {
-      productInFlight = null;
-    }
-  })();
-
-  return productInFlight;
-}
-
-function searchProducts(products, query, limit = 8) {
-  const q = String(query || "").trim();
-  if (!q) return [];
-
-  return (products || [])
-    .map((p) => {
-      const title = p.title || p.name || "";
-      const handle = p.handle || "";
-      const desc = stripHtml(p.description || "").slice(0, 160);
-      const score = Math.max(
-        scoreFields({ title, keywords: handle, excerpt: desc }, q),
-        scoreMatch(`${title} ${handle} ${desc}`, q),
-      );
-      if (!score) return null;
-      return {
-        id: `product-${p.id || p.medusa_product_id || handle}`,
-        title: title || handle,
-        href: buildProductHref(p),
-        excerpt: desc,
-        source: SEARCH_SOURCE.product.key,
-        sourceLabel: SEARCH_SOURCE.product.label,
-        image: p.thumbnail || p.image_url || null,
-        score,
-      };
-    })
-    .filter(Boolean)
-    .sort(compareSearchResults)
-    .slice(0, limit);
-}
+const WP_SEARCH_TIMEOUT_MS =
+  Number(process.env.SITE_SEARCH_WP_TIMEOUT_MS) || 400;
 
 function mapArticles(posts, query, limit = 6) {
   const q = String(query || "").trim();
@@ -102,6 +47,17 @@ function mapArticles(posts, query, limit = 6) {
     .slice(0, limit);
 }
 
+function searchArticlesWithTimeout(query) {
+  return Promise.race([
+    searchWpPosts(query, { per_page: 6, embed: false })
+      .then((posts) => mapArticles(posts, query, 6))
+      .catch(() => []),
+    new Promise((resolve) => {
+      setTimeout(() => resolve([]), WP_SEARCH_TIMEOUT_MS);
+    }),
+  ]);
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
@@ -114,13 +70,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [products, articles] = await Promise.all([
-      getProductSummaries().then((list) => searchProducts(list, q, 8)),
-      searchWpPosts(q, { per_page: 6, embed: false })
-        .then((posts) => mapArticles(posts, q, 6))
-        .catch(() => []),
+    const [productList, articles] = await Promise.all([
+      getSiteSearchProducts(),
+      searchArticlesWithTimeout(q),
     ]);
 
+    const products = searchProductSummaries(productList, q, 8);
     const staticHits = searchStaticEntries(q, { limit: 10 });
 
     const results = [...products, ...articles, ...staticHits]

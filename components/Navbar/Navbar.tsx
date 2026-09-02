@@ -14,6 +14,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useUser } from "@/components/context/UserContext";
 // 🚀 導入你的 supabase 客戶端
 import { supabase } from "@/lib/supabaseClient";
+import { clientError } from "@/lib/clientLogger";
 
 import FeaturedCountryCard, {
   type FeaturedCountry,
@@ -313,7 +314,7 @@ export default function Navbar({ className }: NavbarProps) {
           ),
         );
       } catch (error) {
-        console.error("❌ Navbar 抓取 Medusa 分類失敗:", error);
+        clientError("❌ Navbar 抓取 Medusa 分類失敗:", error);
       } finally {
         setLoadingCats(false);
       }

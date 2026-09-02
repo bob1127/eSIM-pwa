@@ -9,6 +9,7 @@ function pack(bullets, actual_experience = "") {
 export const CA_TELECOM_ROAM = "TELUS / BELL";
 export const CA_TELECOM_MULTI = "Rogers / Bell / TELUS +";
 export const CA_TELECOM_UNLIM = "WIND / Bell / TELUS +";
+export const CA_TELECOM_UNLIM_10M = "Bell / Telus / Verizon（10Mbps）";
 export const CA_TELECOM_NATIVE = "TELUS 原生";
 
 const CA_INTRO_TELUS_BELL =
@@ -153,9 +154,26 @@ export function canadaUnlimitedKeyFeatures() {
   );
 }
 
+export function canadaUnlimited10MbpsKeyFeatures() {
+  return pack(
+    [
+      "本方案為 **Bell／Telus／Verizon 10Mbps 吃到飽** eSIM，加拿大＋美國可用，**不含墨西哥**。",
+      "Bell 與 Telus 互補加拿大東西岸；美國段走 Verizon。",
+      "**為什麼選 10Mbps 吃到飽？**",
+      "**限速 10Mbps**：比 FUP 真吃到飽更省，日常導航、傳訊、社群通常足夠。",
+      "**加拿大多網＋美國 Verizon**：跨境自駕／飛往美國免再換卡。",
+      "**支援熱點與常用 App**：ChatGPT、TikTok、Gemini。",
+      "**漫遊出口**：APN `internetipv6`，出網波蘭 IP。",
+      "**安裝提醒**：建議抵達加拿大或美國覆蓋範圍後再啟用 eSIM。",
+    ],
+    "10Mbps 吃到飽在都會區通常可穩定傳訊與導航；影音與大檔傳輸可能較慢。僅供參考。",
+  );
+}
+
 export function canadaUnlimitedKeyFeaturesByCarrier() {
   return {
     [CA_TELECOM_UNLIM]: canadaUnlimitedKeyFeatures(),
+    [CA_TELECOM_UNLIM_10M]: canadaUnlimited10MbpsKeyFeatures(),
   };
 }
 
@@ -163,6 +181,7 @@ export default {
   CA_TELECOM_ROAM,
   CA_TELECOM_MULTI,
   CA_TELECOM_UNLIM,
+  CA_TELECOM_UNLIM_10M,
   CA_TELECOM_NATIVE,
   canadaRoamTotalKeyFeatures,
   canadaMultiTotalKeyFeatures,

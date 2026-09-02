@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import Copy from "@/components/MaskText";
+import { clientWarn } from "@/lib/clientLogger";
 
 const DEFAULT_ITEMS = [
   {
@@ -130,7 +131,7 @@ export default function ThreeHorizontalSlider({
       const img = new Image();
       img.onload = checkLoaded;
       img.onerror = () => {
-        console.warn(`Failed to load image: ${item.src}`);
+        clientWarn(`Failed to load image: ${item.src}`);
         checkLoaded();
       };
       // Important for cross-origin images if your images are hosted elsewhere

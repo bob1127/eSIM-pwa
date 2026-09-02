@@ -60,10 +60,12 @@ import {
   USA_FAQ_LONG_VZ,
   USCA_FAQ,
   NA_FAQ_ATT,
+  NA_FAQ_ATT_LONGTERM,
   NA_FAQ_USIP,
 } from "../content/product-detailed/usa-region-tab-content.js";
 import {
   CA_FAQ_UNLIM,
+  CA_FAQ_UNLIM_10M,
   CA_FAQ_DAILY_ROAM,
   CA_FAQ_DAILY_MULTI,
   CA_FAQ_TOTAL_ROAM,
@@ -358,6 +360,11 @@ const CONTENT_MAP = {
     handle: "north-america-att-unlimited-esim",
     carrier: "AT&T 美國號碼",
   },
+  "na-att-longterm": {
+    html: NA_FAQ_ATT_LONGTERM,
+    handle: "usa-native-unlimited-longterm-esim",
+    carrier: "AT&T 美國號碼",
+  },
   "na-daily-a0": {
     html: NA_FAQ_USIP,
     handle: "north-america-daily-usip-esim",
@@ -377,6 +384,11 @@ const CONTENT_MAP = {
     html: CA_FAQ_UNLIM,
     handle: "canada-unlimited-esim",
     carrier: "WIND / Bell / TELUS +",
+  },
+  "ca-unlim-10m": {
+    html: CA_FAQ_UNLIM_10M,
+    handle: "canada-unlimited-esim",
+    carrier: "Bell / Telus / Verizon（10Mbps）",
   },
   "ca-daily-roam": {
     html: CA_FAQ_DAILY_ROAM,

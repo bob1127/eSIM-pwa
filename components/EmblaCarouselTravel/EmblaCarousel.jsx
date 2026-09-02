@@ -12,6 +12,7 @@ import {
   usePrevNextButtons,
 } from "./EmblaCarouselArrowButtons";
 import { DotButton, useDotButton } from "./EmblaCarosuelDotButton";
+import { clientError } from "@/lib/clientLogger";
 
 // 🔧 工具：擷取文章內第一張圖片 URL
 function extractFirstImageFromContent(content) {
@@ -83,7 +84,7 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
 
         setSlides(formattedSlides);
       } catch (err) {
-        console.error("Fetch Error:", err);
+        clientError("Fetch Error:", err);
         setError(err.message);
       } finally {
         setLoading(false);

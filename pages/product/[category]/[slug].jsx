@@ -44,6 +44,9 @@ import SoftBankApnReminderModal, {
 import DataExhaustReminderModal, {
   isDataExhaustTerminateVariant,
 } from "../../../components/product/DataExhaustReminderModal";
+import UsCamxCanadaDataReminderModal, {
+  isUsCamxCanadaLimitedVariant,
+} from "../../../components/product/UsCamxCanadaDataReminderModal";
 import MaterialIcon from "../../../components/MaterialIcon";
 import { checkPlanAvailableClient } from "../../../lib/esim/checkPlanClient";
 import JekoPillButton from "../../../components/ui/JekoPillButton";
@@ -124,6 +127,7 @@ import {
   isHotSaleTelecom,
 } from "../../../lib/productHotSale";
 import { isNativeIpPlan } from "../../../lib/isNativeIpPlan";
+import { resolveProductDisplayTitle } from "../../../lib/productRouteTitle";
 import {
   resolveProductOptionQuery,
   sanitizeProductQueryForUrl,
@@ -2562,6 +2566,7 @@ export default function ProductPage({
   const [auApnPromptOpen, setAuApnPromptOpen] = useState(false);
   const [softbankApnPromptOpen, setSoftbankApnPromptOpen] = useState(false);
   const [dataExhaustPromptOpen, setDataExhaustPromptOpen] = useState(false);
+  const [usCamxCanadaPromptOpen, setUsCamxCanadaPromptOpen] = useState(false);
   const [planGate, setPlanGate] = useState({
     loading: false,
     blocked: false,
@@ -3016,7 +3021,7 @@ export default function ProductPage({
         id: currentVariation.id,
         variant_id: currentVariation.id,
         parentId: product.id,
-        name: product.name,
+        name: displayProductName,
         price: currentVariation.price,
         sku: currentVariation.sku,
         planId: currentVariation.plan_id,
@@ -3063,9 +3068,54 @@ export default function ProductPage({
     setIijApnPromptOpen(false);
     setAuApnPromptOpen(false);
     setSoftbankApnPromptOpen(false);
+    setDataExhaustPromptOpen(false);
+    setUsCamxCanadaPromptOpen(false);
     setPendingPurchaseAction(null);
     if (action === "buy") performBuyNow();
     else handleAddToCart();
+  };
+
+  /** 加拿大 25GB 確認後：接續 APN／涵蓋範圍等後續檢查 */
+  const continuePurchaseAfterCanadaAck = (action) => {
+    setUsCamxCanadaPromptOpen(false);
+    const telecom = selectedAttributes?.telecom;
+    const days = selectedAttributes?.days;
+
+    if (needsAuKddiManualApnReminder(telecom, days)) {
+      setPendingPurchaseAction(action);
+      setAuApnPromptOpen(true);
+      return;
+    }
+    if (
+      needsIijManualApnReminder(
+        telecom,
+        currentVariation,
+        product?.slug || product?.handle,
+      )
+    ) {
+      setPendingPurchaseAction(action);
+      setIijApnPromptOpen(true);
+      return;
+    }
+    if (isSoftBankManualApnTelecom(telecom)) {
+      setPendingPurchaseAction(action);
+      setSoftbankApnPromptOpen(true);
+      return;
+    }
+
+    const coverageCountry = resolveCoverageCountry(
+      product,
+      router.query.category ||
+        product?.category_slug ||
+        product?.categories?.[0]?.handle ||
+        "",
+    );
+    if (!coverageCountry || hasCoverageAck(product?.id)) {
+      continueAfterCoverageOrDirect(action);
+      return;
+    }
+    setPendingPurchaseAction(action);
+    setCoveragePromptOpen(true);
   };
 
   /** 涵蓋確認後／略過涵蓋後：IIJ / SoftBank 手動 APN 再跳提醒 */
@@ -3106,6 +3156,13 @@ export default function ProductPage({
     if (isDataExhaustTerminateVariant(currentVariation)) {
       setPendingPurchaseAction(action);
       setDataExhaustPromptOpen(true);
+      return;
+    }
+
+    // 北美 AT&T 美加墨吃到飽：加拿大僅 25GB 高速
+    if (isUsCamxCanadaLimitedVariant(currentVariation, product)) {
+      setPendingPurchaseAction(action);
+      setUsCamxCanadaPromptOpen(true);
       return;
     }
 
@@ -3206,30 +3263,68 @@ export default function ProductPage({
     !!carrierName && carrierName !== "default" && carrierSpecItems.length > 0;
 
   const showNativeIpBadge = useMemo(() => {
-    const attrs = currentVariation?.attributes || {};
-    const ipType =
-      carrierSpecItems.find((i) => i.key === "ip_type")?.text ||
-      attrs.ip_type ||
-      "";
-    const routeType =
-      carrierSpecItems.find((i) => i.key === "route_type")?.text ||
-      attrs.route_type ||
-      attrs.line ||
-      "";
-    const blob = `${ipType} ${routeType}`;
-    if (/原生\s*IP|本地\s*IP|本地IP|當地\s*IP|Native\s*IP/i.test(blob)) {
-      return true;
-    }
-    if (/原生/i.test(routeType) && !/漫遊/i.test(routeType)) return true;
-    if (
-      product?.metadata?.is_native === true ||
-      product?.metadata?.native_esim === true ||
-      product?.metadata?.native === true
-    ) {
-      return true;
-    }
-    return false;
-  }, [carrierSpecItems, currentVariation, product]);
+    if (!isAllOptionsSelected || !currentVariation) return false;
+
+    const telecom = String(selectedAttributes.telecom || "").trim();
+    const carrierSpecs =
+      product?.metadata?.carrier_specs_by_carrier ||
+      product?.carrier_specs_by_carrier ||
+      {};
+    const carrierSpec =
+      carrierSpecs[telecom] ||
+      carrierSpecs[carrierName] ||
+      null;
+
+    return isNativeIpPlan(
+      {
+        ...currentVariation,
+        attributes: currentVariation.attributes || {},
+        carrierSpec,
+      },
+      {
+        carrier_specs_by_carrier: carrierSpecs,
+      },
+    );
+  }, [
+    isAllOptionsSelected,
+    currentVariation,
+    selectedAttributes.telecom,
+    carrierName,
+    product?.metadata?.carrier_specs_by_carrier,
+    product?.carrier_specs_by_carrier,
+  ]);
+
+  const routeTitleContext = useMemo(
+    () => ({
+      variation: currentVariation,
+      product,
+      telecom: selectedAttributes.telecom,
+      carrierName,
+    }),
+    [
+      currentVariation,
+      product,
+      selectedAttributes.telecom,
+      carrierName,
+    ],
+  );
+
+  const displayProductName = useMemo(
+    () => resolveProductDisplayTitle(product?.name, routeTitleContext),
+    [product?.name, routeTitleContext],
+  );
+
+  const displaySeoTitle = useMemo(() => {
+    const raw =
+      product?.metadata?.seo_title || product?.seo_title || "";
+    return raw
+      ? resolveProductDisplayTitle(raw, routeTitleContext)
+      : "";
+  }, [
+    product?.metadata?.seo_title,
+    product?.seo_title,
+    routeTitleContext,
+  ]);
 
   /**
    * 副標題：優先依電信商顯示。
@@ -3484,7 +3579,15 @@ export default function ProductPage({
   );
 
   const pageSeo = buildProductSeo(
-    { ...product, subtitle: displaySubtitle || "" },
+    {
+      ...product,
+      name: displayProductName,
+      metadata: {
+        ...(product?.metadata || {}),
+        ...(displaySeoTitle ? { seo_title: displaySeoTitle } : {}),
+      },
+      subtitle: displaySubtitle || "",
+    },
     currentVariation,
     router.query.category,
     { variations, reviewAggregate },
@@ -3509,9 +3612,10 @@ export default function ProductPage({
   const documentTitle =
     pageSeo?.title ||
     [
-      product?.name,
+      displayProductName,
       displaySubtitle,
-      currentVariation?.title && currentVariation.title !== product?.name
+      currentVariation?.title &&
+      currentVariation.title !== displayProductName
         ? currentVariation.title
         : null,
     ]
@@ -3529,14 +3633,14 @@ export default function ProductPage({
   const shellProps = isPartnerShell
     ? {
         store,
-        title: documentTitle || product?.name,
+        title: documentTitle || displayProductName,
         description: product?.description,
         seo: {
           pageType: "Product",
           ogType: "product",
           path: String(product?.slug || product?.handle || ""),
           product: {
-            name: product?.name,
+            name: displayProductName,
             description: product?.description,
             image: product?.thumbnail || product?.images?.[0],
             images: product?.images,
@@ -3549,7 +3653,7 @@ export default function ProductPage({
               path: `/p/${store?.domain}/`,
             },
             {
-              name: product?.name || "商品",
+              name: displayProductName || "商品",
               path: `/p/${store?.domain}/${product?.slug || product?.handle || ""}/`,
             },
           ],
@@ -3667,6 +3771,17 @@ export default function ProductPage({
               finalizePurchaseAction(pendingPurchaseAction || "cart");
             }}
           />
+          <UsCamxCanadaDataReminderModal
+            isOpen={usCamxCanadaPromptOpen}
+            purchaseAction={pendingPurchaseAction || "cart"}
+            onClose={() => {
+              setUsCamxCanadaPromptOpen(false);
+              setPendingPurchaseAction(null);
+            }}
+            onContinuePurchase={() =>
+              continuePurchaseAfterCanadaAck(pendingPurchaseAction || "cart")
+            }
+          />
 
           <div className="bg-white">
             <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-8 lg:pb-10">
@@ -3680,7 +3795,7 @@ export default function ProductPage({
                   </a>
                   <MaterialIcon name="chevron_right" size={14} />
                   <span className="text-slate-600 truncate max-w-[240px]">
-                    {product.name}
+                    {displayProductName}
                   </span>
                 </nav>
               ) : (
@@ -3703,7 +3818,7 @@ export default function ProductPage({
                   )}
                   <span>/</span>
                   <span className="text-gray-600 truncate max-w-[280px]">
-                    {product.name}
+                    {displayProductName}
                   </span>
                 </nav>
               )}
@@ -3894,7 +4009,7 @@ export default function ProductPage({
                       if (typeof idx === "number") goToGallerySlide(idx);
                     }}
                     images={images}
-                    productName={product.name}
+                    productName={displayProductName}
                     initialIndex={galleryLightboxIndex}
                     ariaLabel="商品圖片檢視"
                   />
@@ -3951,7 +4066,7 @@ export default function ProductPage({
                 {isPartnerShell ? (
                   <div className="w-full flex flex-col">
                     <h1 className="text-[22px] sm:text-[26px] lg:text-[28px] font-bold text-slate-900 leading-snug tracking-tight mb-1.5 flex flex-wrap items-center gap-2">
-                      <span>{product.name}</span>
+                      <span>{displayProductName}</span>
                       {showNativeIpBadge ? (
                         <span className="inline-flex items-center rounded-full bg-[#8B0000] px-2.5 py-0.5 text-[11px] font-bold text-white tracking-wide shrink-0">
                           原生IP
@@ -4503,7 +4618,7 @@ export default function ProductPage({
                     </div>
 
                     <h1 className="text-2xl sm:text-[28px] lg:text-[32px] font-bold text-slate-900 leading-tight tracking-tight mb-1.5 flex flex-wrap items-center gap-2.5">
-                      <span>{product.name}</span>
+                      <span>{displayProductName}</span>
                       {showNativeIpBadge ? (
                         <span className="inline-flex items-center rounded-full bg-[#8B0000] px-3 py-1 text-[11px] sm:text-xs font-bold text-white tracking-wide shrink-0">
                           原生IP
@@ -4953,7 +5068,7 @@ export default function ProductPage({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-slate-900 leading-snug line-clamp-2">
-                            {product.name}
+                            {displayProductName}
                           </p>
                           {displaySubtitle ? (
                             <p className="text-xs font-semibold text-[#00befa] mt-0.5 line-clamp-1">
@@ -5075,7 +5190,7 @@ export default function ProductPage({
               />
               <ProductReviewsSection
                 productId={product.id}
-                productTitle={product.name}
+                productTitle={displayProductName}
                 design={isPartnerShell ? "nissin" : "default"}
               />
             </div>
@@ -5168,7 +5283,7 @@ export default function ProductPage({
               <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[10px] text-slate-500">
-                    {choiceSummary || product.name}
+                    {choiceSummary || displayProductName}
                   </p>
                   <p className="text-[15px] font-black text-slate-900">
                     {displayTotal != null

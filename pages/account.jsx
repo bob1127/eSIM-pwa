@@ -18,6 +18,7 @@ import AccountSettingsView from "@/components/account/AccountSettingsView";
 import AccountSupportView from "@/components/account/AccountSupportView";
 import AccountFollowsPanel from "@/components/account/AccountFollowsPanel";
 import AccountAdminDashboardView from "@/components/account/AccountAdminDashboardView";
+import { clientError } from "@/lib/clientLogger";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 /* ========== 輔助工具 ========== */
@@ -249,7 +250,7 @@ export default function AccountPage() {
           }
         }
       } catch (err) {
-        console.error("❌ Medusa 背景同步失敗:", err);
+        clientError("❌ Medusa 背景同步失敗:", err);
       }
     };
 
@@ -332,11 +333,11 @@ export default function AccountPage() {
       if (result.success) {
         setOrders(result.data || []);
       } else {
-        console.error("撈取訂單失敗:", result.message);
+        clientError("撈取訂單失敗:", result.message);
         setOrders([]);
       }
     } catch (err) {
-      console.error("系統撈取訂單發生異常:", err);
+      clientError("系統撈取訂單發生異常:", err);
       setOrders([]);
     } finally {
       setOrdersLoading(false);
@@ -422,7 +423,7 @@ export default function AccountPage() {
         }
       }
     } catch (err) {
-      console.error("讀取店鋪數據失敗:", err.message);
+      clientError("讀取店鋪數據失敗:", err.message);
     } finally {
       setStatsLoading(false);
     }

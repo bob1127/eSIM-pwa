@@ -1,7 +1,7 @@
 /**
  * 建立「北美 (美國、加拿大、墨西哥) 吃到飽 不限流量 eSIM - AT&T 美國號碼」
- * SKU：USCAMX-Local-unlimited-*-A1（10–30 天）
- * 利潤：70%（成本 × 1.7，尾數 9）
+ * SKU：USCAMX-Local-unlimited-*-A0（10–30 天；31+ 天見長天數商品）
+ * 利潤：75%（成本 × 1.75，尾數 9）
  *
  * 規格重點：
  * - 美國原生 IP（AT&T）＋正宗 +1 美國號碼
@@ -59,7 +59,7 @@ const TITLE =
 const TELECOM = "AT&T 美國號碼";
 const DATA = "吃到飽";
 const LINE = "本地線路";
-const PROFIT = 70;
+const PROFIT = 75;
 const MARGIN = 1 + PROFIT / 100;
 const HKD_TO_TWD = Number(process.env.HKD_TO_TWD || 4.5);
 const BATCH_SIZE = 40;
@@ -433,7 +433,7 @@ async function main() {
     `/admin/products/${product.id}?fields=*variants,*options`,
   );
   const vs = check.product?.variants || [];
-  const sample = vs.find((v) => /10-A1$/i.test(v.sku || ""));
+  const sample = vs.find((v) => /10-A0$/i.test(v.sku || ""));
   console.log("\n======= 完成 =======");
   console.log(`標題: ${check.product?.title}`);
   console.log(`Handle: ${check.product?.handle}`);

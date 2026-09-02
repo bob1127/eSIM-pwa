@@ -59,6 +59,7 @@ import {
   canadaDailyKeyFeaturesByCarrier,
   canadaUnlimitedKeyFeaturesByCarrier,
 } from "../content/product-detailed/canada-key-features.js";
+import { usaMainlandDailyUsipKeyFeaturesByCarrier } from "../content/product-detailed/usa-region-key-features.js";
 import { parseKeyFeaturesByCarrier } from "../lib/productKeyFeatures.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -222,6 +223,10 @@ const PATCHES = [
   {
     handle: "canada-unlimited-esim",
     key_features_by_carrier: canadaUnlimitedKeyFeaturesByCarrier(),
+  },
+  {
+    handle: "usa-mainland-daily-usip-esim",
+    key_features_by_carrier: usaMainlandDailyUsipKeyFeaturesByCarrier(),
   },
 ];
 

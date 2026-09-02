@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { getServiceWorkerUrl } from "@/lib/pushSw";
 import { initInstallPromptCapture } from "@/lib/pwaInstallPrompt";
+import { clientWarn } from "@/lib/clientLogger";
 
 /**
  * 頁面載入即註冊 Service Worker，並攔截 beforeinstallprompt
@@ -18,7 +19,7 @@ export default function PWARegister() {
     navigator.serviceWorker
       .register(getServiceWorkerUrl(), { scope: "/" })
       .catch((err) => {
-        console.warn("[PWA] Service Worker 註冊失敗:", err);
+        clientWarn("[PWA] Service Worker 註冊失敗:", err);
       });
   }, []);
 

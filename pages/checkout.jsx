@@ -5,6 +5,7 @@ import { useCart } from "../components/context/CartContext";
 import { motion } from "framer-motion";
 import Layout from "./Layout.js"; // 注意路徑是否正確
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import { clientError } from "@/lib/clientLogger";
 
 const CheckoutPage = () => {
   const { esimItems, esimTotal } = useCart();
@@ -97,7 +98,7 @@ const CheckoutPage = () => {
       document.close();
       return;
     } catch (err) {
-      console.error("❌ 結帳流程出錯:", err);
+      clientError("❌ 結帳流程出錯:", err);
       alert(`發生錯誤：${err.message}`);
     } finally {
       setIsSubmitting(false);

@@ -2,6 +2,7 @@ import Head from "next/head";
 import EmblaCarousel from "./EmblaCarousel";
 import { fetchWpPosts } from "../../lib/wordpress";
 import { stripHtml } from "@/lib/stripHtml";
+import { clientError } from "@/lib/clientLogger";
 
 function extractFirstImageFromContent(content) {
   if (!content) return null;
@@ -81,7 +82,7 @@ export async function getStaticProps() {
       revalidate: 10,
     };
   } catch (error) {
-    console.error("Fetch Error:", error);
+    clientError("Fetch Error:", error);
     return {
       props: {
         slides: [],

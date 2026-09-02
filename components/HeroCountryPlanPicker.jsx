@@ -9,6 +9,7 @@ import {
   MOCK_COUNTRIES,
   searchHeroCountryPlans,
 } from "@/lib/heroCountryPlans";
+import { clientWarn } from "@/lib/clientLogger";
 
 function formatPrice(amount) {
   if (!amount) return "—";
@@ -79,7 +80,7 @@ export default function HeroCountryPlanPicker() {
           );
         }
       } catch (err) {
-        console.warn("[HeroCountryPlanPicker] 使用假資料:", err);
+        clientWarn("[HeroCountryPlanPicker] 使用假資料:", err);
       } finally {
         if (!cancelled) setLoading(false);
       }

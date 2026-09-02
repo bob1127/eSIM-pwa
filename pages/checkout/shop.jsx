@@ -17,6 +17,7 @@ import { isLineSyntheticEmail } from "@/lib/lineAuth";
 import { ChevronRight, Tag, Shield, Truck, RotateCcw } from "lucide-react";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import { QuarterRing } from "@/components/ui/QuarterRing";
+import { clientWarn, clientError } from "@/lib/clientLogger";
 
 // ── 步驟指示器 ──────────────────────────────────────────────────
 const STEPS = ["購物車", "資訊", "運送", "付款"];
@@ -388,7 +389,7 @@ export default function ShopCheckoutPage() {
           }
         }
       } catch (e) {
-        console.warn("[checkout] 歡迎禮自動套用略過:", e.message);
+        clientWarn("[checkout] 歡迎禮自動套用略過:", e.message);
       }
     })();
 
@@ -571,7 +572,7 @@ export default function ShopCheckoutPage() {
       document.write(html);
       document.close();
     } catch (err) {
-      console.error("結帳失敗:", err);
+      clientError("結帳失敗:", err);
       alert(`發生錯誤：${err.message}`);
     } finally {
       setIsSubmitting(false);

@@ -8,6 +8,7 @@ import LineBroadcastEditor, {
   LINE_TEMPLATES,
 } from "@/components/admin/LineBroadcastEditor";
 import { defaultLineCardStyle, emptyLineCard } from "@/lib/lineBroadcastCard";
+import { clientError } from "@/lib/clientLogger";
 
 export default function AdminPushPage() {
   const [channel, setChannel] = useState("web");
@@ -131,7 +132,7 @@ export default function AdminPushPage() {
         });
       }
     } catch (err) {
-      console.error("推播發送失敗:", err);
+      clientError("推播發送失敗:", err);
       setStatus("error");
       setResult({ error: "連線失敗" });
     }

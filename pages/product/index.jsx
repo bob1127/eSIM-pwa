@@ -18,6 +18,7 @@ import {
   getMedusaPublishableKey,
   isVisibleOnMainSite,
 } from "../../lib/medusaStoreApi";
+import ProductZoneCategorySection from "../../components/product/ProductZoneCategorySection";
 
 function getMedusaHeaders() {
   const publishableKey = getMedusaPublishableKey();
@@ -242,6 +243,8 @@ const AllProductsPage = ({ initialProducts }) => {
               </div>
               <CountryFilter />
             </div>
+
+            <ProductZoneCategorySection />
 
             <div className="flex items-center justify-between px-1">
               <p className="text-[13px] text-slate-500">

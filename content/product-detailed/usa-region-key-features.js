@@ -21,21 +21,63 @@ const EXP_US_TERMINATE =
 const EXP_ROAM_US_IP =
   "出口標示為美國 IP，但線路屬漫遊批發（非美國原生門號卡）。都會區上網體驗通常接近一般 4G／5G；社群、地圖、熱點多半可用。實際速度與 App 可用性依當下網路而定。僅供參考。";
 
+const US_INTRO_VERIZON_ATT =
+  "Verizon 與 AT&T 是美國兩大主流電信：Verizon 在郊區、州際公路與美東／美西主要走廊覆蓋強；AT&T 在都會區、機場與商業區表現穩定。本方案走 Verizon USA／AT&T USA 雙網批發接入，出網標示為美國 IP（漫遊線路，非 +1 原生門號），適合紐約、洛杉磯、舊金山等熱門城市與跨州自駕。";
+
+const US_INTRO_VERIZON_TMO =
+  "Verizon 與 T-Mobile 是美國用戶數最多的兩大電信：Verizon 擅長郊區與州際公路覆蓋，T-Mobile 在都會 5G 部署積極、性價比高。本方案走 Verizon／T-Mobile 雙網批發接入，出網標示為美國 IP（漫遊線路，非 +1 原生門號），方案組合較完整，適合用量可控的短中期美國行程。";
+
+const US_INTRO_VERIZON_ONLY =
+  "Verizon 是美國覆蓋最廣的電信之一，郊區、州際公路與美東／美西走廊表現穩定。本長駐方案走 Verizon 批發接入，出網為新加坡 IP（非美國 IP）；若需要美國 IP 請改選同商品 Verizon USA／AT&T USA 系列。";
+
+const US_INTRO_ATT_LOCAL =
+  "AT&T 是美國最大電信之一，本方案為正宗 +1 美國門號線路（非漫遊），美國原生 IP，可在美國、加拿大、墨西哥使用數據、通話與簡訊。適合需要美國號碼接聽驗證碼、Uber／銀行簡訊的北美行程。";
+
+const US_INTRO_NA_USIP =
+  "本方案走 Rogers（加拿大）＋ Movistar（墨西哥）＋ Verizon USA／AT&T USA（美國）多網批發，一卡美加墨三國，出網標示為美國 IP（漫遊線路，非 +1 原生門號）。若需要美國門號與通話，請改選 AT&T 美國號碼吃到飽。";
+
+const US_INTRO_USCA_VZ_BELL =
+  "Verizon 與加拿大 Bell／Telus 互補：美國段走 Verizon，加拿大段走 Bell／Telus，適合美加來回、自駕與滑雪。不含墨西哥；出網多為波蘭 IP 漫遊節點。";
+
+const US_INTRO_USCA_MULTI =
+  "Rogers、Bell、Telus 是加拿大三大電信，美國段可走 Verizon、AT&T、T-Mobile。單卡美加雙國，跨境自駕或飛往美國不必再換卡；不含墨西哥。";
+
+const US_INTRO_USCA_A0 =
+  "US,CA 多網批發方案，美加兩國可用，走主流批發線路，適合一次覆蓋美加行程。不含墨西哥；出網多為波蘭 IP。";
+
 /* ========== 美國本土 ========== */
 
 export function usaMainlandUnlimitedKeyFeatures() {
   return pack(
     [
       "本方案為 Verizon／T-Mobile 美國本土吃到飽 eSIM，覆蓋美國本土主要都會與交通沿線，適合訪美觀光、探親與短中期停留。",
+      US_INTRO_VERIZON_TMO,
       "**基本介紹與特色**",
       "**市場地位：** Verizon 與 T-Mobile 為美國兩大主流電信，市區與州際移動較不易遇到單一死角。",
       "**覆蓋範圍：** 美國本土主要都會與公路沿線（阿拉斯加、夏威夷不保證）。",
       "**網路速度：** 吃到飽不限流量（FUP）；典型實際速度約 8–20Mbps（視位置與擁塞而定）。",
-      "**數據路由：** 香港漫遊 IP（非美國原生 IP）。若需要美國 IP，請改選美國 IP 總量／每日型。",
+      "**數據路由：** 美國 IP 出口（漫遊批發線路，非原生門號卡）；APN 多為 bicsapn（自動）。",
       "**本站方案：** 吃到飽；支援熱點與 ChatGPT／TikTok／Gemini；天數可選 1–10、15、20、25、30 天。",
       "**使用注意：** 建議抵達美國後再新增／啟用 eSIM。",
     ],
-    `${EXP_US_FUP} 本線路為香港漫遊 IP。`,
+    `${EXP_US_FUP} ${EXP_ROAM_US_IP}`,
+  );
+}
+
+export function usaMainlandDailyVztmoKeyFeatures() {
+  return pack(
+    [
+      "本方案為 Verizon／T-Mobile 美國本土每日型 eSIM，出網標示為美國 IP，依天數提供每日高速額度。",
+      US_INTRO_VERIZON_TMO,
+      "**基本介紹與特色**",
+      "**市場地位：** Verizon 與 T-Mobile 雙網，美國主流覆蓋熱門城市與公路沿線。",
+      "**覆蓋範圍：** 美國本土主要都會（阿拉斯加、夏威夷不保證）。",
+      "**網路速度：** 可選每日 500MB／1GB／2GB／3GB 等；高速用完後一般約 128kbps（每日重置）。",
+      "**數據路由：** 美國 IP 出口（漫遊批發線路，非原生門號卡）；APN 多為 bicsapn（自動）。",
+      "**本站方案：** 每日型；支援熱點與 ChatGPT／TikTok／Gemini。",
+      "**使用注意：** 建議抵達美國後再啟用。",
+    ],
+    `${EXP_US_128} ${EXP_ROAM_US_IP}`,
   );
 }
 
@@ -43,6 +85,7 @@ export function usaMainlandDailyUsipKeyFeatures() {
   return pack(
     [
       "本方案為 Verizon USA／AT&T USA 美國本土每日型 eSIM，出網標示為美國 IP，依天數提供每日高速額度。",
+      US_INTRO_VERIZON_ATT,
       "**基本介紹與特色**",
       "**市場地位：** Verizon 與 AT&T 雙網，美國主流覆蓋熱門城市與公路沿線。",
       "**覆蓋範圍：** 美國本土主要都會（阿拉斯加、夏威夷不保證）。",
@@ -59,6 +102,7 @@ export function usaMainlandTotalUsipKeyFeatures() {
   return pack(
     [
       "本方案為 Verizon USA／AT&T USA 美國總量型 eSIM，出網標示為美國 IP，於有效天數內提供高速總量，用完後依方案進入 FUP 吃到飽。",
+      US_INTRO_VERIZON_ATT,
       "**基本介紹與特色**",
       "**市場地位：** Verizon + AT&T 雙網，都會與城際覆蓋穩定。",
       "**覆蓋範圍：** 美國本土主要城市與跨州自駕沿線（阿拉斯加、夏威夷不保證）。",
@@ -75,6 +119,7 @@ export function usaMainlandTotalLongUsAttKeyFeatures() {
   return pack(
     [
       "本方案為長天數（15／20／30 天）美國總量型，走 Verizon USA／AT&T USA，出網美國 IP，高速約 30GB 後 FUP 吃到飽。",
+      US_INTRO_VERIZON_ATT,
       "**基本介紹與特色**",
       "**市場地位：** Verizon／AT&T 覆蓋美國本土主要都會。",
       "**覆蓋範圍：** 適合打工度假、探親、商務短期派駐（阿拉斯加、夏威夷不保證）。",
@@ -91,6 +136,7 @@ export function usaMainlandTotalLongVzKeyFeatures() {
   return pack(
     [
       "本方案為 60 天長駐總量型，走 Verizon，可選高速 30GB／60GB 後 FUP；閘道為新加坡 IP。",
+      US_INTRO_VERIZON_ONLY,
       "**基本介紹與特色**",
       "**市場地位：** Verizon 覆蓋美國本土主要都會與公路沿線。",
       "**覆蓋範圍：** 一次約兩個月停留，減少中途續購。",
@@ -108,7 +154,10 @@ export function usaMainlandUnlimitedKeyFeaturesByCarrier() {
 }
 
 export function usaMainlandDailyUsipKeyFeaturesByCarrier() {
-  return { "Verizon USA / AT&T USA": usaMainlandDailyUsipKeyFeatures() };
+  return {
+    "Verizon USA / AT&T USA": usaMainlandDailyUsipKeyFeatures(),
+    "Verizon / T-Mobile": usaMainlandDailyVztmoKeyFeatures(),
+  };
 }
 
 export function usaMainlandTotalUsipKeyFeaturesByCarrier() {
@@ -125,10 +174,17 @@ function usCanadaIntro(planKindLabel) {
   return `本方案為美加（美國＋加拿大）${planKindLabel} eSIM，單一方案跨兩國使用，不含墨西哥（美加墨請選北美方案）。`;
 }
 
+function usCanadaCarrierIntro(telecomLabel) {
+  if (/Bell.*Telus|Verizon \+ Bell/i.test(telecomLabel)) return US_INTRO_USCA_VZ_BELL;
+  if (/US,CA 多網 A0/i.test(telecomLabel)) return US_INTRO_USCA_A0;
+  return US_INTRO_USCA_MULTI;
+}
+
 export function usCanadaUnlimitedKeyFeatures(telecomLabel = "美加多網") {
   return pack(
     [
       usCanadaIntro("吃到飽不限流量"),
+      usCanadaCarrierIntro(telecomLabel),
       "**基本介紹與特色**",
       `**市場地位：** ${telecomLabel}，美國與加拿大主流網路，城際與跨境移動較有彈性。`,
       "**覆蓋範圍：** 美加主要城市與自駕／滑雪／商務來回路線（不含墨西哥）。",
@@ -145,6 +201,7 @@ export function usCanadaDailyKeyFeatures(telecomLabel = "美加多網") {
   return pack(
     [
       usCanadaIntro("每日型"),
+      usCanadaCarrierIntro(telecomLabel),
       "**基本介紹與特色**",
       `**市場地位：** ${telecomLabel}，雙國多網移動中較不易卡在單一死角。`,
       "**覆蓋範圍：** 美國＋加拿大（不含墨西哥）。",
@@ -161,6 +218,7 @@ export function usCanadaTotalKeyFeatures(telecomLabel = "美加多網") {
   return pack(
     [
       usCanadaIntro("總量型"),
+      usCanadaCarrierIntro(telecomLabel),
       "**基本介紹與特色**",
       `**市場地位：** ${telecomLabel}，美國＋加拿大雙國可用。`,
       "**覆蓋範圍：** 美加兩國（不含墨西哥）。",
@@ -216,10 +274,12 @@ export function usCanadaTotalKeyFeaturesByCarrier() {
 export function northAmericaAttUnlimitedKeyFeatures() {
   return pack(
     [
-      "本方案為 AT&T 美國號碼吃到飽 eSIM，含一組 +1 美國電話號碼，可在美加墨使用數據、通話與簡訊，適合需要美國門號的北美行程。",
+      "本方案為 AT&T 美國號碼吃到飽 eSIM（**10–30 天**），含一組 +1 美國電話號碼，可在美加墨使用數據、通話與簡訊，適合需要美國門號的短期北美行程。",
+      "若需 **31 天以上**（留學、長期出差），請改選 [美國原生卡長天數吃到飽](/product/usa/usa-native-unlimited-longterm-esim/)。",
+      US_INTRO_ATT_LOCAL,
       "**基本介紹與特色**",
       "**市場地位：** 正宗 AT&T 美國門號線路，美加墨覆蓋可靠（實際依地區而定）。",
-      "**覆蓋範圍：** 美國、加拿大、墨西哥；跨境時請啟用此 eSIM 的數據漫遊。",
+      "**覆蓋範圍：** 美國、加拿大、墨西哥；方案已含三國。",
       "**網路速度：** 美墨無限數據；加拿大 25GB 高速（用盡後約 512Kbps 吃到飽）。若加拿大需要更多高速／吃到飽，可改選 [加拿大吃到飽](/product/canada/canada-unlimited-esim/)。",
       "**通話簡訊：** 美加墨境內及跨國互撥／互傳完全免費。",
       "**數據路由：** 美國境內使用本地數據與美國 IP。",
@@ -230,10 +290,29 @@ export function northAmericaAttUnlimitedKeyFeatures() {
   );
 }
 
-export function northAmericaAttUnlimitedOverviewNotices() {
+export function usaNativeUnlimitedLongtermKeyFeatures() {
+  return pack(
+    [
+      "本方案為 AT&T 美國號碼吃到飽 eSIM **長天數版（31–88 天）**，含 +1 美國電話號碼，美國原生 IP，適合留學、長期出差或數週至數月北美停留。",
+      "若行程 **30 天以內**，請改選 [北美 AT&T 美國號碼吃到飽](/product/north-america/north-america-att-unlimited-esim/)。",
+      US_INTRO_ATT_LOCAL,
+      "**基本介紹與特色**",
+      "**市場地位：** 正宗 AT&T 美國門號線路，長天數一次購足，免頻繁續購。",
+      "**覆蓋範圍：** 美國、加拿大、墨西哥；方案已含三國。",
+      "**網路速度：** 美墨無限數據；加拿大 25GB 高速（用盡後約 512Kbps 吃到飽）。",
+      "**通話簡訊：** 美加墨境內及跨國互撥／互傳完全免費。",
+      "**數據路由：** 美國境內使用本地數據與美國 IP。",
+      "**本站方案：** 含美國號碼；熱點僅限美國境內且不作保證，加拿大與墨西哥無法使用熱點。",
+      "**使用注意：** 開通日期以美西時間 (PT) 為準，建議至少提前一天預訂。裝置須已解鎖並支援 eSIM。",
+    ],
+    "長天數方案適合留學生或長期出差；美墨主要城市上網與收發簡訊通常穩定。加拿大請留意 25GB 高速額度。熱點僅建議在美國境內嘗試，且不作保證。開通請依美西時間預約，建議至少提前一天。僅供參考。",
+  );
+}
+
+export function usaNativeUnlimitedLongtermOverviewNotices() {
   return {
     fup_notice:
-      "美國與墨西哥無限數據流量；加拿大 25GB 高速（用盡後降速至 512 Kbps 吃到飽）。若加拿大需要更多高速／吃到飽，可改選 [加拿大吃到飽](/product/canada/canada-unlimited-esim/)。美加墨境內及跨國無限通話與簡訊免費。網路高度擁塞期間，AT&T 可能暫時降低數據速度。",
+      "美國與墨西哥無限數據流量；加拿大 25GB 高速（用盡後降速至 512 Kbps 吃到飽）。美加墨境內及跨國無限通話與簡訊免費。長天數方案（31–88 天）適合留學、長期出差；30 天以內行程請改選北美 AT&T 吃到飽短天數商品。",
     activation_notice:
       "開通政策：您所選擇的日期以美西時間 (PT) 為準。服務將於該日期的上午 9:00 前自動啟用。為確保服務準時開通，建議您至少提前一天預訂。",
     special_notice: [
@@ -241,7 +320,23 @@ export function northAmericaAttUnlimitedOverviewNotices() {
       "熱點限制：熱點分享／網路共享僅限美國境內，且可用性不作保證；加拿大與墨西哥境內無法使用熱點。",
       "裝置相容性：手機必須為「已解鎖 (Unlocked)」且支援 eSIM，並支援美國 4G／5G 頻段。建議僅限 iPhone 使用；部分 Android 仍可能可用，但受限於電信商規範無法保證相容，Android 用戶請自行評估購買風險。",
       "網路覆蓋圖：5G 覆蓋並非所有區域皆有，可查閱 AT&T 預付覆蓋圖 att.com/prepaidmap。",
-      "加拿大／墨西哥使用數據時，請啟用此 eSIM 的數據漫遊功能。",
+      "加拿大流量：僅 25GB 高速（美／墨為無限）；用盡後降速續航，非加拿大全速吃到飽。",
+    ].join("\n"),
+  };
+}
+
+export function northAmericaAttUnlimitedOverviewNotices() {
+  return {
+    fup_notice:
+      "美國與墨西哥無限數據流量；加拿大 25GB 高速（用盡後降速至 512 Kbps 吃到飽）。若加拿大需要更多高速／吃到飽，可改選 [加拿大吃到飽](/product/canada/canada-unlimited-esim/)。美加墨境內及跨國無限通話與簡訊免費。31 天以上請改選 [美國原生卡長天數吃到飽](/product/usa/usa-native-unlimited-longterm-esim/)。網路高度擁塞期間，AT&T 可能暫時降低數據速度。",
+    activation_notice:
+      "開通政策：您所選擇的日期以美西時間 (PT) 為準。服務將於該日期的上午 9:00 前自動啟用。為確保服務準時開通，建議您至少提前一天預訂。",
+    special_notice: [
+      "【重要資訊 — 請務必閱讀】",
+      "熱點限制：熱點分享／網路共享僅限美國境內，且可用性不作保證；加拿大與墨西哥境內無法使用熱點。",
+      "裝置相容性：手機必須為「已解鎖 (Unlocked)」且支援 eSIM，並支援美國 4G／5G 頻段。建議僅限 iPhone 使用；部分 Android 仍可能可用，但受限於電信商規範無法保證相容，Android 用戶請自行評估購買風險。",
+      "網路覆蓋圖：5G 覆蓋並非所有區域皆有，可查閱 AT&T 預付覆蓋圖 att.com/prepaidmap。",
+      "加拿大流量：僅 25GB 高速（美／墨為無限）；用盡後降速續航，非加拿大全速吃到飽。",
     ].join("\n"),
   };
 }
@@ -250,6 +345,7 @@ export function northAmericaDailyUsipKeyFeatures(telecomLabel) {
   return pack(
     [
       "本方案為北美（美國＋加拿大＋墨西哥）每日型 eSIM，出網標示為美國 IP，三國一卡。",
+      US_INTRO_NA_USIP,
       "**基本介紹與特色**",
       `**市場地位：** ${telecomLabel}，美加墨多網，跨境自駕／飛機往返較安心。`,
       "**覆蓋範圍：** 美國、加拿大、墨西哥。",
@@ -266,6 +362,7 @@ export function northAmericaTotalUsipKeyFeatures(telecomLabel) {
   return pack(
     [
       "本方案為北美（美國＋加拿大＋墨西哥）總量型 eSIM，出網標示為美國 IP，三國共用總流量。",
+      US_INTRO_NA_USIP,
       "**基本介紹與特色**",
       `**市場地位：** ${telecomLabel}，美加墨多網覆蓋。`,
       "**覆蓋範圍：** 美國、加拿大、墨西哥。",
@@ -284,6 +381,14 @@ export function northAmericaAttUnlimitedKeyFeaturesByCarrier() {
 
 export function northAmericaAttUnlimitedOverviewNoticesByCarrier() {
   return { "AT&T 美國號碼": northAmericaAttUnlimitedOverviewNotices() };
+}
+
+export function usaNativeUnlimitedLongtermKeyFeaturesByCarrier() {
+  return { "AT&T 美國號碼": usaNativeUnlimitedLongtermKeyFeatures() };
+}
+
+export function usaNativeUnlimitedLongtermOverviewNoticesByCarrier() {
+  return { "AT&T 美國號碼": usaNativeUnlimitedLongtermOverviewNotices() };
 }
 
 export function northAmericaDailyUsipKeyFeaturesByCarrier() {
@@ -309,6 +414,8 @@ export default {
   usCanadaTotalKeyFeaturesByCarrier,
   northAmericaAttUnlimitedKeyFeaturesByCarrier,
   northAmericaAttUnlimitedOverviewNoticesByCarrier,
+  usaNativeUnlimitedLongtermKeyFeaturesByCarrier,
+  usaNativeUnlimitedLongtermOverviewNoticesByCarrier,
   northAmericaDailyUsipKeyFeaturesByCarrier,
   northAmericaTotalUsipKeyFeaturesByCarrier,
 };

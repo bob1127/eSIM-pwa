@@ -17,6 +17,7 @@ import CheckoutTicketReceipt, {
   guessDestLabel,
   shortOrderNo,
 } from "@/components/checkout/CheckoutTicketReceipt";
+import { clientError } from "@/lib/clientLogger";
 
 interface ApnInfo {
   apn?: string;
@@ -433,7 +434,7 @@ export default function ThankYouPage() {
         fulfillmentFailed: Boolean(fulfillmentFailed),
       };
     } catch (err) {
-      console.error("❌ 抓取訂單資料失敗", err);
+      clientError("❌ 抓取訂單資料失敗", err);
       return { ok: false };
     }
   }, [orderNo, clearCart]);

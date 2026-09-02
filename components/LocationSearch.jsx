@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { clientError } from "@/lib/clientLogger";
 
 const LocationSearch = ({ onLocationSelect }) => {
   const [query, setQuery] = useState(""); // 用户输入的查询
@@ -28,7 +29,7 @@ const LocationSearch = ({ onLocationSelect }) => {
       // 如果返回的数据有 predictions，更新 suggestions
       setSuggestions(response.data.predictions || []);
     } catch (error) {
-      console.error("Error fetching suggestions", error);
+      clientError("Error fetching suggestions", error);
     } finally {
       setIsLoading(false);
     }

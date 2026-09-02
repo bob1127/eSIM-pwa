@@ -1,3 +1,5 @@
+import { clientError } from "@/lib/clientLogger";
+
 export async function addToCart(productId, quantity) {
   try {
     const res = await fetch("/api/Cart/add", {
@@ -10,11 +12,12 @@ export async function addToCart(productId, quantity) {
 
     const data = await res.json();
     if (!res.ok) {
-      console.error("❌ 加入購物車失敗:", data);
+      clientError("❌ 加入購物車失敗:", data);
+      return null;
     }
     return data;
   } catch (error) {
-    console.error("API Error:", error);
-    return { error: "Server error" };
+    clientError("API Error:", error);
+    return null;
   }
 }

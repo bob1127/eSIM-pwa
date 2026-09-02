@@ -3,8 +3,7 @@
  * SKU：United States of America-unlimited-*-A0（1–10、15、20、25、30 天全系列）
  * 利潤：100%（成本 × 2，尾數 9）
  *
- * 注意：供應商標註 IP=HK（香港漫遊 IP），非美國原生 IP。
- * 真要美國原生 IP 請用 usa-mainland-total-usip-esim 或北美 AT&T。
+ * 注意：供應商標註 IP=US（美國 IP 漫遊出口，非原生門號卡）。
  *
  * 用法：
  *   HKD_TO_TWD=4.5 node scripts/create-usa-mainland-unlimited-product.mjs
@@ -216,7 +215,7 @@ function toVariant(row) {
       rule_desc: row.rule_desc || "unlimited",
       speed_desc: row.speed_desc || "",
       special_desc: row.special_desc || "",
-      ip: row.ip || "HK",
+      ip: row.ip || "US",
       hotspot: true,
       attributes: {
         days: row.day,
@@ -225,14 +224,14 @@ function toVariant(row) {
         telecom: TELECOM,
         line: LINE,
         network: "Verizon / T-Mobile · 4G·5G",
-        ip_type: "香港 IP（漫遊）",
+        ip_type: "美國 IP",
         route_type: LINE,
         hotspot: true,
         gpt: true,
-        tiktok: false,
+        tiktok: true,
         gemini: true,
         speed_rule: "吃到飽 FUP；典型速度約 8–20Mbps；阿拉斯加／夏威夷不保證",
-        apps: "ChatGPT、Gemini；TikTok 可能受限；支援熱點",
+        apps: "ChatGPT、TikTok、Gemini；支援熱點",
       },
     },
   };
@@ -276,16 +275,16 @@ async function main() {
       "美國eSIM,美國本土eSIM,Verizon,T-Mobile,吃到飽,Jeko eSIM",
     subtitle_by_carrier: {
       [TELECOM]:
-        "Verizon / T-Mobile 5G｜吃到飽 FUP｜支援熱點｜香港漫遊 IP",
+        "Verizon / T-Mobile 5G｜吃到飽 FUP｜支援熱點｜美國 IP",
     },
     carrier_specs_by_carrier: {
       [TELECOM]: {
-        ip_type: "香港 IP（漫遊）",
+        ip_type: "美國 IP",
         route_type: LINE,
         network: "US: Verizon｜T-Mobile｜4G·5G",
         speed_rule: "吃到飽 FUP；典型速度約 8–20Mbps",
         apn: "bicsapn",
-        apps: "ChatGPT、Gemini；TikTok 可能受限；支援熱點",
+        apps: "ChatGPT、TikTok、Gemini；支援熱點",
       },
     },
     overview_notices_by_carrier: {
@@ -303,7 +302,7 @@ async function main() {
     subtitle: "Verizon / T-Mobile 5G｜吃到飽 FUP｜支援熱點｜1–30 天",
     handle: HANDLE,
     description:
-      "美國本土吃到飽 eSIM，電信 Verizon／T-Mobile（5G），支援熱點。供應商閘道為香港漫遊 IP。提供 1–10、15、20、25、30 天。FUP 典型速度約 8–20Mbps；阿拉斯加與夏威夷使用不保證。建議抵達後再新增 eSIM。",
+      "美國本土吃到飽 eSIM，電信 Verizon／T-Mobile（5G），支援熱點。出網為美國 IP（漫遊批發線路，非原生門號卡）。提供 1–10、15、20、25、30 天。FUP 典型速度約 8–20Mbps；阿拉斯加與夏威夷使用不保證。建議抵達後再新增 eSIM。",
     status: "published",
     discountable: true,
     thumbnail: THUMB,

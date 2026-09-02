@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getClientPlatformFxRates } from "@/lib/esim/platformFx";
 import { useProductAdmin } from "@/hooks/useProductAdmin";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import { clientWarn, clientError } from "@/lib/clientLogger";
 
 const PLATFORM_FX = getClientPlatformFxRates();
 
@@ -132,9 +133,9 @@ type CountryConfig = {
 // --- 1. 國家設定檔 ---
 const COUNTRIES: Record<string, CountryConfig> = {
   /**
-   * 高天數方案：純單國（美日澳英加韓）＋美加跨國
+   * 高天數方案：純單國（美日澳英加韓）＋跨國補位（美加／紐澳／日韓／歐洲含英）
    * 預設篩「特長 60天+」，天數由長到短。
-   * 主力：韓／英吃到飽 90、加／美加每日 90、美總量 FUP 60。
+   * 純單國缺 60+ 時靠多國包：澳→紐澳最長 30（Total60GB-60 已下架）、加→美加 90、英→歐34/43 unlimited 60/90、日韓→日韓總量 60。
    */
   HIGH_DAY: {
     emoji: "📅",
@@ -142,7 +143,10 @@ const COUNTRIES: Record<string, CountryConfig> = {
     pure: false,
     codes: ["HIGH_DAY", "LONG_STAY"],
     matchPureCountries: ["US", "JP", "AU", "GB", "CA", "KR"],
-    matchLocationSets: [["US", "CA"]],
+    matchLocationSets: [
+      ["US", "CA"],
+      ["AU", "NZ"],
+    ],
     namePrefixes: [
       "USA-",
       "USA ",
@@ -190,36 +194,38 @@ const COUNTRIES: Record<string, CountryConfig> = {
       "USA&Canada-",
       "Japan-",
       "Japan(",
+      "Japan/Korea-Total",
+      "Japan-Total30GB-60",
+      "Japan-Total60GB-60",
       "Australia-",
+      "Australia&New-Zealand-",
+      "Australia&New Zealand-",
+      "Australia/New-Zealand-",
+      "AU,NZ(T+C)-",
       "United Kingdom-",
       "United-Kingdom-",
       "UK-",
+      "Europe-34-countries-unlimited-60",
+      "Europe-34-countries-unlimited-90",
+      "Europe-43-countries-unlimited-60",
+      "Europe-43-countries-unlimited-90",
       "Canada-",
       "South Korea-",
       "South Korea(",
+      "South-Korea-Local-unlimited-60",
+      "South-Korea-Local-unlimited-90",
       "Korea-",
+      "USCAMX-Local-unlimited",
     ],
     exclude: [
       "GLOBAL",
       "WORLD",
       "ASIA",
-      "EUROPE",
-      "EU ",
       "MEXICO",
       "美加墨",
       "北美",
       "US,CA,MX",
       "USA,CA,MX",
-      "JAPAN/KOREA",
-      "JAPAN&KOREA",
-      "JAPAN-KOREA",
-      "JAPAN KOREA",
-      "日韓",
-      "AU,NZ",
-      "AU&NZ",
-      "NEW ZEALAND",
-      "紐澳",
-      "澳紐",
     ],
     defaultDayRange: "XXLONG",
   },
@@ -530,6 +536,44 @@ const COUNTRIES: Record<string, CountryConfig> = {
     pure: false,
     codes: ["ANZ", "AU_NZ", "AU-NZ"],
     locationSet: ["AU", "NZ"],
+    includeSkuIncludes: [
+      "Australia/New-Zealand-",
+      "Australia&New-Zealand-",
+      "Australia&New Zealand-",
+      "Australia-New-Zealand-",
+      "AU,NZ(T+C)-",
+    ],
+    keywords: [
+      "AU,NZ(T+C)",
+      "AU,NZ-",
+      "Australia&New Zealand",
+      "Australia-New Zealand",
+      "Australia/New Zealand",
+      "Australia & New Zealand",
+      "紐澳",
+      "澳紐",
+    ],
+    exclude: ["ASIA", "GLOBAL"],
+  },
+  /**
+   * 紐澳／純澳最長目前僅 30 天（正式目錄已無 Total60GB-60）。
+   * 預設「超長期 30天+」＋依成本排序，方便比價 AU,NZ(T+C) 與 Australia&New-Zealand-*。
+   */
+  ANZ_LONG: {
+    emoji: "🇦🇺🇳🇿📅",
+    name: "紐澳長天數 (30天主力)",
+    pure: false,
+    codes: ["ANZ_LONG", "ANZ_30", "AU_NZ_LONG"],
+    locationSet: ["AU", "NZ"],
+    defaultSortByCost: true,
+    defaultDayRange: "XLONG",
+    includeSkuIncludes: [
+      "Australia/New-Zealand-",
+      "Australia&New-Zealand-",
+      "Australia&New Zealand-",
+      "Australia-New-Zealand-",
+      "AU,NZ(T+C)-",
+    ],
     keywords: [
       "AU,NZ(T+C)",
       "AU,NZ-",
@@ -566,6 +610,7 @@ const COUNTRIES: Record<string, CountryConfig> = {
     name: "亞洲多國 (Asia)",
     pure: false,
     codes: ["ASIA", "ASIA11", "ASIA24"],
+    namePrefixes: ["Asia-", "Asia "],
     keywords: ["ASIA", "Asia "],
     exclude: ["GLOBAL", "EUROPE"],
   },
@@ -818,7 +863,7 @@ const COUNTRIES: Record<string, CountryConfig> = {
   },
   AE: {
     emoji: "🇦🇪",
-    name: "阿拉伯聯合大公國 (杜拜／阿布達比)",
+    name: "杜拜、阿布達比",
     pure: true,
     codes: [
       "AE",
@@ -868,6 +913,11 @@ const COUNTRIES: Record<string, CountryConfig> = {
     // 不含墨西哥／門號方案（那些走北美）
     exclude: ["GLOBAL", "EUROPE", "ASIA", "MEXICO", "墨西哥", "北美"],
   },
+  /**
+   * 美加墨三國 + AT&T 美國門號吃到飽
+   * 供應商 SKU：USCAMX-Local-unlimited-{天數}-A0（2026 起由 *-A1 改為 *-A0，約 10–88 天）
+   * 注意：location 常標 Global，需靠 includeSkuIncludes 抓 USCAMX-Local-*
+   */
   US_CA_MX: {
     emoji: "🌎",
     name: "北美 (美加墨)",
@@ -877,6 +927,12 @@ const COUNTRIES: Record<string, CountryConfig> = {
     locationSets: [
       ["US", "CA", "MX"],
       ["US", "MX", "CA"],
+    ],
+    namePrefixes: ["USCAMX-", "USCAMX "],
+    includeSkuIncludes: [
+      "USCAMX-Local-unlimited",
+      "USCAMX-Local-",
+      "USCAMX-",
     ],
     keywords: [
       "USA&Canada&Mexico",
@@ -892,8 +948,11 @@ const COUNTRIES: Record<string, CountryConfig> = {
       "ATT US NUMBER",
       "AT&T 美國號碼",
       "美國號碼",
+      "USCAMX-Local-unlimited",
+      "USCAMX-Local-",
     ],
     exclude: ["GLOBAL", "EUROPE", "ASIA"],
+    defaultDayRange: "LONG",
   },
   PE: {
     emoji: "🇵🇪",
@@ -940,8 +999,78 @@ const COUNTRIES: Record<string, CountryConfig> = {
     name: "歐洲多國 (EU)",
     pure: false,
     codes: ["EU", "EUROPE", "EU33", "EU42"],
+    namePrefixes: [
+      "Europe ",
+      "Europe-",
+      "EU 3",
+      "EU 4",
+      "EU-3",
+      "EU-4",
+      "EUROPE ",
+    ],
     keywords: ["Europe", "EU 33", "EU 42", "EU 3", "歐洲"],
     exclude: ["GLOBAL", "ASIA"],
+  },
+  SEA: {
+    emoji: "🏝️",
+    name: "東南亞多國 (SEA)",
+    pure: false,
+    codes: ["SEA", "SOUTHEAST_ASIA"],
+    namePrefixes: ["Southeast Asia"],
+    keywords: ["Southeast Asia", "東南亞"],
+    exclude: ["GLOBAL", "EUROPE"],
+  },
+  NA_SA_CB: {
+    emoji: "🌎",
+    name: "美洲多國 (中南美)",
+    pure: false,
+    codes: ["NA_SA_CB", "AMERICAS", "SACB"],
+    namePrefixes: ["NA,SA,CB ", "NA,SA,CB-", "SACB"],
+    keywords: [
+      "NA,SA,CB",
+      "South America",
+      "SA CB",
+      "SACB",
+      "北美中南美",
+      "中南美",
+    ],
+    exclude: ["GLOBAL", "EUROPE", "ASIA"],
+  },
+  MEA: {
+    emoji: "🕌",
+    name: "中東多國 (MEA)",
+    pure: false,
+    codes: ["MEA", "MIDDLE_EAST"],
+    namePrefixes: ["MEA ", "Middle East "],
+    keywords: ["MEA ", "Middle East", "中東"],
+    exclude: ["GLOBAL", "EUROPE", "ASIA"],
+  },
+  AFRICA: {
+    emoji: "🦁",
+    name: "非洲多國",
+    pure: false,
+    codes: ["AFRICA_MULTI"],
+    namePrefixes: ["Africa "],
+    keywords: ["Africa ", "非洲"],
+    exclude: ["GLOBAL", "EUROPE", "ASIA", "MIDDLE EAST", "MEA "],
+  },
+  OCEANIA: {
+    emoji: "🌊",
+    name: "大洋洲多國",
+    pure: false,
+    codes: ["OCEANIA_MULTI"],
+    namePrefixes: ["Oceania "],
+    keywords: ["Oceania ", "大洋洲"],
+    exclude: ["GLOBAL", "EUROPE", "ASIA"],
+  },
+  BALKAN: {
+    emoji: "🏔️",
+    name: "巴爾幹多國",
+    pure: false,
+    codes: ["BALKAN"],
+    namePrefixes: ["Balkan "],
+    keywords: ["Balkan", "巴爾幹"],
+    exclude: ["GLOBAL", "EUROPE", "ASIA"],
   },
   GLOBAL: {
     emoji: "🌍",
@@ -1067,7 +1196,9 @@ function planMatchesCountry(
       : tokensFromSku.length
         ? tokensFromSku
         : tokensFromLoc;
-  const hayForExclude = fields.join(" ");
+  const hayForExclude = [p.name, p.channel_dataplan_name, p.code]
+    .map((x) => stripPlanText(String(x || "")))
+    .join(" ");
 
   const prefixHit = matchesNamePrefixes(fields, config.namePrefixes);
   const aliases = normalizeAliasCodes(config.codes);
@@ -1127,6 +1258,7 @@ function planMatchesCountry(
     if (config.pure) return true;
   }
   if (extraSkuHit && !config.pure) return true;
+  if (prefixHit && !config.pure) return true;
 
   if (config.exclude?.length) {
     const hit = config.exclude.some((ex) =>
@@ -1321,6 +1453,107 @@ function parseEkycStatus(p: any): {
   };
 }
 
+type NetworkSegment = {
+  code: string;
+  label: string;
+  flag: string;
+  text: string;
+};
+
+const CARRIER_COLLAPSE_MIN = 3;
+const CARRIER_PREVIEW_COUNT = 2;
+
+function parseNetworkSegments(raw: string): NetworkSegment[] {
+  if (!raw || raw.length <= 5) return [];
+  return raw
+    .split("|")
+    .map((part) => {
+      const trimmed = part.trim();
+      if (!trimmed) return null;
+      const colon = trimmed.indexOf(":");
+      if (colon < 0) {
+        return { code: "", label: trimmed, flag: "", text: trimmed };
+      }
+      const code = trimmed.slice(0, colon).trim();
+      const opsRaw = trimmed.slice(colon + 1);
+      const label = opsRaw
+        .replace(/\[.*?\]/g, "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(" / ");
+      const flag = COUNTRIES[code]?.emoji || "";
+      const text = `${flag ? `${flag} ` : ""}${label}`.trim();
+      return { code, label, flag, text };
+    })
+    .filter((s): s is NetworkSegment => Boolean(s?.text));
+}
+
+function CarrierNetworksCell({
+  carrier,
+  carrierBadge,
+  carrierSegments,
+  carrierIsMulti,
+  carrierSummary,
+  ekycLabel,
+  ekycClass,
+  ekycTitle,
+}: {
+  carrier: string;
+  carrierBadge: string;
+  carrierSegments: NetworkSegment[];
+  carrierIsMulti: boolean;
+  carrierSummary: string;
+  ekycLabel: string;
+  ekycClass: string;
+  ekycTitle: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const shouldCollapse =
+    carrierIsMulti || carrierSegments.length >= CARRIER_COLLAPSE_MIN;
+  const preview = carrierSegments.slice(0, CARRIER_PREVIEW_COUNT);
+  const hiddenCount = Math.max(0, carrierSegments.length - preview.length);
+
+  return (
+    <>
+      <div
+        className={`font-bold text-sm px-2 py-1 rounded-md inline-block mb-1 ${carrierBadge}`}
+      >
+        {shouldCollapse ? carrierSummary : carrier}
+      </div>
+      {shouldCollapse ? (
+        <div
+          className={`text-[10px] text-gray-700 space-y-0.5 leading-snug ${
+            open ? "max-h-36 overflow-y-auto pr-1" : ""
+          }`}
+        >
+          {(open ? carrierSegments : preview).map((seg, i) => (
+            <div key={`${seg.code}-${i}`}>{seg.text}</div>
+          ))}
+        </div>
+      ) : null}
+      {shouldCollapse && hiddenCount > 0 ? (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="mt-1 text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline"
+        >
+          {open ? "收合多國電信" : `展開 ${hiddenCount} 國`}
+        </button>
+      ) : null}
+      <div
+        className={`text-[10px] px-1.5 py-0.5 rounded inline-block mb-1 ${ekycClass}`}
+        title={ekycTitle}
+      >
+        {ekycLabel}
+      </div>
+      {carrier.includes("SoftBank / KDDI") && (
+        <div className="text-[10px] text-blue-500">✨ 雙網自動切換</div>
+      )}
+    </>
+  );
+}
+
 // --- 3. 核心解析邏輯 ---
 const parsePlanDetails = (p: any, countryConfig: any) => {
   const name = (p.name || "").toLowerCase();
@@ -1337,11 +1570,25 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
   let rawOp = "";
   let rawGateway = "";
 
+  const networksRaw = String(
+    p.networks || p.operator || p.operator_list || "",
+  ).trim();
+  if (networksRaw.length > 5) {
+    rawOp = networksRaw.toUpperCase();
+  }
+
   Object.entries(p).forEach(([key, val]) => {
     if (typeof val === "string") {
       const v = val.trim();
       const vUpper = v.toUpperCase();
-      if (v.includes("[") && v.includes("]") && v.length > 5) rawOp = vUpper;
+      if (
+        !rawOp &&
+        v.includes("[") &&
+        v.includes("]") &&
+        v.length > 5
+      ) {
+        rawOp = vUpper;
+      }
       if (
         key !== "location" &&
         key !== "countryCode" &&
@@ -1410,26 +1657,24 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
 
   let carrier = "自動切換";
   let carrierBadge = "bg-gray-50 text-gray-600";
+  let carrierSegments: NetworkSegment[] = [];
+  let carrierIsMulti = false;
+  let carrierSummary = "自動切換";
 
-  const formatOperator = (raw: string) => {
-    if (!raw) return "自動切換";
-    return raw
-      .split("|")
-      .map((part) => {
-        const [code, opsRaw] = part.split(":");
-        if (!opsRaw) return part;
-        const cleanOps = opsRaw
-          .replace(/\[.*?\]/g, "")
-          .split(",")
-          .join(" / ");
-        const flag = COUNTRIES[code]?.emoji || code;
-        return `${flag} ${cleanOps}`;
-      })
-      .join(" + ");
-  };
+  const locationCountryCodes = normalizeLocationTokens(
+    String(p.location || p.code || ""),
+  ).filter((t) => t !== "GLOBAL");
 
   if (rawOp && rawOp.length > 5) {
-    carrier = formatOperator(rawOp);
+    carrierSegments = parseNetworkSegments(rawOp);
+    carrier =
+      carrierSegments.length > 0
+        ? carrierSegments.map((s) => s.text).join(" + ")
+        : rawOp;
+    carrierIsMulti = carrierSegments.length >= CARRIER_COLLAPSE_MIN;
+    carrierSummary = carrierIsMulti
+      ? `${carrierSegments.length} 國 · 多網自動`
+      : carrier;
     if (
       carrier.includes("/") ||
       carrier.includes("+") ||
@@ -1446,6 +1691,31 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
     else if (apn.includes("au-net")) carrier = "AU (KDDI)";
     else if (apn.includes("vmobile.jp")) carrier = "IIJ Docomo";
     else if (apn.includes("mobile.three.com.hk")) carrier = "3HK 漫遊";
+    carrierSummary = carrier;
+  }
+
+  if (
+    !carrierIsMulti &&
+    locationCountryCodes.length >= CARRIER_COLLAPSE_MIN
+  ) {
+    carrierIsMulti = true;
+    const countryCount = Math.max(
+      carrierSegments.length,
+      locationCountryCodes.length,
+    );
+    carrierSummary = `${countryCount} 國 · 多網自動`;
+    if (carrierSegments.length === 0) {
+      carrierSegments = locationCountryCodes.map((code) => {
+        const cfg = COUNTRIES[code];
+        const flag = cfg?.emoji || "";
+        return {
+          code,
+          label: cfg?.name?.replace(/\s*\(.*\)\s*$/, "") || code,
+          flag,
+          text: `${flag ? `${flag} ` : ""}${code}`.trim(),
+        };
+      });
+    }
   }
 
   // IP & App Support（原生：日／韓／泰／越／馬）
@@ -1508,6 +1778,13 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
       label: "🇲🇾 馬來西亞原生 IP",
       apnHints: ["my3g"],
       netHints: ["umobile", "u mobile"],
+      requireLocalName: true,
+    },
+    {
+      code: "US",
+      label: "🇺🇸 美國原生 IP",
+      apnHints: ["enhancedphone"],
+      netHints: ["at&t", "att"],
       requireLocalName: true,
     },
   ];
@@ -1640,6 +1917,9 @@ const parsePlanDetails = (p: any, countryConfig: any) => {
     isNative,
     carrier,
     carrierBadge,
+    carrierSegments,
+    carrierIsMulti,
+    carrierSummary,
     isTrueUnlimited,
     throttle,
     throttleClass,
@@ -1667,7 +1947,7 @@ const CurrencyConverter = () => {
     fetch("https://api.exchangerate-api.com/v4/latest/USD")
       .then((res) => res.json())
       .then((data) => setRates(data.rates))
-      .catch((e) => console.error(e));
+      .catch((e) => clientWarn("[esim-selection] FX rates:", e));
   }, []);
 
   const handleConvert = (currency: string, value: string) => {
@@ -1865,7 +2145,7 @@ export default function GlobalPlanScanner() {
       const data = await res.json();
       setMarketRates({ USD: 1 / data.rates.USD, HKD: 1 / data.rates.HKD });
     } catch (e) {
-      console.error(e);
+      clientWarn("[esim-selection] market FX rates:", e);
     }
   };
 
@@ -2049,8 +2329,14 @@ export default function GlobalPlanScanner() {
     partnerDiscountPercent,
   ]);
 
+  const carrierFilterKey = (p: {
+    carrier: string;
+    carrierIsMulti?: boolean;
+    carrierSummary?: string;
+  }) => (p.carrierIsMulti ? p.carrierSummary || p.carrier : p.carrier);
+
   const uniqueCarriers = useMemo(() => {
-    const carriers = new Set(baseProcessedPlans.map((p) => p.carrier));
+    const carriers = new Set(baseProcessedPlans.map((p) => carrierFilterKey(p)));
     return Array.from(carriers).sort();
   }, [baseProcessedPlans]);
 
@@ -2108,7 +2394,9 @@ export default function GlobalPlanScanner() {
       if (filterName !== "ALL")
         result = result.filter((p) => p.name === filterName);
       if (filterCarrier !== "ALL")
-        result = result.filter((p) => p.carrier === filterCarrier);
+        result = result.filter(
+          (p) => carrierFilterKey(p) === filterCarrier,
+        );
       if (filterIP === "NATIVE") result = result.filter((p) => p.isNative);
       if (filterIP === "ROAMING") result = result.filter((p) => !p.isNative);
       if (filterDayRange === "SHORT")
@@ -2332,16 +2620,17 @@ export default function GlobalPlanScanner() {
                 </div>
                 {selectedCountry === "HIGH_DAY" && (
                   <p className="text-xs text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-1 max-w-lg">
-                    高天數：純單國（美日澳英加韓）＋美加。預設「特長
-                    60天+」、天數由長到短。主力含韓／英吃到飽
-                    90、加／美加每日 90、美總量 FUP 60。日／澳最長多半
-                    30 天→請改篩「超長期 30天+」才看得到。
+                    高天數：純單國（美日澳英加韓）＋跨國補位（美加／紐澳／日韓總量／歐洲含英）。預設「特長
+                    60天+」。美國 31–88 天吃到飽見 USCAMX；韓 SK 原生 60/90；英歐34/43
+                    unlimited 60/90；加／美加每日 90；日總量 60。純澳／紐澳目錄<strong>
+                    最長 30 天</strong>（舊 Total60GB-60 已下架）→ 見「🇦🇺🇳🇿📅 紐澳長天數」。
                   </p>
                 )}
                 {selectedCountry === "STUDENT" && (
                   <p className="text-xs text-violet-900 bg-violet-50 border border-violet-200 rounded-md px-2 py-1 max-w-lg">
-                    留學生專案：僅美／日／澳／英／加／韓純單國（不含美加）。預設「超長期
-                    30天+」。要美加 90 天請改選「📅 高天數方案」。
+                    留學生專案：僅美／日／澳／英／加／韓<strong>純單國</strong>（不含美加／紐澳／歐洲包）。預設「超長期
+                    30天+」。需 60 天以上或多國補位請改「📅 高天數方案」；美 31–88 天 AT&T 見「🇺🇸🇨🇦🇲🇽
+                    美加墨」。
                   </p>
                 )}
                 {selectedCountry === "TH_CP" && (
@@ -2367,10 +2656,69 @@ export default function GlobalPlanScanner() {
                     吃到飽」；EU-36-A0 通常比 43 國 B0 更省
                   </p>
                 )}
+                {selectedCountry === "AU" && (
+                  <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-lg">
+                    純澳吃到飽／每日／總量最長<strong> 30 天</strong>。供應商正式目錄已無{" "}
+                    <code className="text-[10px]">Total60GB-60</code>。若要紐澳雙國比價 →
+                    「🇦🇺🇳🇿📅 紐澳長天數」（預設 30天+）。
+                  </p>
+                )}
+                {selectedCountry === "ANZ" && (
+                  <p className="text-xs text-sky-900 bg-sky-50 border border-sky-200 rounded-md px-2 py-1 max-w-lg">
+                    含紐澳吃到飽、Total、Daily（AU,NZ T+C 等）。目錄最長<strong> 30 天</strong>
+                    。快捷比價 30 天方案 →「🇦🇺🇳🇿📅 紐澳長天數」。
+                  </p>
+                )}
+                {selectedCountry === "ANZ_LONG" && (
+                  <p className="text-xs text-sky-900 bg-sky-50 border border-sky-200 rounded-md px-2 py-1 max-w-lg">
+                    預設「超長期 30天+」、依成本排序。主力如{" "}
+                    <code className="text-[10px]">AU,NZ(T+C)-Total50GB-30</code>、
+                    <code className="text-[10px]">Australia&New-Zealand-unlimited-30</code>
+                    。注意：舊 SKU{" "}
+                    <code className="text-[10px]">Australia/New-Zealand-Total60GB-60</code>{" "}
+                    已不在正式目錄，勿再篩「特長 60天+」。
+                  </p>
+                )}
+                {selectedCountry === "EU" && (
+                  <p className="text-xs text-indigo-900 bg-indigo-50 border border-indigo-200 rounded-md px-2 py-1 max-w-lg">
+                    Europe 30/34/35/43、EU 32/36/41 等多國包；電信商欄預設收折，可展開查看各國網路
+                  </p>
+                )}
+                {selectedCountry === "ASIA" && (
+                  <p className="text-xs text-indigo-900 bg-indigo-50 border border-indigo-200 rounded-md px-2 py-1 max-w-lg">
+                    Asia-5／Asia-11 等亞太多國包（非東南亞專用）；電信商欄預設收折
+                  </p>
+                )}
+                {selectedCountry === "SEA" && (
+                  <p className="text-xs text-indigo-900 bg-indigo-50 border border-indigo-200 rounded-md px-2 py-1 max-w-lg">
+                    Southeast Asia 4／5 國（新馬泰印越等）；比「星馬泰」範圍稍廣
+                  </p>
+                )}
+                {selectedCountry === "NA_SA_CB" && (
+                  <p className="text-xs text-indigo-900 bg-indigo-50 border border-indigo-200 rounded-md px-2 py-1 max-w-lg">
+                    NA,SA,CB 13／18／33 國美洲＋加勒比海組合；不含純美加墨三國（見「北美」）
+                  </p>
+                )}
+                {(selectedCountry === "MEA" ||
+                  selectedCountry === "AFRICA" ||
+                  selectedCountry === "OCEANIA" ||
+                  selectedCountry === "BALKAN") && (
+                  <p className="text-xs text-indigo-900 bg-indigo-50 border border-indigo-200 rounded-md px-2 py-1 max-w-lg">
+                    區域多國包；電信商欄預設收折，點「展開 N 國」查看完整列表
+                  </p>
+                )}
                 {selectedCountry === "GB_UNLIMITED" && (
                   <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-md">
                     吃到飽：Europe-43-unlimited（B0）、Europe-34-unlimited（B0）、EU-36-unlimited（A0，多為
                     8–20Mbps、成本較低）。請依成本排序比 CP
+                  </p>
+                )}
+                {selectedCountry === "US_CA_MX" && (
+                  <p className="text-xs text-sky-900 bg-sky-50 border border-sky-200 rounded-md px-2 py-1 max-w-lg">
+                    AT&T 美國門號吃到飽：<strong>USCAMX-Local-unlimited-*-A0</strong>（舊
+                    *-A1 已下架）。短天數 10–30 天 → 官網 75%；長天數 31–88 天 →{" "}
+                    <strong>60%</strong>（另開長天數商品）。🔴 原生 IP · APN ENHANCEDPHONE ·
+                    美墨吃到飽＋加 25GB 高速。
                   </p>
                 )}
                 {!!COUNTRIES[selectedCountry]?.networkCodes?.length && (
@@ -2910,23 +3258,17 @@ export default function GlobalPlanScanner() {
                       </span>
                     </div>
                   </td>
-                  <td className="p-4 align-top">
-                    <div
-                      className={`font-bold text-sm px-2 py-1 rounded-md inline-block mb-1 ${p.carrierBadge}`}
-                    >
-                      {p.carrier}
-                    </div>
-                    <div
-                      className={`text-[10px] px-1.5 py-0.5 rounded inline-block mb-1 ${p.ekycClass}`}
-                      title={p.ekycTitle}
-                    >
-                      {p.ekycLabel}
-                    </div>
-                    {p.carrier.includes("SoftBank / KDDI") && (
-                      <div className="text-[10px] text-blue-500">
-                        ✨ 雙網自動切換
-                      </div>
-                    )}
+                  <td className="p-4 align-top max-w-[12rem]">
+                    <CarrierNetworksCell
+                      carrier={p.carrier}
+                      carrierBadge={p.carrierBadge}
+                      carrierSegments={p.carrierSegments || []}
+                      carrierIsMulti={Boolean(p.carrierIsMulti)}
+                      carrierSummary={p.carrierSummary || p.carrier}
+                      ekycLabel={p.ekycLabel}
+                      ekycClass={p.ekycClass}
+                      ekycTitle={p.ekycTitle}
+                    />
                   </td>
                   <td className="p-4 align-top">
                     <div className="flex flex-col gap-1 text-[10px] font-bold">

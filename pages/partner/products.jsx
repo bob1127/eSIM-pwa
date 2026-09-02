@@ -23,6 +23,7 @@ import {
 } from "@/lib/partnerCsvExport";
 import { isSettledOrderStatus } from "@/lib/refundPolicy";
 import StatusIconBadge from "@/components/partner/StatusIconBadge";
+import { clientError } from "@/lib/clientLogger";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import PublishToggle from "@/components/partner/blog-builder/PublishToggle";
 import PartnerSelectMenu from "@/components/partner/PartnerSelectMenu";
@@ -2508,7 +2509,7 @@ export default function PartnerProductsPage() {
 
       setProducts(rows);
     } catch (err) {
-      console.error("[PartnerProductsPage] loadProducts", err);
+      clientError("[PartnerProductsPage] loadProducts", err);
       setProducts([]);
     } finally {
       setLoadingProducts(false);

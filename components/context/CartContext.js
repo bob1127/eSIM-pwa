@@ -342,6 +342,37 @@ export const CartProvider = ({ children }) => {
     setIsCartOpen(false);
   }, []);
 
+  /** LINE Pay 取消／幽靈 cart 後：建新 Medusa cart 並把本機 eSIM 品項同步上去 */
+  const rebuildMedusaCartFromLocal = useCallback(async () => {
+    localStorage.removeItem(CART_ID_KEY);
+    setCartId(null);
+    const localEsim = readLocal().filter(isEsimItem);
+    try {
+      const res = await fetch(`${MEDUSA_URL_ENV}/store/carts`, {
+        method: "POST",
+        headers: medusaHeaders(),
+      });
+      if (!res.ok) return false;
+      const { cart } = await res.json();
+      const newId = cart?.id;
+      if (!newId) return false;
+      localStorage.setItem(CART_ID_KEY, newId);
+      setCartId(newId);
+      for (const item of localEsim) {
+        await tryMedusaAddItem(
+          newId,
+          item.variant_id,
+          item.quantity,
+          item.specLabel,
+          item.type,
+        );
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   return (
     <CartContext.Provider
       value={{
@@ -358,6 +389,7 @@ export const CartProvider = ({ children }) => {
         removeFromCart,
         updateQuantity,
         clearCart,
+        rebuildMedusaCartFromLocal,
         isCartOpen,
         setIsCartOpen,
         isOpen: isCartOpen,

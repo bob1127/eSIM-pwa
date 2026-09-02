@@ -3,6 +3,10 @@ import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import MobileCardCarousel from "./MobileCardCarousel";
+import {
+  PRODUCT_ZONE_DEFS,
+  zoneCountryToServiceCard,
+} from "@/lib/productZoneCategories";
 
 /* ========== 共用：滾動進場（大距離、超柔順；與 page.jsx 同步） ========== */
 function FadeUp({
@@ -135,6 +139,8 @@ export default function PickUpJobsSection() {
   const TABS = [
     { key: "native", label: "原生卡專區-本地IP" },
     { key: "unlimited", label: "真．不限速eSIM" },
+    { key: "student", label: "留學生專區" },
+    { key: "business", label: "出差辦公專區" },
     { key: "japan", label: "日本 Japan" },
     { key: "korea", label: "韓國 Korea" },
     { key: "china", label: "中國 China" },
@@ -147,6 +153,13 @@ export default function PickUpJobsSection() {
   /* 🌟 eSIM 產品資料 (已全數加上 link 屬性) */
   const DATA = useMemo(
     () => ({
+      // 留學生／出差：共用 lib/productZoneCategories（各國分開；變體稍後再加）
+      student: PRODUCT_ZONE_DEFS.find((z) => z.key === "student").countries.map(
+        (c) => zoneCountryToServiceCard(c, "留學"),
+      ),
+      business: PRODUCT_ZONE_DEFS.find((z) => z.key === "business").countries.map(
+        (c) => zoneCountryToServiceCard(c, "出差"),
+      ),
       // 來源：/esim-selection 原生 IP 規則（日／韓／泰／越）；產品尚未上架，先放國家入口卡
       native: [
         {

@@ -11,6 +11,7 @@ import { emptyItineraryBlock, isItineraryBlocks } from "@/lib/partnerBlogItinera
 import { LineAppIconSvg } from "@/components/social/SocialBrandIcons";
 import MaterialIcon from "@/components/MaterialIcon";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import { clientError } from "@/lib/clientLogger";
 import MediaUploadField, {
   BlogBuilderMediaProvider,
 } from "@/components/partner/blog-builder/MediaUploadField";
@@ -206,7 +207,7 @@ export default function PartnerBlogAdminPage() {
       .order("updated_at", { ascending: false });
     if (!silent) setLoading(false);
     if (error) {
-      console.error(error);
+      clientError(error);
       if (!silent) setPosts([]);
       return;
     }

@@ -36,7 +36,7 @@ const steps = ["購物車", "填寫資料 / 付款"];
 
 export default function PartnerCart({ store }) {
   const router = useRouter();
-  const { esimItems, updateQuantity, removeFromCart } = useCart();
+  const { esimItems, updateQuantity, removeFromCart, rebuildMedusaCartFromLocal } = useCart();
   const cartItems = useMemo(() => {
     const all = esimItems || [];
     if (!store?.id) return all;
@@ -267,7 +267,11 @@ export default function PartnerCart({ store }) {
                 </div>
                 <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
                   {/* 統一結帳：帶 store_id → 伺服器端套用夥伴售價後走藍新／LINE Pay */}
-                  <CheckoutForm storeId={store.id} onBack={handleBack} />
+                  <CheckoutForm
+                    storeId={store.id}
+                    onBack={handleBack}
+                    onCartNeedsRebuild={rebuildMedusaCartFromLocal}
+                  />
                 </div>
               </div>
 

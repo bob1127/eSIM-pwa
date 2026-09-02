@@ -13,6 +13,7 @@ import {
   getCooldownRemainingMs,
   formatCooldownMessage,
 } from "../../lib/productReviewAntiSpam";
+import { clientWarn } from "@/lib/clientLogger";
 
 const VIDEO_REGEX = /\.(mp4|webm|mov|m4v|avi|mkv|qt)$/i;
 const MAX_MEDIA = 4;
@@ -710,7 +711,7 @@ export default function ProductReviewsSection({
 
     if (error) {
       // likes 表尚未建立時不阻斷主流程
-      console.warn("product_review_likes:", error.message);
+      clientWarn("product_review_likes:", error.message);
       return;
     }
 
@@ -735,7 +736,7 @@ export default function ProductReviewsSection({
     if (error) {
       // 表尚未建立時不阻斷頁面（僅 console），避免露出 schema cache 錯誤
       if (/schema cache|does not exist|Could not find the table/i.test(error.message)) {
-        console.warn("product_reviews:", error.message);
+        clientWarn("product_reviews:", error.message);
         setReviews([]);
         setReplies({});
         setSubmitError("");

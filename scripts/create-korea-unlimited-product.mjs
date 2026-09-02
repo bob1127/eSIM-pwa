@@ -2,7 +2,7 @@
  * 建立「韓國 eSIM 吃到飽」— 兩個電信方案 × 各天數變體
  *   1) SK電信（韓國IP）← South Korea-Local-unlimited-*-B0（真高速）
  *   2) LG U+ / SK電信 ← South Korea-Promo-unlimited-*-A0（限速 10Mbps）
- * 利潤 50%：retail = ceil(ceil(hkd*4.1)*1.5 / 10)*10 - 1
+ * 利潤：SK 原生 <30 天 50%；≥30 天 40%。Promo 維持 50%。
  *
  * 用法：
  *   node scripts/create-korea-unlimited-product.mjs
@@ -25,7 +25,10 @@ const HANDLE = "korea-unlimited-esim";
 const DATA_AMOUNT = "無限流量";
 const TELECOM_SKT = "SK電信（韓國IP）";
 const TELECOM_PROMO = "LG U+ / SK電信";
-const MARGIN = 1.5;
+const PROFIT_SKT_SHORT = 50;
+const PROFIT_SKT_LONG = 40;
+const SKT_LONG_MIN_DAYS = 30;
+const PROFIT_PROMO = 50;
 const HKD_TO_TWD = Number(process.env.HKD_TO_TWD || 4.1);
 const BATCH_SIZE = 40;
 const REBUILD = process.argv.includes("--rebuild");
@@ -50,8 +53,16 @@ const KOREA_GALLERY = [
 const THUMB = process.env.KOREA_PRODUCT_THUMB || KOREA_GALLERY[0];
 const PRODUCT_IMAGES = KOREA_GALLERY.map((url) => ({ url }));
 
-function retailFromCost(costTwd) {
-  return Math.ceil((costTwd * MARGIN) / 10) * 10 - 1;
+function profitForRow(row) {
+  if (row.kind === "native_skt") {
+    return row.day >= SKT_LONG_MIN_DAYS ? PROFIT_SKT_LONG : PROFIT_SKT_SHORT;
+  }
+  return PROFIT_PROMO;
+}
+
+function retailFromCost(costTwd, profitPercent) {
+  const m = 1 + profitPercent / 100;
+  return Math.ceil((costTwd * m) / 10) * 10 - 1;
 }
 
 function loadPlans() {
@@ -59,30 +70,28 @@ function loadPlans() {
   const raw = JSON.parse(fs.readFileSync(file, "utf8"));
   const rows = [];
   for (const p of raw.local || []) {
+    const cost_twd = p.cost_twd || Math.ceil(Number(p.price_hkd) * HKD_TO_TWD);
+    const profit_percent = profitForRow({ kind: "native_skt", day: p.day });
     rows.push({
       ...p,
       telecom: TELECOM_SKT,
       daysLabel: `${p.day}天`,
-      cost_twd: p.cost_twd || Math.ceil(Number(p.price_hkd) * HKD_TO_TWD),
-      retail_twd:
-        p.retail_twd ||
-        retailFromCost(
-          p.cost_twd || Math.ceil(Number(p.price_hkd) * HKD_TO_TWD),
-        ),
+      cost_twd,
+      profit_percent,
+      retail_twd: retailFromCost(cost_twd, profit_percent),
       kind: "native_skt",
     });
   }
   for (const p of raw.promo || []) {
+    const cost_twd = p.cost_twd || Math.ceil(Number(p.price_hkd) * HKD_TO_TWD);
+    const profit_percent = PROFIT_PROMO;
     rows.push({
       ...p,
       telecom: TELECOM_PROMO,
       daysLabel: `${p.day}天`,
-      cost_twd: p.cost_twd || Math.ceil(Number(p.price_hkd) * HKD_TO_TWD),
-      retail_twd:
-        p.retail_twd ||
-        retailFromCost(
-          p.cost_twd || Math.ceil(Number(p.price_hkd) * HKD_TO_TWD),
-        ),
+      cost_twd,
+      profit_percent,
+      retail_twd: retailFromCost(cost_twd, profit_percent),
       kind: "promo_lg_skt",
     });
   }
@@ -157,7 +166,10 @@ function toVariant(row) {
       days: String(row.day),
       cost_hkd: String(row.price_hkd),
       cost_price: row.cost_twd,
-      profit_margin: "50%",
+      profit_percent: row.profit_percent,
+      profit_margin: `${row.profit_percent}%`,
+      profit_rate: `${row.profit_percent}%`,
+      margin: 1 + row.profit_percent / 100,
       apn: row.apn || "",
       networks: row.networks || "",
       rule_desc: row.rule_desc || "",
@@ -208,8 +220,14 @@ async function main() {
     native_esim: true,
     hot_sale_telecoms: [TELECOM_SKT],
     carrier_profit_by_carrier: {
-      [TELECOM_SKT]: 50,
-      [TELECOM_PROMO]: 50,
+      [TELECOM_SKT]: PROFIT_SKT_SHORT,
+      [TELECOM_PROMO]: PROFIT_PROMO,
+    },
+    carrier_profit_long_by_carrier: {
+      [TELECOM_SKT]: PROFIT_SKT_LONG,
+    },
+    carrier_profit_long_min_days_by_carrier: {
+      [TELECOM_SKT]: SKT_LONG_MIN_DAYS,
     },
     seo_title:
       "韓國 eSIM SK電信 - 高速數據流量吃到飽 原生eSIM / 漫遊｜韓國IP｜Jeko eSIM",

@@ -4,7 +4,7 @@ import { useCart } from "../components/context/CartContext";
 import Layout from "./Layout";
 import Link from "next/link";
 import CartRelatedEsimCarousel from "../components/SwiperCarousel/AnotherProduct";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Stepper from "@mui/material/Stepper";
@@ -18,6 +18,7 @@ import { useUser } from "@/components/context/UserContext";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import { PENDING_COUPON_KEY } from "@/lib/partnerReferralDiscount";
 import { useLineBind } from "@/hooks/useLineBind";
+import { clientWarn } from "@/lib/clientLogger";
 import { maybeMarkWelcomeGiftOnFirstClaim } from "@/lib/welcomeGiftPopup";
 import { buildLoginUrl } from "@/lib/authRedirect";
 import {
@@ -27,6 +28,11 @@ import {
 } from "@/lib/lineWelcomeCheckoutClient";
 import JekoPillButton from "@/components/ui/JekoPillButton";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import {
+  readPendingPayment,
+  clearPendingPayment,
+  isPendingPaymentActive,
+} from "@/lib/checkoutPendingPayment";
 
 const CART_STEP_KEY = "jeko_cart_active_step";
 
@@ -95,7 +101,7 @@ function CartItemThumb({ item, size = "md" }) {
 }
 
 const CartPage = () => {
-  const { updateQuantity, removeFromCart, cartId, esimItems, esimTotal } =
+  const { updateQuantity, removeFromCart, cartId, esimItems, esimTotal, rebuildMedusaCartFromLocal } =
     useCart();
   const displayItems = esimItems || [];
   const displayTotal = esimTotal || 0;
@@ -125,8 +131,55 @@ const CartPage = () => {
   const [welcomeHint, setWelcomeHint] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [paymentBusy, setPaymentBusy] = useState(null); // null | "linepay" | "newebpay"
+  const [pendingPayment, setPendingPayment] = useState(null);
+  const [linePayCancelNotice, setLinePayCancelNotice] = useState(false);
+  const [pendingBusy, setPendingBusy] = useState(false);
+  const checkoutPreparedCartRef = useRef(null);
 
   const payableTotal = Math.max(0, Number(displayTotal || 0) - Number(discount || 0));
+  const linePayPendingActive =
+    pendingPayment &&
+    isPendingPaymentActive(pendingPayment, "linepay");
+  const checkoutBlocked = Boolean(linePayPendingActive || paymentBusy || pendingBusy);
+
+  useEffect(() => {
+    setPendingPayment(readPendingPayment());
+  }, []);
+
+  // 進入「填寫資料」步驟時預先套用免運 + 暖方案快取（按 LINE Pay 時少 1～2 次 Medusa 往返）
+  useEffect(() => {
+    if (activeStep !== 1 || !cartId) return;
+    if (checkoutPreparedCartRef.current === cartId) return;
+    checkoutPreparedCartRef.current = cartId;
+
+    const ctrl = new AbortController();
+    fetch("/api/checkout/prepare-cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cartId }),
+      signal: ctrl.signal,
+    }).catch(() => {});
+
+    return () => ctrl.abort();
+  }, [activeStep, cartId]);
+
+  const handleDismissPendingPayment = async () => {
+    setPendingBusy(true);
+    try {
+      clearPendingPayment();
+      await rebuildMedusaCartFromLocal();
+      setPendingPayment(null);
+      setLinePayCancelNotice(false);
+    } finally {
+      setPendingBusy(false);
+    }
+  };
+
+  const handleViewPendingOrder = () => {
+    const no = pendingPayment?.orderNo || pendingPayment?.medusaOrderId;
+    if (!no) return;
+    router.push(`/thank-you?orderNo=${encodeURIComponent(no)}`);
+  };
 
   useEffect(() => {
     const onBusy = (e) => {
@@ -162,6 +215,19 @@ const CartPage = () => {
     },
     [router],
   );
+
+  useEffect(() => {
+    if (router.query.linepay !== "cancel") return;
+    setLinePayCancelNotice(true);
+    setPendingPayment(readPendingPayment());
+    goToStep(1);
+    const q = { ...router.query };
+    delete q.linepay;
+    q.step = "1";
+    router.replace({ pathname: router.pathname, query: q }, undefined, {
+      shallow: true,
+    });
+  }, [router.query.linepay, goToStep, router]);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -505,7 +571,7 @@ const CartPage = () => {
           );
         }
       } catch (e) {
-        console.warn("[Cart] 歡迎禮自動套用略過:", e.message);
+        clientWarn("[Cart] 歡迎禮自動套用略過:", e.message);
         if (!cancelled) {
           setPromoOpen(true);
           setCouponMessage(e.message || "優惠券載入失敗");
@@ -954,6 +1020,7 @@ const CartPage = () => {
                       hideSubmitButton={true}
                       requireTerms
                       termsAccepted={termsAccepted}
+                      onCartNeedsRebuild={rebuildMedusaCartFromLocal}
                     />
                   </div>
                 </div>
@@ -1249,6 +1316,40 @@ const CartPage = () => {
                         </label>
 
                         {/* 付款方式：LINE Pay / 藍新金流 */}
+                        {(linePayPendingActive || linePayCancelNotice) && (
+                          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left">
+                            <p className="text-[13px] font-bold text-amber-900">
+                              {linePayCancelNotice
+                                ? "LINE Pay 付款已取消"
+                                : "有一筆 LINE Pay 訂單等待付款"}
+                            </p>
+                            <p className="mt-1 text-[12px] text-amber-800 leading-relaxed">
+                              {linePayCancelNotice
+                                ? "您的商品仍在購物車。若再次結帳會產生新訂單；若剛才其實已付款，請先查看訂單狀態。"
+                                : `訂單 ${pendingPayment?.orderNo ? `#${pendingPayment.orderNo}` : ""} 尚未完成付款。若已付款請稍候確認。`}
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {pendingPayment?.orderNo || pendingPayment?.medusaOrderId ? (
+                                <button
+                                  type="button"
+                                  onClick={handleViewPendingOrder}
+                                  className="rounded-lg bg-white px-3 py-1.5 text-[12px] font-bold text-[#1E4AD1] border border-[#1E4AD1]/30 hover:bg-blue-50"
+                                >
+                                  查看訂單狀態
+                                </button>
+                              ) : null}
+                              <button
+                                type="button"
+                                disabled={pendingBusy}
+                                onClick={handleDismissPendingPayment}
+                                className="rounded-lg bg-amber-600 px-3 py-1.5 text-[12px] font-bold text-white hover:bg-amber-700 disabled:opacity-60"
+                              >
+                                {pendingBusy ? "處理中…" : "取消並重新結帳"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         <p className="text-xs text-center text-gray-500 mb-3">
                           選擇付款方式
                         </p>
@@ -1257,7 +1358,7 @@ const CartPage = () => {
                             type="button"
                             variant="primary"
                             tone="line"
-                            disabled={Boolean(paymentBusy)}
+                            disabled={checkoutBlocked || !termsAccepted}
                             onClick={() => {
                               window.dispatchEvent(
                                 new CustomEvent("esim-checkout-linepay"),
@@ -1271,7 +1372,7 @@ const CartPage = () => {
                           <JekoPillButton
                             type="button"
                             variant="primary"
-                            disabled={Boolean(paymentBusy)}
+                            disabled={checkoutBlocked || !termsAccepted}
                             onClick={() => {
                               window.dispatchEvent(
                                 new CustomEvent("esim-checkout-newebpay"),

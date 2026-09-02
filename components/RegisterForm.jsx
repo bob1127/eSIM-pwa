@@ -12,6 +12,7 @@ import { markJustRegistered } from "../lib/authRedirect";
 import { markWelcomeGiftPopup } from "../lib/welcomeGiftPopup";
 import { validatePassword, PASSWORD_HINT } from "../lib/passwordPolicy";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
+import { clientError } from "@/lib/clientLogger";
 
 const RESEND_WAIT_SECONDS = 60;
 
@@ -144,7 +145,7 @@ const RegisterForm = ({ onSuccess }) => {
       onSuccess?.("註冊成功！請使用 Email 與密碼登入，將導向會員中心。");
       setTimeout(() => setShowSuccessPopup(false), 3000);
     } catch (err) {
-      console.error("Register Error:", err.message);
+      clientError("Register Error:", err.message);
       setMessage(err.message || "註冊失敗");
     } finally {
       setRegistering(false);

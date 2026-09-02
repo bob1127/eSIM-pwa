@@ -81,15 +81,19 @@ import {
   USCA_USAGE_DAILY,
   USCA_USAGE_TOTAL,
   NA_ATT_DETAILED,
+  NA_ATT_LONGTERM_DETAILED,
   NA_DAILY_A0_DETAILED,
   NA_DAILY_A1_DETAILED,
   NA_TOTAL_DETAILED,
   NA_USAGE_ATT,
+  NA_USAGE_ATT_LONGTERM,
   NA_USAGE_USIP,
 } from "../content/product-detailed/usa-region-tab-content.js";
 import {
   CA_UNLIM_DETAILED,
+  CA_UNLIM_10M_DETAILED,
   CA_USAGE_UNLIM,
+  CA_USAGE_UNLIM_10M,
   CA_DAILY_ROAM_DETAILED,
   CA_DAILY_MULTI_DETAILED,
   CA_USAGE_DAILY_ROAM,
@@ -784,6 +788,18 @@ const CONTENT_MAP = {
     carrier: "AT&T 美國號碼",
     contentType: "usage",
   },
+  "na-att-longterm": {
+    html: NA_ATT_LONGTERM_DETAILED,
+    handle: "usa-native-unlimited-longterm-esim",
+    carrier: "AT&T 美國號碼",
+    contentType: "detailed",
+  },
+  "na-att-longterm-usage": {
+    html: NA_USAGE_ATT_LONGTERM,
+    handle: "usa-native-unlimited-longterm-esim",
+    carrier: "AT&T 美國號碼",
+    contentType: "usage",
+  },
   "na-daily-a0": {
     html: NA_DAILY_A0_DETAILED,
     handle: "north-america-daily-usip-esim",
@@ -831,6 +847,18 @@ const CONTENT_MAP = {
     html: CA_USAGE_UNLIM,
     handle: "canada-unlimited-esim",
     carrier: "WIND / Bell / TELUS +",
+    contentType: "usage",
+  },
+  "ca-unlim-10m": {
+    html: CA_UNLIM_10M_DETAILED,
+    handle: "canada-unlimited-esim",
+    carrier: "Bell / Telus / Verizon（10Mbps）",
+    contentType: "detailed",
+  },
+  "ca-unlim-10m-usage": {
+    html: CA_USAGE_UNLIM_10M,
+    handle: "canada-unlimited-esim",
+    carrier: "Bell / Telus / Verizon（10Mbps）",
     contentType: "usage",
   },
   "ca-daily-roam": {

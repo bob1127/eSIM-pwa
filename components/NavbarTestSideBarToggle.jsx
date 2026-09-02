@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { clientError } from "@/lib/clientLogger";
 
 // ✅ WooCommerce API base
 const WC_API_URL = `https://inf.fjg.mybluehost.me/website_f9214e6b/wp-json/wc/v3/products/categories`;
@@ -40,7 +41,7 @@ const Navbar = ({ initialCategories = [] }) => {
         }
         setCategories(allCategories);
       } catch (error) {
-        console.error("Error fetching categories:", error);
+        clientError("Error fetching categories:", error);
       }
     };
 

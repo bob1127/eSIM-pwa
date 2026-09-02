@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
+import { clientError } from "@/lib/clientLogger";
 
 export default function LinePayConfirmPage() {
   const router = useRouter();
@@ -71,7 +72,7 @@ export default function LinePayConfirmPage() {
                       `❌ 付款失敗：${[msg, detail].filter(Boolean).join("／")}`,
                     );
                   } catch (error) {
-                    console.error("LINE Pay confirm 錯誤:", error);
+                    clientError("LINE Pay confirm 錯誤:", error);
                     setStatus(
                       "❌ 付款確認失敗：" +
                         (error?.message || String(error)),

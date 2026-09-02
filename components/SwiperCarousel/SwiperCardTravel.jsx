@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Card, CardHeader, CardBody } from "@nextui-org/react";
 import Link from "next/link";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
+import { clientError } from "@/lib/clientLogger";
 
 // 抓 WooCommerce 所有商品分類，包含 description
 // 抓 WooCommerce 所有商品分類，包含 description
@@ -24,7 +25,7 @@ async function fetchProductCategories() {
         cat.slug !== "all-product",
     );
   } catch (error) {
-    console.error("Error fetching categories:", error);
+    clientError("Error fetching categories:", error);
     return [];
   }
 }

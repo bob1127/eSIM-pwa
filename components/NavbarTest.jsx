@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { clientError } from "@/lib/clientLogger";
 
 const fetchCategories = async () => {
   let allCategories = [];
@@ -34,7 +35,7 @@ const fetchCategories = async () => {
 
     return allCategories;
   } catch (error) {
-    console.error("Error fetching categories:", error);
+    clientError("Error fetching categories:", error);
     return [];
   }
 };

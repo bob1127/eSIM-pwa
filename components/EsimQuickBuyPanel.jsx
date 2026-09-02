@@ -15,6 +15,7 @@ import {
   MOCK_COUNTRIES,
   searchHeroCountryPlans,
 } from "@/lib/heroCountryPlans";
+import { clientWarn } from "@/lib/clientLogger";
 import { getCountryProductImagePath } from "@/lib/countryProductImages";
 import {
   parseHotSaleTelecoms,
@@ -832,7 +833,7 @@ export default function EsimQuickBuyPanel({ onCloseSheet } = {}) {
           ),
         );
       } catch (err) {
-        console.warn("[EsimQuickBuyPanel] 使用假資料:", err);
+        clientWarn("[EsimQuickBuyPanel] 使用假資料:", err);
         setCountries(attachProductsToCountries(MOCK_COUNTRIES, []));
       } finally {
         if (!cancelled) setLoading(false);
@@ -879,7 +880,7 @@ export default function EsimQuickBuyPanel({ onCloseSheet } = {}) {
           ),
         );
       } catch (err) {
-        console.warn("[EsimQuickBuyPanel] 分類商品載入失敗:", err);
+        clientWarn("[EsimQuickBuyPanel] 分類商品載入失敗:", err);
         setCountryProducts([]);
       } finally {
         setProductsLoading(false);

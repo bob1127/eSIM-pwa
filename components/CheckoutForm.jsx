@@ -13,6 +13,13 @@ import {
   saveCheckoutProfile,
 } from "@/lib/checkoutProfile";
 import { isLineSyntheticEmail } from "@/lib/lineAuth";
+import { clientWarn, clientError } from "@/lib/clientLogger";
+import {
+  readPendingPayment,
+  writePendingPayment,
+  isPendingPaymentActive,
+  getPendingPaymentBlockMessage,
+} from "@/lib/checkoutPendingPayment";
 import { CONTACT_INFO } from "@/lib/contactUi";
 import { supabase } from "@/lib/supabaseClient";
 import JekoPillButton from "@/components/ui/JekoPillButton";
@@ -120,6 +127,7 @@ const CheckoutForm = ({
   storeId = null,
   requireTerms = false,
   termsAccepted = true,
+  onCartNeedsRebuild = null,
 }) => {
   const router = useRouter();
   const { esimItems, cartId } = useCart();
@@ -249,7 +257,7 @@ const CheckoutForm = ({
           },
         });
       } catch (err) {
-        console.warn("[checkout] 同步會員資料略過:", err?.message || err);
+        clientWarn("[checkout] 同步會員資料略過:", err?.message || err);
       }
     }
   };
@@ -271,7 +279,7 @@ const CheckoutForm = ({
           },
         })
         .catch((err) => {
-          console.warn("[checkout] 同步會員資料略過:", err?.message || err);
+          clientWarn("[checkout] 同步會員資料略過:", err?.message || err);
         });
     }
   };
@@ -394,9 +402,11 @@ const CheckoutForm = ({
       sessionStorage.setItem(
         "checkout_pending_payment",
         JSON.stringify({
+          method: "newebpay",
           medusaOrderId: orderId,
           amount,
           email: normalizedForm.email,
+          cartId,
           startedAt: Date.now(),
         }),
       );
@@ -418,7 +428,7 @@ const CheckoutForm = ({
       await router.push("/checkout/payment/");
       return;
     } catch (err) {
-      console.error("❌ 結帳流程出錯:", err);
+      clientError("❌ 結帳流程出錯:", err);
       alert(`發生錯誤：${err.message}`);
     } finally {
       isSubmittingLock = false;
@@ -438,6 +448,12 @@ const CheckoutForm = ({
   const handleLinePaySubmit = async () => {
     if (!assertCheckoutReady("linepay")) return;
 
+    const pending = readPendingPayment();
+    if (pending && isPendingPaymentActive(pending, "linepay")) {
+      alert(getPendingPaymentBlockMessage(pending));
+      return;
+    }
+
     const normalizedForm = getNormalizedFormData();
 
     if (isSubmittingLock) {
@@ -448,6 +464,7 @@ const CheckoutForm = ({
     setIsSubmitting(true);
     setCheckoutBusy(true, "linepay");
 
+    let redirecting = false;
     try {
       persistProfileInBackground();
 
@@ -470,13 +487,26 @@ const CheckoutForm = ({
       const linepayData = await linepayRes.json();
       if (!linepayRes.ok || !linepayData?.success || !linepayData?.paymentUrl) {
         if (linepayData?.code === "CART_COMPLETED") {
-          localStorage.removeItem("medusa_cart_id");
+          if (typeof onCartNeedsRebuild === "function") {
+            await onCartNeedsRebuild();
+          } else {
+            localStorage.removeItem("medusa_cart_id");
+            window.location.reload();
+          }
           alert(
             linepayData.message ||
-              "購物車已結帳完成，請重新整理後再試。",
+              "購物車已結帳完成，已為您重建購物車，請再試一次。",
           );
-          window.location.reload();
           return;
+        }
+        if (linepayData?.code === "EMPTY_CART") {
+          if (typeof onCartNeedsRebuild === "function") {
+            await onCartNeedsRebuild();
+          }
+          throw new Error(
+            linepayData.message ||
+              "伺服器購物車與本機不同步，已嘗試重建，請再按一次結帳。",
+          );
         }
         if (
           linepayData?.code === "PLAN_DELISTED" ||
@@ -489,16 +519,27 @@ const CheckoutForm = ({
         throw new Error(linepayData?.message || "LINE Pay 建單失敗");
       }
 
-      localStorage.removeItem("medusa_cart_id");
+      writePendingPayment({
+        method: "linepay",
+        medusaOrderId: linepayData.orderId,
+        orderNo: linepayData.orderNo,
+        amount: linepayData.amount,
+        cartId,
+        email: normalizedForm.email,
+      });
+
+      redirecting = true;
       window.location.href = linepayData.paymentUrl;
       return;
     } catch (err) {
-      console.error("❌ LINE Pay 結帳流程出錯:", err);
+      clientError("❌ LINE Pay 結帳流程出錯:", err);
       alert(`LINE Pay 結帳失敗：${err.message}`);
       setCheckoutBusy(false, "linepay");
     } finally {
-      isSubmittingLock = false;
-      setIsSubmitting(false);
+      if (!redirecting) {
+        isSubmittingLock = false;
+        setIsSubmitting(false);
+      }
     }
   };
 

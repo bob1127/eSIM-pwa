@@ -23,6 +23,7 @@ import {
   isStorePublicLive,
   isStoreSetupPending,
 } from "@/lib/partnerStoreLifecycle";
+import { clientError } from "@/lib/clientLogger";
 
 const EMPTY_FOOTER = {
   footer_company_name: "",
@@ -204,7 +205,7 @@ export default function PartnerSettingsPage() {
       }
       setLogoUrl(data.url);
     } catch (err) {
-      console.error("[logo upload]", err);
+      clientError("[logo upload]", err);
       alert("上傳失敗：" + (err.message || "請稍後再試"));
     } finally {
       setUploading(false);

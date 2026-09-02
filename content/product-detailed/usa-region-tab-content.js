@@ -57,19 +57,19 @@ export function usaCompareTableSection() {
     [
       [
         `<strong>美國本土吃到飽</strong>`,
-        "Verizon／T-Mobile<br>香港 IP",
+        "Verizon／T-Mobile<br>美國 IP",
         "純訪美、要吃到飽",
         `${compareBullets([
           "雙網互補，市區與跨州移動較安心。",
           "不限流量 FUP；典型速度約 8–20Mbps（視位置而定）。",
-          "閘道為香港漫遊 IP（非美國原生 IP）。",
+          "出網標示為美國 IP（漫遊批發線路，非原生門號卡）。",
           "阿拉斯加／夏威夷不保證。",
         ])}<div style="margin-top:8px;">${link("/product/usa/usa-mainland-unlimited-esim/", "查看吃到飽")}</div>`,
       ],
       [
         `<strong>美國 IP 每日／總量</strong>`,
         "Verizon USA／AT&T USA<br>美國 IP",
-        "需要美國 IP 出口",
+        "要控管每日／總量用量",
         `${compareBullets([
           "出網標示為美國 IP（漫遊批發線路，非原生門號卡）。",
           "每日型：高速額度用完後約 128kbps（每日重置）。",
@@ -345,20 +345,20 @@ export const USA_UNLIM_DETAILED = buildDetailed({
   speedHtml:
     "4G／LTE／5G；吃到飽不限流量（FUP），典型約 8–20Mbps（視位置與擁塞而定）",
   planTypeLabel: "僅數據流量・吃到飽",
-  routeHtml: "漫遊（香港 IP）",
+  routeHtml: "漫遊（美國 IP）",
   regionLabel: "美國",
   compareSection: usaCompareTableSection(),
   introParas: [
     "jeko eSIM 美國本土吃到飽方案，走 <strong>Verizon／T-Mobile</strong> 雙網，適合訪美觀光、探親與短中期停留。",
     "公平使用政策下可持續上網，導航、Uber、傳訊與輕量影音通常沒問題。支援熱點與 ChatGPT／TikTok／Gemini。",
-    "出網為<strong>香港漫遊 IP</strong>（非美國原生 IP）。若您需要美國 IP 出口，請改選美國 IP 每日型或總量型。阿拉斯加、夏威夷使用不保證。",
+    "出網標示為<strong>美國 IP</strong>（漫遊批發線路，非原生門號卡）。阿拉斯加、夏威夷使用不保證。",
   ],
   bullets: [
     "Verizon／T-Mobile 雙網互補，市區與州際移動較安心。",
     "吃到飽不限流量（FUP）；實際速度依位置與網路負載而定。",
     "支援熱點與常用 App（ChatGPT／TikTok／Gemini）。",
     "僅數據、無門號／傳統通話／簡訊。",
-    "香港漫遊 IP；阿拉斯加／夏威夷不保證。建議抵達後再啟用。",
+    "美國 IP 出口；阿拉斯加／夏威夷不保證。建議抵達後再啟用。",
   ],
 });
 
@@ -380,7 +380,7 @@ export const USA_DAILY_USIP_DETAILED = buildDetailed({
     "美國 IP 出口；Verizon＋AT&T 雙網覆蓋熱門城市與公路沿線。",
     "每日高速額度，用完後約 128kbps（每日重置）。",
     "支援熱點與常用 App。",
-    "僅數據、無門號。需要吃到飽可改選美國本土吃到飽（香港 IP）。",
+    "僅數據、無門號。需要吃到飽可改選美國本土吃到飽。",
     "建議抵達後再啟用；阿拉斯加／夏威夷不保證。",
   ],
 });
@@ -520,7 +520,7 @@ export const USA_FAQ_UNLIM = buildFaq([
   {
     question: "這是美國原生 IP 嗎？",
     answerHtml: p(
-      `本吃到飽方案為<strong>香港漫遊 IP</strong>。若您需要美國 IP，請改選美國 IP 每日型或總量型。`,
+      `本吃到飽方案出網標示為<strong>美國 IP</strong>（漫遊批發線路，<strong>非</strong>美國原生門號卡）。若您需要含 +1 門號與通話，請改選北美 AT&T 美國號碼方案。`,
       0,
     ),
   },
@@ -807,6 +807,59 @@ export const USCA_FAQ = buildFaq([
 
 const attActivationPolicy = `開通日期以<strong>美西時間 (PT)</strong>為準，服務將於該日上午 9:00 前自動啟用。<span class="jeko-sum-warn">建議至少提前一天預訂</span>，以確保準時開通。`;
 
+const canada25GbNote = `美國／墨西哥為<strong>無限數據</strong>；加拿大僅含 <strong>25GB 高速</strong>（用盡後降速續航，常見約 512Kbps 等級，非加拿大全速吃到飽）。若加拿大需要更多高速或吃到飽，可改選 ${link("/product/canada/canada-unlimited-esim/", "加拿大吃到飽")}。`;
+
+const attUsageItems = [
+  {
+    iconName: "call",
+    title: "+1 美國號碼",
+    descHtml: "可接聽通話與收發簡訊，方便訂車、餐廳與雙重驗證。",
+  },
+  {
+    iconName: "speed",
+    title: "加拿大 25GB 高速",
+    descHtml: `${canada25GbNote}`,
+  },
+  {
+    iconName: "public",
+    title: "美加墨一卡",
+    descHtml:
+      "方案已含美國、加拿大、墨西哥；請將此 eSIM 設為行動數據。加拿大並非無限高速吃到飽。",
+  },
+  {
+    iconName: "all_inclusive",
+    title: "無限通話簡訊",
+    descHtml: "三國境內及跨國互撥／互傳免費。",
+  },
+  {
+    iconName: "schedule",
+    title: "預約開通",
+    descHtml: "依美西時間預約啟用日，建議提前一天預訂。",
+  },
+  ...usageDelivery.slice(0, 1),
+];
+
+const attFaqCanadaItems = [
+  {
+    question: "加拿大流量跟美國／墨西哥一樣嗎？",
+    answerHtml: p(canada25GbNote, 0),
+  },
+  {
+    question: "加拿大只有 25GB 高速，有其他選擇嗎？",
+    answerHtml: p(
+      `有。本方案在加拿大為 25GB 高速後降速續航。若您主要以加拿大上網、需要吃到飽，建議改選 ${link("/product/canada/canada-unlimited-esim/", "加拿大吃到飽")}（亦可在美國使用，不含墨西哥）。`,
+      0,
+    ),
+  },
+  {
+    question: "在加拿大／墨西哥無法上網怎麼辦？",
+    answerHtml: p(
+      `請確認已將此 eSIM 設為<strong>行動數據</strong>，且人已在方案適用地區。若在加拿大／墨西哥仍無法連線，可於該 eSIM 線路嘗試開啟「數據漫遊」（方案已含加／墨，<strong>不另收漫遊費</strong>）。${canada25GbNote}`,
+      0,
+    ),
+  },
+];
+
 export const NA_ATT_DETAILED = buildDetailed({
   coverage: coverageNa,
   carrierHtml: "AT&T（美國）／Rogers（加拿大）／AT&T（墨西哥）",
@@ -825,14 +878,45 @@ export const NA_ATT_DETAILED = buildDetailed({
   activateExtra: `<div style="margin-top:8px;">${attActivationPolicy}</div>`,
   fullWidthHtml: `${expiryOnUse}<div style="margin-top:10px;">${attActivationPolicy}</div>`,
   introParas: [
-    "jeko eSIM <strong>北美 AT&T 美國號碼</strong>方案：附一組 <strong>+1 AT&T</strong> 電話號碼，美國原生 IP，一卡暢遊美國、加拿大、墨西哥。",
-    `美／墨無限數據；加拿大提供 <strong>25GB 高速</strong>（用盡後約 512kbps 吃到飽）。若您在加拿大需要更多高速或吃到飽，可改選 ${link("/product/canada/canada-unlimited-esim/", "加拿大吃到飽")}。三國境內及跨國<strong>無限通話與簡訊免費</strong>。`,
-    "熱點僅限美國境內且不作保證；加拿大與墨西哥無法使用熱點。建議以已解鎖 iPhone 為主；部分 Android 可能可用但不保證相容。",
+    "jeko eSIM <strong>北美 AT&T 美國號碼</strong>方案（10–30 天）：附一組 <strong>+1 AT&T</strong> 電話號碼，美國原生 IP，一卡暢遊美國、加拿大、墨西哥。",
+    canada25GbNote,
+    "三國境內及跨國<strong>無限通話與簡訊免費</strong>。熱點僅限美國境內且不作保證；加拿大與墨西哥無法使用熱點。31 天以上請改選美國原生卡長天數方案。",
   ],
   bullets: [
     "正宗美國電話號碼，可接聽通話與收發簡訊。",
-    "美國原生 IP；加拿大／墨西哥使用數據時請開啟此 eSIM 的數據漫遊。",
-    `美墨無限數據；加拿大 25GB 高速後降速續航。加拿大要更多高速／吃到飽 → ${link("/product/canada/canada-unlimited-esim/", "加拿大吃到飽")}。`,
+    "美國原生 IP；方案已含加拿大／墨西哥。",
+    `美／墨無限數據；加拿大 25GB 高速後降速續航。要更多 → ${link("/product/canada/canada-unlimited-esim/", "加拿大吃到飽")}。`,
+    "美加墨無限通話與簡訊。",
+    "熱點僅限美國且不作保證；開通請依美西時間預約。",
+  ],
+});
+
+export const NA_ATT_LONGTERM_DETAILED = buildDetailed({
+  coverage: coverageNa,
+  carrierHtml: "AT&T（美國）／Rogers（加拿大）／AT&T（墨西哥）",
+  speedHtml:
+    "4G／5G；美／墨無限流量；加拿大 25GB 高速後降速續航（常見約 512Kbps 等級）",
+  planTypeLabel: "數據＋通話＋簡訊・吃到飽・長天數",
+  routeHtml: "本地（美國原生 IP）",
+  regionLabel: "北美（美加墨）",
+  compareSection: northAmericaCompareTableSection(),
+  hotspotHtml:
+    "僅限美國境內，且可用性不作保證；加拿大與墨西哥境內無法使用熱點",
+  phoneHtml: "有（+1 AT&T 美國號碼）",
+  callHtml: "美加墨境內及跨國互撥免費（無限）",
+  smsHtml: "美加墨境內及跨國互傳免費（無限）",
+  ekycHtml: "依開通流程（請依說明完成）",
+  activateExtra: `<div style="margin-top:8px;">${attActivationPolicy}</div>`,
+  fullWidthHtml: `${expiryOnUse}<div style="margin-top:10px;">${attActivationPolicy}</div>`,
+  introParas: [
+    "jeko eSIM <strong>美國原生卡長天數吃到飽</strong>（31–88 天）：附 <strong>+1 AT&T</strong> 美國號碼與美國原生 IP，適合留學、長期出差或數週至數月北美停留。",
+    canada25GbNote,
+    `30 天以內行程請改選 ${link("/product/north-america/north-america-att-unlimited-esim/", "北美 AT&T 短天數")}。熱點僅限美國境內且不作保證。`,
+  ],
+  bullets: [
+    "長天數 31–88 天，一次購足免頻繁續購。",
+    "美國原生 IP；方案已含加拿大／墨西哥。",
+    `美／墨無限數據；加拿大 25GB 高速後降速續航。要更多 → ${link("/product/canada/canada-unlimited-esim/", "加拿大吃到飽")}。`,
     "美加墨無限通話與簡訊。",
     "熱點僅限美國且不作保證；開通請依美西時間預約。",
   ],
@@ -902,29 +986,13 @@ export const NA_TOTAL_DETAILED = buildDetailed({
 export const NA_USAGE_ATT = buildUsage({
   title: "使用 jeko 北美 AT&T 美國號碼的優勢",
   subtitle: "美國號碼・美加墨通話簡訊",
-  items: [
-    {
-      iconName: "call",
-      title: "+1 美國號碼",
-      descHtml: "可接聽通話與收發簡訊，方便訂車、餐廳與雙重驗證。",
-    },
-    {
-      iconName: "public",
-      title: "三國漫遊",
-      descHtml: "美加墨一卡；加／墨請開啟數據漫遊。",
-    },
-    {
-      iconName: "all_inclusive",
-      title: "無限通話簡訊",
-      descHtml: "三國境內及跨國互撥／互傳免費。",
-    },
-    {
-      iconName: "schedule",
-      title: "預約開通",
-      descHtml: "依美西時間預約啟用日，建議提前一天預訂。",
-    },
-    ...usageDelivery.slice(0, 1),
-  ],
+  items: attUsageItems,
+});
+
+export const NA_USAGE_ATT_LONGTERM = buildUsage({
+  title: "使用 jeko 美國原生卡長天數 eSIM 的優勢",
+  subtitle: "31–88 天・留學・長期出差",
+  items: attUsageItems,
 });
 
 export const NA_USAGE_USIP = buildUsage({
@@ -952,6 +1020,7 @@ export const NA_USAGE_USIP = buildUsage({
 
 export const NA_FAQ_ATT = buildFaq([
   ...sharedFaqItems("北美 AT&T 美國號碼", "北美"),
+  ...attFaqCanadaItems,
   {
     question: "開通要等多久？可以當天用嗎？",
     answerHtml: p(
@@ -967,23 +1036,42 @@ export const NA_FAQ_ATT = buildFaq([
     ),
   },
   {
-    question: "在加拿大／墨西哥要開什麼設定？",
+    question: "Android 可以用嗎？",
     answerHtml: p(
-      `請啟用此 eSIM 的<strong>數據漫遊</strong>，才能在加拿大與墨西哥使用數據。加拿大高速額度為 25GB，用盡後約 512kbps。若加拿大需要更多高速／吃到飽，可改選 ${link("/product/canada/canada-unlimited-esim/", "加拿大吃到飽")}。`,
+      `建議以已解鎖 <strong>iPhone</strong> 為主。部分 Android 可能可用，但受限於電信商規範無法保證相容，請自行評估。`,
+      0,
+    ),
+  },
+]);
+
+export const NA_FAQ_ATT_LONGTERM = buildFaq([
+  ...sharedFaqItems("美國原生卡長天數吃到飽", "北美"),
+  ...attFaqCanadaItems,
+  {
+    question: "長天數跟短天數有什麼差別？",
+    answerHtml: p(
+      `本商品為 <strong>31–88 天</strong>長天數方案。若行程在 30 天以內，請改選 ${link("/product/north-america/north-america-att-unlimited-esim/", "北美 AT&T 短天數吃到飽")}。兩者皆為 AT&T 美國號碼、美國原生 IP，加拿大同為 25GB 高速（非三國皆無限吃到飽）。`,
       0,
     ),
   },
   {
-    question: "加拿大只有 25GB 高速，有其他選擇嗎？",
+    question: "開通要等多久？可以當天用嗎？",
     answerHtml: p(
-      `有。本方案在加拿大為 25GB 高速後降速續航。若您主要以加拿大上網、需要吃到飽，建議改選 ${link("/product/canada/canada-unlimited-esim/", "加拿大吃到飽")}（亦可在美國使用，不含墨西哥）。`,
+      `開通日期以<strong>美西時間 (PT)</strong>為準，並建議<strong>至少提前一天</strong>預訂。`,
+      0,
+    ),
+  },
+  {
+    question: "可以用熱點嗎？",
+    answerHtml: p(
+      `熱點<strong>僅限美國境內</strong>，且可用性不作保證；加拿大與墨西哥無法使用熱點。`,
       0,
     ),
   },
   {
     question: "Android 可以用嗎？",
     answerHtml: p(
-      `建議以已解鎖 <strong>iPhone</strong> 為主。部分 Android 可能可用，但受限於電信商規範無法保證相容，請自行評估。`,
+      `建議以已解鎖 <strong>iPhone</strong> 為主。部分 Android 可能可用，但無法保證相容。`,
       0,
     ),
   },

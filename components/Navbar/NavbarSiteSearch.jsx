@@ -10,6 +10,12 @@ import {
 import { cn } from "@/lib/utils";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 import { displaySourceLabel } from "@/lib/siteSearch";
+import {
+  hasSiteSearchIndex,
+  mergeSearchResults,
+  prefetchSiteSearchIndex,
+  searchInstantLocal,
+} from "@/lib/siteSearchClientCache";
 
 /**
  * Navbar 即時搜尋
@@ -60,6 +66,10 @@ export default function NavbarSiteSearch({
 
   useEffect(() => setMounted(true), []);
 
+  useEffect(() => {
+    if (!isPartner) prefetchSiteSearchIndex();
+  }, [isPartner]);
+
   const close = useCallback(() => {
     setOpen(false);
     setQuery("");
@@ -77,6 +87,11 @@ export default function NavbarSiteSearch({
       return;
     }
 
+    const localHits = !isPartner ? searchInstantLocal(trimmed) : [];
+    if (localHits.length) {
+      setResults(localHits);
+    }
+
     if (abortRef.current) abortRef.current.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -90,10 +105,15 @@ export default function NavbarSiteSearch({
       const res = await fetch(url, { signal: ctrl.signal });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "搜尋失敗");
-      setResults(Array.isArray(data.results) ? data.results : []);
+      const apiResults = Array.isArray(data.results) ? data.results : [];
+      if (!isPartner) {
+        setResults(mergeSearchResults(apiResults, searchInstantLocal(trimmed)));
+      } else {
+        setResults(apiResults);
+      }
     } catch (err) {
       if (err?.name === "AbortError") return;
-      setResults([]);
+      if (!localHits.length) setResults([]);
       setError(err.message || "搜尋失敗");
     } finally {
       if (abortRef.current === ctrl) setLoading(false);
@@ -145,8 +165,30 @@ export default function NavbarSiteSearch({
   const onChange = (value) => {
     setQuery(value);
     setOpen(true);
+    const trimmed = String(value || "").trim();
+
+    if (trimmed.length < 1) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      setResults([]);
+      setLoading(false);
+      setError("");
+      return;
+    }
+
+    if (!isPartner) {
+      const instant = searchInstantLocal(trimmed);
+      if (instant.length) {
+        setResults(instant);
+      } else if (!hasSiteSearchIndex()) {
+        setLoading(true);
+      }
+    }
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => runSearch(value), 220);
+    debounceRef.current = setTimeout(
+      () => runSearch(value),
+      isPartner ? 180 : 80,
+    );
   };
 
   const handleNavigate = () => {
@@ -155,6 +197,30 @@ export default function NavbarSiteSearch({
   };
 
   const showPanel = open && (query.trim().length > 0 || loading);
+
+  const LoadingRow = ({ dense = false }) =>
+    loading && results.length === 0 ? (
+      <div className={dense ? "px-3 py-2.5" : "px-4 py-3"}>
+        <LoadingIndicator
+          layout="inline"
+          size="sm"
+          label="搜尋中…"
+          labelClassName="text-xs text-slate-500"
+        />
+      </div>
+    ) : null;
+
+  const UpdatingRow = ({ dense = false }) =>
+    loading && results.length > 0 ? (
+      <p
+        className={cn(
+          "text-[10px] text-slate-400 border-t border-slate-100",
+          dense ? "px-3 py-2" : "px-4 py-2",
+        )}
+      >
+        更新文章結果…
+      </p>
+    ) : null;
 
   // type="search" 在部分瀏覽器（Chrome／Safari）會自帶原生 × 清除鈕，
   // 與下面自訂的 XMarkIcon 按鈕疊在一起變成「兩個關閉鈕」，
@@ -207,16 +273,7 @@ export default function NavbarSiteSearch({
         panelClassName,
       )}
     >
-      {loading && results.length === 0 && (
-        <div className="px-4 py-3">
-          <LoadingIndicator
-            layout="inline"
-            size="sm"
-            label="搜尋中…"
-            labelClassName="text-xs text-slate-500"
-          />
-        </div>
-      )}
+      {loading && results.length === 0 ? <LoadingRow /> : null}
       {error && (
         <p className="px-4 py-3 text-xs font-bold text-red-600">{error}</p>
       )}
@@ -228,6 +285,7 @@ export default function NavbarSiteSearch({
       <div className="py-1">
         <ResultList />
       </div>
+      <UpdatingRow />
     </div>
   ) : null;
 
@@ -286,16 +344,7 @@ export default function NavbarSiteSearch({
               panelClassName,
             )}
           >
-            {loading && results.length === 0 && (
-              <div className="px-4 py-3">
-                <LoadingIndicator
-                  layout="inline"
-                  size="sm"
-                  label="搜尋中…"
-                  labelClassName="text-xs text-slate-500"
-                />
-              </div>
-            )}
+            {loading && results.length === 0 ? <LoadingRow dense /> : null}
             {error && (
               <p className="px-4 py-3 text-xs font-bold text-red-600">{error}</p>
             )}
@@ -307,6 +356,7 @@ export default function NavbarSiteSearch({
             <div className="py-1">
               <ResultList />
             </div>
+            <UpdatingRow dense />
           </div>
         ) : null}
       </div>
@@ -350,16 +400,7 @@ export default function NavbarSiteSearch({
               role="listbox"
               className="absolute left-0 right-0 top-[calc(100%+6px)] z-[70] max-h-[min(60vh,360px)] overflow-y-auto rounded-lg border border-slate-200 bg-white"
             >
-              {loading && results.length === 0 && (
-                <div className="px-3 py-2.5">
-                  <LoadingIndicator
-                    layout="inline"
-                    size="sm"
-                    label="搜尋中…"
-                    labelClassName="text-xs text-slate-500"
-                  />
-                </div>
-              )}
+              {loading && results.length === 0 ? <LoadingRow dense /> : null}
               {error && (
                 <p className="px-3 py-2.5 text-xs font-bold text-red-600">{error}</p>
               )}
@@ -369,6 +410,7 @@ export default function NavbarSiteSearch({
                 </p>
               )}
               <ResultList dense />
+              <UpdatingRow dense />
             </div>
           ) : null}
         </div>
@@ -431,16 +473,7 @@ export default function NavbarSiteSearch({
           {panel ? (
             <div className="relative mt-1">
               <div className="relative left-0 right-0 top-0 max-h-[min(60vh,360px)] overflow-y-auto rounded-lg border border-slate-100">
-                {loading && results.length === 0 && (
-                  <div className="px-3 py-2.5">
-                    <LoadingIndicator
-                      layout="inline"
-                      size="sm"
-                      label="搜尋中…"
-                      labelClassName="text-xs text-slate-500"
-                    />
-                  </div>
-                )}
+                {loading && results.length === 0 ? <LoadingRow dense /> : null}
                 {error && (
                   <p className="px-3 py-2.5 text-xs font-bold text-red-600">
                     {error}
@@ -452,6 +485,7 @@ export default function NavbarSiteSearch({
                   </p>
                 )}
                 <ResultList dense />
+                <UpdatingRow dense />
               </div>
             </div>
           ) : null}

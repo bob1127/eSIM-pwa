@@ -264,6 +264,68 @@ export const CA_UNLIM_DETAILED = buildDetailed({
   ],
 });
 
+export const CA_UNLIM_10M_DETAILED = buildDetailed({
+  coverage: coverageCaUs,
+  carrierHtml: "Bell／Telus（加拿大）＋ Verizon（美國）4G／LTE／5G",
+  speedHtml: "4G／LTE／5G；吃到飽限速 <strong>10Mbps</strong>（依 API 標示）",
+  planTypeLabel: "僅數據流量・10Mbps 吃到飽",
+  routeHtml: "漫遊（波蘭 IP）",
+  regionLabel: "加拿大或美國",
+  introParas: [
+    "jeko eSIM <strong>Bell／Telus／Verizon 10Mbps 吃到飽</strong>，加拿大 Bell／Telus 搭配美國 Verizon，適合加／美來回、留學與長期出差。",
+    "比 WIND 多網 FUP 吃到飽更省；日常導航、傳訊、社群通常足夠。不含墨西哥。",
+    "支援熱點與 ChatGPT／TikTok／Gemini。APN `internetipv6`。",
+  ],
+  bullets: [
+    "加拿大 Bell／Telus＋美國 Verizon。",
+    "吃到飽限速 10Mbps。",
+    "支援熱點與常用 App。",
+    "純數據、無門號；出網波蘭 IP。",
+  ],
+});
+
+export const CA_USAGE_UNLIM_10M = buildUsage({
+  title: "使用 jeko 加拿大 10Mbps 吃到飽的優勢",
+  subtitle: "Bell／Telus／Verizon・更省",
+  items: [
+    {
+      iconName: "speed",
+      title: "10Mbps 吃到飽",
+      descHtml: "限速 10Mbps，比 FUP 真吃到飽更省，日常上網通常足夠。",
+    },
+    {
+      iconName: "public",
+      title: "加美可用",
+      descHtml: "加拿大 Bell／Telus＋美國 Verizon（不含墨西哥）。",
+    },
+    {
+      iconName: "wifi_tethering",
+      title: "支援熱點",
+      descHtml: "可與旅伴分享；支援常用 App。",
+    },
+    ...usageDelivery,
+  ],
+});
+
+export const CA_FAQ_UNLIM_10M = buildFaq([
+  ...sharedFaq("加拿大 10Mbps 吃到飽"),
+  {
+    question: "10Mbps 跟 WIND 吃到飽有什麼差別？",
+    answerHtml: p(
+      `本選項為 API 標示 <strong>unlimited 10mbps</strong>，最高約 10Mbps；WIND 多網為 FUP 真吃到飽，繁忙時段可能降速。若您需要更高 CP 且用量不大，10Mbps 較划算。`,
+      0,
+    ),
+  },
+  {
+    question: "可以用在美國嗎？",
+    answerHtml: p(`可以（Verizon）。<strong>不含墨西哥</strong>。`, 0),
+  },
+  {
+    question: "可以用熱點嗎？",
+    answerHtml: p(`可以；實際速度上限約 10Mbps。`, 0),
+  },
+]);
+
 export const CA_USAGE_UNLIM = buildUsage({
   title: "使用 jeko 加拿大吃到飽的優勢",
   subtitle: "加／美多網・不限流量",
