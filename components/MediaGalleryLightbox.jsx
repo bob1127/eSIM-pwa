@@ -1,33 +1,94 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import Image from "next/image";
 import SafeImage from "./SafeImage";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { motion, AnimatePresence } from "framer-motion";
 import MaterialIcon from "./MaterialIcon";
 import { shouldBypassImageOptimization } from "../lib/resolveMedusaImageUrl";
+import { cfImgSrc } from "../lib/cfImageLoader";
 import "swiper/css";
 
 const GALLERY_LB_STYLE = `
   .product-gallery-lb.swiper {
     width: 100%;
     height: 100%;
+    overflow: hidden;
+  }
+  .product-gallery-lb .swiper-wrapper {
+    height: 100%;
   }
   .product-gallery-lb .swiper-slide {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    height: 100% !important;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  .product-gallery-lb .gallery-lb-frame {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 100%;
     height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 0.5rem 0.75rem;
+    box-sizing: border-box;
+    overflow: hidden;
   }
-  .product-gallery-lb .swiper-slide > div,
-  .product-gallery-lb .swiper-slide > img,
-  .product-gallery-lb .swiper-slide > span {
-    margin-left: auto;
-    margin-right: auto;
+  /* 原生 img：用 dvh 扣頂欄／縮圖，整圖 contain、不裁切 */
+  .product-gallery-lb .gallery-lb-frame .gallery-lb-media {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: min(92vw, 1100px);
+    max-height: var(--gallery-lb-max-h, calc(100dvh - 5.5rem));
+    object-fit: contain;
+    object-position: center center;
   }
 `;
 
-function MediaSlide({ item, fill = false, className = "", priority = false }) {
+/** lightbox 主圖：避開 Next/Image 外層尺寸，才能可靠吃 max-height */
+function LightboxMainMedia({ item, maxHeight, priority = false }) {
+  if (item.type === "video") {
+    return (
+      <video
+        src={item.src}
+        controls
+        playsInline
+        preload="metadata"
+        className="gallery-lb-media bg-black"
+        style={{ maxHeight, maxWidth: "min(92vw, 1100px)" }}
+      />
+    );
+  }
+
+  const src = cfImgSrc(item.src, 1280) || item.src;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={item.alt || "media"}
+      className="gallery-lb-media select-none"
+      style={{ maxHeight, maxWidth: "min(92vw, 1100px)" }}
+      loading={priority ? "eager" : "lazy"}
+      decoding="async"
+      draggable={false}
+    />
+  );
+}
+
+function MediaSlide({
+  item,
+  fill = false,
+  className = "",
+  priority = false,
+  style,
+  sizes,
+}) {
   if (item.type === "video") {
     return (
       <video
@@ -36,6 +97,7 @@ function MediaSlide({ item, fill = false, className = "", priority = false }) {
         playsInline
         preload="metadata"
         className={className}
+        style={style}
       />
     );
   }
@@ -46,8 +108,9 @@ function MediaSlide({ item, fill = false, className = "", priority = false }) {
         src={item.src}
         alt={item.alt || "media"}
         fill
-        sizes="(max-width: 1024px) 100vw, 55vw"
+        sizes={sizes || "(max-width: 1024px) 100vw, 55vw"}
         className={className}
+        style={style}
         priority={priority}
         unoptimized={shouldBypassImageOptimization(item.src)}
       />
@@ -58,10 +121,11 @@ function MediaSlide({ item, fill = false, className = "", priority = false }) {
     <SafeImage
       src={item.src}
       alt={item.alt || "media"}
-      width={1200}
-      height={1200}
-      sizes="(max-width: 1024px) 100vw, 55vw"
+      width={1600}
+      height={1600}
+      sizes={sizes || "(max-width: 1024px) 96vw, 90vw"}
       className={className}
+      style={style}
       priority={priority}
       unoptimized={shouldBypassImageOptimization(item.src)}
     />
@@ -144,6 +208,11 @@ export default function MediaGalleryLightbox({
 
   if (!portalRoot || images.length === 0) return null;
 
+  const showThumbs = !showThumbGrid && images.length > 1;
+  const galleryMaxH = showThumbs
+    ? "calc(100dvh - 11rem)"
+    : "calc(100dvh - 5.5rem)";
+
   return createPortal(
     <AnimatePresence>
       {isOpen && (
@@ -152,8 +221,11 @@ export default function MediaGalleryLightbox({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.22 }}
-          className="fixed inset-0 z-[10050] flex flex-col backdrop-blur-[3px]"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.88)" }}
+          className="fixed inset-0 z-[20000] flex flex-col overflow-hidden backdrop-blur-[3px]"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.88)",
+            ["--gallery-lb-max-h"]: galleryMaxH,
+          }}
           role="dialog"
           aria-modal="true"
           aria-label={ariaLabel}
@@ -292,27 +364,21 @@ export default function MediaGalleryLightbox({
               >
                 {images.map((item, idx) => (
                   <SwiperSlide key={idx}>
-                    {item.type === "video" ? (
-                      <div className="flex items-center justify-center w-full h-full">
-                        <MediaSlide
-                          item={item}
-                          className="max-h-[calc(100vh-220px)] max-w-full w-auto mx-auto product-gallery-media bg-black"
-                        />
-                      </div>
-                    ) : (
-                        <MediaSlide
-                          item={item}
-                          className="max-h-[calc(100vh-220px)] max-w-full w-auto mx-auto product-gallery-media select-none bg-transparent"
-                        />
-                    )}
+                    <div className="gallery-lb-frame">
+                      <LightboxMainMedia
+                        item={item}
+                        maxHeight={galleryMaxH}
+                        priority={idx === lbIndex}
+                      />
+                    </div>
                   </SwiperSlide>
                 ))}
               </Swiper>
             )}
           </div>
 
-          {!showThumbGrid && images.length > 1 && (
-            <div className="relative z-30 shrink-0 pb-8 sm:pb-10 pt-2">
+          {showThumbs && (
+            <div className="relative z-30 shrink-0 pb-6 sm:pb-8 pt-2">
               <div className="flex justify-center items-center gap-2 sm:gap-2.5 px-4 overflow-x-auto max-w-[100vw]">
                 {images.map((item, idx) => (
                   <button

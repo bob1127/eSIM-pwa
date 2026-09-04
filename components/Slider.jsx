@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -215,10 +215,16 @@ export default function Slider() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [installHint, setInstallHint] = useState(null);
+  // buildLoginUrl() 會讀 window.location，SSR 與首次 render 必須一致才不會 hydration mismatch
+  const [loginHref, setLoginHref] = useState("/login");
 
   useEffect(() => {
     setInstallHint(buildInstallHintText({ isStandalone }));
   }, [isStandalone]);
+
+  useEffect(() => {
+    setLoginHref(buildLoginUrl());
+  }, []);
 
   const installHintText = installHint;
 
@@ -269,25 +275,38 @@ export default function Slider() {
     () => {
       let currentIndex = 0;
       let isAnimating = false;
+      let alive = true;
+      let activeTl = null;
 
       const slideDuration = 4;
       const transitionDuration = 1.5;
 
-      function animateSlide(nextIndex) {
-        if (isAnimating || nextIndex === currentIndex) return;
-        isAnimating = true;
+      function forEachIndicator(fn) {
+        (indicatorsRef.current || []).forEach((ind, i) => {
+          if (!ind?.isConnected) return;
+          fn(ind, i);
+        });
+      }
 
+      function animateSlide(nextIndex) {
+        if (!alive || isAnimating || nextIndex === currentIndex) return;
         const currentImg = imagesRef.current[currentIndex];
         const nextImg = imagesRef.current[nextIndex];
+        if (!currentImg || !nextImg || !currentImg.isConnected || !nextImg.isConnected) {
+          return;
+        }
+        isAnimating = true;
 
         const tl = gsap.timeline({
           onComplete: () => {
+            if (!alive) return;
             isAnimating = false;
             currentIndex = nextIndex;
             setActiveSlide(nextIndex);
             startAutoplay();
           },
         });
+        activeTl = tl;
 
         gsap.set(nextImg, { zIndex: 2 });
         gsap.set(currentImg, { zIndex: 1 });
@@ -305,7 +324,7 @@ export default function Slider() {
           0,
         );
 
-        if (titleRef.current) {
+        if (titleRef.current?.isConnected) {
           const showCurrent = currentIndex >= HEADLINE_FROM_INDEX;
           const showNext = nextIndex >= HEADLINE_FROM_INDEX;
 
@@ -333,44 +352,55 @@ export default function Slider() {
           }
         }
 
-        indicatorsRef.current.forEach((ind, i) => {
-          const ring = ind.querySelector(".ring");
+        forEachIndicator((ind, i) => {
+          const ring = ind.querySelector?.(".ring");
           if (i === nextIndex) {
             gsap.to(ind, { opacity: 1, duration: 0.3 }, 0);
-            gsap.to(
-              ring,
-              { scale: 1, opacity: 1, duration: 0.5, ease: "power2.out" },
-              0,
-            );
+            if (ring) {
+              gsap.to(
+                ring,
+                { scale: 1, opacity: 1, duration: 0.5, ease: "power2.out" },
+                0,
+              );
+            }
           } else {
             gsap.to(ind, { opacity: 0.4, duration: 0.3 }, 0);
-            gsap.to(ring, { scale: 0, opacity: 0, duration: 0.3 }, 0);
+            if (ring) {
+              gsap.to(ring, { scale: 0, opacity: 0, duration: 0.3 }, 0);
+            }
           }
         });
       }
 
       function startAutoplay() {
         clearTimeout(timerRef.current);
+        if (!alive) return;
         timerRef.current = setTimeout(() => {
+          if (!alive) return;
           animateSlide((currentIndex + 1) % slides.length);
         }, slideDuration * 1000);
       }
 
-      gsap.set(imagesRef.current, { opacity: 0 });
-      gsap.set(imagesRef.current[0], {
-        opacity: 1,
-        scale: 1,
-        zIndex: 2,
-      });
+      const imgs = (imagesRef.current || []).filter(Boolean);
+      if (imgs.length) {
+        gsap.set(imgs, { opacity: 0 });
+        if (imgs[0]) {
+          gsap.set(imgs[0], {
+            opacity: 1,
+            scale: 1,
+            zIndex: 2,
+          });
+        }
+      }
 
-      indicatorsRef.current.forEach((ind, i) => {
-        const ring = ind.querySelector(".ring");
+      forEachIndicator((ind, i) => {
+        const ring = ind.querySelector?.(".ring");
         if (i === 0) {
           gsap.set(ind, { opacity: 1 });
-          gsap.set(ring, { scale: 1, opacity: 1 });
+          if (ring) gsap.set(ring, { scale: 1, opacity: 1 });
         } else {
           gsap.set(ind, { opacity: 0.4 });
-          gsap.set(ring, { scale: 0, opacity: 0 });
+          if (ring) gsap.set(ring, { scale: 0, opacity: 0 });
         }
       });
 
@@ -383,7 +413,13 @@ export default function Slider() {
       startAutoplay();
 
       return () => {
+        alive = false;
         clearTimeout(timerRef.current);
+        timerRef.current = null;
+        if (activeTl) {
+          activeTl.kill();
+          activeTl = null;
+        }
       };
     },
     { scope: containerRef },
@@ -515,7 +551,7 @@ export default function Slider() {
                           </HeroCardAction>
                           <HeroCardAction
                             icon="person_add"
-                            href={buildLoginUrl()}
+                            href={loginHref}
                           >
                             加入會員
                           </HeroCardAction>

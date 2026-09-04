@@ -22,117 +22,139 @@ export default function Copy({
     () => {
       if (!containerRef.current) return;
 
-      // 1. 取得目標元素
-      let elements = [];
-      if (containerRef.current.hasAttribute("data-copy-wrapper")) {
-        elements = Array.from(containerRef.current.children);
-      } else {
-        elements = [containerRef.current];
-      }
+      let cancelled = false;
+      let splits = [];
+      let scrollTrigger = null;
+      let tl = null;
 
-      const lines = [];
-      const blocks = [];
-      const splits = [];
+      const run = () => {
+        if (cancelled || !containerRef.current) return;
 
-      // 2. DOM 操作與分割文字
-      elements.forEach((element) => {
-        const split = SplitText.create(element, {
-          type: "lines",
-          linesClass: "block-line++",
-          lineThreshold: 0.1,
+        let elements = [];
+        if (containerRef.current.hasAttribute("data-copy-wrapper")) {
+          elements = Array.from(containerRef.current.children);
+        } else {
+          elements = [containerRef.current];
+        }
+
+        const lines = [];
+        const blocks = [];
+        splits = [];
+
+        elements.forEach((element) => {
+          if (!element || !element.isConnected) return;
+          const split = SplitText.create(element, {
+            type: "lines",
+            linesClass: "block-line++",
+            lineThreshold: 0.1,
+          });
+
+          splits.push(split);
+
+          split.lines.forEach((line) => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "block-line-wrapper";
+            wrapper.style.position = "relative";
+            wrapper.style.display = "block";
+            wrapper.style.overflow = "hidden";
+
+            line.parentNode.insertBefore(wrapper, line);
+            wrapper.appendChild(line);
+
+            const block = document.createElement("div");
+            block.className = "block-revealer";
+            block.style.backgroundColor = blockColor;
+            block.style.position = "absolute";
+            block.style.top = "0";
+            block.style.left = "0";
+            block.style.width = "100%";
+            block.style.height = "100%";
+            block.style.zIndex = "2";
+
+            wrapper.appendChild(block);
+
+            lines.push(line);
+            blocks.push(block);
+          });
         });
 
-        splits.push(split);
+        if (!lines.length) return;
 
-        split.lines.forEach((line) => {
-          const wrapper = document.createElement("div");
-          wrapper.className = "block-line-wrapper";
-          wrapper.style.position = "relative";
-          wrapper.style.display = "block";
-          wrapper.style.overflow = "hidden";
+        gsap.set(lines, { opacity: 0 });
+        gsap.set(blocks, { scaleX: 0, transformOrigin: "left center" });
 
-          line.parentNode.insertBefore(wrapper, line);
-          wrapper.appendChild(line);
-
-          const block = document.createElement("div");
-          block.className = "block-revealer";
-          block.style.backgroundColor = blockColor;
-          block.style.position = "absolute";
-          block.style.top = "0";
-          block.style.left = "0";
-          block.style.width = "100%";
-          block.style.height = "100%";
-          block.style.zIndex = "2";
-
-          wrapper.appendChild(block);
-
-          lines.push(line);
-          blocks.push(block);
+        tl = gsap.timeline({
+          paused: true,
+          delay,
         });
-      });
 
-      // 3. 設定初始狀態
-      gsap.set(lines, { opacity: 0 });
-      gsap.set(blocks, { scaleX: 0, transformOrigin: "left center" });
+        blocks.forEach((block, index) => {
+          const line = lines[index];
+          const startTime = index * stagger;
 
-      // 4. 建立主時間軸
-      const tl = gsap.timeline({
-        paused: true,
-        delay,
-      });
+          tl.to(
+            block,
+            {
+              scaleX: 1,
+              duration: duration,
+              ease: "power4.inOut",
+              transformOrigin: "left center",
+            },
+            startTime,
+          );
 
-      // 依序建立動畫序列
-      blocks.forEach((block, index) => {
-        const line = lines[index];
-        const startTime = index * stagger;
+          tl.set(line, { opacity: 1 }, startTime + duration);
+          tl.set(
+            block,
+            { transformOrigin: "right center" },
+            startTime + duration,
+          );
 
-        // 階段一：色塊展開
-        tl.to(
-          block,
-          {
-            scaleX: 1,
-            duration: duration,
-            ease: "power4.inOut",
-            transformOrigin: "left center",
-          },
-          startTime,
-        );
-
-        // 階段二：顯示文字並切換 transformOrigin
-        tl.set(line, { opacity: 1 }, startTime + duration);
-        tl.set(
-          block,
-          { transformOrigin: "right center" },
-          startTime + duration,
-        );
-
-        // 階段三：色塊收縮
-        tl.to(
-          block,
-          {
-            scaleX: 0,
-            duration: duration,
-            ease: "power4.inOut",
-          },
-          startTime + duration,
-        );
-      });
-
-      // 5. 設定 ScrollTrigger
-      if (animateOnScroll) {
-        ScrollTrigger.create({
-          trigger: containerRef.current,
-          start: "top bottom",
-          once: true,
-          onEnter: () => tl.play(),
+          tl.to(
+            block,
+            {
+              scaleX: 0,
+              duration: duration,
+              ease: "power4.inOut",
+            },
+            startTime + duration,
+          );
         });
-      } else {
-        tl.play();
-      }
 
-      // 清理函式
+        if (animateOnScroll) {
+          scrollTrigger = ScrollTrigger.create({
+            trigger: containerRef.current,
+            start: "top bottom",
+            once: true,
+            onEnter: () => tl?.play(),
+          });
+        } else {
+          tl.play();
+        }
+      };
+
+      const fontsReady =
+        typeof document !== "undefined" && document.fonts?.ready
+          ? document.fonts.ready
+          : Promise.resolve();
+
+      fontsReady.then(() => {
+        if (cancelled) return;
+        // 下一幀再切字，避免與 hydration / layout 搶同一幀
+        requestAnimationFrame(run);
+      });
+
       return () => {
-        splits.forEach((split) => split.revert());
+        cancelled = true;
+        scrollTrigger?.kill();
+        tl?.kill();
+        splits.forEach((split) => {
+          try {
+            split.revert();
+          } catch {
+            /* ignore */
+          }
+        });
         const wrappers = containerRef.current?.querySelectorAll(
           ".block-line-wrapper",
         );

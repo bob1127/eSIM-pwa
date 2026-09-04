@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Head from "next/head";
+import Layout from "./Layout";
 import NotFoundPageView from "@/components/errors/NotFoundPageView";
 
 function ErrorPage({ statusCode }) {
@@ -13,7 +14,9 @@ function ErrorPage({ statusCode }) {
           <title>找不到頁面｜Jeko eSIM</title>
           <meta name="robots" content="noindex" />
         </Head>
-        <NotFoundPageView />
+        <Layout flushTop hideFooter>
+          <NotFoundPageView />
+        </Layout>
       </>
     );
   }

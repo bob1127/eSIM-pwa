@@ -457,15 +457,20 @@ export default function DataQueryPage() {
   const loginHref = useMemo(() => buildLoginUrl("/data-query/"), []);
 
   const activeMeta = TABS.find((t) => t.id === activeTab) || TABS[0];
-  const todayLabel = useMemo(() => {
+  // Node 與瀏覽器的 zh-TW 日期格式（星期前是否加空格）不一致，
+  // SSR 直接輸出會造成 hydration mismatch，改為掛載後才產生。
+  const [todayLabel, setTodayLabel] = useState("");
+  useEffect(() => {
     try {
-      return new Intl.DateTimeFormat("zh-TW", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-      }).format(new Date());
+      setTodayLabel(
+        new Intl.DateTimeFormat("zh-TW", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        }).format(new Date()),
+      );
     } catch {
-      return "";
+      /* 不支援 Intl 時不顯示日期 */
     }
   }, []);
 

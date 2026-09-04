@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import {
@@ -15,6 +15,10 @@ import PartnerShopLayout from "@/components/Shop/PartnerShopLayout"; // 🌟 統
 import CheckoutForm from "@/components/CheckoutForm";
 import EsimRefundDisclosure from "@/components/legal/EsimRefundDisclosure";
 import { TrashIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
+import {
+  readPendingPayment,
+  clearPendingPayment,
+} from "@/lib/checkoutPendingPayment";
 
 const TruckIcon = () => (
   <svg
@@ -58,6 +62,36 @@ export default function PartnerCart({ store }) {
 
   const [activeStep, setActiveStep] = useState(0);
   const [removingIndex, setRemovingIndex] = useState(null);
+
+  // 藍新／LINE Pay 未完成付款返回：保留本機商品並重建 Medusa cart
+  useEffect(() => {
+    let cancelled = false;
+    const recover = async () => {
+      try {
+        const pending = readPendingPayment();
+        if (!pending) return;
+        if (
+          pending.method === "newebpay" ||
+          pending.preserveLocalCart ||
+          pending.method === "linepay"
+        ) {
+          if (!cancelled) await rebuildMedusaCartFromLocal();
+        }
+        if (!cancelled) clearPendingPayment();
+      } catch {
+        /* ignore */
+      }
+    };
+    recover();
+    const onPageShow = (e) => {
+      if (e?.persisted) recover();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [rebuildMedusaCartFromLocal]);
 
   const handleNext = () => setActiveStep((prev) => prev + 1);
   const handleBack = () => setActiveStep((prev) => prev - 1);

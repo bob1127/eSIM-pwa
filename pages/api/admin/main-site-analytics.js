@@ -13,6 +13,7 @@ import {
 import {
   buildMainSiteSalesReport,
   isPartnerMedusaOrder,
+  isTestMedusaOrder,
 } from "../../../lib/mainSiteAnalytics";
 
 const ORDER_FIELDS = [
@@ -167,7 +168,9 @@ export default async function handler(req, res) {
     const { orders, fetched, totalCount } = await fetchAllAdminOrders(
       admin.token,
     );
-    const mainSiteRaw = orders.filter((o) => !isPartnerMedusaOrder(o));
+    const withoutPartner = orders.filter((o) => !isPartnerMedusaOrder(o));
+    const testSkipped = withoutPartner.filter((o) => isTestMedusaOrder(o));
+    const mainSiteRaw = withoutPartner.filter((o) => !isTestMedusaOrder(o));
     const costByVariantId = await fillMissingVariantCosts(
       admin.token,
       mainSiteRaw,
@@ -185,7 +188,8 @@ export default async function handler(req, res) {
         medusaFetched: fetched,
         medusaTotalCount: totalCount,
         mainSiteCandidates: mainSiteRaw.length,
-        partnerSkipped: orders.length - mainSiteRaw.length,
+        partnerSkipped: orders.length - withoutPartner.length,
+        testSkipped: testSkipped.length,
       },
       report,
     });

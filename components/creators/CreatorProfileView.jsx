@@ -3,14 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useAuth } from "@/hooks/useAuth";
-import { buildLoginUrl } from "@/lib/authRedirect";
 import EyeIcon from "@/components/icons/eye-icon";
 import HeartIcon from "@/components/icons/heart-icon";
 import UserPlusIcon from "@/components/icons/user-plus-icon";
 import UserCheckIcon from "@/components/icons/user-check-icon";
 import InstagramIcon from "@/components/icons/instagram-icon";
 import FacebookIcon from "@/components/icons/facebook-icon";
+import FilledBellIcon from "@/components/icons/filled-bell-icon";
+import CreatorFollowHeart from "@/components/creators/CreatorFollowHeart";
+import { useCreatorFollow } from "@/hooks/useCreatorFollow";
 import { useEngageToast } from "@/components/creators/EngageToast";
 import ClockIcon from "@/components/icons/clock-icon";
 
@@ -18,15 +19,21 @@ function fmt(n) {
   return Number(n || 0).toLocaleString("zh-TW");
 }
 
+const WEEKDAY_LABELS = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+
+/**
+ * 固定用台北時間自行組字，不走 toLocaleDateString。
+ * Node 與瀏覽器的 zh-TW 星期前空格不一致（`8月16日 週日` / `8月16日週日`），
+ * 且伺服器時區可能不是 +08，兩者都會造成 hydration mismatch。
+ */
 function fmtDate(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
-  return d.toLocaleDateString("zh-TW", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+  const taipei = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  return `${taipei.getUTCMonth() + 1}月${taipei.getUTCDate()}日 ${
+    WEEKDAY_LABELS[taipei.getUTCDay()]
+  }`;
 }
 
 function PostStats({ views, likes, light = false, size = 14 }) {
@@ -67,11 +74,22 @@ export default function CreatorProfileView({
   embedded = false,
 }) {
   const router = useRouter();
-  const { isLoggedIn, token } = useAuth();
-  const [profile, setProfile] = useState(initial);
-  const [busy, setBusy] = useState(false);
+  const [profile] = useState(initial);
   const [postPage, setPostPage] = useState(1);
   const { showToast, toastNode } = useEngageToast();
+  const {
+    following,
+    followerCount,
+    busy,
+    ready: followReady,
+    toggle: toggleFollow,
+  } = useCreatorFollow({
+    creatorKey: profile.key,
+    creatorName: profile.name,
+    initialFollowing: initial?.following,
+    initialFollowerCount: initial?.followerCount,
+    onToast: showToast,
+  });
   const latest = profile.posts?.[0];
   const allPosts = profile.posts || [];
   const postPages = Math.max(1, Math.ceil(allPosts.length / POSTS_PER_PAGE));
@@ -84,65 +102,18 @@ export default function CreatorProfileView({
     setPostPage(1);
   }, [profile.key]);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/blog/creator-profile?key=${encodeURIComponent(profile.key)}`, {
-      credentials: "include",
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled || !data?.key) return;
-        setProfile((p) => ({ ...p, following: Boolean(data.following) }));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [profile.key]);
-
-  const toggleFollow = async () => {
-    if (!isLoggedIn) {
-      showToast("請先登入後再追蹤");
-      router.push(buildLoginUrl());
-      return;
-    }
-    if (busy) return;
-    setBusy(true);
-    const next = !profile.following;
-    const res = await fetch("/api/blog/engage", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        action: next ? "follow" : "unfollow",
-        creatorKey: profile.key,
-        creatorName: profile.name,
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (res.status === 401) {
-      showToast("請先登入後再追蹤");
-      router.push(buildLoginUrl());
-      return;
-    }
-    if (res.ok) {
-      setProfile((p) => ({
-        ...p,
-        following: Boolean(data.following),
-        followerCount: Math.max(0, (p.followerCount || 0) + (next ? 1 : -1)),
-      }));
+  const handleToggleFollow = async () => {
+    const result = await toggleFollow();
+    if (!result?.ok) return;
+    if (result.following) {
       showToast(
-        data.following
+        result.changed
           ? `已追蹤「${profile.name}」`
-          : `已取消追蹤「${profile.name}」`,
+          : `已在追蹤「${profile.name}」`,
       );
-      return;
+    } else {
+      showToast(`已取消追蹤「${profile.name}」`);
     }
-    showToast(data.error || "追蹤失敗，請稍後再試");
   };
 
   const blueBtn =
@@ -181,18 +152,16 @@ export default function CreatorProfileView({
                 >
                   <InstagramIcon size={16} color="#fff" />
                 </a>
-                <button
-                  type="button"
-                  onClick={toggleFollow}
-                  className="w-9 h-9 rounded-full bg-black/35 text-white flex items-center justify-center"
-                  aria-label="追蹤"
-                >
-                  <HeartIcon
-                    size={16}
-                    color="#fff"
-                    fill={profile.following ? "#fff" : "none"}
-                  />
-                </button>
+                <CreatorFollowHeart
+                  following={following}
+                  busy={busy}
+                  ready={followReady}
+                  onToggle={handleToggleFollow}
+                  creatorName={profile.name}
+                  tone="overlay"
+                  size={16}
+                  className="w-9 h-9"
+                />
               </div>
             </div>
             <div className="absolute inset-x-0 bottom-[4.25rem] sm:bottom-16 px-4 sm:px-6 lg:px-8 text-white max-w-3xl">
@@ -200,7 +169,7 @@ export default function CreatorProfileView({
                 {latest?.title || profile.name}
               </h1>
               <p className="mt-2 text-[12px] sm:text-[13px] text-white/85">
-                {fmtDate(latest?.date)} · + {fmt(profile.followerCount)} 人追蹤
+                {fmtDate(latest?.date)} · + {fmt(followerCount)} 人追蹤
               </p>
               <p className="mt-1.5 text-[12px] sm:text-[13px] text-white/80 flex items-start gap-1.5">
                 <span className="mt-0.5">📍</span>
@@ -211,16 +180,20 @@ export default function CreatorProfileView({
               <div className="flex gap-2 w-full">
                 <button
                   type="button"
-                  onClick={toggleFollow}
-                  disabled={busy}
-                  className={`${blueBtn} ${profile.following ? "bg-[#1d4ed8]" : ""}`}
+                  onClick={handleToggleFollow}
+                  disabled={busy || !followReady}
+                  aria-pressed={following}
+                  aria-busy={busy}
+                  className={`${blueBtn} ${following ? "bg-[#1d4ed8]" : ""} ${
+                    busy || !followReady ? "opacity-70 cursor-not-allowed" : ""
+                  }`}
                 >
-                  {profile.following ? (
+                  {following ? (
                     <UserCheckIcon size={16} color="#fff" />
                   ) : (
                     <UserPlusIcon size={16} color="#fff" />
                   )}
-                  {profile.following ? "追蹤中" : "追蹤"}
+                  {following ? "追蹤中" : "追蹤"}
                 </button>
                 <Link href={profile.shopHref} className={blueBtn}>
                   賣場
@@ -282,7 +255,7 @@ export default function CreatorProfileView({
                       <p className="text-[10px] text-slate-400 mt-0.5">累計人氣</p>
                     </div>
                     <div className="bg-white rounded-2xl px-3 py-3 text-center shadow-sm">
-                      <p className="text-[16px] font-black">{fmt(profile.followerCount)}</p>
+                      <p className="text-[16px] font-black">{fmt(followerCount)}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">追蹤</p>
                     </div>
                     <div className="bg-white rounded-2xl px-3 py-3 text-center shadow-sm">
@@ -326,7 +299,7 @@ export default function CreatorProfileView({
                   </a>
                 </section>
 
-                {profile.following ? (
+                {following ? (
                   <p className="text-[12px] text-slate-400 px-1 flex items-center gap-1.5">
                     <FilledBellIcon size={14} color="#2563eb" />
                     已追蹤，新文章會嘗試推播通知你。

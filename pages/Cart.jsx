@@ -4,7 +4,7 @@ import { useCart } from "../components/context/CartContext";
 import Layout from "./Layout";
 import Link from "next/link";
 import CartRelatedEsimCarousel from "../components/SwiperCarousel/AnotherProduct";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Stepper from "@mui/material/Stepper";
@@ -40,6 +40,45 @@ function clampCartStep(n) {
   const v = Number(n);
   if (!Number.isFinite(v)) return 0;
   return Math.max(0, Math.min(2, Math.trunc(v)));
+}
+
+/** 折扣券卡片顯示名（中文短標，不暴露完整碼） */
+function couponCardLabel(coupon) {
+  if (!coupon) return "折扣券";
+  const amount = Number(coupon.amount) || 0;
+  const source = String(coupon.source || "");
+  const raw = String(coupon.label || "").trim();
+  const code = String(coupon.code || "");
+
+  if (
+    source === "welcome" ||
+    isWelcomeCouponCode(code) ||
+    /新會員|welcome/i.test(raw)
+  ) {
+    return amount > 0 ? `新會員折${amount}` : "新會員折價券";
+  }
+  if (source === "lottery" || /^JEKO-LOT-/i.test(code)) {
+    return amount > 0 ? `抽獎折${amount}` : raw || "抽獎折價券";
+  }
+  if (raw) return raw.length > 20 ? `${raw.slice(0, 20)}…` : raw;
+  if (amount > 0) return `折${amount}`;
+  return "折扣券";
+}
+
+function normalizePromoCode(code) {
+  return String(code || "")
+    .trim()
+    .toUpperCase();
+}
+
+function isSameCouponCard(coupon, appliedSourceCode, appliedCode) {
+  const card = normalizePromoCode(coupon?.code);
+  if (!card) return false;
+  const source = normalizePromoCode(appliedSourceCode);
+  const applied = normalizePromoCode(appliedCode);
+  if (source && source === card) return true;
+  if (applied && applied === card) return true;
+  return false;
 }
 
 // --- Icons ---
@@ -120,11 +159,16 @@ const CartPage = () => {
   const [coupon, setCoupon] = useState("");
   const [discount, setDiscount] = useState(0);
   const [appliedCode, setAppliedCode] = useState(null);
+  /** 會員個人碼（JEKO-WELCOME-…），與 Medusa 內部碼可能不同 */
+  const [appliedSourceCode, setAppliedSourceCode] = useState(null);
+  const [appliedLabel, setAppliedLabel] = useState("");
+  const [memberCoupons, setMemberCoupons] = useState([]);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponMessage, setCouponMessage] = useState("");
   const [needLineFriend, setNeedLineFriend] = useState(false);
   const [needLineVerify, setNeedLineVerify] = useState(false);
   const [needLogin, setNeedLogin] = useState(false);
+  const couponApplyLockRef = useRef(false);
   const [lineOaUrl, setLineOaUrl] = useState(
     process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn",
   );
@@ -134,13 +178,71 @@ const CartPage = () => {
   const [pendingPayment, setPendingPayment] = useState(null);
   const [linePayCancelNotice, setLinePayCancelNotice] = useState(false);
   const [pendingBusy, setPendingBusy] = useState(false);
+  /** 首單券未套用卻按結帳：白底警示 */
+  const [welcomeFirstOrderWarn, setWelcomeFirstOrderWarn] = useState(null); // null | { method }
   const checkoutPreparedCartRef = useRef(null);
 
   const payableTotal = Math.max(0, Number(displayTotal || 0) - Number(discount || 0));
-  const linePayPendingActive =
-    pendingPayment &&
-    isPendingPaymentActive(pendingPayment, "linepay");
-  const checkoutBlocked = Boolean(linePayPendingActive || paymentBusy || pendingBusy);
+  // LINE Pay 已改為「付款成功才建單」：未付款返回不阻擋結帳、不顯示等待付款橫幅。
+  // 藍新 ATM／匯款仍會先建單，不走這段 linepay pending UI。
+  const linePayPendingActive = false;
+  const checkoutBlocked = Boolean(paymentBusy || pendingBusy);
+
+  const pendingWelcomeCoupon = useMemo(() => {
+    return (
+      memberCoupons.find(
+        (c) =>
+          c &&
+          c.status === "available" &&
+          (c.source === "welcome" || isWelcomeCouponCode(c.code)),
+      ) || null
+    );
+  }, [memberCoupons]);
+
+  const welcomeCouponApplied = Boolean(
+    pendingWelcomeCoupon &&
+      isSameCouponCard(pendingWelcomeCoupon, appliedSourceCode, appliedCode) &&
+      discount > 0,
+  );
+
+  const requestCheckoutPayment = useCallback((method) => {
+    if (method !== "linepay" && method !== "newebpay") return;
+    if (
+      pendingWelcomeCoupon &&
+      !welcomeCouponApplied &&
+      !checkoutBlocked &&
+      termsAccepted
+    ) {
+      setWelcomeFirstOrderWarn({ method });
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent(
+        method === "linepay"
+          ? "esim-checkout-linepay"
+          : "esim-checkout-newebpay",
+      ),
+    );
+  }, [
+    pendingWelcomeCoupon,
+    welcomeCouponApplied,
+    checkoutBlocked,
+    termsAccepted,
+  ]);
+
+  const confirmCheckoutWithoutWelcome = useCallback(() => {
+    const method = welcomeFirstOrderWarn?.method;
+    setWelcomeFirstOrderWarn(null);
+    if (!method) return;
+    window.dispatchEvent(
+      new CustomEvent(
+        method === "linepay"
+          ? "esim-checkout-linepay"
+          : "esim-checkout-newebpay",
+      ),
+    );
+  }, [welcomeFirstOrderWarn]);
+
 
   useEffect(() => {
     setPendingPayment(readPendingPayment());
@@ -218,8 +320,11 @@ const CartPage = () => {
 
   useEffect(() => {
     if (router.query.linepay !== "cancel") return;
-    setLinePayCancelNotice(true);
-    setPendingPayment(readPendingPayment());
+    // 未付款取消／上一頁：保留本機商品，僅清暫存並確保 Medusa cart 可用
+    clearPendingPayment();
+    setPendingPayment(null);
+    setLinePayCancelNotice(false);
+    rebuildMedusaCartFromLocal().catch(() => {});
     goToStep(1);
     const q = { ...router.query };
     delete q.linepay;
@@ -227,7 +332,44 @@ const CartPage = () => {
     router.replace({ pathname: router.pathname, query: q }, undefined, {
       shallow: true,
     });
-  }, [router.query.linepay, goToStep, router]);
+  }, [router.query.linepay, goToStep, router, rebuildMedusaCartFromLocal]);
+
+  // 藍新／LINE Pay 未完成付款就返回購物車：保留本機商品，重建可用的 Medusa cart
+  useEffect(() => {
+    let cancelled = false;
+    const recoverAbandonedCheckout = async () => {
+      try {
+        const pending = readPendingPayment();
+        if (!pending) return;
+        // LINE Pay 未建單：商品本來就在；藍新已 complete cart：必須重建
+        if (
+          pending.method === "newebpay" ||
+          pending.preserveLocalCart ||
+          pending.method === "linepay"
+        ) {
+          if (!cancelled) {
+            await rebuildMedusaCartFromLocal();
+          }
+        }
+        if (!cancelled) {
+          clearPendingPayment();
+          setPendingPayment(null);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    recoverAbandonedCheckout();
+    const onPageShow = (e) => {
+      if (e?.persisted) recoverAbandonedCheckout();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [rebuildMedusaCartFromLocal]);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -274,6 +416,11 @@ const CartPage = () => {
       const data = await res.json().catch(() => ({}));
       if (data.line_oa_url) setLineOaUrl(data.line_oa_url);
 
+      const available = (Array.isArray(data.coupons) ? data.coupons : [])
+        .filter((c) => c && c.status === "available" && c.code)
+        .slice(0, 20);
+      setMemberCoupons(available);
+
       const code = data.welcome_coupon?.code || coupon.trim();
       if (code) {
         setCoupon(code);
@@ -318,12 +465,21 @@ const CartPage = () => {
       if (applyRes.ok && applyData.success) {
         const raw = Number(applyData.discount_total || 0);
         const asYen = raw >= 1000 ? Math.round(raw / 100) : raw;
+        const label = couponCardLabel(
+          data.welcome_coupon || {
+            code,
+            amount: 50,
+            source: "welcome",
+          },
+        );
         setDiscount(asYen);
         setAppliedCode(applyData.code || code);
-        setCouponMessage(`已自動套用新會員折價券 ${applyData.code || code}`);
+        setAppliedSourceCode(code);
+        setAppliedLabel(label);
+        setCouponMessage(`已自動套用${label}`);
       } else {
         setCouponMessage(
-          applyData.error || "已連結 LINE，請點「套用」使用折扣碼。",
+          applyData.error || "已連結 LINE，請點擊折扣券卡片或按「套用」。",
         );
       }
     } catch (e) {
@@ -469,6 +625,7 @@ const CartPage = () => {
       setNeedLogin(true);
       setNeedLineFriend(false);
       setPromoOpen(true);
+      setMemberCoupons([]);
       return undefined;
     }
 
@@ -503,6 +660,12 @@ const CartPage = () => {
 
         if (data.line_oa_url) setLineOaUrl(data.line_oa_url);
         if (data.welcome) maybeMarkWelcomeGiftOnFirstClaim(data.welcome);
+
+        const available = (Array.isArray(data.coupons) ? data.coupons : [])
+          .filter((c) => c && c.status === "available" && c.code)
+          .slice(0, 20);
+        setMemberCoupons(available);
+        if (available.length > 0) setPromoOpen(true);
 
         const welcomeCode = data.welcome_coupon?.code;
         if (welcomeCode) {
@@ -553,8 +716,10 @@ const CartPage = () => {
               const asYen = raw >= 1000 ? Math.round(raw / 100) : raw;
               setDiscount(asYen);
               setAppliedCode(applyData.code || welcomeCode);
+              setAppliedSourceCode(welcomeCode);
+              setAppliedLabel(couponCardLabel(data.welcome_coupon || { code: welcomeCode, amount: 50, source: "welcome" }));
               setCouponMessage(
-                `已自動套用新會員折價券 ${applyData.code || welcomeCode}`,
+                `已自動套用${couponCardLabel(data.welcome_coupon || { amount: 50, source: "welcome" })}`,
               );
               setPromoOpen(true);
             } else if (applyData.error) {
@@ -585,18 +750,25 @@ const CartPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStep, authReady, isLoggedIn, token, cartId]);
 
-  const handleApplyCoupon = async ({ lineIdToken: lineIdTokenOverride } = {}) => {
-    const code = coupon.trim();
+  const handleApplyCoupon = async ({
+    lineIdToken: lineIdTokenOverride,
+    code: codeOverride,
+    label: labelOverride,
+  } = {}) => {
+    if (couponApplyLockRef.current) return;
+    const code = String(codeOverride ?? coupon).trim();
     if (!code) return;
     if (!cartId) {
       setCouponMessage("購物車尚未與伺服器連線，請稍候再試");
       setPromoOpen(true);
       return;
     }
+    couponApplyLockRef.current = true;
     setIsApplyingCoupon(true);
     setCouponMessage("");
     setNeedLineFriend(false);
     setNeedLineVerify(false);
+    setCoupon(code);
 
     const isWelcome = isWelcomeCouponCode(code);
     let lineIdToken = lineIdTokenOverride || null;
@@ -605,6 +777,7 @@ const CartPage = () => {
       setNeedLogin(false);
       const lineResult = await getLineIdTokenForWelcomeCheckout();
       if (lineResult.pending) {
+        couponApplyLockRef.current = false;
         setIsApplyingCoupon(false);
         return;
       }
@@ -615,6 +788,7 @@ const CartPage = () => {
           lineResult.error ||
             "請先以 LINE 驗證身分（不需註冊會員），才能套用新會員折扣碼",
         );
+        couponApplyLockRef.current = false;
         setIsApplyingCoupon(false);
         return;
       }
@@ -644,6 +818,8 @@ const CartPage = () => {
       if (data.need_line_verify) {
         setDiscount(0);
         setAppliedCode(null);
+        setAppliedSourceCode(null);
+        setAppliedLabel("");
         setNeedLineVerify(true);
         setNeedLogin(false);
         setNeedLineFriend(false);
@@ -666,6 +842,8 @@ const CartPage = () => {
         } else {
           setDiscount(0);
           setAppliedCode(null);
+          setAppliedSourceCode(null);
+          setAppliedLabel("");
           setNeedLogin(true);
           setNeedLineFriend(false);
           setPromoOpen(true);
@@ -676,6 +854,8 @@ const CartPage = () => {
       if (data.need_line_friend) {
         setDiscount(0);
         setAppliedCode(null);
+        setAppliedSourceCode(null);
+        setAppliedLabel("");
         setNeedLineFriend(true);
         setNeedLogin(false);
         setPromoOpen(true);
@@ -689,7 +869,20 @@ const CartPage = () => {
       if (!res.ok || !data.success) {
         setDiscount(0);
         setAppliedCode(null);
+        setAppliedSourceCode(null);
+        setAppliedLabel("");
         setCouponMessage(data.error || "折扣碼無效");
+        if (data.code === "WELCOME_FIRST_ORDER_ONLY") {
+          setMemberCoupons((prev) =>
+            (prev || []).filter(
+              (c) =>
+                !(
+                  c?.source === "welcome" ||
+                  isWelcomeCouponCode(c?.code)
+                ),
+            ),
+          );
+        }
         return;
       }
       const raw = Number(data.discount_total || 0);
@@ -699,7 +892,15 @@ const CartPage = () => {
       if (isLoggedIn) setNeedLogin(false);
       setDiscount(asYen);
       setAppliedCode(data.code || code.toUpperCase());
-      setCouponMessage(`已套用折扣碼 ${data.code || code.toUpperCase()}`);
+      setAppliedSourceCode(code.toUpperCase());
+      const matched = memberCoupons.find(
+        (c) => normalizePromoCode(c.code) === normalizePromoCode(code),
+      );
+      const label =
+        labelOverride ||
+        couponCardLabel(matched || { code, amount: asYen, source: isWelcome ? "welcome" : "" });
+      setAppliedLabel(label);
+      setCouponMessage(`已套用${label}`);
       try {
         sessionStorage.removeItem(PENDING_COUPON_KEY);
         sessionStorage.removeItem(`${PENDING_COUPON_KEY}_failed`);
@@ -709,10 +910,33 @@ const CartPage = () => {
     } catch (err) {
       setDiscount(0);
       setAppliedCode(null);
+      setAppliedSourceCode(null);
+      setAppliedLabel("");
       setCouponMessage(err.message || "折扣碼套用失敗");
     } finally {
+      couponApplyLockRef.current = false;
       setIsApplyingCoupon(false);
     }
+  };
+
+  const handleCouponCardClick = async (card) => {
+    if (!card?.code || isApplyingCoupon || couponApplyLockRef.current) return;
+    setPromoOpen(true);
+
+    if (isSameCouponCard(card, appliedSourceCode, appliedCode)) {
+      await handleRemoveCoupon();
+      return;
+    }
+
+    if (!cartId) {
+      setCouponMessage("購物車尚未與伺服器連線，請稍候再試或重新整理頁面");
+      return;
+    }
+
+    await handleApplyCoupon({
+      code: card.code,
+      label: couponCardLabel(card),
+    });
   };
 
   // LINE OAuth 訪客驗證回到購物車後自動重試套用
@@ -739,24 +963,40 @@ const CartPage = () => {
   }, [router.isReady, router.query.line_welcome, cartId]);
 
   const handleRemoveCoupon = async () => {
-    if (!cartId || !appliedCode) return;
+    if (couponApplyLockRef.current) return;
+    if (!cartId || !appliedCode) {
+      setDiscount(0);
+      setAppliedCode(null);
+      setAppliedSourceCode(null);
+      setAppliedLabel("");
+      setCouponMessage("");
+      return;
+    }
+    couponApplyLockRef.current = true;
     setIsApplyingCoupon(true);
     try {
-      await fetch("/api/checkout/promotion", {
+      const res = await fetch("/api/checkout/promotion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ cartId, action: "remove" }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setCouponMessage(data.error || "移除折扣失敗，請稍後再試");
+      } else {
+        setCouponMessage("已解除套用折扣券");
+      }
     } catch {
-      /* ignore */
+      setCouponMessage("移除折扣時發生網路錯誤，金額已先還原，請確認後再結帳");
     } finally {
       setDiscount(0);
       setAppliedCode(null);
-      setCoupon("");
-      setCouponMessage("");
+      setAppliedSourceCode(null);
+      setAppliedLabel("");
       setNeedLineFriend(false);
       setNeedLineVerify(false);
+      couponApplyLockRef.current = false;
       setIsApplyingCoupon(false);
     }
   };
@@ -1082,7 +1322,14 @@ const CartPage = () => {
                         </div>
                         {discount > 0 && (
                           <div className="flex justify-between text-sm text-emerald-600 mb-2">
-                            <span>折扣{appliedCode ? `（${appliedCode}）` : ""}</span>
+                            <span>
+                              折扣
+                              {appliedLabel
+                                ? `（${appliedLabel}）`
+                                : appliedCode
+                                  ? `（${appliedCode}）`
+                                  : ""}
+                            </span>
                             <span className="font-medium">－${discount}</span>
                           </div>
                         )}
@@ -1097,7 +1344,7 @@ const CartPage = () => {
                         </div>
 
                         <div className="mb-6">
-                          {!promoOpen ? (
+                          {!promoOpen && memberCoupons.length === 0 ? (
                             <button
                               type="button"
                               onClick={() => setPromoOpen(true)}
@@ -1106,25 +1353,96 @@ const CartPage = () => {
                               使用折扣碼
                             </button>
                           ) : (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
+                              {memberCoupons.length > 0 && (
+                                <div className="space-y-1.5">
+                                  <p className="text-[11px] font-semibold text-gray-600 tracking-wide">
+                                    可用折扣券
+                                  </p>
+                                  <ul
+                                    className="flex flex-wrap gap-1.5"
+                                    role="list"
+                                  >
+                                    {memberCoupons.map((card) => {
+                                      const selected = isSameCouponCard(
+                                        card,
+                                        appliedSourceCode,
+                                        appliedCode,
+                                      );
+                                      const label = couponCardLabel(card);
+                                      return (
+                                        <li key={card.id || card.code}>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleCouponCardClick(card)
+                                            }
+                                            disabled={
+                                              isApplyingCoupon ||
+                                              checkoutBlocked
+                                            }
+                                            aria-pressed={selected}
+                                            aria-label={
+                                              selected
+                                                ? `解除套用 ${label}`
+                                                : `套用 ${label}`
+                                            }
+                                            className={`inline-flex items-center gap-1.5 rounded-md border bg-white px-2.5 py-1.5 text-left transition disabled:opacity-55 disabled:cursor-not-allowed ${
+                                              selected
+                                                ? "border-gray-400 ring-1 ring-gray-300"
+                                                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                            }`}
+                                          >
+                                            <span className="text-[12px] font-semibold text-gray-800 leading-none">
+                                              {label}
+                                            </span>
+                                            {Number(card.amount) > 0 && (
+                                              <span className="text-[10px] text-gray-400 leading-none">
+                                                −${Number(card.amount)}
+                                              </span>
+                                            )}
+                                            <span
+                                              className={`text-[10px] leading-none ${
+                                                selected
+                                                  ? "text-gray-700"
+                                                  : "text-gray-400"
+                                              }`}
+                                            >
+                                              {isApplyingCoupon && selected
+                                                ? "…"
+                                                : selected
+                                                  ? "解除"
+                                                  : "套用"}
+                                            </span>
+                                          </button>
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                </div>
+                              )}
+
                               <div className="flex gap-2">
                                 <input
                                   type="text"
                                   value={coupon}
                                   onChange={(e) => setCoupon(e.target.value)}
-                                  placeholder="輸入折扣碼"
-                                  disabled={Boolean(appliedCode)}
+                                  placeholder="或手動輸入折扣碼"
+                                  disabled={Boolean(appliedCode) || isApplyingCoupon}
                                   className="flex-1 min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
+                                  autoComplete="off"
+                                  spellCheck={false}
                                 />
                                 <button
                                   type="button"
                                   onClick={
                                     appliedCode
                                       ? handleRemoveCoupon
-                                      : handleApplyCoupon
+                                      : () => handleApplyCoupon()
                                   }
                                   disabled={
                                     isApplyingCoupon ||
+                                    checkoutBlocked ||
                                     (!appliedCode && !coupon.trim())
                                   }
                                   className="shrink-0 rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
@@ -1315,41 +1633,9 @@ const CartPage = () => {
                           </span>
                         </label>
 
-                        {/* 付款方式：LINE Pay / 藍新金流 */}
-                        {(linePayPendingActive || linePayCancelNotice) && (
-                          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left">
-                            <p className="text-[13px] font-bold text-amber-900">
-                              {linePayCancelNotice
-                                ? "LINE Pay 付款已取消"
-                                : "有一筆 LINE Pay 訂單等待付款"}
-                            </p>
-                            <p className="mt-1 text-[12px] text-amber-800 leading-relaxed">
-                              {linePayCancelNotice
-                                ? "您的商品仍在購物車。若再次結帳會產生新訂單；若剛才其實已付款，請先查看訂單狀態。"
-                                : `訂單 ${pendingPayment?.orderNo ? `#${pendingPayment.orderNo}` : ""} 尚未完成付款。若已付款請稍候確認。`}
-                            </p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {pendingPayment?.orderNo || pendingPayment?.medusaOrderId ? (
-                                <button
-                                  type="button"
-                                  onClick={handleViewPendingOrder}
-                                  className="rounded-lg bg-white px-3 py-1.5 text-[12px] font-bold text-[#1E4AD1] border border-[#1E4AD1]/30 hover:bg-blue-50"
-                                >
-                                  查看訂單狀態
-                                </button>
-                              ) : null}
-                              <button
-                                type="button"
-                                disabled={pendingBusy}
-                                onClick={handleDismissPendingPayment}
-                                className="rounded-lg bg-amber-600 px-3 py-1.5 text-[12px] font-bold text-white hover:bg-amber-700 disabled:opacity-60"
-                              >
-                                {pendingBusy ? "處理中…" : "取消並重新結帳"}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
+                        {/* 付款方式：LINE Pay / 藍新金流
+                            LINE Pay：未付款返回不顯示等待橫幅（付款成功才建單）
+                            藍新 ATM／匯款：仍先建單，走 thank-you／pending 頁顯示轉帳資訊 */}
                         <p className="text-xs text-center text-gray-500 mb-3">
                           選擇付款方式
                         </p>
@@ -1359,11 +1645,7 @@ const CartPage = () => {
                             variant="primary"
                             tone="line"
                             disabled={checkoutBlocked || !termsAccepted}
-                            onClick={() => {
-                              window.dispatchEvent(
-                                new CustomEvent("esim-checkout-linepay"),
-                              );
-                            }}
+                            onClick={() => requestCheckoutPayment("linepay")}
                           >
                             {paymentBusy === "linepay"
                               ? "正在前往 LINE Pay…"
@@ -1373,11 +1655,7 @@ const CartPage = () => {
                             type="button"
                             variant="primary"
                             disabled={checkoutBlocked || !termsAccepted}
-                            onClick={() => {
-                              window.dispatchEvent(
-                                new CustomEvent("esim-checkout-newebpay"),
-                              );
-                            }}
+                            onClick={() => requestCheckoutPayment("newebpay")}
                           >
                             {paymentBusy === "newebpay"
                               ? "正在前往藍新金流…"
@@ -1390,6 +1668,56 @@ const CartPage = () => {
                 </div>
               </motion.div>
             )}
+
+            {welcomeFirstOrderWarn ? (
+              <div
+                className="fixed inset-0 z-[110] bg-black/40 flex items-center justify-center px-5"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="welcome-first-order-title"
+              >
+                <div className="w-full max-w-sm rounded-xl bg-white border border-gray-200 px-5 py-5 shadow-lg">
+                  <h2
+                    id="welcome-first-order-title"
+                    className="text-[15px] font-bold text-black mb-2"
+                  >
+                    尚未使用新會員折扣
+                  </h2>
+                  <p className="text-[13px] leading-relaxed text-black mb-5">
+                    您有「
+                    {couponCardLabel(pendingWelcomeCoupon)}
+                    」尚未套用。若完成本次購買，此折扣券將失效且無法再使用。
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-[13px] font-bold text-black hover:bg-gray-50"
+                      onClick={() => {
+                        const card = pendingWelcomeCoupon;
+                        setWelcomeFirstOrderWarn(null);
+                        if (card) void handleCouponCardClick(card);
+                      }}
+                    >
+                      先套用折扣
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full rounded-lg bg-black px-3 py-2.5 text-[13px] font-bold text-white hover:bg-gray-900"
+                      onClick={confirmCheckoutWithoutWelcome}
+                    >
+                      不用，繼續結帳
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full px-3 py-1.5 text-[12px] text-gray-600 hover:text-black"
+                      onClick={() => setWelcomeFirstOrderWarn(null)}
+                    >
+                      取消
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             {paymentBusy ? (
               <div

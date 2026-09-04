@@ -10,14 +10,27 @@ import LoadingIndicator from "@/components/ui/LoadingIndicator";
 const FALLBACK_OA_URL =
   process.env.NEXT_PUBLIC_LINE_OA_URL || "https://line.me/R/ti/p/@593gvyzn";
 
+/** 與帳號流量「查詢流量」SecondaryBtn 同款 */
+const queryBtnStyle = {
+  backgroundColor: "#fafafa",
+  color: "#303030",
+  border: "1px solid #8a8a8a",
+  borderRadius: "0.5rem",
+};
+
 function buildOaQrUrl(oaUrl) {
   return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&margin=12&data=${encodeURIComponent(oaUrl)}`;
 }
 
 /**
  * LINE 登入會員：開啟官方 LINE 低流量推播（不需 Web Push）
+ * @param {{ className?: string, boundTopupId?: string, disabled?: boolean }} props
  */
-export default function PushLineAlertSection({ className = "", boundTopupId }) {
+export default function PushLineAlertSection({
+  className = "",
+  boundTopupId,
+  disabled = false,
+}) {
   const { session, authReady, token, isLoggedIn } = useAuth();
 
   const [status, setStatus] = useState(null);
@@ -55,6 +68,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
   }, [loadStatus]);
 
   const toggleLineAlert = async (enable) => {
+    if (disabled) return;
     setActionLoading(true);
     setError("");
     try {
@@ -99,33 +113,63 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
 
   const oaUrl = status?.oaUrl || FALLBACK_OA_URL;
   const oaQrUrl = status?.oaQrUrl || buildOaQrUrl(oaUrl);
+  const locked = Boolean(disabled);
 
   const lineGuideCard = (
-    <div className="flex flex-col sm:flex-row gap-3 items-center sm:items-start rounded-xl border border-[#06C755]/35 bg-white p-3">
+    <div
+      className={`flex flex-col sm:flex-row gap-3 items-center sm:items-start rounded-xl border p-3 ${
+        locked
+          ? "border-zinc-200 bg-zinc-100/80 opacity-70"
+          : "border-zinc-200 bg-white"
+      }`}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={oaQrUrl}
         alt="Jeko 官方 LINE QR Code"
         width={120}
         height={120}
-        className="w-[112px] h-[112px] rounded-lg border border-stone-200 bg-white shrink-0"
+        className={`w-[112px] h-[112px] rounded-lg border border-zinc-200 bg-white shrink-0 ${
+          locked ? "grayscale" : ""
+        }`}
       />
       <div className="flex-1 min-w-0 space-y-2 text-center sm:text-left w-full">
-        <p className="text-sm font-bold text-stone-900 leading-snug">
+        <p
+          className={`text-sm font-bold leading-snug ${
+            locked ? "text-zinc-400" : "text-zinc-900"
+          }`}
+        >
           加入官方 LINE 開啟流量提醒
         </p>
-        <p className="text-[11px] text-stone-500 leading-relaxed">
-          用手機相機或 LINE 掃描左側 QR；已是好友可直接點下方開啟提醒。
-        </p>
-        <a
-          href={oaUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-[#06C755] hover:bg-[#05b34c] text-white text-sm font-bold py-2.5 px-4 transition"
+        <p
+          className={`text-[11px] leading-relaxed ${
+            locked ? "text-zinc-400" : "text-zinc-500"
+          }`}
         >
-          <LineIconSvg className="w-4 h-4 text-white" />
-          開啟官方 LINE
-        </a>
+          {locked
+            ? "此 eSIM 已過期，無法開啟 LINE 流量提醒。"
+            : "用手機相機或 LINE 掃描左側 QR；已是好友可直接點下方開啟提醒。"}
+        </p>
+        {locked ? (
+          <span
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 h-8 px-3 text-[13px] font-semibold cursor-not-allowed opacity-40"
+            style={queryBtnStyle}
+          >
+            <LineIconSvg className="w-4 h-4 text-[#303030]" />
+            開啟官方 LINE
+          </span>
+        ) : (
+          <a
+            href={oaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 h-8 px-3 text-[13px] font-semibold transition hover:bg-zinc-100"
+            style={queryBtnStyle}
+          >
+            <LineIconSvg className="w-4 h-4 text-[#303030]" />
+            開啟官方 LINE
+          </a>
+        )}
       </div>
     </div>
   );
@@ -133,7 +177,7 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
   if (!authReady || loading) {
     return (
       <div
-        className={`rounded-xl border border-stone-200 bg-stone-50 p-4 text-xs text-stone-500 animate-pulse ${className}`}
+        className={`rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-500 animate-pulse ${className}`}
       >
         載入 LINE 提醒設定…
       </div>
@@ -143,11 +187,21 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
   if (!session?.user?.id && !isLoggedIn) {
     return (
       <div
-        className={`rounded-xl border border-[#06C755]/30 bg-[#06C755]/5 p-4 ${className}`}
+        className={`rounded-xl border border-zinc-200 bg-zinc-50 p-4 ${className}`}
       >
         <div className="flex items-start gap-3 mb-4">
-          <LineIconSvg className="w-6 h-6 shrink-0 mt-0.5 text-[#06C755]" />
-          <p className="font-bold text-stone-900 text-sm">LINE 推播提醒</p>
+          <LineIconSvg
+            className={`w-6 h-6 shrink-0 mt-0.5 ${
+              locked ? "text-zinc-400" : "text-zinc-700"
+            }`}
+          />
+          <p
+            className={`font-bold text-sm ${
+              locked ? "text-zinc-400" : "text-zinc-900"
+            }`}
+          >
+            LINE 推播提醒
+          </p>
         </div>
         {lineGuideCard}
       </div>
@@ -161,36 +215,58 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
 
   return (
     <div
-      className={`rounded-xl border border-[#06C755]/30 bg-[#06C755]/5 p-4 sm:p-5 ${className}`}
+      className={`rounded-xl border p-4 sm:p-5 ${
+        locked
+          ? "border-zinc-200 bg-zinc-100"
+          : "border-zinc-200 bg-zinc-50"
+      } ${className}`}
     >
       <div className="flex items-start gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-[#06C755]/25">
-          <LineIconSvg className="w-6 h-6 text-[#06C755]" />
+        <div
+          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden ring-1 ${
+            locked
+              ? "bg-zinc-200 ring-zinc-200"
+              : "bg-white ring-zinc-200"
+          }`}
+        >
+          <LineIconSvg
+            className={`w-6 h-6 ${locked ? "text-zinc-400" : "text-zinc-700"}`}
+          />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-stone-900 text-sm">LINE 推播提醒</p>
-          {enabled && status?.productName ? (
-            <p className="text-[11px] text-[#06C755] font-bold mt-1">
+          <p
+            className={`font-bold text-sm ${
+              locked ? "text-zinc-400" : "text-zinc-900"
+            }`}
+          >
+            LINE 推播提醒
+          </p>
+          {locked ? (
+            <p className="text-[11px] text-zinc-400 font-medium mt-1">
+              已過期，無法開啟或變更提醒
+            </p>
+          ) : enabled && status?.productName ? (
+            <p className="text-[11px] text-zinc-600 font-semibold mt-1">
               已監控：{status.productName}
             </p>
           ) : needsFriend ? (
-            <p className="text-[11px] text-amber-700 font-medium mt-1">
+            <p className="text-[11px] text-zinc-600 font-medium mt-1">
               系統尚未確認好友狀態，請掃碼加入後再開啟
             </p>
           ) : (
-            <p className="text-[11px] text-stone-500 mt-1">
+            <p className="text-[11px] text-zinc-500 mt-1">
               已加入官方帳號即可一鍵開啟低流量提醒
             </p>
           )}
         </div>
       </div>
 
-      {error && (
-        <p className="text-xs text-red-600 mb-3 flex items-start gap-1">
-          <MaterialIcon name="error" size={16} className="shrink-0 mt-0.5" />
+      {error && !locked ? (
+        <p className="text-xs text-zinc-700 mb-3 flex items-start gap-1 rounded-lg bg-zinc-100 px-2.5 py-2 border border-zinc-200">
+          <MaterialIcon name="error" size={16} className="shrink-0 mt-0.5 text-zinc-500" />
           <span>{error}</span>
         </p>
-      )}
+      ) : null}
 
       {showGuideOnly ? (
         <div className="flex flex-col gap-3">
@@ -198,12 +274,15 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
           {!needsLineLink ? (
             <button
               type="button"
-              disabled={actionLoading}
+              disabled={actionLoading || locked}
               onClick={() => toggleLineAlert(true)}
-              className="w-full rounded-lg border border-[#06C755] bg-white text-[#06C755] font-bold py-3 px-4 text-sm hover:bg-[#06C755]/10 disabled:opacity-50 transition"
+              className="w-full inline-flex items-center justify-center gap-1.5 h-8 px-3 text-[13px] font-semibold transition hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={queryBtnStyle}
             >
               {actionLoading ? (
                 <LoadingIndicator layout="inline" size="xs" label="設定中…" />
+              ) : locked ? (
+                "已過期無法開啟"
               ) : (
                 "已加入？點此開啟提醒"
               )}
@@ -213,12 +292,15 @@ export default function PushLineAlertSection({ className = "", boundTopupId }) {
       ) : (
         <button
           type="button"
-          disabled={actionLoading}
+          disabled={actionLoading || locked}
           onClick={() => toggleLineAlert(false)}
-          className="w-full rounded-lg border border-stone-300 bg-white text-stone-700 font-bold py-3 px-4 text-sm hover:bg-stone-50 disabled:opacity-50 transition"
+          className="w-full inline-flex items-center justify-center gap-1.5 h-8 px-3 text-[13px] font-semibold transition hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={queryBtnStyle}
         >
           {actionLoading ? (
             <LoadingIndicator layout="inline" size="xs" label="處理中…" />
+          ) : locked ? (
+            "已過期無法變更"
           ) : (
             "關閉 LINE 提醒"
           )}

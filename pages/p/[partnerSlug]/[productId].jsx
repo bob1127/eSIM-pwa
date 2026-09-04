@@ -9,6 +9,10 @@ import {
   applyPartnerMarkupToVariations,
 } from "@/lib/formatMedusaProductPage";
 import { applyPartnerB2BMarkup } from "@/lib/medusaPartnerPricing";
+import {
+  resolveProductListingImage,
+  resolveProductGalleryUrls,
+} from "@/lib/resolveProductListingImage";
 
 /**
  * 夥伴賣場商品內頁 — 完全沿用主站 eSIM 產品頁 UI，
@@ -111,11 +115,28 @@ async function loadLocalProductFallback(listing, store) {
     customPrices,
   });
 
+  const handle = p.handle || String(p.id);
+  const categorySlug = inferCategoryHandleFromProduct({
+    name: p.name,
+    slug: handle,
+  }) || "uncategorized";
+  const imageCtx = {
+    categorySlug,
+    handle,
+    categories: categorySlug !== "uncategorized" ? [{ handle: categorySlug }] : [],
+  };
+  const image_url = resolveProductListingImage(p.image_url || null, imageCtx);
+  const image_urls = resolveProductGalleryUrls(
+    p.image_url || null,
+    p.image_url ? [p.image_url] : [],
+    imageCtx,
+  );
+
   return {
     product: {
       id: String(p.id),
       name: p.name,
-      slug: p.handle || String(p.id),
+      slug: handle,
       description: p.description || "",
       detailed_content: "",
       detailed_content_by_carrier: {},
@@ -126,8 +147,9 @@ async function loadLocalProductFallback(listing, store) {
       carrier_specs_by_carrier: {},
       hot_sale_telecoms: [],
       overview_notices_by_carrier: {},
-      image_url: p.image_url || null,
-      image_urls: p.image_url ? [p.image_url] : [],
+      category_slug: categorySlug,
+      image_url,
+      image_urls,
       price: variations[0]?.price || null,
     },
     variations,
@@ -142,6 +164,7 @@ function inferCategoryHandleFromProduct(product) {
   if (/日本|japan/i.test(s)) return "japan";
   if (/韓國|korea/i.test(s)) return "korea";
   if (/泰國|thailand/i.test(s)) return "thailand";
+  if (/巴西|brazil/i.test(s)) return "brazil";
   if (/歐洲|europe/i.test(s)) return "europe";
   if (/美國|usa|united.?states/i.test(s)) return "usa";
   return null;

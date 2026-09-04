@@ -42,6 +42,7 @@ import {
   isCouponRateLimited,
   logCouponAttempt,
 } from "../../../lib/couponRateLimit";
+import { expireWelcomeCouponsForEmail } from "../../../lib/welcomeFirstOrder";
 
 // 夥伴專屬折扣碼在 Medusa 端的內部代碼前綴（見 lib/medusaPartnerPromotions.js）。
 // 這是高熵亂數碼，本來就不可能被猜到；但仍多一層防線：即使有人不知怎麼拿到
@@ -348,9 +349,15 @@ export default async function handler(req, res) {
       }
       const alreadyOrdered = await hasPriorSuccessfulOrder(email);
       if (alreadyOrdered) {
+        try {
+          await expireWelcomeCouponsForEmail(supabaseAdmin, email);
+        } catch (e) {
+          console.warn("[promotion] 失效首單券略過:", e?.message || e);
+        }
         return res.status(400).json({
           success: false,
           error: "此優惠僅限尚未購買過的新會員使用，您已有訂單記錄",
+          code: "WELCOME_FIRST_ORDER_ONLY",
         });
       }
     }

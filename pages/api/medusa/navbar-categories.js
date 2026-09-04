@@ -2,6 +2,8 @@
  * Navbar 精選國家分類：同源代理 Medusa，避免 localhost:3001 CORS 被擋
  * 只回傳分類＋精簡產品統計，避免 API 超過 4MB
  */
+import { filterLeafCategoriesForNav } from "@/lib/categoryNavFilter";
+
 const backendUrl =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
 
@@ -47,7 +49,9 @@ export default async function handler(req, res) {
     }
 
     const catData = await catRes.json();
-    const product_categories = catData.product_categories || [];
+    const product_categories = filterLeafCategoriesForNav(
+      catData.product_categories || [],
+    );
 
     // 精簡產品：只留 id／categories／最低價，給 Navbar 統計用
     let products = [];

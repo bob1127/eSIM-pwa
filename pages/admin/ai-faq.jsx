@@ -324,7 +324,7 @@ export default function AdminAiFaqPage() {
               從聊天紀錄自動抓取
             </p>
             <p className="text-xs text-stone-600 leading-relaxed">
-              系統會讀取 chat_logs 裡的「用戶提問 → 下一則 AI 回覆」，略過短句／型號關鍵字、問候、小按鈕快捷題、「幫你規劃」點選題、preset／quick 回覆、重複與已存在
+              系統會讀取 chat_logs 裡的「用戶提問 → 下一則 AI 回覆」。寫入時已略過快捷／preset、問候、規劃表單題等；掃描時再過濾短句／型號關鍵字、重複與已存在
               FAQ。建議先匯入為草稿，改完答案再啟用。
             </p>
             <div className="flex flex-wrap items-center gap-2">

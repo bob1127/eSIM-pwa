@@ -10,19 +10,29 @@ import LoadingIndicator from "@/components/ui/LoadingIndicator";
 export default function AccountFollowsPanel() {
   const { token } = useAuth();
   const [follows, setFollows] = useState([]);
+  const [savedPosts, setSavedPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inner, setInner] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const res = await fetch("/api/blog/engage?action=list-follows", {
-        credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const data = await res.json().catch(() => ({}));
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const [followsRes, likesRes] = await Promise.all([
+        fetch("/api/blog/engage?action=list-follows", {
+          credentials: "include",
+          headers,
+        }),
+        fetch("/api/blog/engage?action=list-likes", {
+          credentials: "include",
+          headers,
+        }),
+      ]);
+      const followsData = await followsRes.json().catch(() => ({}));
+      const likesData = await likesRes.json().catch(() => ({}));
       if (!cancelled) {
-        setFollows(data.follows || []);
+        setFollows(followsData.follows || []);
+        setSavedPosts(likesData.posts || []);
         setLoading(false);
       }
     };
@@ -63,6 +73,7 @@ export default function AccountFollowsPanel() {
       ) : (
         <CreatorFollowFeed
           follows={follows}
+          savedPosts={savedPosts}
           onUnfollow={unfollow}
           onOpenInner={setInner}
         />

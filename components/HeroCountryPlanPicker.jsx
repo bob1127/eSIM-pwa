@@ -41,14 +41,27 @@ export default function HeroCountryPlanPicker() {
           ...(publishableKey && { "x-publishable-api-key": publishableKey }),
         };
 
+        // calculated_price 必須帶 region_id，否則 Medusa 回 400
+        const regionsRes = await fetch(`${backendUrl}/store/regions`, {
+          headers,
+        });
+        const regionsData = regionsRes.ok ? await regionsRes.json() : { regions: [] };
+        const region =
+          regionsData.regions?.find(
+            (r) => r.currency_code?.toLowerCase() === "twd",
+          ) || regionsData.regions?.[0] || null;
+
         const productFields =
           "+metadata,*categories,*variants,*variants.calculated_price,*variants.prices";
+        const productQs = new URLSearchParams({
+          limit: "100",
+          fields: productFields,
+        });
+        if (region?.id) productQs.set("region_id", region.id);
+
         const [catRes, prodRes, ranksRes] = await Promise.all([
           fetch(`${backendUrl}/store/product-categories`, { headers }),
-          fetch(
-            `${backendUrl}/store/products?limit=100&fields=${encodeURIComponent(productFields)}`,
-            { headers },
-          ),
+          fetch(`${backendUrl}/store/products?${productQs}`, { headers }),
           fetch("/api/hero-product-ranks").catch(() => null),
         ]);
 
@@ -58,6 +71,12 @@ export default function HeroCountryPlanPicker() {
         const prodData = prodRes.ok
           ? await prodRes.json()
           : { products: [] };
+        if (!prodRes.ok) {
+          clientWarn(
+            "[HeroCountryPlanPicker] products fetch failed:",
+            prodRes.status,
+          );
+        }
         const ranksData =
           ranksRes && ranksRes.ok
             ? await ranksRes.json()

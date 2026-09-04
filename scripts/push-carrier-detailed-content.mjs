@@ -190,6 +190,11 @@ import {
   TR_USAGE,
 } from "../content/product-detailed/turkey-tab-content.js";
 import {
+  BR_UNLIM_DETAILED,
+  BR_USAGE,
+  BR_TELECOM,
+} from "../content/product-detailed/brazil-tab-content.js";
+import {
   SG_UNLIM_DETAILED,
   SG_DAILY_DETAILED,
   SG_TOTAL_DETAILED,
@@ -1608,6 +1613,19 @@ const CONTENT_MAP = {
     html: TR_USAGE,
     handle: "turkey-unlimited-esim",
     carrier: "AVEA TURKEY / VODAFONE TURKEY +",
+    contentType: "usage",
+  },
+  // —— 巴西 ——
+  "br-unlim": {
+    html: BR_UNLIM_DETAILED,
+    handle: "brazil-unlimited-esim",
+    carrier: BR_TELECOM,
+    contentType: "detailed",
+  },
+  "br-unlim-usage": {
+    html: BR_USAGE,
+    handle: "brazil-unlimited-esim",
+    carrier: BR_TELECOM,
     contentType: "usage",
   },
   "tr-daily": {

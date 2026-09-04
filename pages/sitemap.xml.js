@@ -1,4 +1,5 @@
 import { SITE_URL, PAGE_SEO } from "../lib/seo.config";
+import { filterLeafCategoriesForNav } from "../lib/categoryNavFilter";
 
 const getMedusaHeaders = () => {
   const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
@@ -46,7 +47,7 @@ export async function getServerSideProps({ res }) {
     });
     if (catRes.ok) {
       const { product_categories = [] } = await catRes.json();
-      for (const cat of product_categories) {
+      for (const cat of filterLeafCategoriesForNav(product_categories)) {
         if (!cat?.handle) continue;
         urls.push(
           urlEntry(`${SITE_URL}/product/${cat.handle}`, {

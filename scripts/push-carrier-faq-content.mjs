@@ -132,6 +132,10 @@ import {
   TR_FAQ_TOTAL,
 } from "../content/product-detailed/turkey-tab-content.js";
 import {
+  BR_FAQ_UNLIM,
+  BR_TELECOM,
+} from "../content/product-detailed/brazil-tab-content.js";
+import {
   SG_FAQ_SINGTEL,
   SG_FAQ_M1_DAILY,
   SG_FAQ_M1_TOTAL,
@@ -734,6 +738,11 @@ const CONTENT_MAP = {
     html: TR_FAQ_UNLIM,
     handle: "turkey-unlimited-esim",
     carrier: "AVEA TURKEY / VODAFONE TURKEY +",
+  },
+  "br-unlim": {
+    html: BR_FAQ_UNLIM,
+    handle: "brazil-unlimited-esim",
+    carrier: BR_TELECOM,
   },
   "tr-daily": {
     html: TR_FAQ_DAILY,

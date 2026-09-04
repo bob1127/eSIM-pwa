@@ -1300,13 +1300,26 @@ export default function AiChatWidget() {
 
   const scrollToBottom = useCallback((force = false) => {
     const el = messagesContainerRef.current;
-    if (!el) return;
-    if (!force && !stickToBottomRef.current) return;
+    if (!el) return false;
+    if (!force && !stickToBottomRef.current) return false;
     // 只捲訊息容器，勿用 scrollIntoView（會連動外層／頁面亂跳）
-    requestAnimationFrame(() => {
-      el.scrollTop = el.scrollHeight;
-    });
+    el.scrollTop = el.scrollHeight;
+    return true;
   }, []);
+
+  /** 面板剛打開／換頁回來：等 layout + 動畫後強制停在最後一則 */
+  const scrollToBottomWhenReady = useCallback(() => {
+    stickToBottomRef.current = true;
+    const delays = [0, 32, 80, 160, 280, 480];
+    const timers = delays.map((ms) =>
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          scrollToBottom(true);
+        });
+      }, ms),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [scrollToBottom]);
 
   const handleMessagesScroll = useCallback(() => {
     const el = messagesContainerRef.current;
@@ -1318,6 +1331,35 @@ export default function AiChatWidget() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading, pendingMedia, showPlanForm, scrollToBottom]);
+
+  // 關閉再開／換頁後面板重掛：一律捲到對話底部
+  const prevOpenRef = useRef(false);
+  useEffect(() => {
+    const justOpened = isOpen && !prevOpenRef.current;
+    prevOpenRef.current = isOpen;
+    if (!justOpened || !chatHydrated) return undefined;
+    return scrollToBottomWhenReady();
+  }, [isOpen, chatHydrated, scrollToBottomWhenReady]);
+
+  // 從隱藏頁（後台等）回到前台且視窗仍開著：重掛後捲到底
+  const chatHidden = shouldHideAiChat(router.pathname);
+  const prevHiddenRef = useRef(chatHidden);
+  useEffect(() => {
+    const wasHidden = prevHiddenRef.current;
+    prevHiddenRef.current = chatHidden;
+    if (wasHidden && !chatHidden && isOpen && chatHydrated) {
+      return scrollToBottomWhenReady();
+    }
+    return undefined;
+  }, [chatHidden, isOpen, chatHydrated, scrollToBottomWhenReady]);
+
+  // 還原歷史訊息後若視窗已開，補一次捲動（圖片／卡片載入後）
+  useEffect(() => {
+    if (!chatHydrated || !isOpen || messages.length < 2) return undefined;
+    return scrollToBottomWhenReady();
+    // 只在 hydrate 完成當下跑一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatHydrated]);
 
   useEffect(() => {
     const open = () => setIsOpen(true);
@@ -1519,16 +1561,7 @@ export default function AiChatWidget() {
         ]);
         setIsLoading(false);
       }, 600);
-      // 儲存 preset 對話紀錄
-      persistChatLog({
-        sessionId: sessionIdRef.current,
-        userId: user?.id || null,
-        guestId: guestIdRef.current,
-        messages: [
-          { role: "user", content: displayContent, provider: "preset" },
-          { role: "ai", content: presetReply, provider: "preset" },
-        ],
-      });
+      // preset／快捷固定答不寫入 chat_logs（由 /api/chat/log 過濾對齊）
       return;
     }
 
@@ -1570,24 +1603,26 @@ export default function AiChatWidget() {
           shopCards: data.shopCards?.length ? data.shopCards : null,
         },
       ]);
-      // 儲存 user + ai 兩則紀錄（快捷按鈕標記 quick，掃描 FAQ 時略過）
-      persistChatLog({
-        sessionId: sessionIdRef.current,
-        userId: user?.id || null,
-        guestId: guestIdRef.current,
-        messages: [
-          {
-            role: "user",
-            content: displayContent,
-            provider: userLogProvider,
-          },
-          {
-            role: "ai",
-            content: aiReply,
-            provider: fromQuickButton ? "quick" : data.provider || null,
-          },
-        ],
-      });
+      // 儲存 user + ai 兩則紀錄（快捷按鈕／noise 由 /api/chat/log 過濾）
+      if (!fromQuickButton) {
+        persistChatLog({
+          sessionId: sessionIdRef.current,
+          userId: user?.id || null,
+          guestId: guestIdRef.current,
+          messages: [
+            {
+              role: "user",
+              content: displayContent,
+              provider: userLogProvider,
+            },
+            {
+              role: "ai",
+              content: aiReply,
+              provider: data.provider || null,
+            },
+          ],
+        });
+      }
     } catch (error) {
       const errMsg = `抱歉，我暫時無法處理：${error.message || "請稍後再試"}`;
       setMessages((prev) => [

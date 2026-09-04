@@ -57,10 +57,7 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
           );
           const featureImage =
             post._embedded?.["wp:featuredmedia"]?.[0]?.source_url;
-          const finalImage =
-            contentImage ||
-            featureImage ||
-            "https://via.placeholder.com/800x600?text=No+Image";
+          const finalImage = contentImage || featureImage || null;
 
           let categoryName = "Travel";
           if (post._embedded && post._embedded["wp:term"]) {
@@ -77,7 +74,7 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
               stripHtml(post.excerpt.rendered).substring(0, 80) + "...",
             image: finalImage,
             category: categoryName,
-            date: new Date(post.date).toLocaleDateString(),
+            date: new Date(post.date).toLocaleDateString("zh-TW"),
             link: `/blog/${post.slug}`,
           };
         });
@@ -112,12 +109,13 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
     onNextButtonClick,
   } = usePrevNextButtons(emblaApi);
 
-  // ==========================================
-  // 3. 游標跟隨邏輯 (修正位置問題的核心)
-  // ==========================================
+  // 游標跟隨：僅桌面且 DOM 就緒後初始化（loading 時 cursor 尚未掛載）
   useEffect(() => {
-    // 初始化 GSAP quickTo
-    // xPercent: -50, yPercent: -50 是為了讓圓圈的中心點對準滑鼠，而不是左上角
+    if (loading || !cursorRef.current) return;
+    if (window.matchMedia("(hover: none), (pointer: coarse)").matches) {
+      return;
+    }
+
     xTo.current = gsap.quickTo(cursorRef.current, "x", {
       duration: 0.15,
       ease: "power3",
@@ -128,17 +126,16 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
     });
 
     const moveCursor = (e) => {
-      // 讓隱藏的圓圈始終跟隨滑鼠移動
-      xTo.current(e.clientX);
-      yTo.current(e.clientY);
+      xTo.current?.(e.clientX);
+      yTo.current?.(e.clientY);
     };
 
     window.addEventListener("mousemove", moveCursor);
     return () => window.removeEventListener("mousemove", moveCursor);
-  }, []);
+  }, [loading]);
 
-  // 4. 卡片互動：移入放大
   const handleCardMouseEnter = () => {
+    if (!cursorRef.current) return;
     gsap.to(cursorRef.current, {
       scale: 1,
       opacity: 1,
@@ -148,8 +145,8 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
     });
   };
 
-  // 5. 卡片互動：移出縮小
   const handleCardMouseLeave = () => {
+    if (!cursorRef.current) return;
     gsap.to(cursorRef.current, {
       scale: 0,
       opacity: 0,
@@ -290,11 +287,18 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
                     className="superellipse-card w-full bg-white"
                     style={{ aspectRatio: "16 / 10" }}
                   >
-                    <img
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      alt={slide.title}
-                      src={slide.image}
-                    />
+                    {slide.image ? (
+                      <img
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        alt={slide.title}
+                        src={slide.image}
+                      />
+                    ) : (
+                      <div
+                        className="w-full h-full bg-slate-200"
+                        aria-hidden
+                      />
+                    )}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
                   </div>
 

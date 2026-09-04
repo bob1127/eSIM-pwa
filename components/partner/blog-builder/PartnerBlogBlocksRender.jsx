@@ -698,41 +698,57 @@ const SOCIAL_CARD_MIN = 220;
 const SOCIAL_CARD_MAX = 300; // 多則並排時勿過寬，避免看起來被橫向拉扁
 /** 直式比例（高／寬），Reels／貼文預覽統一 */
 const SOCIAL_PORTRAIT_HW = 16 / 9;
-/** IG 官方 embed 底部「新增留言」列（以 540 寬估算），用裁切藏起來 */
-const IG_COMMENT_CROP_NATIVE = 72;
+/** IG 官方 embed 底部「新增留言」列；略裁即可，避免砍到按讚數 */
+const IG_COMMENT_CROP_NATIVE = 48;
 const IG_NATIVE_W = 540;
-const IG_NATIVE_H = Math.round(IG_NATIVE_W * SOCIAL_PORTRAIT_HW) + IG_COMMENT_CROP_NATIVE;
-/** FB plugin 畫布；外框限寬，內容 cover 撐滿避免黑邊 */
+const IG_NATIVE_H =
+  Math.round(IG_NATIVE_W * SOCIAL_PORTRAIT_HW) + IG_COMMENT_CROP_NATIVE;
+/** FB plugin 畫布；高度貼近一般圖文貼文，避免底部大片空白（過長可微捲） */
 const FB_NATIVE_W = 500;
-const FB_NATIVE_H = 620;
-const FB_CARD_HW = 5 / 4; // 略扁於 9:16，貼近一般貼文
+const FB_NATIVE_H = 700;
+const FB_CARD_HW = FB_NATIVE_H / FB_NATIVE_W;
+/** Threads 預覽畫布（長文可捲動，外框勿過矮） */
+const THREADS_NATIVE_W = 540;
+const THREADS_NATIVE_H = 1100;
+const THREADS_CARD_HW = THREADS_NATIVE_H / THREADS_NATIVE_W;
 
 function socialNativeSize(post) {
   if (post?.platform === "facebook" || post?.kind === "facebook") {
     return { w: FB_NATIVE_W, h: FB_NATIVE_H };
   }
   if (post?.platform === "threads" || post?.kind === "threads") {
-    return { w: 540, h: 960 };
+    return { w: THREADS_NATIVE_W, h: THREADS_NATIVE_H };
   }
   // IG：畫布比 9:16 略高，卡片裁掉底部留言列
   return { w: IG_NATIVE_W, h: IG_NATIVE_H };
 }
 
 function socialCardSize(slotW, maxH, platform) {
+  // 輪播槽寬為準，不可比槽更寬（否則最右一則會被裁）
   let dw = Math.min(
     SOCIAL_CARD_MAX,
-    Math.max(SOCIAL_CARD_MIN, Number(slotW) || SOCIAL_CARD_MAX),
+    Math.max(160, Number(slotW) || SOCIAL_CARD_MAX),
   );
-  const ratio = platform === "facebook" ? FB_CARD_HW : SOCIAL_PORTRAIT_HW;
+  if (Number(slotW) > 0) {
+    dw = Math.min(dw, Number(slotW));
+  }
+  const ratio =
+    platform === "facebook"
+      ? FB_CARD_HW
+      : platform === "threads"
+        ? THREADS_CARD_HW
+        : SOCIAL_PORTRAIT_HW;
   let dh = Math.round(dw * ratio);
   if (Number(maxH) > 0 && dh > maxH) {
     dh = Math.round(maxH);
     dw = Math.round(dh / ratio);
     dw = Math.max(160, dw);
+    if (Number(slotW) > 0) dw = Math.min(dw, Number(slotW));
     dh = Math.round(dw * ratio);
     if (dh > maxH) {
       dh = Math.round(maxH);
       dw = Math.round(dh / ratio);
+      if (Number(slotW) > 0) dw = Math.min(dw, Number(slotW));
     }
   }
   return { dw, dh };
@@ -755,14 +771,10 @@ function useElementWidth() {
 
 function socialCardChrome(cardStyle) {
   const skin = designCardStyle(cardStyle || {});
-  const hideDefaultShadow =
-    cardStyle?.card_shadow === "none" ||
-    cardStyle?.card_shadow === "sm" ||
-    cardStyle?.card_shadow === "md";
-  // 設計定案：淺灰邊 + 8px 圓角（不跟舊的黑邊設定）
+  // 設計定案：淺灰邊 + 8px 圓角、無陰影
   return {
-    skin,
-    hideDefaultShadow,
+    skin: { ...skin, boxShadow: "none" },
+    hideDefaultShadow: true,
     borderW: 1,
     borderColor: "#d1d5db",
     borderRadius: 8,
@@ -787,12 +799,12 @@ function ThreadsEmbedCard({
   const [failed, setFailed] = useState(false);
   const { w: nw, h: nh } = socialNativeSize(post);
   const { dw, dh } = socialCardSize(slotW, maxH, "threads");
-  const { skin, hideDefaultShadow, borderW, borderColor, borderRadius } =
+  const { skin, borderW, borderColor, borderRadius } =
     socialCardChrome(cardStyle);
   const href = normalizeThreadsPermalink(post.permalink) || post.permalink;
   const scale = dw / nw;
   const scaledH = nh * scale;
-  const oy = Math.min(0, Math.round((dh - scaledH) / 2));
+  const oy = 0;
 
   useEffect(() => {
     const el = rootRef.current;
@@ -853,18 +865,19 @@ function ThreadsEmbedCard({
   return (
     <div
       ref={rootRef}
-      className={`relative overflow-hidden ${
+      className={`relative mr-auto overflow-hidden ${
         cardStyle?.card_bg ? "" : "bg-white"
-      } ${hideDefaultShadow ? "" : "shadow-sm"}`}
+      }`}
       data-social-open={post.permalink}
       style={{
         width: dw,
+        maxWidth: "100%",
         height: dh,
-        aspectRatio: "9 / 16",
+        aspectRatio: `${THREADS_NATIVE_W} / ${THREADS_NATIVE_H}`,
         border: `${borderW}px solid ${borderColor}`,
         borderRadius,
         background: skin.background || "#fff",
-        boxShadow: skin.boxShadow,
+        boxShadow: "none",
         boxSizing: "border-box",
       }}
     >
@@ -963,15 +976,13 @@ function SocialEmbedCard({
   const isFb = post.platform === "facebook" || post.kind === "facebook";
   const { w: nw, h: nh } = socialNativeSize(post);
   const { dw, dh } = socialCardSize(slotW, maxH, isFb ? "facebook" : "instagram");
-  const { skin, hideDefaultShadow, borderW, borderColor, borderRadius } =
+  const { skin, borderW, borderColor, borderRadius } =
     socialCardChrome(cardStyle);
 
-  // FB：cover 撐滿外框；IG：依寬縮放、置頂裁底留言列
-  const scale = isFb ? Math.max(dw / nw, dh / nh) : dw / nw;
-  const scaledW = nw * scale;
-  const scaledH = nh * scale;
-  const ox = isFb ? Math.round((dw - scaledW) / 2) : 0;
-  const oy = isFb ? Math.round((dh - scaledH) / 2) : 0;
+  // FB／IG：依寬縮放、置頂；FB 卡片可捲動避免長文被裁
+  const scale = dw / nw;
+  const ox = 0;
+  const oy = 0;
 
   const frameBg = isFb
     ? skin.background || "#fff"
@@ -979,43 +990,54 @@ function SocialEmbedCard({
 
   return (
     <div
-      className={`relative mx-auto overflow-hidden ${hideDefaultShadow ? "" : "shadow-sm"}`}
+      className="relative mr-auto overflow-hidden"
       data-social-open={post.permalink}
       style={{
         width: dw,
+        maxWidth: "100%",
         height: dh,
-        aspectRatio: isFb ? `${1 / FB_CARD_HW}` : "9 / 16",
+        aspectRatio: isFb
+          ? `${FB_NATIVE_W} / ${FB_NATIVE_H}`
+          : "9 / 16",
         border: `${borderW}px solid ${borderColor}`,
         borderRadius,
         background: frameBg,
-        boxShadow: skin.boxShadow,
+        boxShadow: "none",
         boxSizing: "border-box",
       }}
     >
-      <iframe
-        title={post.label}
-        src={
-          isFb
-            ? post.embedSrc.replace(/([?&])width=\d+/i, `$1width=${FB_NATIVE_W}`) ||
-              post.embedSrc
-            : post.embedSrc
-        }
-        className="pointer-events-none"
+      <div
+        className="relative"
         style={{
-          position: "absolute",
-          top: oy,
-          left: ox,
-          width: nw,
-          height: nh,
-          border: 0,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-          background: isFb ? "#fff" : "#000",
+          width: dw,
+          height: dh,
         }}
-        loading="lazy"
-        scrolling="no"
-        referrerPolicy="strict-origin-when-cross-origin"
-      />
+      >
+        <iframe
+          title={post.label}
+          src={
+            isFb
+              ? post.embedSrc.replace(/([?&])width=\d+/i, `$1width=${FB_NATIVE_W}`) ||
+                post.embedSrc
+              : post.embedSrc
+          }
+          className="pointer-events-none"
+          style={{
+            position: "absolute",
+            top: oy,
+            left: ox,
+            width: nw,
+            height: nh,
+            border: 0,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+            background: isFb ? "#fff" : "#000",
+          }}
+          loading="lazy"
+          scrolling="no"
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      </div>
       {!editable ? (
         <button
           type="button"
@@ -1037,17 +1059,21 @@ function SocialEmbedCard({
 function fitSocialCount(boxW, gapPx, wanted, n) {
   const cap = Math.min(4, wanted, n);
   if (boxW <= 0) return Math.max(1, cap);
+  // 預留邊界，避免最右一則被容器裁切（與 IG 一致：只顯示能完整放下的張數）
+  const usable = Math.max(0, boxW - 12);
   const maxFit = Math.max(
     1,
-    Math.floor((boxW + gapPx) / (SOCIAL_CARD_MIN + gapPx)),
+    Math.floor((usable + gapPx) / (SOCIAL_CARD_MIN + gapPx)),
   );
-  return Math.min(4, n, wanted, maxFit);
+  return Math.min(cap, maxFit);
 }
 
 function socialSlotWidth(boxW, gapPx, shown) {
   if (boxW <= 0 || shown <= 0) return SOCIAL_CARD_MAX;
-  const raw = Math.floor((boxW - gapPx * (shown - 1)) / shown);
-  return Math.min(SOCIAL_CARD_MAX, Math.max(SOCIAL_CARD_MIN, raw));
+  const usable = Math.max(0, boxW - 12);
+  const raw = Math.floor((usable - gapPx * (shown - 1)) / shown);
+  // 不可把寬度抬高到超出容器（否則最右會被裁）
+  return Math.min(SOCIAL_CARD_MAX, Math.max(160, raw));
 }
 
 function useDragScroll(ref, enabled, dragFlagRef, onTapRef, suppressClickRef) {
@@ -1108,14 +1134,36 @@ function useDragScroll(ref, enabled, dragFlagRef, onTapRef, suppressClickRef) {
 }
 
 function socialAuthorKey(post) {
+  if (post?.platform === "facebook" || post?.kind === "facebook") {
+    const u = String(post?.permalink || "");
+    const page = u.match(
+      /facebook\.com\/(?:pages\/)?([^/?#]+)\/(?:posts|videos|photos|reel|reels)/i,
+    );
+    if (page?.[1] && !/^(watch|share|story\.php|permalink\.php)$/i.test(page[1])) {
+      return `fb:${decodeURIComponent(page[1]).toLowerCase()}`;
+    }
+    // 無法判斷粉專時回空字串 → 燈箱改用本區塊全部貼文
+    return "";
+  }
   const fromProfile = String(post?.profileUrl || "")
     .replace(/\/+$/, "")
     .toLowerCase();
-  if (fromProfile) return fromProfile;
+  if (
+    fromProfile &&
+    !fromProfile.includes("/posts/") &&
+    !fromProfile.includes("/post/")
+  ) {
+    return fromProfile;
+  }
   const m = String(post?.permalink || "").match(
     /(?:instagram\.com|threads\.com|threads\.net)\/(@?[^/?#]+)/i,
   );
-  return m ? `https://www.instagram.com/${m[1].replace(/^@/, "")}`.toLowerCase() : "";
+  if (!m) return "";
+  const handle = m[1].replace(/^@/, "").toLowerCase();
+  if (post?.platform === "threads" || post?.kind === "threads") {
+    return `https://www.threads.com/@${handle}`;
+  }
+  return `https://www.instagram.com/${handle}`;
 }
 
 function mergeLightboxPosts(displayPosts, navPosts) {
@@ -1194,7 +1242,11 @@ function SocialPostPublic({
     (post) => {
       if (editable || !post) return;
       if (dragSuppressRef.current) return;
-      const pool = postsSameAuthor(allPosts, post);
+      // IG：同作者；FB／Threads：本區塊全部貼文（含燈箱專用 nav_urls）才能左右輪播
+      const pool =
+        platform === "instagram"
+          ? postsSameAuthor(allPosts, post)
+          : allPosts;
       const i = pool.findIndex(
         (p) => p.permalink === post.permalink || p.embedSrc === post.embedSrc,
       );
@@ -1202,7 +1254,7 @@ function SocialPostPublic({
       setLbIndex(i >= 0 ? i : 0);
       setLbOpen(true);
     },
-    [editable, allPosts],
+    [editable, allPosts, platform],
   );
 
   onTapRef.current = (e) => {
@@ -1292,7 +1344,7 @@ function SocialPostPublic({
       <>
         <div
           ref={boxRef}
-          className="w-full flex flex-col items-center"
+          className={`w-full flex flex-col ${n === 1 ? "items-start" : "items-center"}`}
           style={{ gap: gapPx }}
         >
           {posts.map((post) => card(post, post.permalink || post.embedSrc))}
@@ -1330,9 +1382,10 @@ function SocialPostPublic({
             <div
               key={`${post.permalink || post.embedSrc}-${idx}`}
               data-social-open={post.permalink}
-              className="shrink-0 flex justify-start"
+              className="shrink-0 flex justify-start overflow-hidden"
               style={{
                 width: slotW,
+                maxWidth: slotW,
                 scrollSnapAlign: "start",
               }}
             >
@@ -1375,7 +1428,7 @@ function SocialPostPublic({
         gridTemplateColumns: `repeat(${shown}, minmax(0, 1fr))`,
         gap: gapPx,
         alignItems: "start",
-        justifyItems: "center",
+        justifyItems: n === 1 ? "start" : "center",
       }}
     >
       {posts.map((post) => card(post, post.permalink || post.embedSrc))}

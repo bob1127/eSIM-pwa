@@ -17,6 +17,7 @@ import { clientWarn, clientError } from "@/lib/clientLogger";
 import {
   readPendingPayment,
   writePendingPayment,
+  clearPendingPayment,
   isPendingPaymentActive,
   getPendingPaymentBlockMessage,
 } from "@/lib/checkoutPendingPayment";
@@ -376,12 +377,17 @@ const CheckoutForm = ({
 
       if (!orderResult.success) {
         if (orderResult.code === "CART_COMPLETED") {
-          localStorage.removeItem("medusa_cart_id");
+          // 本機商品保留；重建 Medusa cart 後可再結帳
+          if (typeof onCartNeedsRebuild === "function") {
+            await onCartNeedsRebuild();
+          } else {
+            localStorage.removeItem("medusa_cart_id");
+            window.location.reload();
+          }
           alert(
             orderResult.message ||
-              "購物車已結帳完成，請重新整理頁面後再加入商品並結帳。",
+              "購物車狀態已更新，本機商品仍保留，請再按一次結帳。",
           );
-          window.location.reload();
           return;
         }
         if (
@@ -397,19 +403,18 @@ const CheckoutForm = ({
 
       const { orderId, amount } = orderResult;
 
+      // 只丟棄已 complete 的 Medusa cart id；本機購物車商品保留到 thank-you 付款成功／ATM 取號成功再清
       localStorage.removeItem("medusa_cart_id");
 
-      sessionStorage.setItem(
-        "checkout_pending_payment",
-        JSON.stringify({
-          method: "newebpay",
-          medusaOrderId: orderId,
-          amount,
-          email: normalizedForm.email,
-          cartId,
-          startedAt: Date.now(),
-        }),
-      );
+      writePendingPayment({
+        method: "newebpay",
+        medusaOrderId: orderId,
+        amount,
+        email: normalizedForm.email,
+        cartId,
+        // 未付款返回時用來重建 Medusa cart
+        preserveLocalCart: true,
+      });
 
       sessionStorage.setItem(
         "newebpay_checkout_payload",
@@ -448,11 +453,9 @@ const CheckoutForm = ({
   const handleLinePaySubmit = async () => {
     if (!assertCheckoutReady("linepay")) return;
 
-    const pending = readPendingPayment();
-    if (pending && isPendingPaymentActive(pending, "linepay")) {
-      alert(getPendingPaymentBlockMessage(pending));
-      return;
-    }
+    // LINE Pay 改為付款成功才建單：未付款返回不會留下訂單，也不阻擋再次結帳。
+    // （藍新 ATM／匯款仍會先建單，走 startHostedCheckout，與此無關。）
+    clearPendingPayment();
 
     const normalizedForm = getNormalizedFormData();
 
@@ -468,7 +471,7 @@ const CheckoutForm = ({
     try {
       persistProfileInBackground();
 
-      // 單一 API：準備地址／運費 + LINE Pay 建單（少一次瀏覽器往返）
+      // 單一 API：準備地址／運費 + LINE Pay request（此時不 complete cart）
       const linepayRes = await fetch("/api/linepay/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -519,9 +522,11 @@ const CheckoutForm = ({
         throw new Error(linepayData?.message || "LINE Pay 建單失敗");
       }
 
+      // 僅作導轉備註；不再用來顯示「等待付款」橫幅（未付款＝無訂單）
       writePendingPayment({
         method: "linepay",
-        medusaOrderId: linepayData.orderId,
+        deferredOrder: true,
+        medusaOrderId: null,
         orderNo: linepayData.orderNo,
         amount: linepayData.amount,
         cartId,

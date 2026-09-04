@@ -195,6 +195,21 @@ export const CartProvider = ({ children }) => {
 
     const initMedusa = async () => {
       const storedId = localStorage.getItem(CART_ID_KEY);
+      const localItems = readLocal();
+
+      const syncLocalToCart = async (id) => {
+        const localEsim = localItems.filter(isEsimItem);
+        for (const item of localEsim) {
+          await tryMedusaAddItem(
+            id,
+            item.variant_id,
+            item.quantity,
+            item.specLabel,
+            item.type,
+          );
+        }
+      };
+
       if (storedId) {
         try {
           const res = await fetch(`${MEDUSA_URL_ENV}/store/carts/${storedId}`, {
@@ -212,6 +227,8 @@ export const CartProvider = ({ children }) => {
         }
         localStorage.removeItem(CART_ID_KEY);
       }
+
+      // 舊 cart 已結帳／失效：建新 cart；若本機還有商品則同步上去（未付款返回不丟車）
       try {
         const res = await fetch(`${MEDUSA_URL_ENV}/store/carts`, {
           method: "POST",
@@ -219,8 +236,13 @@ export const CartProvider = ({ children }) => {
         });
         if (res.ok) {
           const { cart } = await res.json();
-          setCartId(cart.id);
-          localStorage.setItem(CART_ID_KEY, cart.id);
+          if (cart?.id) {
+            localStorage.setItem(CART_ID_KEY, cart.id);
+            setCartId(cart.id);
+            if (localItems.length) {
+              await syncLocalToCart(cart.id);
+            }
+          }
         }
       } catch {
         /* ignore */

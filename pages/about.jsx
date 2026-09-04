@@ -286,7 +286,7 @@ export default function Home() {
               </div>
               <div className="mx-4">
                 <img
-                  src="/素材/形象/Generated-Image-November-15,-2025---5_19PM.png"
+                  src="/images/Generated-Image-November-15,-2025---5_19PM.png"
                   className="max-w-[450px]"
                   alt="scan"
                 />
@@ -314,7 +314,7 @@ export default function Home() {
               </div>
               <div className="mx-4">
                 <img
-                  src="/素材/形象/Generated-Image-November-15,-2025---5_19PM.png"
+                  src="/images/Generated-Image-November-15,-2025---5_19PM.png"
                   className="max-w-[450px]"
                   alt="scan"
                 />

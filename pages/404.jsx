@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Layout from "./Layout";
 import NotFoundPageView from "@/components/errors/NotFoundPageView";
 
 export default function Custom404() {
@@ -8,7 +9,9 @@ export default function Custom404() {
         <title>找不到頁面｜Jeko eSIM</title>
         <meta name="robots" content="noindex" />
       </Head>
-      <NotFoundPageView />
+      <Layout flushTop hideFooter>
+        <NotFoundPageView />
+      </Layout>
     </>
   );
 }

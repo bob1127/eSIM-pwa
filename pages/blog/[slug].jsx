@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo, useCallback } from "react";
 import Layout from "../Layout";
 import { buildBlogPostSeo } from "../../lib/seo.config";
 import Link from "next/link";
@@ -36,7 +36,14 @@ import MediaGalleryLightbox, {
 import ArticleBlogPostLayout from "../../components/Blog/ArticleBlogPostLayout";
 import PartnerBlogArticleView from "../../components/Shop/PartnerBlogArticleView";
 import WpArticleBody from "../../components/Blog/WpArticleBody";
+import ArticleMapToc, {
+  extractArticleH2Headings,
+} from "../../components/Blog/ArticleMapToc";
+import MobileCardCarousel from "@/components/MobileCardCarousel";
+import CategoryPromoCard from "@/components/CategoryPromoCard";
+import { fetchCategoryPromoBanner } from "@/lib/categoryPromoBanner";
 import { buildLoginUrl } from "../../lib/authRedirect";
+import { attributesToProps, domToReact } from "html-react-parser";
 
 import { stripHtml } from "@/lib/stripHtml";
 
@@ -163,6 +170,7 @@ export default function PostPage({
   articleSubCats = [],
   popularTags = [],
   partnerArticle = null,
+  categoryPromo = null,
 }) {
   const router = useRouter();
   const { user, session } = useUser();
@@ -185,10 +193,13 @@ export default function PostPage({
     clearMedia,
   } = useReviewUpload({ session });
 
-  const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [replyToId, setReplyToId] = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [replySubmitting, setReplySubmitting] = useState(false);
+  const [replyError, setReplyError] = useState(null);
   const [openCategory, setOpenCategory] = useState("airport");
   const [reviewMediaGallery, setReviewMediaGallery] = useState({
     isOpen: false,
@@ -219,17 +230,42 @@ export default function PostPage({
     setIsSubmitting(true);
     try {
       await submitReview({
-        rating: newRating,
+        rating: 5,
         content: newComment,
         mediaIds: pendingMedia.map((m) => m.id),
       });
       setNewComment("");
-      setNewRating(5);
       clearMedia();
     } catch (err) {
       setSubmitError(err.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmitReply = async (e, parentId) => {
+    e.preventDefault();
+    if (!user) {
+      router.push(buildLoginUrl(router.asPath));
+      return;
+    }
+    if (!replyText.trim()) {
+      setReplyError("請輸入回覆內容");
+      return;
+    }
+    setReplyError(null);
+    setReplySubmitting(true);
+    try {
+      await submitReview({
+        content: replyText,
+        parentId,
+      });
+      setReplyText("");
+      setReplyToId(null);
+    } catch (err) {
+      setReplyError(err.message);
+    } finally {
+      setReplySubmitting(false);
     }
   };
 
@@ -243,9 +279,53 @@ export default function PostPage({
     } catch {}
   };
 
+  const threadedReviews = useMemo(() => {
+    const flat = Array.isArray(reviews) ? reviews : [];
+    const repliesByParent = new Map();
+    const roots = [];
+    for (const r of flat) {
+      if (r.parent_id) {
+        const list = repliesByParent.get(r.parent_id) || [];
+        list.push(r);
+        repliesByParent.set(r.parent_id, list);
+      } else {
+        roots.push(r);
+      }
+    }
+    roots.sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at),
+    );
+    return roots.map((r) => ({
+      ...r,
+      replies: (repliesByParent.get(r.id) || []).sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at),
+      ),
+    }));
+  }, [reviews]);
+
   const toggleCategory = (id) => {
     setOpenCategory(openCategory === id ? null : id);
   };
+
+  const articleMapHeadings = useMemo(
+    () => extractArticleH2Headings(post?.content?.rendered || ""),
+    [post?.content?.rendered],
+  );
+
+  const articleMapReplaceExtras = useCallback(() => {
+    let h2Index = 0;
+    return {
+      onH2: (node, parseOptions) => {
+        const id = `article-map-${h2Index++}`;
+        const props = attributesToProps(node.attribs || {});
+        return (
+          <h2 {...props} id={id} className="scroll-mt-28">
+            {domToReact(node.children, parseOptions)}
+          </h2>
+        );
+      },
+    };
+  }, []);
 
   if (router.isFallback) {
     return (
@@ -311,6 +391,7 @@ export default function PostPage({
         seo={{
           ...pageSeo,
         }}
+        flushTop
       >
         <ArticleBlogPostLayout
           post={post}
@@ -320,6 +401,7 @@ export default function PostPage({
           articleSubCats={articleSubCats}
           bannerImage={bannerImage}
           shareUrl={`${siteUrl}/blog/${post.slug}`}
+          categoryPromo={categoryPromo}
         />
         <MediaGalleryLightbox
           isOpen={reviewMediaGallery.isOpen}
@@ -343,11 +425,9 @@ export default function PostPage({
         seo={{
           ...pageSeo,
         }}
+        flushTop
       >
         <div className="bg-white min-h-screen pb-24 font-sans text-[#333]">
-          {/* =========================================
-              滿版視差橫幅
-          ========================================= */}
           <ParallaxImage
             src={bannerImage}
             title={stripHtml(post.title.rendered)}
@@ -357,13 +437,13 @@ export default function PostPage({
           {/* =========================================
               三欄式主體架構
           ========================================= */}
-          <div className="max-w-[1480px] w-[94%] mx-auto mt-12 md:mt-20 flex flex-col xl:flex-row items-start gap-8 lg:gap-10">
+          <div className="max-w-[1480px] w-[94%] mx-auto mt-16 md:mt-24 flex flex-col xl:flex-row items-start gap-8 lg:gap-10">
             {/* -----------------------------------------
                 [左側] 延伸文章分類導覽 (Sticky)
             ----------------------------------------- */}
-            <aside className="w-full xl:w-[280px] shrink-0 xl:sticky xl:top-[120px] order-2 xl:order-1">
-              <div className="bg-[#f9f9f9] border border-[#e5e5e5] rounded-[4px] overflow-hidden shadow-sm">
-                <div className="bg-[#111] text-white py-3.5 px-5 font-bold text-[14px] tracking-widest text-center">
+            <aside className="w-full xl:w-[280px] shrink-0 xl:sticky xl:top-[160px] order-2 xl:order-1">
+              <div className="bg-[#f9f9f9] border border-[#e5e5e5] rounded-[8px] overflow-hidden shadow-sm">
+                <div className="bg-[#1E4AD1] text-white py-3.5 px-5 font-bold text-[14px] tracking-widest text-center">
                   延伸閱讀：日本攻略
                 </div>
                 <div className="divide-y divide-[#e5e5e5]">
@@ -477,10 +557,16 @@ export default function PostPage({
                     </div>
                   </header>
 
+                  <ArticleMapToc
+                    headings={articleMapHeadings}
+                    className="mb-10"
+                  />
+
                   {/* 內文區塊 */}
                   <WpArticleBody
                     html={post.content.rendered}
                     className="entry-content max-w-none mb-24"
+                    replaceExtras={articleMapReplaceExtras}
                     lightboxTitle={
                       post.title?.rendered
                         ? String(post.title.rendered).replace(/<[^>]+>/g, "")
@@ -488,26 +574,6 @@ export default function PostPage({
                     }
                   />
                 </article>
-
-                {/* PR TIMES 區塊：媒體/合作夥伴專區 */}
-                <div className="bg-[#f9f9f9] border border-[#e5e5e5] py-16 px-6 text-center mb-16">
-                  <p className="font-bold text-[15px] md:text-[16px] text-[#111] mb-8 tracking-wider">
-                    本新聞稿包含提供給旅遊同業及媒體關係者的專屬資訊
-                  </p>
-                  <div className="flex flex-col sm:flex-row justify-center gap-4 mb-6">
-                    <button className="bg-[#111] hover:bg-[#333] text-white px-8 py-3.5 text-[14px] font-bold sm:w-[240px] transition-colors tracking-widest shadow-sm">
-                      合作夥伴登入
-                    </button>
-                    <button className="bg-[#0056b3] hover:bg-[#004494] text-white px-8 py-3.5 text-[14px] font-bold sm:w-[240px] transition-colors tracking-widest shadow-sm">
-                      合作夥伴免費註冊
-                    </button>
-                  </div>
-                  <p className="text-[13px] text-[#666] leading-[1.8] tracking-wider">
-                    註冊成為合作夥伴後，可獲得企業專屬的高畫質 eSIM 產品圖片、
-                    <br className="hidden sm:block" />
-                    最新漫遊促銷資訊及專屬優惠碼等特權內容。
-                  </p>
-                </div>
 
                 {/* 底部麵包屑 */}
                 <div className="border-t border-[#e5e5e5] py-5 mb-16 text-[13px] text-[#666] flex flex-wrap items-center gap-3 tracking-wider">
@@ -556,23 +622,6 @@ export default function PostPage({
                       <h4 className="text-[14px] font-bold mb-6 tracking-widest">
                         撰寫您的體驗
                       </h4>
-
-                      {/* 星評 */}
-                      <div className="flex items-center gap-2 mb-6">
-                        <span className="text-[13px] text-[#666] tracking-wider mr-2">
-                          推薦指數
-                        </span>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            type="button"
-                            key={star}
-                            onClick={() => setNewRating(star)}
-                            className={`text-xl transition-colors ${star <= newRating ? "text-yellow-400" : "text-[#ddd]"}`}
-                          >
-                            ★
-                          </button>
-                        ))}
-                      </div>
 
                       {/* 文字 */}
                       <textarea
@@ -719,7 +768,7 @@ export default function PostPage({
                     /* 未登入提示 */
                     <div className="bg-[#f9f9f9] border border-[#e5e5e5] p-8 mb-12 flex flex-col sm:flex-row items-center justify-between gap-4">
                       <p className="text-[14px] text-[#555] tracking-wide">
-                        登入後即可留下您的旅遊心得與評分
+                        登入後即可留下您的旅遊心得
                       </p>
                       <Link
                         href={buildLoginUrl(router.asPath || `/blog/${post?.slug}`)}
@@ -743,20 +792,19 @@ export default function PostPage({
                     <p className="text-[13px] text-red-400 py-6">
                       {reviewsError}
                     </p>
-                  ) : reviews.length === 0 ? (
+                  ) : threadedReviews.length === 0 ? (
                     <p className="text-[14px] text-[#999] py-10 text-center tracking-wider">
                       還沒有評論，成為第一個留言的旅人吧！
                     </p>
                   ) : (
                     <div className="space-y-6">
-                      {reviews.map((review) => (
+                      {threadedReviews.map((review) => (
                         <div
                           key={review.id}
                           className="border-b border-[#e5e5e5] pb-6 last:border-0"
                         >
                           <div className="flex justify-between items-start mb-3">
                             <div className="flex items-start gap-3">
-                              {/* 頭像 */}
                               {review.user_avatar ? (
                                 <img
                                   src={review.user_avatar}
@@ -777,15 +825,11 @@ export default function PostPage({
                                     {formatDate(review.created_at)}
                                   </span>
                                 </div>
-                                <div className="flex text-yellow-400 text-[13px]">
-                                  {"★".repeat(review.rating)}
-                                  {"☆".repeat(5 - review.rating)}
-                                </div>
                               </div>
                             </div>
 
-                            {/* 按讚 */}
                             <button
+                              type="button"
                               onClick={() =>
                                 handleToggleLike(
                                   review.id,
@@ -828,12 +872,10 @@ export default function PostPage({
                             </button>
                           </div>
 
-                          {/* 評論內文 */}
                           <p className="text-[14px] text-[#333] leading-[1.8] tracking-wide ml-11">
                             {review.content}
                           </p>
 
-                          {/* 附件媒體 */}
                           {review.blog_review_media?.length > 0 && (
                             <ReviewMediaThumbnails
                               media={review.blog_review_media}
@@ -847,6 +889,147 @@ export default function PostPage({
                               }
                             />
                           )}
+
+                          <div className="ml-11 mt-3 flex items-center gap-4">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!user) {
+                                  router.push(buildLoginUrl(router.asPath));
+                                  return;
+                                }
+                                setReplyError(null);
+                                setReplyText("");
+                                setReplyToId(
+                                  replyToId === review.id ? null : review.id,
+                                );
+                              }}
+                              className="text-[12px] font-bold text-[#1E4AD1] hover:underline tracking-wide"
+                            >
+                              {replyToId === review.id ? "取消回覆" : "回覆"}
+                            </button>
+                            {review.replies?.length > 0 ? (
+                              <span className="text-[12px] text-[#999]">
+                                {review.replies.length} 則回覆
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {replyToId === review.id ? (
+                            <form
+                              onSubmit={(e) => handleSubmitReply(e, review.id)}
+                              className="ml-11 mt-3 rounded-[8px] border border-[#e5e5e5] bg-[#f9f9f9] p-4"
+                            >
+                              <textarea
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                placeholder={`回覆 ${review.user_name}…`}
+                                rows={3}
+                                className="w-full p-3 border border-[#e5e5e5] bg-white text-[14px] leading-relaxed resize-y focus:outline-none focus:border-[#1E4AD1]"
+                              />
+                              {replyError ? (
+                                <p className="text-[12px] text-red-500 mt-2">
+                                  {replyError}
+                                </p>
+                              ) : null}
+                              <div className="mt-3 flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReplyToId(null);
+                                    setReplyText("");
+                                    setReplyError(null);
+                                  }}
+                                  className="px-4 py-2 text-[12px] font-bold text-[#666] hover:text-[#111]"
+                                >
+                                  取消
+                                </button>
+                                <button
+                                  type="submit"
+                                  disabled={replySubmitting}
+                                  className="bg-[#1E4AD1] text-white px-5 py-2 text-[12px] font-bold tracking-wide hover:bg-[#1639a8] disabled:opacity-50 rounded-[4px]"
+                                >
+                                  {replySubmitting ? "送出中…" : "送出回覆"}
+                                </button>
+                              </div>
+                            </form>
+                          ) : null}
+
+                          {review.replies?.length > 0 ? (
+                            <div className="ml-11 mt-4 space-y-4 border-l-2 border-[#e8e8e8] pl-4">
+                              {review.replies.map((reply) => (
+                                <div key={reply.id}>
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-start gap-2.5">
+                                      {reply.user_avatar ? (
+                                        <img
+                                          src={reply.user_avatar}
+                                          alt={reply.user_name}
+                                          className="w-7 h-7 rounded-full object-cover shrink-0"
+                                        />
+                                      ) : (
+                                        <div className="w-7 h-7 rounded-full bg-[#64748b] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                                          {reply.user_name?.[0]?.toUpperCase() ||
+                                            "U"}
+                                        </div>
+                                      )}
+                                      <div>
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                          <span className="font-bold text-[13px]">
+                                            {reply.user_name}
+                                          </span>
+                                          <span className="text-[#999] text-[11px]">
+                                            {formatDate(reply.created_at)}
+                                          </span>
+                                        </div>
+                                        <p className="text-[13px] text-[#333] leading-[1.7]">
+                                          {reply.content}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleToggleLike(
+                                          reply.id,
+                                          reply.is_liked_by_me,
+                                        )
+                                      }
+                                      className="flex items-center gap-1.5 text-[11px] shrink-0"
+                                    >
+                                      <svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 24 24"
+                                        fill={
+                                          reply.is_liked_by_me
+                                            ? "#ef4444"
+                                            : "none"
+                                        }
+                                        stroke={
+                                          reply.is_liked_by_me
+                                            ? "#ef4444"
+                                            : "#999"
+                                        }
+                                        strokeWidth="2"
+                                      >
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                      </svg>
+                                      <span
+                                        className={
+                                          reply.is_liked_by_me
+                                            ? "text-[#ef4444] font-bold"
+                                            : "text-[#999]"
+                                        }
+                                      >
+                                        {reply.likes}
+                                      </span>
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       ))}
                     </div>
@@ -858,39 +1041,15 @@ export default function PostPage({
             {/* -----------------------------------------
                 [右側] 變現廣告區塊 (Sticky)
             ----------------------------------------- */}
-            <aside className="w-full xl:w-[320px] shrink-0 xl:sticky xl:top-[120px] order-3 flex flex-col gap-6">
-              {/* Ad 1: eSIM 折扣碼 */}
-              <div className="bg-gradient-to-br from-[#111] to-[#333] text-white rounded-[8px] p-6 shadow-lg relative overflow-hidden group">
-                <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
-                <span className="bg-[#ff4757] text-white text-[11px] font-bold px-3 py-1 rounded-sm tracking-wider uppercase mb-3 inline-block">
-                  獨家優惠
-                </span>
-                <h4 className="text-[18px] font-bold mb-2 tracking-wide">
-                  日本 eSIM 吃到飽方案
-                </h4>
-                <p className="text-[13px] text-white/80 mb-5 leading-relaxed">
-                  輸入折扣碼即享 9 折優惠，免換卡掃碼即用，打卡找路不斷線！
-                </p>
-                <div className="bg-black/50 border border-white/20 rounded-[4px] p-3 text-center mb-4 flex items-center justify-between">
-                  <span className="text-[14px] font-mono font-bold tracking-widest">
-                    WMESIM2026
-                  </span>
-                  <button className="text-[12px] text-[#ff4757] font-bold hover:text-white transition-colors">
-                    複製
-                  </button>
-                </div>
-                <Link
-                  href="#"
-                  className="block w-full bg-white text-[#111] text-center py-3 text-[14px] font-bold rounded-[4px] hover:bg-[#f0f0f0] transition-colors"
-                >
-                  立即前往購買
-                </Link>
-              </div>
+            <aside className="w-full xl:w-[320px] shrink-0 xl:sticky xl:top-[160px] order-3 flex flex-col gap-6">
+              {categoryPromo ? (
+                <CategoryPromoCard promo={categoryPromo} />
+              ) : null}
             </aside>
           </div>
 
           {/* =========================================
-              底部相關文章 (PR TIMES 滿版風格)
+              底部相關文章：自動無限輪播
           ========================================= */}
           <section className="mb-0 pt-16 mt-16 border-t border-[#e5e5e5]">
             <div className="max-w-[1200px] w-[92%] mx-auto">
@@ -906,23 +1065,33 @@ export default function PostPage({
                 </Link>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                {relatedPosts.length > 0 ? (
-                  relatedPosts.slice(0, 4).map((item) => {
+              {relatedPosts.length > 0 ? (
+                <MobileCardCarousel
+                  label="相關文章輪播"
+                  slideClassName="box-border shrink-0 flex-[0_0_78%] min-w-[78%] max-w-[78%] sm:flex-[0_0_48%] sm:min-w-[48%] sm:max-w-[48%] lg:flex-[0_0_calc((100%-36px)/3)] lg:min-w-[calc((100%-36px)/3)] lg:max-w-[calc((100%-36px)/3)] xl:flex-[0_0_calc((100%-48px)/4)] xl:min-w-[calc((100%-48px)/4)] xl:max-w-[calc((100%-48px)/4)]"
+                  gap={16}
+                  autoplay
+                  autoplayDelay={4000}
+                  loop={relatedPosts.length > 2}
+                  showArrows={relatedPosts.length > 1}
+                  arrowsOutside
+                  hideArrowsOnMobile
+                  align="start"
+                >
+                  {relatedPosts.slice(0, 12).map((item) => {
                     let previewImg = "/default-esim.jpg";
                     if (item._embedded?.["wp:featuredmedia"]?.[0]?.source_url) {
                       previewImg = normalizeWpAssetUrl(
                         item._embedded["wp:featuredmedia"][0].source_url,
                       );
                     }
-
                     return (
                       <Link
                         href={`/blog/${item.slug}`}
-                        key={item.id}
-                        className="group block"
+                        key={item.id || item.slug}
+                        className="group block h-full"
                       >
-                        <div className="w-full aspect-[4/3] bg-[#f5f5f5] overflow-hidden mb-4 border border-[#eee]">
+                        <div className="w-full aspect-[4/3] bg-[#f5f5f5] overflow-hidden mb-4 border border-[#eee] rounded-[8px]">
                           <img
                             src={previewImg}
                             alt={stripHtml(item.title.rendered)}
@@ -942,13 +1111,13 @@ export default function PostPage({
                         </div>
                       </Link>
                     );
-                  })
-                ) : (
-                  <p className="text-[13px] text-[#999] col-span-4 tracking-widest">
-                    目前尚無相關文章
-                  </p>
-                )}
-              </div>
+                  })}
+                </MobileCardCarousel>
+              ) : (
+                <p className="text-[13px] text-[#999] tracking-widest">
+                  目前尚無相關文章
+                </p>
+              )}
             </div>
           </section>
         </div>
@@ -1261,6 +1430,7 @@ export async function getStaticProps({ params }) {
           articleCountry: null,
           articleSubCats: ["合作夥伴供稿"],
           popularTags: ["#合作夥伴供稿", "#旅遊", "#eSIM"],
+          categoryPromo: null,
         },
         revalidate: 3600,
       };
@@ -1284,18 +1454,24 @@ export async function getStaticProps({ params }) {
       .slice(0, 12)
       .map((name) => `#${name}`);
 
+    const articleCountry =
+      classified.articleCountry || classified.knowledgeCountry || null;
+    const categoryPromo = await fetchCategoryPromoBanner({
+      countryName: articleCountry,
+    });
+
     return {
       props: {
         post: slimWpPostForPage(post),
         relatedPosts: relatedRaw.map(slimWpPostCard).filter(Boolean),
         isArticle: !!classified.isArticle,
-        articleCountry:
-          classified.articleCountry || classified.knowledgeCountry || null,
+        articleCountry,
         articleSubCats: [
           ...(classified.articleSubCats || []),
           ...(classified.knowledgeSubCats || []),
         ],
         popularTags,
+        categoryPromo,
       },
       revalidate: 3600,
     };

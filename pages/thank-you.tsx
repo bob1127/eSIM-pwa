@@ -418,11 +418,19 @@ export default function ThankYouPage() {
         fulfillmentStatus ? String(fulfillmentStatus) : null,
       );
 
-      if (!clearedOnceRef.current && isPaid(orderInfo)) {
+      // 正常結帳才清空購物車：已付款，或 ATM／超商已成功取號（訂單已成立）
+      // 未付款直接返回上一頁不會進這裡，本機商品會保留
+      const paid = isPaid(orderInfo);
+      const statusLower = String(orderInfo?.status || "").toLowerCase();
+      const payFailed =
+        /fail|error|cancel|unpaid|reject/.test(statusLower) && !paid;
+      const offsiteOk = Boolean(offsiteInfo) && Boolean(orderInfo) && !payFailed;
+      if (!clearedOnceRef.current && (paid || offsiteOk)) {
         clearedOnceRef.current = true;
         clearCart();
         try {
           sessionStorage.removeItem("checkout_pending_payment");
+          sessionStorage.removeItem("newebpay_checkout_payload");
         } catch {
           /* ignore */
         }

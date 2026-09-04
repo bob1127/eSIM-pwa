@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { ChevronUp } from "lucide-react";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
 import { domToReact, attributesToProps } from "html-react-parser";
@@ -14,68 +13,67 @@ import {
 import { SOCIAL_LINKS } from "@/lib/seo.config";
 import WpArticleBody from "@/components/Blog/WpArticleBody";
 import BlogCreatorEngageBar from "@/components/Blog/BlogCreatorEngageBar";
+import CategoryPromoCard from "@/components/CategoryPromoCard";
+import ArticleMapToc, {
+  extractArticleH2Headings,
+} from "@/components/Blog/ArticleMapToc";
+import MobileCardCarousel from "@/components/MobileCardCarousel";
 
 import { stripHtml } from "@/lib/stripHtml";
 
-const RELATED_PER_PAGE = 6;
+const SKIP_CATEGORY_NAMES = new Set(["文章", "未分類", "uncategorized"]);
 
-function formatDateJP(isoStr) {
-  if (!isoStr) return "";
-  const d = new Date(isoStr);
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+function termsFromPost(post, taxonomy) {
+  return (
+    post?._embedded?.["wp:term"]
+      ?.flat()
+      ?.filter((t) => t?.taxonomy === taxonomy && t?.name)
+      ?.map((t) => String(t.name).trim())
+      ?.filter(Boolean) || []
+  );
 }
 
-function formatDateMeta(isoStr) {
-  if (!isoStr) return "";
-  const d = new Date(isoStr);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function getPostTerms(post) {
-  if (!post?._embedded?.["wp:term"]) return [];
-  return post._embedded["wp:term"].flat().filter(Boolean);
-}
-
+/** 文章分類標籤：優先用 SSR 傳入的子分類／國家，再補 WP embedded terms */
 function getCategoryLabels(post, articleCountry, articleSubCats = []) {
-  const terms = getPostTerms(post).filter((t) => t.taxonomy === "category");
-  const names = terms
-    .map((t) => t.name)
-    .filter((n) => n && n !== "文章" && n !== "article");
-  if (names.length) return names;
-  if (articleCountry)
-    return [articleCountry, ...articleSubCats].filter(Boolean);
-  return articleSubCats.length ? articleSubCats : ["旅遊"];
+  const labels = [];
+  const push = (name) => {
+    const n = String(name || "").trim();
+    if (!n || SKIP_CATEGORY_NAMES.has(n) || labels.includes(n)) return;
+    labels.push(n);
+  };
+
+  (articleSubCats || []).forEach(push);
+  push(articleCountry);
+  termsFromPost(post, "category").forEach(push);
+
+  return labels;
 }
 
 function getTagLabels(post) {
-  return getPostTerms(post)
-    .filter((t) => t.taxonomy === "post_tag")
-    .map((t) => t.name)
-    .filter(Boolean);
+  return termsFromPost(post, "post_tag");
 }
 
-function extractHeadings(html) {
-  if (!html) return [];
-  const matches = [...html.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)];
-  return matches
-    .map((m, i) => ({
-      id: `heading-${i}`,
-      text: stripHtml(m[1]),
-    }))
-    .filter((h) => h.text)
-    .slice(0, 8);
+/** 相關文章日期：固定格式，避免 Node／瀏覽器 locale 不一致 */
+function formatDateJP(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}.${m}.${day}`;
+}
+
+/** 文章 meta 日期（標題旁）：固定台北日曆，避免 hydration／SSR locale 差異 */
+function formatDateMeta(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  const taipei = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  return `${taipei.getUTCFullYear()}年${taipei.getUTCMonth() + 1}月${taipei.getUTCDate()}日`;
 }
 
 function RelatedArticlesSection({ posts = [] }) {
-  const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(posts.length / RELATED_PER_PAGE));
-  const safePage = Math.min(page, totalPages);
-
-  const pageItems = useMemo(() => {
-    const start = (safePage - 1) * RELATED_PER_PAGE;
-    return posts.slice(start, start + RELATED_PER_PAGE);
-  }, [posts, safePage]);
-
   if (!posts.length) {
     return (
       <section className="mt-16 pt-10 border-t border-[#eee]">
@@ -90,6 +88,8 @@ function RelatedArticlesSection({ posts = [] }) {
     );
   }
 
+  const slides = posts.slice(0, 12);
+
   return (
     <section className="mt-16 pt-10 border-t border-[#eee]">
       <div className="flex items-baseline justify-between gap-3 mb-8">
@@ -99,115 +99,65 @@ function RelatedArticlesSection({ posts = [] }) {
           </h2>
           <span className="text-[14px] text-[#666]">相關文章</span>
         </div>
-        {totalPages > 1 && (
-          <span className="text-[12px] text-[#999] tracking-wide">
-            {safePage} / {totalPages}
-          </span>
-        )}
       </div>
 
-      <div className="relative min-h-[120px]">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={safePage}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8"
-          >
-            {pageItems.map((item) => {
-              let thumb = "/images/placeholder.jpg";
-              if (item._embedded?.["wp:featuredmedia"]?.[0]?.source_url) {
-                thumb = normalizeWpAssetUrl(
-                  item._embedded["wp:featuredmedia"][0].source_url,
-                );
-              }
-              const cats =
-                item._embedded?.["wp:term"]
-                  ?.flat()
-                  ?.filter((t) => t.taxonomy === "category")
-                  ?.map((t) => t.name)
-                  ?.filter((n) => n && n !== "文章") || [];
-
-              return (
-                <Link
-                  key={item.id}
-                  href={`/blog/${item.slug}`}
-                  className="group block"
-                >
-                  <div className="w-full aspect-[3/2] overflow-hidden bg-[#f5f5f5] mb-3">
-                    <img
-                      src={thumb}
-                      alt=""
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                  <p className="text-[11px] font-bold tracking-wider text-[#111] mb-1.5 uppercase">
-                    {cats[0] || "JEKO"}
-                  </p>
-                  <h3
-                    className="text-[15px] font-bold text-[#111] leading-snug line-clamp-3 mb-3 group-hover:text-[#0A6CD0] transition-colors"
-                    dangerouslySetInnerHTML={{ __html: item.title.rendered }}
-                  />
-                  <div className="flex items-center gap-2 text-[12px] text-[#888]">
-                    <span className="w-6 h-6 rounded-full bg-[#0A6CD0] text-white text-[8px] font-black flex items-center justify-center shrink-0">
-                      J
-                    </span>
-                    <span>{formatDateJP(item.date)}</span>
-                    <span>Jeko eSIM</span>
-                  </div>
-                </Link>
-              );
-            })}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      <nav
-        className="mt-10 flex items-center justify-center gap-1"
-        aria-label="相關文章分頁"
+      <MobileCardCarousel
+        label="相關文章輪播"
+        slideClassName="box-border shrink-0 flex-[0_0_78%] min-w-[78%] max-w-[78%] sm:flex-[0_0_48%] sm:min-w-[48%] sm:max-w-[48%] md:flex-[0_0_calc((100%-32px)/3)] md:min-w-[calc((100%-32px)/3)] md:max-w-[calc((100%-32px)/3)]"
+        gap={16}
+        autoplay
+        autoplayDelay={4000}
+        loop={slides.length > 2}
+        showArrows={slides.length > 1}
+        arrowsOutside
+        hideArrowsOnMobile
+        align="start"
       >
-        <button
-          type="button"
-          disabled={safePage <= 1}
-          onClick={() =>
-            setPage((p) => Math.max(1, Math.min(p, totalPages) - 1))
+        {slides.map((item) => {
+          let thumb = "/images/placeholder.jpg";
+          if (item._embedded?.["wp:featuredmedia"]?.[0]?.source_url) {
+            thumb = normalizeWpAssetUrl(
+              item._embedded["wp:featuredmedia"][0].source_url,
+            );
           }
-          className="min-w-[36px] h-9 px-2 text-[13px] text-[#666] disabled:text-[#ccc] disabled:cursor-not-allowed hover:text-[#111] transition-colors"
-          aria-label="上一頁"
-        >
-          ‹
-        </button>
+          const cats =
+            item._embedded?.["wp:term"]
+              ?.flat()
+              ?.filter((t) => t.taxonomy === "category")
+              ?.map((t) => t.name)
+              ?.filter((n) => n && n !== "文章") || [];
 
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => setPage(n)}
-            aria-current={n === safePage ? "page" : undefined}
-            className={`min-w-[36px] h-9 text-[13px] transition-colors ${
-              n === safePage
-                ? "text-[#111] font-bold border-b-2 border-[#111]"
-                : "text-[#999] hover:text-[#111]"
-            }`}
-          >
-            {n}
-          </button>
-        ))}
-
-        <button
-          type="button"
-          disabled={safePage >= totalPages}
-          onClick={() =>
-            setPage((p) => Math.min(totalPages, Math.min(p, totalPages) + 1))
-          }
-          className="min-w-[36px] h-9 px-2 text-[13px] text-[#666] disabled:text-[#ccc] disabled:cursor-not-allowed hover:text-[#111] transition-colors"
-          aria-label="下一頁"
-        >
-          ›
-        </button>
-      </nav>
+          return (
+            <Link
+              key={item.id || item.slug}
+              href={`/blog/${item.slug}`}
+              className="group block h-full"
+            >
+              <div className="w-full aspect-[3/2] overflow-hidden bg-[#f5f5f5] mb-3 rounded-[8px]">
+                <img
+                  src={thumb}
+                  alt=""
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              <p className="text-[11px] font-bold tracking-wider text-[#111] mb-1.5 uppercase">
+                {cats[0] || "JEKO"}
+              </p>
+              <h3
+                className="text-[15px] font-bold text-[#111] leading-snug line-clamp-3 mb-3 group-hover:text-[#0A6CD0] transition-colors"
+                dangerouslySetInnerHTML={{ __html: item.title.rendered }}
+              />
+              <div className="flex items-center gap-2 text-[12px] text-[#888]">
+                <span className="w-6 h-6 rounded-full bg-[#0A6CD0] text-white text-[8px] font-black flex items-center justify-center shrink-0">
+                  J
+                </span>
+                <span>{formatDateJP(item.date)}</span>
+                <span>Jeko eSIM</span>
+              </div>
+            </Link>
+          );
+        })}
+      </MobileCardCarousel>
     </section>
   );
 }
@@ -494,6 +444,7 @@ export default function ArticleBlogPostLayout({
   articleSubCats = [],
   bannerImage,
   shareUrl: shareUrlProp,
+  categoryPromo = null,
   children,
 }) {
   const titleText = stripHtml(post.title.rendered);
@@ -510,7 +461,7 @@ export default function ArticleBlogPostLayout({
   const tagLabels = getTagLabels(post);
   const displayTags =
     tagLabels.length > 0 ? tagLabels : categoryLabels.map((c) => `#${c}`);
-  const headings = extractHeadings(post.content?.rendered || "");
+  const headings = extractArticleH2Headings(post.content?.rendered || "");
   const primaryCat = categoryLabels[0] || articleCountry || "旅遊";
   const sidebarTags =
     popularTags.length > 0
@@ -521,7 +472,7 @@ export default function ArticleBlogPostLayout({
     let h2Index = 0;
     return {
       onH2: (node, parseOptions) => {
-        const id = `heading-${h2Index++}`;
+        const id = `article-map-${h2Index++}`;
         const props = attributesToProps(node.attribs || {});
         return (
           <h2
@@ -537,8 +488,8 @@ export default function ArticleBlogPostLayout({
   }, []);
 
   return (
-    <div className="bg-white min-h-screen pt-10 pb-20 font-sans text-[#333]">
-      <div className="max-w-[1280px] w-[92%] mx-auto pt-6 md:pt-10">
+    <div className="bg-white min-h-screen pb-20 font-sans text-[#333] pt-[96px] lg:pt-[148px]">
+      <div className="max-w-[1280px] w-[92%] mx-auto pt-4 md:pt-6">
         {/* 精選圖：主欄＋側欄同寬滿版、橫式 21:9 */}
         <div className="relative w-full aspect-[21/9] overflow-hidden bg-[#f0f0f0] mb-6 md:mb-8">
           <img
@@ -613,23 +564,7 @@ export default function ArticleBlogPostLayout({
 
             <ShareBar url={shareUrl} title={titleText} />
 
-            {headings.length > 0 && (
-              <div className="mt-8 mb-10 border border-[#e5e5e5]  bg-[#fafafa] px-5 py-5">
-                <p className="text-[16px] font-bold text-[#111] mb-3">概要</p>
-                <ol className="space-y-2">
-                  {headings.map((h, i) => (
-                    <li key={h.id}>
-                      <a
-                        href={`#${h.id}`}
-                        className="text-[14px] text-[#333] hover:text-[#0A6CD0] leading-relaxed"
-                      >
-                        {i + 1}. {h.text}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
+            <ArticleMapToc headings={headings} className="mt-8 mb-10" />
 
             {/* 內文 */}
             <WpArticleBody
@@ -725,6 +660,12 @@ export default function ArticleBlogPostLayout({
 
           {/* ── 側欄 ── */}
           <aside className="w-full lg:w-[300px] shrink-0 lg:sticky lg:top-28 lg:max-h-[calc(100vh-7rem)] lg:flex lg:flex-col lg:overflow-hidden">
+            {categoryPromo ? (
+              <div className="shrink-0 mb-6">
+                <CategoryPromoCard promo={categoryPromo} />
+              </div>
+            ) : null}
+
             <SidebarSection
               title="#熱門標籤"
               href="/blog"

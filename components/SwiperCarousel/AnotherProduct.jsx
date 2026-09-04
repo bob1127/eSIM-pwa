@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination } from "swiper/modules";
+import { Autoplay } from "swiper/modules";
 import "swiper/css";
-import "swiper/css/pagination";
 import LoadingIndicator from "@/components/ui/LoadingIndicator";
 
 function formatPrice(amount) {
@@ -13,8 +12,26 @@ function formatPrice(amount) {
   return `NT$${Math.round(Number(amount)).toLocaleString("zh-TW")}起`;
 }
 
+/** 從購物車列推 category（欄位或缺則從 /product/{cat}/{slug} 解析） */
+function resolveCartCategorySlug(item) {
+  const direct = String(item?.categorySlug || item?.category || "").trim();
+  if (direct) return direct;
+  const href = String(item?.href || "");
+  const m = href.match(/\/product\/([^/]+)\/([^/?#]+)/i);
+  if (m?.[1] && m[1].toLowerCase() !== "product") return m[1];
+  return "";
+}
+
+function resolveCartProductSlug(item) {
+  const direct = String(item?.slug || item?.handle || "").trim();
+  if (direct) return direct;
+  const href = String(item?.href || "");
+  const m = href.match(/\/product\/[^/]+\/([^/?#]+)/i);
+  return m?.[1] || "";
+}
+
 /**
- * 購物車頁：相關 eSIM 自動輪播（獨立區塊）
+ * 購物車頁：同分類 eSIM 自動輪播（無 pagination）
  */
 export default function CartRelatedEsimCarousel({ cartItems = [] }) {
   const [products, setProducts] = useState([]);
@@ -22,10 +39,10 @@ export default function CartRelatedEsimCarousel({ cartItems = [] }) {
 
   const queryKey = useMemo(() => {
     const categories = [
-      ...new Set(cartItems.map((i) => i.categorySlug).filter(Boolean)),
+      ...new Set(cartItems.map(resolveCartCategorySlug).filter(Boolean)),
     ].join(",");
     const exclude = [
-      ...new Set(cartItems.map((i) => i.slug).filter(Boolean)),
+      ...new Set(cartItems.map(resolveCartProductSlug).filter(Boolean)),
     ].join(",");
     return `${categories}|${exclude}`;
   }, [cartItems]);
@@ -35,15 +52,16 @@ export default function CartRelatedEsimCarousel({ cartItems = [] }) {
     setLoading(true);
 
     const categories = [
-      ...new Set(cartItems.map((i) => i.categorySlug).filter(Boolean)),
+      ...new Set(cartItems.map(resolveCartCategorySlug).filter(Boolean)),
     ].join(",");
     const exclude = [
-      ...new Set(cartItems.map((i) => i.slug).filter(Boolean)),
+      ...new Set(cartItems.map(resolveCartProductSlug).filter(Boolean)),
     ].join(",");
 
     const params = new URLSearchParams();
     if (categories) params.set("categories", categories);
     if (exclude) params.set("exclude", exclude);
+    params.set("sameCategoryOnly", "1");
 
     fetch(`/api/cart/related-esim?${params}`)
       .then((r) => r.json())
@@ -78,15 +96,15 @@ export default function CartRelatedEsimCarousel({ cartItems = [] }) {
           其他推薦好商品
         </h2>
         <p className="mt-1 text-[12px] md:text-[13px] text-slate-500">
-          依購物車目的地推薦相關 eSIM
+          依購物車商品種類推薦相同分類 eSIM
         </p>
       </div>
 
       <Swiper
-        modules={[Autoplay, Pagination]}
-        spaceBetween={14}
-        slidesPerView={1.35}
-        loop={products.length > 2}
+        modules={[Autoplay]}
+        spaceBetween={12}
+        slidesPerView={2.15}
+        loop={products.length > 3}
         autoplay={
           products.length > 1
             ? {
@@ -96,38 +114,39 @@ export default function CartRelatedEsimCarousel({ cartItems = [] }) {
               }
             : false
         }
-        pagination={{ clickable: true }}
         breakpoints={{
-          480: { slidesPerView: 2, spaceBetween: 14 },
-          768: { slidesPerView: 2.5, spaceBetween: 16 },
-          1024: { slidesPerView: 3, spaceBetween: 18 },
-          1280: { slidesPerView: 4, spaceBetween: 20 },
+          480: { slidesPerView: 2.4, spaceBetween: 12 },
+          768: { slidesPerView: 3.2, spaceBetween: 14 },
+          1024: { slidesPerView: 4, spaceBetween: 16 },
+          1280: { slidesPerView: 5, spaceBetween: 16 },
         }}
-        className="cart-related-esim-swiper pb-10"
+        className="cart-related-esim-swiper"
       >
         {products.map((p) => (
-          <SwiperSlide key={p.id} className="!h-auto">
+          <SwiperSlide key={p.id}>
             <Link
               href={p.href}
-              className="group flex h-[220px] flex-col border border-slate-200 bg-[#f7f8fa] transition hover:border-[#1E4AD1]/40 hover:bg-white"
+              className="group flex aspect-square flex-col overflow-hidden border border-slate-200 bg-[#f7f8fa] transition hover:border-[#1E4AD1]/40 hover:bg-white"
             >
-              <div className="flex h-[88px] shrink-0 items-center justify-center border-b border-slate-100 bg-white px-3">
+              <div className="relative min-h-0 flex-[1.15] border-b border-slate-100 bg-white">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={p.image || "/images/jeko-esim.png"}
                   alt=""
-                  className="h-14 w-14 object-contain"
+                  className="absolute inset-0 h-full w-full object-contain p-3 md:p-4"
                 />
               </div>
 
-              <div className="flex min-h-0 flex-1 flex-col px-3 py-3">
-                <p className="line-clamp-2 min-h-[2.5rem] text-[13px] font-bold leading-snug text-slate-900 group-hover:text-[#1E4AD1]">
+              <div className="flex shrink-0 flex-col px-2.5 py-2.5 md:px-3 md:py-3">
+                <p className="line-clamp-2 text-[12px] md:text-[13px] font-bold leading-snug text-slate-900 group-hover:text-[#1E4AD1]">
                   {p.name}
                 </p>
-                <p className="mt-1 line-clamp-2 min-h-[2rem] text-[11px] leading-snug text-slate-500">
-                  {p.subtitle || "\u00A0"}
-                </p>
-                <p className="mt-auto pt-2 text-[14px] font-black tabular-nums text-[#0071EB]">
+                {p.subtitle ? (
+                  <p className="mt-0.5 line-clamp-1 text-[10px] md:text-[11px] leading-snug text-slate-500">
+                    {p.subtitle}
+                  </p>
+                ) : null}
+                <p className="mt-1.5 text-[13px] md:text-[14px] font-black tabular-nums text-[#0071EB]">
                   {formatPrice(p.minPrice)}
                 </p>
               </div>
@@ -135,19 +154,6 @@ export default function CartRelatedEsimCarousel({ cartItems = [] }) {
           </SwiperSlide>
         ))}
       </Swiper>
-
-      <style jsx global>{`
-        .cart-related-esim-swiper .swiper-pagination {
-          bottom: 0 !important;
-        }
-        .cart-related-esim-swiper .swiper-pagination-bullet {
-          background: #cbd5e1;
-          opacity: 1;
-        }
-        .cart-related-esim-swiper .swiper-pagination-bullet-active {
-          background: #1e4ad1;
-        }
-      `}</style>
     </div>
   );
 }

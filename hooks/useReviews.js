@@ -48,15 +48,15 @@ export function useReviews({ slug, session }) {
     fetchReviews();
   }, [fetchReviews]);
 
-  // ── 送出評論 ────────────────────────────────────────────────
+  // ── 送出評論／回覆 ──────────────────────────────────────────
   const submitReview = useCallback(
-    async ({ rating, content, mediaIds = [] }) => {
+    async ({ rating, content, mediaIds = [], parentId = null }) => {
       const authHeader = getAuthHeader(session);
       if (!authHeader) throw new Error("請先登入");
       const res = await fetch(`/api/blog/reviews?slug=${encodeURIComponent(slug)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: authHeader },
-        body: JSON.stringify({ rating, content, mediaIds }),
+        body: JSON.stringify({ rating, content, mediaIds, parentId }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "送出失敗");

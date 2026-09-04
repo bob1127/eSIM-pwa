@@ -107,12 +107,12 @@ function LocalVideoPlayer({ src, poster, autoPlay = true }) {
   );
 }
 
-/** 左欄媒體：h = 可見高度；iframe 實際高度 = h + cropBottom（裁掉新增留言） */
+/** 左欄媒體：h = 可見高度；iframe 實際高度 = h + cropBottom（略裁留言列，保留按讚） */
 function igEmbedNativeSize(post) {
   if (post?.kind === "reel" || post?.kind === "tv") {
-    return { w: 540, h: 980, cropBottom: 72 };
+    return { w: 540, h: 1020, cropBottom: 40 };
   }
-  return { w: 540, h: 720, cropBottom: 72 };
+  return { w: 540, h: 780, cropBottom: 40 };
 }
 
 function useIgLightboxFit(nativeW, nativeH, enabled) {
@@ -131,8 +131,8 @@ function useIgLightboxFit(nativeW, nativeH, enabled) {
       const vw = window.innerWidth;
       const showSidebar = vw >= 768;
       const sidebarW = showSidebar ? Math.min(360, Math.round(vw * 0.34)) : 0;
-      const maxH = Math.max(360, Math.min(vh * 0.9, 900));
-      const padX = showSidebar ? 100 : 40;
+      const maxH = Math.max(400, vh * 0.92);
+      const padX = showSidebar ? 100 : 24;
       const maxLeftW = Math.max(
         220,
         Math.min(nativeW, vw - sidebarW - padX),
@@ -285,7 +285,7 @@ function InstagramSlide({ post, active }) {
 
   return (
     <div
-      className="mx-auto flex overflow-hidden rounded-sm bg-black shadow-2xl"
+      className="mx-auto flex overflow-hidden rounded-sm bg-black"
       style={{
         width: fit.showSidebar ? fit.dw + fit.sidebarW : fit.dw,
         height: fit.dh,
@@ -357,32 +357,29 @@ function FacebookSlide({ post, active }) {
   const nh = 720;
   const maxW = Math.min(
     500,
-    typeof window !== "undefined" ? window.innerWidth * 0.92 : 500,
+    typeof window !== "undefined" ? window.innerWidth * 0.94 : 500,
   );
   const maxH =
-    typeof window !== "undefined"
-      ? Math.min(window.innerHeight * 0.85, 780)
-      : 720;
+    typeof window !== "undefined" ? window.innerHeight * 0.88 : 720;
   const scale = Math.min(1, maxW / nw, maxH / nh);
   const dw = Math.round(nw * scale);
-  const dh = Math.round(nh * scale);
   const src =
     post.embedSrc?.replace(/([?&])width=\d+/i, `$1width=${nw}`) ||
     post.embedSrc;
 
   return (
     <div
-      className="relative mx-auto overflow-hidden bg-white shadow-2xl"
+      className="relative mx-auto overflow-hidden bg-white"
       style={{
         width: dw,
-        height: dh,
+        height: Math.round(nh * scale),
         borderRadius: 4,
       }}
     >
       <iframe
         title={post.label || "Facebook"}
         src={src}
-        className="border-0 bg-white"
+        className="pointer-events-none border-0 bg-white"
         style={{
           position: "absolute",
           top: 0,
@@ -416,7 +413,12 @@ function ThreadsSlide({ post, active }) {
 
     const markReady = () => {
       if (cancelled) return;
-      if (wrapRef.current?.querySelector("iframe")) setReady(true);
+      const iframe = wrapRef.current?.querySelector("iframe");
+      if (iframe) {
+        // 讓左右滑動輪播可收到手勢（iframe 會吃掉 touch）
+        iframe.style.pointerEvents = "none";
+        setReady(true);
+      }
     };
     const mo = new MutationObserver(markReady);
     const startMo = () => {
@@ -469,10 +471,10 @@ function ThreadsSlide({ post, active }) {
     <div
       ref={wrapRef}
       key={permalink}
-      className="relative mx-auto overflow-auto bg-white shadow-2xl"
+      className="relative mx-auto overflow-auto bg-white"
       style={{
-        width: "min(540px, 92vw)",
-        maxHeight: "min(85vh, 780px)",
+        width: "min(540px, 94vw)",
+        maxHeight: "min(92vh, 960px)",
         borderRadius: 4,
       }}
     >
@@ -552,8 +554,16 @@ export default function SocialPostsLightbox({
     setLbIndex(initialIndex);
     setIsAutoplay(false);
     document.body.style.overflow = "hidden";
+    document.body.classList.add("jeko-social-lb-open");
+    window.dispatchEvent(
+      new CustomEvent("jeko:social-lightbox", { detail: { open: true } }),
+    );
     return () => {
       document.body.style.overflow = "";
+      document.body.classList.remove("jeko-social-lb-open");
+      window.dispatchEvent(
+        new CustomEvent("jeko:social-lightbox", { detail: { open: false } }),
+      );
     };
   }, [isOpen, initialIndex]);
 
@@ -629,7 +639,7 @@ export default function SocialPostsLightbox({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.22 }}
-          className="fixed inset-0 z-[10050] flex flex-col"
+          className="fixed inset-0 z-[20000] flex flex-col"
           style={{ backgroundColor: "rgba(0, 0, 0, 0.85)" }}
           role="dialog"
           aria-modal="true"
@@ -691,7 +701,7 @@ export default function SocialPostsLightbox({
                 <button
                   type="button"
                   onClick={goPrev}
-                  className="absolute left-2 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/55 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/75 sm:left-4 sm:h-14 sm:w-14 lg:left-6"
+                  className="absolute left-1 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/55 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/75 sm:left-4 sm:h-14 sm:w-14 lg:left-6"
                   aria-label="上一則貼文"
                 >
                   <MaterialIcon name="chevron_left" size={36} />
@@ -699,7 +709,7 @@ export default function SocialPostsLightbox({
                 <button
                   type="button"
                   onClick={goNext}
-                  className="absolute right-2 top-1/2 z-30 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/55 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/75 sm:right-4 sm:h-14 sm:w-14 lg:right-6"
+                  className="absolute right-1 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/55 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/75 sm:right-4 sm:h-14 sm:w-14 lg:right-6"
                   aria-label="下一則貼文"
                 >
                   <MaterialIcon name="chevron_right" size={36} />
@@ -721,8 +731,11 @@ export default function SocialPostsLightbox({
               slidesPerView={1}
               spaceBetween={0}
               allowTouchMove={multi}
+              threshold={8}
+              touchReleaseOnEdges
+              resistanceRatio={0.65}
               onSlideChange={(s) => setLbIndex(s.realIndex)}
-              className="social-posts-lb h-full w-full max-w-[min(96vw,1180px)] px-14 sm:px-20 lg:px-24"
+              className="social-posts-lb h-full w-full max-w-[min(96vw,1180px)] px-12 sm:px-20 lg:px-24"
             >
               {posts.map((post, idx) => {
                 // 預載相鄰張，切換時不必每次從「載入中」重來
@@ -731,9 +744,11 @@ export default function SocialPostsLightbox({
                   idx === (lbIndex + 1) % posts.length ||
                   idx === (lbIndex - 1 + posts.length) % posts.length;
                 return (
-                  <SwiperSlide key={post.permalink || idx}>
-                    <div className="flex h-full w-full items-center justify-center">
-                      <EmbedSlide post={post} active={warm} />
+                  <SwiperSlide key={post.permalink || post.embedSrc || idx}>
+                    <div className="flex h-full w-full items-center justify-center pointer-events-none [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
+                      <div className="pointer-events-auto max-h-full max-w-full">
+                        <EmbedSlide post={post} active={warm} />
+                      </div>
                     </div>
                   </SwiperSlide>
                 );
@@ -745,7 +760,7 @@ export default function SocialPostsLightbox({
             <div className="absolute bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/50 px-3 py-2 backdrop-blur-sm">
               {posts.map((post, idx) => (
                 <button
-                  key={post.permalink || idx}
+                  key={post.permalink || post.embedSrc || idx}
                   type="button"
                   onClick={() => goTo(idx)}
                   className={`h-2.5 rounded-full transition-all ${

@@ -30,7 +30,7 @@ function withRanks(posts) {
   }));
 }
 
-function groupPostsByCategory(follows) {
+function postsFromFollows(follows) {
   const all = [];
   follows.forEach((f) => {
     const profile = f.profile;
@@ -44,6 +44,11 @@ function groupPostsByCategory(follows) {
       });
     });
   });
+  return all;
+}
+
+function groupPostsByCategory(posts) {
+  const all = (posts || []).filter((post) => post?.href && !post.placeholder);
   const ranked = withRanks(all);
   const map = new Map();
   ranked.forEach((post) => {
@@ -52,9 +57,9 @@ function groupPostsByCategory(follows) {
     map.get(label).push(post);
   });
   return [...map.entries()]
-    .map(([label, posts]) => ({
+    .map(([label, list]) => ({
       label,
-      posts: [...posts].sort((a, b) => (a.rank || 99) - (b.rank || 99)),
+      posts: [...list].sort((a, b) => (a.rank || 99) - (b.rank || 99)),
     }))
     .sort(
       (a, b) =>
@@ -186,13 +191,18 @@ function ArticleCarousel({ label, posts, onOpenInner }) {
 
 export default function CreatorFollowFeed({
   follows = [],
+  /** 傳入陣列（可空）→ 下半部為「你的收藏」；不傳則顯示創作者文章流 */
+  savedPosts,
   onUnfollow,
   onOpenInner,
   heading = "追蹤中",
   emptyHint = null,
 }) {
   const items = follows.filter((f) => f.creator_key);
-  const rows = groupPostsByCategory(items);
+  const bookmarkMode = Array.isArray(savedPosts);
+  const rows = groupPostsByCategory(
+    bookmarkMode ? savedPosts : postsFromFollows(items),
+  );
   const { showToast, toastNode } = useEngageToast();
 
   const openInner = (f) => {
@@ -281,9 +291,7 @@ export default function CreatorFollowFeed({
             </div>
           </div>
         </div>
-      ) : null}
-
-      {items.length === 0 ? (
+      ) : (
         emptyHint || (
           <p className="text-sm text-slate-500 leading-relaxed">
             尚未追蹤任何人。到{" "}
@@ -293,8 +301,43 @@ export default function CreatorFollowFeed({
             點創作者「追蹤」，之後發新文可收推播。
           </p>
         )
-      ) : rows.length === 0 ? (
-        <p className="text-sm text-slate-500">追蹤的創作者尚無公開文章。</p>
+      )}
+
+      {bookmarkMode ? (
+        <div className="space-y-6 pt-2">
+          <h2 className="text-[22px] font-black text-slate-900">你的收藏</h2>
+          {rows.length === 0 ? (
+            <p className="text-sm text-slate-500 leading-relaxed">
+              尚未收藏任何文章。在文章頁點愛心即可加入收藏。
+            </p>
+          ) : (
+            <div className="space-y-8">
+              {rows.map((row) => (
+                <ArticleCarousel
+                  key={row.label}
+                  label={row.label}
+                  posts={row.posts}
+                  onOpenInner={
+                    onOpenInner
+                      ? (key) => {
+                          const f = items.find((x) => x.creator_key === key);
+                          if (f?.profile) {
+                            onOpenInner(f.profile);
+                            return;
+                          }
+                          if (typeof window !== "undefined") {
+                            window.location.href = creatorProfileHref(key);
+                          }
+                        }
+                      : null
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : items.length === 0 ? null : rows.length === 0 ? (
+        <p className="text-sm text-slate-500">尚無公開文章。</p>
       ) : (
         <div className="space-y-8">
           {rows.map((row) => (

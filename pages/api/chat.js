@@ -8,7 +8,7 @@ import {
   getClientIp,
   stripClientOverrides,
 } from "../../lib/chatSecurity";
-import { fetchProductKnowledge, fetchProductCards } from "../../lib/chatProducts";
+import { fetchProductBundle } from "../../lib/chatProducts";
 import { fetchArticleKnowledgeByQuery } from "../../lib/chatArticles";
 import { fetchFaqKnowledgeByQuery } from "../../lib/chatFaqKnowledge";
 import { fetchWebKnowledgeByQuery } from "../../lib/chatWebSearch";
@@ -68,7 +68,12 @@ const BASE_SYSTEM_PROMPT = `你是 Jeko eSIM 的專屬 AI 旅行小幫手【J寶
 5. 可使用的 http/https 連結僅限：地圖搜尋連結、商品資料庫連結、Jeko 官網文章連結、【原生 eSIM 收訊／熱點涵蓋】列出的官方／nPerf 涵蓋圖網址、【Jeko 商城推薦】列出的完整購買連結、【Jeko 聯盟推薦】列出的 Klook／KKday 購買連結、以及【網路資料】區塊明確列出的來源網址。禁止發明未列出的連結。
 6. 使用【網路資料】時，開頭簡短註明「以下依公開網頁整理，建議再向官方確認」。
 7. 【禁止競品｜極重要】絕對禁止推薦其他電信／eSIM 電商或比較網站（例如 shannday、bestsim、遠傳、中華、台灣大哥大上網卡賣場、Airalo、Holafly 等）。eSIM 方案只能推薦【商品資料庫】內明確列出的 Jeko 商品與購買連結。
-8. 【禁止捏造商品｜極重要】若【商品資料庫】寫「無庫存／未找到」或沒有列出任何「▸」商品，必須誠實說尚未上架，禁止自行編造方案名稱、電信商（如 AT&T）、天數、流量或價格；可引導至 /product 或轉真人客服。`;
+8. 【禁止捏造商品｜極重要】若【商品資料庫】寫「無庫存／未找到」或沒有列出任何「▸」商品，必須誠實說尚未上架，禁止自行編造方案名稱、電信商（如 AT&T）、天數、流量或價格；可引導至 /product 或轉真人客服。
+9. 【eSIM 推薦順序｜一律遵守】凡使用者問到 eSIM／上網方案／怎麼選／推薦哪一款，在【商品資料庫】有貨時必須依此順序主推（僅限資料庫已列出的商品，禁止捏造）：
+   ① 第一優先：「真・不限速吃到飽」（名稱／標籤含真・不限速、真．不限速吃到飽；非僅限速 Mbps 的假吃到飽）。
+   ② 第二優先：「原生 IP／原生線路」商品（標籤含原生 IP、原生 eSIM；低延遲、在地 IP）。
+   ③ 同順位再依 HOT SALE 電信、用量緩衝規則挑選；使用者若明確指定「只要總量／只要漫遊／只要某電信」則依指定。
+   可推 1～2 個：第 1 個盡量為真・不限速吃到飽；第 2 個可推原生 IP 或留餘裕的總量型。`;
 
 /** 允許的花 emoji；其他 emoji 一律移除 */
 const FLOWER_EMOJI = new Set(["🌼", "🌸", "🌻", "🌺", "💮", "🏵️"]);
@@ -116,10 +121,10 @@ function sanitizeReplyLinks(text) {
 function normalizeHistory(history = []) {
   return (Array.isArray(history) ? history : [])
     .filter((m) => m && typeof m.content === "string" && m.content.trim())
-    .slice(-12)
+    .slice(-6)
     .map((m) => ({
       role: m.role === "assistant" || m.role === "ai" ? "assistant" : "user",
-      content: String(m.content).slice(0, 2000),
+      content: String(m.content).slice(0, 1200),
     }));
 }
 
@@ -130,12 +135,11 @@ function parseDataUrl(dataUrl) {
   return { mimeType: match[1], data: match[2] };
 }
 
-/** 免費路線：Groq 多模型 → Gemini Flash 文字備援（不預設走付費 OpenAI） */
-const GROQ_MODEL_DEFAULT = "openai/gpt-oss-120b";
-const GROQ_MODEL_FALLBACKS = [
-  "qwen/qwen3.6-27b",
-  "openai/gpt-oss-20b",
-];
+/** 免費路線：預設小／快模型；可用 GROQ_MODEL 覆寫成更大模型 */
+const GROQ_MODEL_DEFAULT = "openai/gpt-oss-20b";
+const GROQ_MODEL_FALLBACKS = ["qwen/qwen3.6-27b", "openai/gpt-oss-120b"];
+/** Groq 單模型逾時後換下一個，避免卡在慢模型 */
+const GROQ_MODEL_TIMEOUT_MS = Number(process.env.GROQ_MODEL_TIMEOUT_MS || 9000);
 /** 免費額度看圖／文字：新帳號請用 3.x Flash（2.5 對 new users 已停） */
 const GEMINI_TEXT_MODEL_DEFAULT = "gemini-3.6-flash";
 const GEMINI_VISION_FALLBACKS = [
@@ -177,9 +181,19 @@ function getGeminiVisionModels({ advanced = false } = {}) {
 }
 
 function isTransientModelError(errMsg = "") {
-  return /does not exist|not have access|no longer available|decommissioned|deprecated|model_not_found|rate.?limit|quota|overloaded|unavailable|temporarily|high demand|try again later|429|503|502/i.test(
+  return /does not exist|not have access|no longer available|decommissioned|deprecated|model_not_found|rate.?limit|quota|overloaded|unavailable|temporarily|high demand|try again later|timeout|aborted|429|503|502/i.test(
     String(errMsg),
   );
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = GROQ_MODEL_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function chatWithGroq({ message, history, systemPrompt }) {
@@ -197,7 +211,7 @@ async function chatWithGroq({ message, history, systemPrompt }) {
 
   for (const model of models) {
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         "https://api.groq.com/openai/v1/chat/completions",
         {
           method: "POST",
@@ -208,10 +222,11 @@ async function chatWithGroq({ message, history, systemPrompt }) {
           body: JSON.stringify({
             model,
             messages: allMessages,
-            temperature: 0.5,
-            max_tokens: 1500,
+            temperature: 0.4,
+            max_tokens: 900,
           }),
         },
+        GROQ_MODEL_TIMEOUT_MS,
       );
 
       const data = await response.json();
@@ -302,7 +317,7 @@ async function chatWithGemini({
             contents: [{ role: "user", parts }],
             generationConfig: {
               temperature: 0.4,
-              maxOutputTokens: 2048,
+              maxOutputTokens: 1200,
             },
           }),
         },
@@ -384,8 +399,8 @@ function isEsimFocusQuery(text = "") {
     return true;
   }
   // 明確只要 eSIM，且不是在問周邊／住宿／門票
-  const wantsEsim = /eSIM|esim|上網卡|網卡方案/i.test(t);
-  const asksRecommend = /推薦|方案|怎麼選|哪一款|規劃|適合/.test(t);
+  const wantsEsim = /eSIM|esim|上網卡|網卡方案|吃到飽|不限速|原生\s*IP|流量方案/i.test(t);
+  const asksRecommend = /推薦|方案|怎麼選|哪一款|哪款|規劃|適合|有沒有|多少錢|怎麼買/.test(t);
   const asksOther =
     /充電器|轉接頭|收納|行動電源|商城|\/shop|飯店|住宿|門票|JR\s*PASS|鐵路|周遊券|klook|kkday|交通票/i.test(
       t,
@@ -494,32 +509,39 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 8. 知識庫：eSIM + 聯盟 + 官網文章 → 不足再用網路 ─────────────
+    // ── 8. 知識庫：eSIM 專問精簡路徑；一般問答再補文章／商城／聯盟 ─────
+    const t0 = Date.now();
     const esimOnly = isEsimFocusQuery(msgText);
 
     const coverageKnowledge = fetchNetworkCoverageKnowledge(msgText);
     const hasCoverageKb = Boolean(coverageKnowledge);
 
     const [
-      productKnowledge,
+      productBundle,
       articleResult,
       faqResult,
-      productCards,
       affiliateKnowledge,
       affiliateCards,
       shopKnowledge,
       shopCards,
     ] = await Promise.all([
-      fetchProductKnowledge(msgText),
-      fetchArticleKnowledgeByQuery(msgText),
+      fetchProductBundle(msgText),
+      // eSIM 專推略過 WP 全文搜尋（常是冷啟動瓶頸）
+      esimOnly
+        ? Promise.resolve({ text: "", strongCoverage: false })
+        : fetchArticleKnowledgeByQuery(msgText),
       fetchFaqKnowledgeByQuery(msgText),
-      fetchProductCards(msgText),
-      // eSIM 規劃／推薦：不要帶入商城與聯盟，避免推到充電器、JR PASS 等
       esimOnly ? Promise.resolve("") : Promise.resolve(fetchAffiliateKnowledge(msgText)),
       esimOnly ? Promise.resolve([]) : Promise.resolve(fetchAffiliateCards(msgText)),
       esimOnly ? Promise.resolve("") : Promise.resolve(fetchShopKnowledge(msgText)),
       esimOnly ? Promise.resolve([]) : Promise.resolve(fetchShopCards(msgText)),
     ]);
+
+    const productKnowledge = productBundle?.knowledge || "";
+    const productCards = Array.isArray(productBundle?.cards)
+      ? productBundle.cards
+      : [];
+    const kbMs = Date.now() - t0;
 
     const articleKnowledge =
       typeof articleResult === "string"
@@ -576,8 +598,7 @@ export default async function handler(req, res) {
       coverageKnowledge,
       esimOnly ? "" : shopKnowledge,
       esimOnly ? "" : affiliateKnowledge,
-      // eSIM 專問時文章可留作安裝／注意事項，但仍以商品庫為主
-      articleKnowledge,
+      esimOnly ? "" : articleKnowledge,
       webKnowledge,
       strongFaq
         ? "【本次來源｜人工 FAQ】已命中後台 FAQ 知識庫；請優先依【人工審核 FAQ 知識庫】作答，可改寫語氣但勿改變事實。"
@@ -589,8 +610,9 @@ export default async function handler(req, res) {
         ? productOutOfStock || !hasProductDb
           ? "【本次來源｜eSIM 專推｜無庫存】商品資料庫沒有符合的方案。必須清楚告知尚未上架／找不到；禁止捏造任何 eSIM 方案名稱、電信商、天數、流量、價格或購買連結。可引導至 /product 看其他國家，或請改選目的地／轉真人客服。禁止推薦競品電商。"
           : "【本次來源｜eSIM 專推】使用者只要 eSIM 上網方案。只能依【商品資料庫】列出的商品推薦 1～2 個 Jeko eSIM；聊天室會顯示 eSIM 商品卡。禁止提及或推薦 Jeko 商城配件、Klook／KKday 聯盟商品、門票、鐵路周遊券、住宿。禁止推薦資料庫未列出的方案。\n" +
-            "【HOT SALE 優先｜一律遵守】若商品標註 HOT SALE 電信（例如日本總量型的 AU(KDDI)、KDDI / SoftBank），推薦時一律以該電信商方案為主推；說明時可點出這是熱銷／推薦線路。不要主推非 HOT SALE 電信（如 IIJ(DOCOMO)），除非使用者明確指定。\n" +
-            "【用量緩衝設計｜極重要｜避免客訴】可推 1～2 個：第 1 優先吃到飽／高容量；第 2 可推「明顯留餘裕」的總量型，禁止用「總量÷天數剛好夠」當理由。\n" +
+            "【eSIM 推薦順序｜一律遵守】① 第一優先主推「真・不限速吃到飽」；② 第二優先主推「原生 IP／原生線路」。僅限資料庫已標示／列出者；沒有真・不限速時才改推原生 IP 或其他符合用量規則的方案。\n" +
+            "【HOT SALE 優先｜一律遵守】在上述順序內，若商品標註 HOT SALE 電信（例如日本總量型的 AU(KDDI)、KDDI / SoftBank），推薦時一律以該電信商方案為主推；說明時可點出這是熱銷／推薦線路。不要主推非 HOT SALE 電信（如 IIJ(DOCOMO)），除非使用者明確指定。\n" +
+            "【用量緩衝設計｜極重要｜避免客訴】可推 1～2 個：第 1 優先真・不限速吃到飽／高容量；第 2 可推原生 IP 或「明顯留餘裕」的總量型，禁止用「總量÷天數剛好夠」當理由。\n" +
             "依使用習慣的「建議最低總量」（約等於 天數 × 下列每日下限，再往上取商品庫現有檔）：\n" +
             "- 輕量（地圖／訊息）：每日至少約 1.5GB → 例 10 天至少約 15GB；或吃到飽。禁止推每日均攤＜1GB 的總量。\n" +
             "- 社群／拍照：每日至少約 2.5GB → 例 10 天至少約 25GB；優先吃到飽，其次高總量。\n" +
@@ -601,6 +623,7 @@ export default async function handler(req, res) {
         ? "【本次來源｜無庫存】商品資料庫沒有符合方案。誠實告知尚未上架；禁止捏造商品。可引導 /product 或轉客服。"
         : hasProductCards || hasProductDb
         ? "【本次來源】已提供 Jeko 商品資料庫與／或推薦卡。請只依資料庫列出的商品推薦，並引導點下方商品卡；禁止推薦未列出的方案或外部競品 eSIM／電信網站。" +
+          "【eSIM 推薦順序】問到 eSIM 時：① 真・不限速吃到飽 → ② 原生 IP；再套用 HOT SALE。" +
           "【HOT SALE】若知識庫標了 HOT SALE 電信，一律優先推薦該電信商方案。"
         : hasCoverageKb
         ? "【本次來源】已提供原生 eSIM 收訊／熱點涵蓋資料；請依此說明並附地圖連結，勿臆測未列出的覆蓋細節。"
@@ -621,6 +644,7 @@ export default async function handler(req, res) {
 
     let reply;
     let provider;
+    const tModel = Date.now();
 
     if (useVision) {
       const vision = await chatWithGemini({
@@ -641,6 +665,10 @@ export default async function handler(req, res) {
       reply = textResult.reply;
       provider = textResult.provider || "groq";
     }
+
+    console.info(
+      `[chat] timing kb=${kbMs}ms model=${Date.now() - tModel}ms total=${Date.now() - t0}ms esimOnly=${esimOnly} provider=${provider}`,
+    );
 
     return res.status(200).json({
       reply,

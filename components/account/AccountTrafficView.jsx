@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import AccountIcon from "@/components/account/AccountIcon";
 import { extractEsimsFromOrders } from "@/lib/esimOrderExtract";
-import { formatMb, usagePercent, resolveEsimExpiryDisplay } from "@/lib/esimUsageFormat";
+import { formatMb, usagePercent, isEsimUsageExpired, resolveEsimExpiryForPlan } from "@/lib/esimUsageFormat";
 import {
   isEsimNotInstalledForUsage,
   canShowEsimUsageStats,
@@ -26,6 +26,7 @@ import {
   subscribePushNotifySync,
 } from "@/lib/pushNotifySync";
 import { useUser } from "@/components/context/UserContext";
+import { formatEsimValidityLinesZh } from "@/lib/esimDisplayZh";
 import {
   AccountPageWrap,
   AccountBadge,
@@ -99,10 +100,16 @@ function isUnlimitedEsim(esim, r) {
 }
 
 function statusMeta(r, esim) {
+  if (isEsimUsageExpired(r)) {
+    return { label: "已過期", tone: "neutral" };
+  }
   if (isUnlimitedEsim(esim, r)) {
     return { label: "剩餘充足", tone: "success" };
   }
   if (!r) return { label: "未查詢", tone: "neutral" };
+  if (isEsimNotInstalledForUsage(r)) {
+    return { label: "尚未安裝", tone: "warning" };
+  }
   const pct = usagePercent(r.remainingMb, r.totalMb);
   if (pct == null) {
     // 有回傳但沒用量數字：多半缺 topup、或僅 ICCID、或供應商尚未給流量資料
@@ -292,8 +299,17 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
     [esims, selectedId],
   );
 
+  const selectedExpired = useMemo(() => {
+    if (!selectedEsim) return false;
+    return isEsimUsageExpired(results[selectedEsim.topupId]);
+  }, [selectedEsim, results]);
+
   const openMonitorBind = () => {
     if (monitorBound) return;
+    if (selectedExpired) {
+      setError("已過期的 eSIM 無法開啟流量監控提醒。");
+      return;
+    }
     setPreferOpenBind(true);
     setBindModalOpen(true);
   };
@@ -324,12 +340,15 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "查詢失敗");
+      setResults((prev) => ({ ...prev, [key]: data }));
+      if (isEsimUsageExpired(data)) {
+        setError("此 eSIM 使用期間已過期，無法再查詢用量。");
+        return;
+      }
       if (isEsimNotInstalledForUsage(data)) {
-        setResults((prev) => ({ ...prev, [key]: data }));
         setError(ESIM_NOT_INSTALLED_USAGE_MESSAGE);
         return;
       }
-      setResults((prev) => ({ ...prev, [key]: data }));
     } catch (e) {
       setError(e.message || "查詢失敗");
     } finally {
@@ -339,6 +358,12 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
 
   const handleOneClick = useCallback(
     (esim) => {
+      const existing = results[esim.topupId];
+      if (isEsimUsageExpired(existing)) {
+        setSelectedId(esim.topupId);
+        setError("此 eSIM 使用期間已過期，無法再查詢用量。");
+        return;
+      }
       // 缺真實 topup 時不要把 `iccid:…` 假 key 當 topupId 送供應商
       const realTopupId = esim.missingTopupId ? null : esim.topupId;
       if (!realTopupId && !esim.iccid) {
@@ -351,16 +376,23 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
         key: esim.topupId,
       });
     },
-    [queryUsage],
+    [queryUsage, results],
   );
 
   const autoQueried = useRef(false);
   useEffect(() => {
     if (autoQueried.current || esims.length === 0) return;
-    // 優先自動查「有真實 topup」的第一筆，避免假 topupId 觸發供應商錯誤
+    // 優先自動查「有真實 topup」且尚未知過期的第一筆
     const firstQueryable =
-      esims.find((e) => !e.missingTopupId && e.topupId) ||
-      esims.find((e) => e.iccid);
+      esims.find(
+        (e) =>
+          !e.missingTopupId &&
+          e.topupId &&
+          !isEsimUsageExpired(results[e.topupId]),
+      ) ||
+      esims.find(
+        (e) => e.iccid && !isEsimUsageExpired(results[e.topupId]),
+      );
     if (!firstQueryable || results[firstQueryable.topupId]) return;
     autoQueried.current = true;
     handleOneClick(firstQueryable);
@@ -368,6 +400,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
 
   const handleQueryAll = async () => {
     for (const esim of esims) {
+      if (isEsimUsageExpired(results[esim.topupId])) continue;
       const realTopupId = esim.missingTopupId ? null : esim.topupId;
       if (!realTopupId && !esim.iccid) continue;
       await queryUsage({
@@ -388,21 +421,27 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
   const showPwaHint = pushSupport?.needsPWA && !standalone;
   const chartLoading = !!loadingId;
 
-  const queriedCount = esims.filter((e) => canShowEsimUsageStats(results[e.topupId])).length;
+  const queriedCount = esims.filter((e) => {
+    const r = results[e.topupId];
+    return canShowEsimUsageStats(r) && !isEsimUsageExpired(r);
+  }).length;
   const lowCount = esims.filter((e) => {
     const r = results[e.topupId];
-    if (!canShowEsimUsageStats(r)) return false;
+    if (!canShowEsimUsageStats(r) || isEsimUsageExpired(r)) return false;
     const pct = usagePercent(r.remainingMb, r.totalMb);
     return pct != null && pct <= 15;
   }).length;
+
+  const firstActiveEsim =
+    esims.find((e) => !isEsimUsageExpired(results[e.topupId])) || null;
 
   const moreMenu = [
     {
       id: "latest",
       label: "查最新一筆",
       icon: "bolt",
-      disabled: !esims.length || !!loadingId,
-      onClick: () => esims[0] && handleOneClick(esims[0]),
+      disabled: !firstActiveEsim || !!loadingId,
+      onClick: () => firstActiveEsim && handleOneClick(firstActiveEsim),
     },
     {
       id: "all",
@@ -416,12 +455,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
       id: "push",
       label: "推播提醒設定",
       icon: "notifications_active",
-      onClick: () => {
-        setShowPush(true);
-        setTimeout(() => {
-          pushRef.current?.scrollIntoView({ behavior: "smooth" });
-        }, 50);
-      },
+      onClick: openMonitorBind,
     },
     {
       id: "guide",
@@ -470,8 +504,8 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
             全部更新
           </SecondaryBtn>
           <PrimaryBtn
-            disabled={!!loadingId || !esims.length}
-            onClick={() => esims[0] && handleOneClick(esims[0])}
+            disabled={!!loadingId || !firstActiveEsim}
+            onClick={() => firstActiveEsim && handleOneClick(firstActiveEsim)}
           >
             <AccountIcon name="bolt" size={16} />
             查最新一筆
@@ -576,8 +610,8 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
               </p>
             </div>
             <PrimaryBtn
-              disabled={!!loadingId || !esims.length}
-              onClick={() => esims[0] && handleOneClick(esims[0])}
+              disabled={!!loadingId || !firstActiveEsim}
+              onClick={() => firstActiveEsim && handleOneClick(firstActiveEsim)}
             >
               <AccountIcon name="speed" size={16} />
               查最新一筆
@@ -606,30 +640,62 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
             <ul>
               {esims.map((esim) => {
                 const r = results[esim.topupId];
+                const expired = isEsimUsageExpired(r);
+                const canShowUsage =
+                  !expired && canShowEsimUsageStats(r);
                 const badge = statusMeta(r, esim);
-                const pct = r ? usagePercent(r.remainingMb, r.totalMb) : null;
+                const pct = canShowUsage
+                  ? usagePercent(r.remainingMb, r.totalMb)
+                  : null;
                 const isSelected = selectedId === esim.topupId;
                 const isLoading = loadingId === esim.topupId;
+                const expiry = resolveEsimExpiryForPlan(r, esim);
+                const validityLines = formatEsimValidityLinesZh({
+                  validityPeriod: esim.validityPeriod || r?.validityPeriod,
+                  serviceDays: esim.serviceDays || r?.serviceDays,
+                });
 
                 return (
                   <li
                     key={esim.topupId}
                     style={{
                       borderTop: `1px solid ${UI.border}`,
-                      backgroundColor: isSelected ? UI.light : undefined,
+                      backgroundColor: expired
+                        ? "#f4f4f5"
+                        : isSelected
+                          ? UI.light
+                          : undefined,
                     }}
                   >
                     <div
                       role="button"
-                      tabIndex={0}
-                      onClick={() => handleOneClick(esim)}
+                      tabIndex={expired ? -1 : 0}
+                      aria-disabled={expired}
+                      onClick={() => {
+                        if (expired) {
+                          setSelectedId(esim.topupId);
+                          setError(
+                            "此 eSIM 使用期間已過期，無法再查詢用量。",
+                          );
+                          return;
+                        }
+                        handleOneClick(esim);
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
+                          if (expired) {
+                            setSelectedId(esim.topupId);
+                            return;
+                          }
                           handleOneClick(esim);
                         }
                       }}
-                      className="px-4 sm:px-5 py-4 cursor-pointer transition hover:bg-[#fafafa]"
+                      className={`px-4 sm:px-5 py-4 transition ${
+                        expired
+                          ? "cursor-not-allowed opacity-70 grayscale"
+                          : "cursor-pointer hover:bg-[#fafafa]"
+                      }`}
                     >
                       <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
                         <div className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 text-sm">
@@ -642,7 +708,9 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                             </p>
                             <p
                               className="font-bold truncate"
-                              style={{ color: UI.dark }}
+                              style={{
+                                color: expired ? UI.mid : UI.dark,
+                              }}
                               title={esim.productName}
                             >
                               {esim.productName}
@@ -698,7 +766,14 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                             >
                               剩餘流量
                             </p>
-                            {r ? (
+                            {expired ? (
+                              <p
+                                className="text-xs font-semibold"
+                                style={{ color: UI.mid }}
+                              >
+                                使用期間已結束
+                              </p>
+                            ) : canShowUsage ? (
                               <p
                                 className="font-bold tabular-nums"
                                 style={{ color: UI.dark }}
@@ -711,6 +786,12 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                                   {" "}
                                   / {formatMb(r.totalMb)}
                                 </span>
+                              </p>
+                            ) : r ? (
+                              <p className="text-xs" style={{ color: UI.soft }}>
+                                {isEsimNotInstalledForUsage(r)
+                                  ? "尚未安裝"
+                                  : "尚無用量資料"}
                               </p>
                             ) : (
                               <p className="text-xs" style={{ color: UI.soft }}>
@@ -749,36 +830,110 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                             </div>
                           ) : null}
                           <SecondaryBtn
-                            disabled={isLoading}
+                            disabled={expired || isLoading}
                             onClick={(e) => {
                               e?.stopPropagation?.();
+                              if (expired) return;
                               handleOneClick(esim);
                             }}
                           >
-                            {isLoading ? "查詢中…" : "查詢流量"}
+                            {expired
+                              ? "已過期"
+                              : isLoading
+                                ? "查詢中…"
+                                : "查詢流量"}
                           </SecondaryBtn>
                         </div>
                       </div>
 
-                      {r ? (
-                        <p
-                          className="text-[10px] mt-2"
-                          style={{ color: UI.soft }}
-                        >
-                          {(() => {
-                            const expiry = resolveEsimExpiryDisplay(r);
-                            return (
-                              <>
-                                更新{" "}
-                                {formatDate(
-                                  r.updatedAt || r.queriedAt || new Date(),
-                                )}
-                                {expiry.shortLine ? ` · ${expiry.shortLine}` : ""}
-                              </>
-                            );
-                          })()}
-                        </p>
-                      ) : null}
+                      {expired ? (
+                        <div className="mt-2 space-y-1">
+                          <p
+                            className="text-[11px] font-semibold leading-snug"
+                            style={{ color: UI.mid }}
+                          >
+                            此 eSIM
+                            使用期間已過期，無法再顯示用量或開啟提醒。
+                            {expiry?.shortLine ? ` · ${expiry.shortLine}` : ""}
+                          </p>
+                          {expiry?.line && expiry.line !== expiry.shortLine ? (
+                            <p
+                              className="text-[11px] font-semibold"
+                              style={{ color: UI.soft }}
+                            >
+                              {expiry.line}
+                            </p>
+                          ) : null}
+                          {validityLines.length ? (
+                            <div className="rounded-lg bg-white/70 px-2.5 py-2 ring-1 ring-slate-200/70 space-y-0.5">
+                              {validityLines.map((line) => (
+                                <p
+                                  key={line}
+                                  className="text-[10px] leading-relaxed"
+                                  style={{ color: UI.mid }}
+                                >
+                                  {line}
+                                </p>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className="mt-2 space-y-1.5">
+                          {validityLines.length ? (
+                            <div
+                              className="rounded-lg px-2.5 py-2 space-y-0.5"
+                              style={{
+                                backgroundColor: "#eff6ff",
+                                boxShadow: "inset 0 0 0 1px #dbeafe",
+                              }}
+                            >
+                              <p
+                                className="text-[10px] font-bold tracking-wide"
+                                style={{ color: "#1e3a8a" }}
+                              >
+                                效期說明
+                              </p>
+                              {validityLines.map((line) => (
+                                <p
+                                  key={line}
+                                  className="text-[11px] leading-relaxed"
+                                  style={{ color: "#1e3a8a" }}
+                                >
+                                  {line}
+                                </p>
+                              ))}
+                            </div>
+                          ) : null}
+                          {expiry?.line ? (
+                            <p
+                              className="text-[11px] font-semibold leading-snug"
+                              style={{ color: "#18181b" }}
+                            >
+                              {expiry.line}
+                            </p>
+                          ) : null}
+                          {r ? (
+                            <p
+                              className="text-[10px]"
+                              style={{ color: UI.soft }}
+                            >
+                              更新{" "}
+                              {formatDate(
+                                r.updatedAt || r.queriedAt || new Date(),
+                              )}
+                              {expiry?.shortLine ? ` · ${expiry.shortLine}` : ""}
+                            </p>
+                          ) : expiry?.shortLine && !expiry?.line ? (
+                            <p
+                              className="text-[10px]"
+                              style={{ color: UI.soft }}
+                            >
+                              {expiry.shortLine}
+                            </p>
+                          ) : null}
+                        </div>
+                      )}
                     </div>
                   </li>
                 );
@@ -789,13 +944,31 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
           {error ? (
             <div
               className="px-4 sm:px-5 py-3 text-sm flex items-center gap-1.5"
-              style={{
-                backgroundColor: "#fef2f2",
-                borderTop: `1px solid ${SHOPIFY_BADGE.critical.bg}`,
-                color: SHOPIFY_BADGE.critical.dot,
-              }}
+              style={
+                /已過期|尚未安裝|尚未啟用/.test(error)
+                  ? {
+                      backgroundColor: "#f4f4f5",
+                      borderTop: `1px solid ${UI.border}`,
+                      color: "#18181b",
+                    }
+                  : {
+                      backgroundColor: "#fef2f2",
+                      borderTop: `1px solid ${SHOPIFY_BADGE.critical.bg}`,
+                      color: SHOPIFY_BADGE.critical.dot,
+                    }
+              }
             >
-              <AccountIcon name="error" size={16} />
+              <AccountIcon
+                name={
+                  /已過期|尚未安裝|尚未啟用/.test(error) ? "info" : "error"
+                }
+                size={16}
+                style={
+                  /已過期|尚未安裝|尚未啟用/.test(error)
+                    ? { color: "#52525b" }
+                    : undefined
+                }
+              />
               {error}
             </div>
           ) : null}
@@ -823,24 +996,27 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
 
             <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
               <p className="text-sm font-bold text-slate-900">流量監控提醒</p>
-              <button
-                type="button"
-                disabled={monitorChecking || monitorBound}
+              {selectedExpired ? (
+                <p className="text-[11px] font-semibold text-slate-500 leading-snug">
+                  此 eSIM 已過期，無法開啟流量監控或 LINE 提醒。
+                </p>
+              ) : null}
+              <SecondaryBtn
+                className="w-full !h-10"
+                disabled={monitorChecking || monitorBound || selectedExpired}
                 onClick={openMonitorBind}
-                className={`w-full rounded-lg text-sm font-bold py-3 px-4 transition ${
-                  monitorBound
-                    ? "bg-slate-200 text-slate-500 cursor-not-allowed"
-                    : "bg-[#1E4AD1] hover:bg-[#1639a8] text-white disabled:opacity-60"
-                }`}
               >
                 {monitorChecking
                   ? "確認中…"
-                  : monitorBound
-                    ? "已開啟流量監控提醒"
-                    : "開啟流量監控提醒"}
-              </button>
+                  : selectedExpired
+                    ? "已過期無法開啟"
+                    : monitorBound
+                      ? "已開啟流量監控提醒"
+                      : "開啟流量監控提醒"}
+              </SecondaryBtn>
               <PushLineAlertSection
                 boundTopupId={boundTopupId || selectedEsim?.topupId}
+                disabled={selectedExpired}
               />
             </div>
           </Card>
@@ -875,8 +1051,8 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
             <div className="space-y-2">
               <SecondaryBtn
                 className="w-full"
-                disabled={!!loadingId || !esims.length}
-                onClick={() => esims[0] && handleOneClick(esims[0])}
+                disabled={!!loadingId || !firstActiveEsim}
+                onClick={() => firstActiveEsim && handleOneClick(firstActiveEsim)}
               >
                 <AccountIcon name="bolt" size={16} />
                 一鍵查最新
@@ -891,11 +1067,15 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
               </SecondaryBtn>
               <SecondaryBtn
                 className="w-full"
-                disabled={monitorChecking || monitorBound}
+                disabled={monitorChecking || monitorBound || selectedExpired}
                 onClick={openMonitorBind}
               >
                 <AccountIcon name="notifications_active" size={16} />
-                {monitorBound ? "已開提醒" : "推播提醒"}
+                {selectedExpired
+                  ? "已過期"
+                  : monitorBound
+                    ? "已開提醒"
+                    : "推播提醒"}
               </SecondaryBtn>
               <SecondaryBtn href="/data-query" className="w-full">
                 <AccountIcon name="help_outline" size={16} />

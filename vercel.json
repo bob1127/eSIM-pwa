@@ -9,6 +9,10 @@
       "schedule": "0 1 * * *"
     },
     {
+      "path": "/api/cron/purge-chat-logs",
+      "schedule": "15 2 * * *"
+    },
+    {
       "path": "/api/admin/refresh-b2b-costs",
       "schedule": "0 19 * * *"
     }

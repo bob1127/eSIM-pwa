@@ -20,6 +20,7 @@ export default function RootLayout({
   hideNavbar = false,
   /** 全幅 hero 等需貼頂時關閉預設頂部留白 */
   flushTop = false,
+  hideFooter = false,
 }) {
   const router = useRouter();
   const seo = useMemo(
@@ -84,12 +85,14 @@ export default function RootLayout({
 
               <SmartWizardFloat />
               {/* AiChatWidget 已移至 _app，避免換頁卸載中斷請求 */}
-              <Footer
-                forceShow={
-                  router.pathname === "/shop" ||
-                  router.pathname?.startsWith("/shop/")
-                }
-              />
+              {!hideFooter ? (
+                <Footer
+                  forceShow={
+                    router.pathname === "/shop" ||
+                    router.pathname?.startsWith("/shop/")
+                  }
+                />
+              ) : null}
               {/* 固定底欄：必須在 Footer 之後，勿再插入 in-flow 佔位（會在 footer 上方留白） */}
               <EsimBottomSheet />
             </UserProvider>

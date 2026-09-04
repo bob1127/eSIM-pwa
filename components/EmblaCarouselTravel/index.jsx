@@ -46,10 +46,7 @@ export async function getStaticProps() {
       const featureImage =
         post._embedded?.["wp:featuredmedia"]?.[0]?.source_url;
 
-      const finalImage =
-        contentImage ||
-        featureImage ||
-        "https://via.placeholder.com/800x600?text=No+Image";
+      const finalImage = contentImage || featureImage || null;
 
       // B. 抓分類 (假設第一個分類是主要分類)
       // 注意：WP API 預設回傳的是分類 ID，若要名稱通常需要額外處理
@@ -69,7 +66,7 @@ export async function getStaticProps() {
         description: stripHtml(post.excerpt.rendered).substring(0, 80) + "...",
         image: finalImage,
         category: categoryName,
-        date: new Date(post.date).toLocaleDateString(),
+        date: new Date(post.date).toLocaleDateString("zh-TW"),
         link: `/blog/${post.slug}`, // 設定點擊後的連結
       };
     });

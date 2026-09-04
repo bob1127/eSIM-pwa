@@ -3,7 +3,7 @@ import { resolveMemberEmail } from "../push/_memberAuth";
 import {
   memberKeyFromAuth,
 } from "../../../lib/blogCreator";
-import { loadCreatorTeasers } from "../../../lib/creatorProfile";
+import { loadCreatorTeasers, loadSavedPostsFromLikes } from "../../../lib/creatorProfile";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -46,6 +46,30 @@ async function bumpViews(postKey) {
   }
 }
 
+async function countFollowers(creatorKey) {
+  if (!creatorKey) return 0;
+  try {
+    const { count } = await supabaseAdmin
+      .from("creator_follows")
+      .select("*", { count: "exact", head: true })
+      .eq("creator_key", creatorKey);
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function isFollowing(creatorKey, memberKey) {
+  if (!creatorKey || !memberKey) return false;
+  const { data } = await supabaseAdmin
+    .from("creator_follows")
+    .select("id")
+    .eq("creator_key", creatorKey)
+    .eq("member_key", memberKey)
+    .maybeSingle();
+  return Boolean(data);
+}
+
 async function recountLikes(postKey) {
   const { count } = await supabaseAdmin
     .from("blog_post_likes")
@@ -71,11 +95,28 @@ export default async function handler(req, res) {
   const creatorName = clip(req.body?.creatorName, 80);
 
   if (req.method === "GET") {
-    const list = clip(req.query.action, 20) === "list-follows";
+    const action = clip(req.query.action, 20);
+    const listFollows = action === "list-follows";
+    const listLikes = action === "list-likes";
     const member = await resolveMemberEmail(req, res);
     const memberKey = memberKeyFromAuth(member);
 
-    if (list) {
+    // 只查追蹤狀態：愛心按鈕重新整理後靠這支還原，不需要整份創作者資料
+    if (action === "follow-state") {
+      if (!creatorKey) return res.status(400).json({ error: "缺少創作者" });
+      const [following, followerCount] = await Promise.all([
+        isFollowing(creatorKey, memberKey),
+        countFollowers(creatorKey),
+      ]);
+      return res.status(200).json({
+        creatorKey,
+        following,
+        followerCount,
+        loggedIn: Boolean(memberKey),
+      });
+    }
+
+    if (listFollows) {
       if (!memberKey) return res.status(401).json({ error: "請先登入會員" });
       const { data } = await supabaseAdmin
         .from("creator_follows")
@@ -91,6 +132,18 @@ export default async function handler(req, res) {
           profile: byKey[f.creator_key] || null,
         })),
       });
+    }
+
+    if (listLikes) {
+      if (!memberKey) return res.status(401).json({ error: "請先登入會員" });
+      const { data } = await supabaseAdmin
+        .from("blog_post_likes")
+        .select("post_key, created_at")
+        .eq("member_key", memberKey)
+        .order("created_at", { ascending: false })
+        .limit(80);
+      const posts = await loadSavedPostsFromLikes(data || []);
+      return res.status(200).json({ posts });
     }
 
     if (!postKey) return res.status(400).json({ error: "缺少文章" });
@@ -176,7 +229,13 @@ export default async function handler(req, res) {
 
   if (action === "follow" || action === "unfollow") {
     if (!creatorKey) return res.status(400).json({ error: "缺少創作者" });
-    if (action === "follow") {
+
+    // 幂等：重複按同一個方向不會重複寫入或重複計數
+    const wantFollow = action === "follow";
+    const already = await isFollowing(creatorKey, memberKey);
+    let changed = false;
+
+    if (wantFollow && !already) {
       await supabaseAdmin.from("creator_follows").upsert(
         {
           member_key: memberKey,
@@ -189,14 +248,22 @@ export default async function handler(req, res) {
         },
         { onConflict: "member_key,creator_key" },
       );
-    } else {
+      changed = true;
+    } else if (!wantFollow && already) {
       await supabaseAdmin
         .from("creator_follows")
         .delete()
         .eq("member_key", memberKey)
         .eq("creator_key", creatorKey);
+      changed = true;
     }
-    return res.status(200).json({ following: action === "follow" });
+
+    const followerCount = await countFollowers(creatorKey);
+    return res.status(200).json({
+      following: wantFollow,
+      followerCount,
+      changed,
+    });
   }
 
   if (action === "list-follows") {

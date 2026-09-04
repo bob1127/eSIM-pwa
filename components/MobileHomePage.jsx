@@ -212,10 +212,16 @@ function MobileHeroDock() {
     usePWAInstall();
   const [showPrompt, setShowPrompt] = useState(false);
   const [installHint, setInstallHint] = useState(null);
+  // buildLoginUrl() 會讀 window.location，SSR 與首次 render 必須一致才不會 hydration mismatch
+  const [loginHref, setLoginHref] = useState("/login");
 
   useEffect(() => {
     setInstallHint(buildInstallHintText({ isStandalone }));
   }, [isStandalone]);
+
+  useEffect(() => {
+    setLoginHref(buildLoginUrl());
+  }, []);
 
   const needsAppleInstall =
     !isStandalone && (deviceType === "ios" || deviceType === "mac");
@@ -275,7 +281,7 @@ function MobileHeroDock() {
                   </MobileHeroCardAction>
                   <MobileHeroCardAction
                     icon="person_add"
-                    href={buildLoginUrl()}
+                    href={loginHref}
                   >
                     加入會員
                   </MobileHeroCardAction>

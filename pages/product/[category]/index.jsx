@@ -14,6 +14,12 @@ import {
   categoryHandlesForProductFetch,
   dedupeCategoriesForNav,
 } from "../../../lib/categoryAliases";
+import {
+  filterLeafCategoriesForNav,
+  isCategoryNavGroup,
+} from "../../../lib/categoryNavFilter";
+import { parseCategoryPromoBanner } from "../../../lib/categoryPromoBanner";
+import CategoryPromoCard from "../../../components/CategoryPromoCard";
 import FilterSideBar, {
   filterProductsByTags,
   buildFilterTagsFromProduct,
@@ -36,7 +42,7 @@ const backendUrl =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
 
 async function findCategoryByHandle(headers, handle) {
-  const catUrl = `${backendUrl}/store/product-categories?handle=${encodeURIComponent(handle)}`;
+  const catUrl = `${backendUrl}/store/product-categories?handle=${encodeURIComponent(handle)}&fields=%2Bmetadata`;
   const catRes = await fetch(catUrl, { headers });
   const catData = await catRes.json();
   return catData.product_categories?.[0] || null;
@@ -55,7 +61,7 @@ export async function getStaticPaths() {
     const { product_categories } = await res.json();
     const seen = new Set();
     const paths = [];
-    for (const cat of product_categories || []) {
+    for (const cat of filterLeafCategoriesForNav(product_categories || [])) {
       const slug = canonicalCategoryHandle(cat.handle);
       if (seen.has(slug)) continue;
       seen.add(slug);
@@ -78,8 +84,9 @@ export async function getStaticProps({ params }) {
       (await findCategoryByHandle(headers, categoryHandle)) ||
       (await findCategoryByHandle(headers, rawHandle));
 
-    if (!currentCategory) {
+    if (!currentCategory || isCategoryNavGroup(currentCategory)) {
       // 不設 revalidate 的話，Medusa 一次暫時性失敗就會被永久快取成 404
+      // 父層分類（eSIM／實體商品）不開放前台分類頁
       return { notFound: true, revalidate: 60 };
     }
 
@@ -128,15 +135,22 @@ export async function getStaticProps({ params }) {
     const allCatData = await allCatRes.json();
 
     const displaySlug = canonicalCategoryHandle(currentCategory.handle);
+    const promoBanner = parseCategoryPromoBanner(currentCategory.metadata, {
+      handle: displaySlug,
+      name: currentCategory.name,
+    });
     const formattedCurrentCategory = {
       id: currentCategory.id,
       name: currentCategory.name,
       slug: displaySlug,
       description: currentCategory.description || "",
+      promoBanner,
     };
 
     const formattedAllCategories = dedupeCategoriesForNav(
-      sortCategoriesByRank(allCatData.product_categories || []).map((cat) => ({
+      sortCategoriesByRank(
+        filterLeafCategoriesForNav(allCatData.product_categories || []),
+      ).map((cat) => ({
         id: cat.id,
         name: cat.name,
         slug: cat.handle,
@@ -423,6 +437,12 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                 )}
               </div>
             </div>
+
+            {currentCategory?.promoBanner ? (
+              <div className="max-w-md">
+                <CategoryPromoCard promo={currentCategory.promoBanner} />
+              </div>
+            ) : null}
 
             {/* 手機：固定篩選工具列 */}
             <div className="lg:hidden sticky top-[72px] z-30 -mx-4 px-4 sm:-mx-6 sm:px-6">

@@ -178,7 +178,9 @@ export default function PartnerBlogArticleView({
         旅遊文章
       </Link>
       <span className="mx-1.5">/</span>
-      <span className="text-[#0A6CD0]">合作夥伴供稿</span>
+      <span className="text-[#0A6CD0] line-clamp-1 max-w-[min(70vw,28rem)]">
+        {post.title}
+      </span>
     </>
   ) : (
     <>

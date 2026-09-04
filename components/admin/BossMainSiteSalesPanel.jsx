@@ -102,7 +102,7 @@ export default function BossMainSiteSalesPanel() {
     <div className="space-y-5" style={{ backgroundColor: BOSS_AUI.wash }}>
       <BossAnalyticsHeader
         title="主站銷售狀況"
-        subtitle="Medusa 真實訂單（已排除夥伴店／連結）；毛利＝營收 − 變體 cost_price"
+        subtitle="Medusa 真實訂單（已排除夥伴店／連結與測試購買）；毛利＝營收 − 變體 cost_price"
         rangeValue={days}
         onRangeChange={setDays}
         extra={
@@ -130,6 +130,9 @@ export default function BossMainSiteSalesPanel() {
           Medusa 拉取 {meta?.medusaFetched ?? "—"} 筆
           {meta?.partnerSkipped != null
             ? ` · 已排除夥伴 ${meta.partnerSkipped}`
+            : ""}
+          {meta?.testSkipped != null && meta.testSkipped > 0
+            ? ` · 已排除測試單 ${meta.testSkipped}`
             : ""}
         </p>
       </BossAnalyticsCard>

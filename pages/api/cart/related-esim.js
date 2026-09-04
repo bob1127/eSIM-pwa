@@ -93,16 +93,25 @@ export default async function handler(req, res) {
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean),
   );
+  const sameCategoryOnly =
+    String(req.query.sameCategoryOnly || "") === "1" ||
+    String(req.query.sameCategoryOnly || "").toLowerCase() === "true";
 
   const priorityHandles = [
     ...new Set(
       rawCategories.flatMap((h) => categoryHandlesForProductFetch(h)),
     ),
   ];
-  const fallbackHandles = FALLBACK_HANDLES.filter(
-    (h) => !priorityHandles.includes(h),
-  );
-  const orderedHandles = [...priorityHandles, ...fallbackHandles];
+  // 有購物車分類時：只推同種類；無分類才用熱門國家兜底
+  const orderedHandles =
+    sameCategoryOnly && priorityHandles.length
+      ? priorityHandles
+      : priorityHandles.length
+        ? [
+            ...priorityHandles,
+            ...FALLBACK_HANDLES.filter((h) => !priorityHandles.includes(h)),
+          ]
+        : FALLBACK_HANDLES;
 
   try {
     const headers = medusaHeaders();
@@ -171,7 +180,12 @@ export default async function handler(req, res) {
       const cats = (p.categories || []).map((c) =>
         canonicalCategoryHandle(c.handle),
       );
-      const score = cats.some((c) => priorityHandles.includes(c)) ? 0 : 1;
+      const inCartCategory = cats.some((c) => priorityHandles.includes(c));
+      // sameCategoryOnly：必須屬於購物車內至少一個分類
+      if (sameCategoryOnly && priorityHandles.length && !inCartCategory) {
+        return;
+      }
+      const score = inCartCategory ? 0 : 1;
       const prev = byHandle.get(p.handle);
       if (!prev || score < prev.score) {
         byHandle.set(p.handle, { ...formatted, score });
@@ -180,7 +194,7 @@ export default async function handler(req, res) {
 
     const products = [...byHandle.values()]
       .sort((a, b) => a.score - b.score || a.minPrice - b.minPrice)
-      .slice(0, 12)
+      .slice(0, sameCategoryOnly ? 16 : 12)
       .map(({ score: _s, ...rest }) => rest);
 
     res.setHeader(

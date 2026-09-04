@@ -135,6 +135,10 @@ export default function AdminChatLogsPage() {
               </a>
               ，讓 J寶 越用越準。
             </p>
+            <p className="mt-1 text-xs text-stone-400">
+              寫入已過濾：快捷／preset、問候、過短碎片、「幫你規劃」表單題。超過約 90
+              天由每日 cron 自動清除（CHAT_LOGS_TTL_DAYS 可調）。
+            </p>
           </div>
           <button
             onClick={handleExport}

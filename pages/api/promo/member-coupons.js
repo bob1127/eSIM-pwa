@@ -3,11 +3,13 @@ import { getSupabaseAdminServer } from "../../../lib/supabaseAdminServer";
 import { listMemberCoupons } from "../../../lib/memberCoupons";
 import { claimWelcomeFifty } from "../../../lib/memberWelcomeBenefit";
 import { getMemberLineFriendStatus, LINE_OA_URL } from "../../../lib/lineOaFriends";
+import { syncWelcomeCouponsAfterOrders } from "../../../lib/welcomeFirstOrder";
 
 /**
  * GET /api/promo/member-coupons
  * 列出會員優惠券；若尚未領過歡迎禮 50 則自動發放
  * 回傳 line_friend 狀態供結帳頁顯示「加 LINE」引導
+ * 已有成功訂單者：自動將首單／welcome 券標為 expired（不再出現在可用列表）
  */
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -50,6 +52,17 @@ export default async function handler(req, res) {
       console.warn("[member-coupons] 自動發放歡迎禮略過:", e.message);
     }
 
+    let hasPriorOrder = false;
+    try {
+      const sync = await syncWelcomeCouponsAfterOrders(
+        supabaseAdmin,
+        member.email,
+      );
+      hasPriorOrder = Boolean(sync.hasPrior);
+    } catch (e) {
+      console.warn("[member-coupons] 首單券同步略過:", e.message);
+    }
+
     const coupons = await listMemberCoupons(supabaseAdmin, member.email);
     const lineStatus = await getMemberLineFriendStatus(supabaseAdmin, member);
 
@@ -60,13 +73,17 @@ export default async function handler(req, res) {
           c.status === "available" &&
           Number(c.amount) === 50,
       ) ||
-      (welcome?.ok ? welcome.coupon : null) ||
+      (welcome?.ok && !hasPriorOrder ? welcome.coupon : null) ||
       null;
 
-    // 還沒加官方 LINE：有券或剛發成功都要引導
     const needLine =
       Boolean(welcomeCoupon && !lineStatus.isFriend) ||
-      Boolean(welcome?.ok && welcome.coupon && !lineStatus.isFriend);
+      Boolean(
+        welcome?.ok &&
+          welcome.coupon &&
+          !lineStatus.isFriend &&
+          !hasPriorOrder,
+      );
 
     return res.status(200).json({
       success: true,
@@ -75,13 +92,14 @@ export default async function handler(req, res) {
       welcome: welcome?.ok
         ? {
             alreadyClaimed: welcome.alreadyClaimed,
-            coupon: welcome.coupon || welcomeCoupon,
+            coupon: hasPriorOrder ? null : welcome.coupon || welcomeCoupon,
             message: welcome.message,
           }
         : welcome && !welcome.ok
           ? { error: welcome.error }
           : null,
       welcome_coupon: welcomeCoupon,
+      has_prior_order: hasPriorOrder,
       line_friend: lineStatus.isFriend,
       line_user_id: lineStatus.lineUserId,
       line_oa_url: lineStatus.lineOaUrl || LINE_OA_URL,

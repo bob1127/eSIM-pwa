@@ -45,7 +45,7 @@ export const COLLAPSED_H_PRODUCT = 32;
 const EXPANDED_VH = 78;
 /** 快速購買：接近滿版 */
 const EXPANDED_VH_BUY = 94;
-/** 高於主站 Navbar（z-1000～10050）與 ShopNavbar（z-8000～8901） */
+/** 高於主站 Navbar（z-1000～10082）；低於文章／商品幻燈片（z-12000） */
 const SHEET_Z_BACKDROP = 10060;
 const SHEET_Z_PANEL = 10061;
 const SHEET_Z_DIALOG = 10070;
@@ -921,13 +921,16 @@ export default function EsimBottomSheet() {
     typeof router.pathname === "string" &&
     (router.pathname === "/shop" || router.pathname.startsWith("/shop/"));
 
-  // eSIM 產品頁：預設縮成橫槓，避免擋立即購買
-  const isProductRoute = useMemo(() => {
+  // eSIM 產品頁／部落格文章頁：預設縮成橫槓，避免擋內容與幻燈片
+  const isCompactRoute = useMemo(() => {
     const path = String(router.asPath || router.pathname || "").split("?")[0];
-    return path === "/product" || path.startsWith("/product/");
+    if (path === "/product" || path.startsWith("/product/")) return true;
+    // /blog/{slug}（不含列表 /blog）
+    if (/^\/blog\/[^/]+/.test(path)) return true;
+    return false;
   }, [router.asPath, router.pathname]);
 
-  /** mini＝產品頁橫槓；normal＝五格底欄；expanded＝展開內容 */
+  /** mini＝產品／文章頁橫槓；normal＝五格底欄；expanded＝展開內容 */
   const [sheetSnap, setSheetSnap] = useState("normal");
   const [panel, setPanel] = useState("qr"); // qr | install | promo | buy | jbao
   const [dragY, setDragY] = useState(0);
@@ -948,11 +951,13 @@ export default function EsimBottomSheet() {
   const [promoPoints, setPromoPoints] = useState(0);
   const [promoLoading, setPromoLoading] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  /** 從底欄 J寶進客服後：關閉聊天仍保持展開，且導覽只留優惠／快速購買／QR */
+  /** 僅暫時收合用；關閉 J寶 後必須恢復五格主 tab */
   const [compactNav, setCompactNav] = useState(false);
   const chatFromSheetRef = useRef(false);
   const [showBindHint, setShowBindHint] = useState(false);
   const [offerPwaAfterBindHint, setOfferPwaAfterBindHint] = useState(false);
+  /** 社群燈箱開啟時隱藏底欄，避免蓋過／穿出 popup */
+  const [socialLbOpen, setSocialLbOpen] = useState(false);
 
   const memberEmail = useMemo(
     () =>
@@ -969,9 +974,9 @@ export default function EsimBottomSheet() {
     !isStandalone && (deviceType === "ios" || deviceType === "mac");
 
   useEffect(() => {
-    setSheetSnap(isProductRoute ? "mini" : "normal");
+    setSheetSnap(isCompactRoute ? "mini" : "normal");
     setCompactNav(false);
-  }, [isProductRoute]);
+  }, [isCompactRoute]);
 
   const expanded = sheetSnap === "expanded";
   const miniCollapsed = sheetSnap === "mini";
@@ -1540,7 +1545,6 @@ export default function EsimBottomSheet() {
     if (id === "jbao") {
       if (!chatOpen) {
         chatFromSheetRef.current = true;
-        setCompactNav(true);
         setPanel("qr");
         setSheetSnap("expanded");
       } else if (chatFromSheetRef.current) {
@@ -1554,6 +1558,7 @@ export default function EsimBottomSheet() {
       }
       return;
     }
+    setCompactNav(false);
     setPanel(id);
     setSheetSnap("expanded");
   };
@@ -1613,11 +1618,19 @@ export default function EsimBottomSheet() {
         chatFromSheetRef.current = false;
         setSheetSnap("expanded");
         setPanel("qr");
-        setCompactNav(true);
+        // 關閉 J寶 後恢復五格（優惠／快速購買／QR／下載／J寶）
+        setCompactNav(false);
       }
     };
+    const onSocialLb = (e) => {
+      setSocialLbOpen(Boolean(e?.detail?.open));
+    };
     window.addEventListener("jeko:ai-chat-visibility", onVis);
-    return () => window.removeEventListener("jeko:ai-chat-visibility", onVis);
+    window.addEventListener("jeko:social-lightbox", onSocialLb);
+    return () => {
+      window.removeEventListener("jeko:ai-chat-visibility", onVis);
+      window.removeEventListener("jeko:social-lightbox", onSocialLb);
+    };
   }, []);
 
   useEffect(() => {
@@ -1691,6 +1704,7 @@ export default function EsimBottomSheet() {
     null;
 
   if (isShopRoute) return null;
+  if (socialLbOpen) return null;
 
   // 底欄佔位改由 Footer pb 負責；此處若再插 h-[118px] 會在 footer 上方留出大空白
   return (
@@ -1731,6 +1745,9 @@ export default function EsimBottomSheet() {
             onClick={() => {
               if (sheetSnap === "expanded") {
                 setSheetSnap("normal");
+              } else if (sheetSnap === "mini") {
+                setPanel((p) => p || "qr");
+                setSheetSnap("normal");
               } else {
                 setPanel((p) => p || "qr");
                 setSheetSnap("expanded");
@@ -1749,18 +1766,20 @@ export default function EsimBottomSheet() {
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                setSheetSnap((v) => (v === "expanded" ? "normal" : "expanded"));
+                if (sheetSnap === "mini") setSheetSnap("normal");
+                else if (sheetSnap === "expanded") setSheetSnap("normal");
+                else setSheetSnap("expanded");
               }
             }}
           >
-            <div className="flex flex-col items-center">
+            <div className="relative flex flex-col items-center">
               <div
                 className={`rounded-full bg-gray-300 ${
                   miniCollapsed ? "w-10 h-1" : "w-9 h-1 mb-1.5"
                 }`}
               />
               {!miniCollapsed && (
-                <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-800">
+                <div className="flex items-center justify-center gap-1.5 text-[13px] font-bold text-gray-800">
                   <svg
                     width="16"
                     height="16"
@@ -1783,6 +1802,7 @@ export default function EsimBottomSheet() {
                     stroke="#9ca3af"
                     strokeWidth="2.5"
                     className={`transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
+                    aria-hidden
                   >
                     <path
                       d="M18 15l-6-6-6 6"

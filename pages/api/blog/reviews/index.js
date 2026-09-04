@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     const { data, error } = await supabaseAdmin
       .from("blog_reviews")
       .select(`
-        id, user_id, user_name, user_avatar, rating, content, likes, created_at,
+        id, user_id, user_name, user_avatar, rating, content, likes, created_at, parent_id,
         blog_review_media (id, media_type, public_url, file_name)
       `)
       .eq("post_slug", slug)
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     return res.status(200).json(enriched);
   }
 
-  // ── POST：新增評論 ─────────────────────────────────────────────
+  // ── POST：新增評論／回覆 ───────────────────────────────────────
   if (req.method === "POST") {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
@@ -60,11 +60,30 @@ export default async function handler(req, res) {
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !user) return res.status(401).json({ error: "登入逾時，請重新登入" });
 
-    const { rating, content, mediaIds } = req.body;
-    if (!rating || rating < 1 || rating > 5)
-      return res.status(400).json({ error: "評分需介於 1~5 顆星" });
+    const { rating, content, mediaIds, parentId } = req.body;
+    const parent = parentId ? String(parentId).trim() : null;
     if (!content?.trim() || content.trim().length < 2)
       return res.status(400).json({ error: "請輸入至少 2 個字的評論" });
+
+    // 回覆不需星等；頂層若未傳則預設 5（前台已無星等 UI）
+    const finalRating = parent
+      ? 5
+      : Math.min(5, Math.max(1, Number(rating) || 5));
+
+    if (parent) {
+      const { data: parentRow, error: parentErr } = await supabaseAdmin
+        .from("blog_reviews")
+        .select("id, parent_id, post_slug")
+        .eq("id", parent)
+        .eq("post_slug", slug)
+        .maybeSingle();
+      if (parentErr) return res.status(500).json({ error: parentErr.message });
+      if (!parentRow) return res.status(400).json({ error: "找不到要回覆的留言" });
+      // 僅允許回覆頂層（一層）
+      if (parentRow.parent_id) {
+        return res.status(400).json({ error: "僅能回覆主留言" });
+      }
+    }
 
     const userName =
       user.user_metadata?.full_name ||
@@ -72,23 +91,28 @@ export default async function handler(req, res) {
       user.email?.split("@")[0] ||
       "訪客";
 
+    const insertPayload = {
+      post_slug: slug,
+      user_id: user.id,
+      user_name: userName,
+      user_avatar: user.user_metadata?.avatar_url || null,
+      rating: finalRating,
+      content: content.trim(),
+      parent_id: parent || null,
+    };
+
     const { data: review, error: insertError } = await supabaseAdmin
       .from("blog_reviews")
-      .insert({
-        post_slug: slug,
-        user_id: user.id,
-        user_name: userName,
-        user_avatar: user.user_metadata?.avatar_url || null,
-        rating,
-        content: content.trim(),
-      })
-      .select("id, user_id, user_name, user_avatar, rating, content, likes, created_at")
+      .insert(insertPayload)
+      .select(
+        "id, user_id, user_name, user_avatar, rating, content, likes, created_at, parent_id",
+      )
       .single();
 
     if (insertError) return res.status(500).json({ error: insertError.message });
 
-    // 將已上傳的媒體綁定到這則評論
-    if (Array.isArray(mediaIds) && mediaIds.length > 0) {
+    // 將已上傳的媒體綁定到這則評論（回覆通常無媒體，仍相容）
+    if (!parent && Array.isArray(mediaIds) && mediaIds.length > 0) {
       await supabaseAdmin
         .from("blog_review_media")
         .update({ review_id: review.id })
@@ -101,7 +125,11 @@ export default async function handler(req, res) {
       .select("id, media_type, public_url, file_name")
       .eq("review_id", review.id);
 
-    return res.status(201).json({ ...review, is_liked_by_me: false, blog_review_media: media || [] });
+    return res.status(201).json({
+      ...review,
+      is_liked_by_me: false,
+      blog_review_media: media || [],
+    });
   }
 
   return res.status(405).json({ error: "Method not allowed" });

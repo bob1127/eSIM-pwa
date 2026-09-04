@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +19,13 @@ import FacebookIcon from "@/components/icons/facebook-icon";
 import InstagramIcon from "@/components/icons/instagram-icon";
 import FilledBellIcon from "@/components/icons/filled-bell-icon";
 import BlogLikeAnimatedToggle from "@/components/Blog/BlogLikeAnimatedToggle";
+import CreatorFollowHeart from "@/components/creators/CreatorFollowHeart";
+import { useCreatorFollow } from "@/hooks/useCreatorFollow";
 import { useEngageToast } from "@/components/creators/EngageToast";
+import {
+  ensureServiceWorkerReady,
+  subscribePushWithRetry,
+} from "@/lib/pushDebug";
 
 function formatCount(n) {
   return Number(n || 0).toLocaleString("zh-TW");
@@ -73,11 +79,27 @@ export default function BlogCreatorEngageBar({
   const [viewCount, setViewCount] = useState(0);
   const [likeCount, setLikeCount] = useState(0);
   const [liked, setLiked] = useState(false);
-  const [following, setFollowing] = useState(false);
-  const [followerCount, setFollowerCount] = useState(0);
+  const [statsLoaded, setStatsLoaded] = useState(false);
   const [hint, setHint] = useState("");
-  const [busy, setBusy] = useState(false);
   const { showToast, toastNode } = useEngageToast();
+
+  // 追蹤狀態交給共用 hook（含連點鎖、幂等與重整還原）
+  const {
+    following,
+    followerCount,
+    busy,
+    ready: followReady,
+    toggle: toggleFollowState,
+    syncFromServer: syncFollowState,
+  } = useCreatorFollow({
+    creatorKey,
+    creatorName: authorName,
+    autoLoad: false,
+    onToast: showToast,
+  });
+
+  // 收藏也要防連點：setState 是非同步的，只靠 state 擋不住同一 tick 的兩次點擊
+  const likeInFlightRef = useRef(false);
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
@@ -85,25 +107,37 @@ export default function BlogCreatorEngageBar({
   });
 
   useEffect(() => {
+    if (!authReady) return undefined;
     let cancelled = false;
     const load = async () => {
-      const qs = new URLSearchParams({ postKey, creatorKey });
-      const res = await fetch(`/api/blog/engage?${qs}`, { credentials: "include" });
-      const data = await res.json().catch(() => ({}));
-      if (cancelled || !res.ok) return;
-      setViewCount(data.viewCount || 0);
-      setLikeCount(data.likeCount || 0);
-      setLiked(Boolean(data.liked));
-      setFollowing(Boolean(data.following));
-      if (typeof data.followerCount === "number") {
-        setFollowerCount(data.followerCount);
+      try {
+        const qs = new URLSearchParams({ postKey, creatorKey });
+        const res = await fetch(`/api/blog/engage?${qs}`, {
+          credentials: "include",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled || !res.ok) return;
+        setViewCount(data.viewCount || 0);
+        setLikeCount(data.likeCount || 0);
+        setLiked(Boolean(data.liked));
+        syncFollowState({
+          following: Boolean(data.following),
+          followerCount: data.followerCount,
+        });
+      } finally {
+        if (!cancelled) {
+          setStatsLoaded(true);
+          // 讀取失敗也要解鎖，否則愛心會永久停用（送出時伺服器仍是權威且幂等）
+          syncFollowState({});
+        }
       }
     };
     load();
     return () => {
       cancelled = true;
     };
-  }, [postKey, creatorKey, isLoggedIn]);
+  }, [postKey, creatorKey, isLoggedIn, authReady, token, syncFollowState]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !postKey) return;
@@ -133,83 +167,83 @@ export default function BlogCreatorEngageBar({
       goLogin("請先登入後再收藏");
       return;
     }
+    // 還沒讀到目前是否已收藏前不送出，避免把「已收藏」誤送成再次收藏
+    if (!statsLoaded) {
+      showToast("收藏狀態載入中，請稍候");
+      return;
+    }
+    if (likeInFlightRef.current) return;
+    likeInFlightRef.current = true;
+
     const next = !liked;
+    const rollback = () => {
+      setLiked(!next);
+      setLikeCount((n) => Math.max(0, n + (next ? -1 : 1)));
+    };
+
     setLiked(next);
     setLikeCount((n) => Math.max(0, n + (next ? 1 : -1)));
     showToast(next ? "已收藏" : "已取消收藏");
-    const res = await fetch("/api/blog/engage", {
-      method: "POST",
-      credentials: "include",
-      headers: authHeaders(),
-      body: JSON.stringify({
-        action: next ? "like" : "unlike",
-        postKey,
-        creatorKey,
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.status === 401) {
-      setLiked(!next);
-      setLikeCount((n) => Math.max(0, n + (next ? -1 : 1)));
-      goLogin("請先登入後再收藏");
-      return;
+
+    try {
+      const res = await fetch("/api/blog/engage", {
+        method: "POST",
+        credentials: "include",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          action: next ? "like" : "unlike",
+          postKey,
+          creatorKey,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        rollback();
+        goLogin("請先登入後再收藏");
+        return;
+      }
+      if (!res.ok) {
+        rollback();
+        showToast(data.error || "收藏失敗，請稍後再試");
+        return;
+      }
+      if (typeof data.likeCount === "number") setLikeCount(data.likeCount);
+      setLiked(Boolean(data.liked));
+    } catch {
+      rollback();
+      showToast("網路異常，請稍後再試");
+    } finally {
+      likeInFlightRef.current = false;
     }
-    if (typeof data.likeCount === "number") setLikeCount(data.likeCount);
-    setLiked(Boolean(data.liked));
   };
 
   const toggleFollow = async () => {
-    if (!authReady || busy) return;
-    if (!isLoggedIn) {
-      goLogin("請先登入後再追蹤");
-      return;
-    }
-    setBusy(true);
-    const next = !following;
-    setFollowing(next);
-    const res = await fetch("/api/blog/engage", {
-      method: "POST",
-      credentials: "include",
-      headers: authHeaders(),
-      body: JSON.stringify({
-        action: next ? "follow" : "unfollow",
-        postKey,
-        creatorKey,
-        creatorName: authorName,
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (res.status === 401) {
-      setFollowing(!next);
-      goLogin("請先登入後再追蹤");
-      return;
-    }
-    if (!res.ok) {
-      setFollowing(!next);
-      const err = data.error || "追蹤失敗";
-      setHint(err);
-      showToast(err);
-      return;
-    }
-    setFollowing(Boolean(data.following));
-    setFollowerCount((n) => Math.max(0, n + (data.following ? 1 : -1)));
-    if (data.following) {
-      try {
-        const ok = await enableCreatorPush(token);
-        const msg = ok
-          ? "已追蹤。之後發新文會推播通知你。"
-          : "已追蹤。若要收推播，請允許瀏覽器通知。";
-        setHint(msg);
-        showToast(msg);
-      } catch {
-        const msg = "已追蹤。可到會員中心再開啟推播。";
-        setHint(msg);
-        showToast(msg);
-      }
-    } else {
+    const result = await toggleFollowState();
+    if (!result?.ok) return;
+
+    if (!result.following) {
       setHint("已取消追蹤");
       showToast("已取消追蹤");
+      return;
+    }
+    // 已在追蹤時再按（例如另一個分頁先按過）不重複要求推播權限
+    if (!result.changed) {
+      const msg = `已在追蹤「${authorName}」`;
+      setHint(msg);
+      showToast(msg);
+      return;
+    }
+    try {
+      const ok = await enableCreatorPush(token);
+      const msg = ok
+        ? "已追蹤。之後發新文會推播通知你。"
+        : "已追蹤。若要收推播，請允許瀏覽器通知。";
+      setHint(msg);
+      showToast(msg);
+    } catch {
+      const msg = "已追蹤。可到會員中心再開啟推播。";
+      setHint(msg);
+      showToast(msg);
     }
   };
 
@@ -226,7 +260,9 @@ export default function BlogCreatorEngageBar({
           <button
             type="button"
             onClick={toggleFollow}
-            disabled={busy}
+            disabled={busy || !followReady}
+            aria-pressed={following}
+            aria-busy={busy}
             className={`${pill} ${following ? "bg-[#1d4ed8]" : ""}`}
           >
             {following ? (
@@ -240,7 +276,7 @@ export default function BlogCreatorEngageBar({
             pressed={liked}
             onPressedChange={() => toggleLike()}
             count={likeCount}
-            disabled={!authReady}
+            disabled={!authReady || !statsLoaded}
             tone="overlay"
             label="收藏"
           />
@@ -266,12 +302,23 @@ export default function BlogCreatorEngageBar({
             )}
           </Link>
           <div className="min-w-0 flex-1">
-            <Link
-              href={creatorProfileHref(creatorKey)}
-              className="block text-[14px] font-black truncate hover:opacity-90"
-            >
-              {authorName}
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={creatorProfileHref(creatorKey)}
+                className="block min-w-0 flex-1 text-[14px] font-black truncate hover:opacity-90"
+              >
+                {authorName}
+              </Link>
+              <CreatorFollowHeart
+                following={following}
+                busy={busy}
+                ready={followReady}
+                onToggle={toggleFollow}
+                creatorName={authorName}
+                tone="overlay"
+                size={15}
+              />
+            </div>
             <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-white/90">
               <span className="inline-flex items-center gap-0.5">
                 <EyeIcon size={13} color="#fff" className="cursor-default" />
@@ -331,12 +378,23 @@ export default function BlogCreatorEngageBar({
         </Link>
 
         <div className="min-w-0 flex flex-col">
-          <Link
-            href={creatorProfileHref(creatorKey)}
-            className="text-[13px] font-bold text-[#111] leading-tight hover:opacity-70"
-          >
-            {authorName}
-          </Link>
+          <div className="flex items-center gap-1.5">
+            <Link
+              href={creatorProfileHref(creatorKey)}
+              className="text-[13px] font-bold text-[#111] leading-tight hover:opacity-70"
+            >
+              {authorName}
+            </Link>
+            <CreatorFollowHeart
+              following={following}
+              busy={busy}
+              ready={followReady}
+              onToggle={toggleFollow}
+              creatorName={authorName}
+              size={15}
+              className="h-7 w-7"
+            />
+          </div>
           <div className="flex items-center gap-1.5 mt-0.5 text-[#555]">
             <a
               href={SOCIAL_LINKS.instagram}
@@ -370,15 +428,17 @@ export default function BlogCreatorEngageBar({
           pressed={liked}
           onPressedChange={() => toggleLike()}
           count={likeCount}
-          disabled={!authReady}
+          disabled={!authReady || !statsLoaded}
           label="收藏"
         />
 
         <button
           type="button"
           onClick={toggleFollow}
-          disabled={busy}
-          className={`inline-flex items-center gap-1.5 text-[12px] font-medium rounded-full px-3.5 py-1.5 border transition-colors ${
+          disabled={busy || !followReady}
+          aria-pressed={following}
+          aria-busy={busy}
+          className={`inline-flex items-center gap-1.5 text-[12px] font-medium rounded-full px-3.5 py-1.5 border transition-colors disabled:opacity-60 ${
             following
               ? "border-[#111] bg-[#111] text-white"
               : "border-[#ccc] text-[#333] hover:border-[#111]"

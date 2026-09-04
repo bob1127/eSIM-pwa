@@ -10,7 +10,7 @@ import {
   designControlStyle,
 } from "@/lib/partnerBlogDesign";
 import ColorPickerField from "./ColorPickerField";
-import { parseSocialPostUrl, socialEmbedPlatform } from "@/lib/partnerBlogBlocks";
+import { parseSocialPostUrl, socialEmbedPlatform, normalizeSocialUrlsField } from "@/lib/partnerBlogBlocks";
 import {
   SHARE_BUTTON_CATALOG,
   parseShareItems,
@@ -1622,12 +1622,19 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
             </>
           ) : null}
           <p className="text-[11px] text-white/50 mb-2 leading-relaxed">{hint}</p>
+          <p className="text-[11px] text-emerald-300/80 mb-2 leading-relaxed">
+            防呆：可直接貼貼文網址，或整段官方 iframe／embed 碼，儲存時會自動轉成可顯示網址。
+          </p>
           <Field label="列表顯示的貼文網址">
             <textarea
               className={`${inputCls} min-h-[110px] font-mono text-[12px]`}
               value={p.urls || ""}
               placeholder={ph}
               onChange={(e) => set("urls", e.target.value)}
+              onBlur={() => {
+                const next = normalizeSocialUrlsField(p.urls || "", { platform });
+                if (next && next !== String(p.urls || "").trim()) set("urls", next);
+              }}
             />
           </Field>
           <Field
@@ -1646,6 +1653,14 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
                   : "其他貼文網址，每行一則（僅燈箱切換用）"
               }
               onChange={(e) => set("nav_urls", e.target.value)}
+              onBlur={() => {
+                const next = normalizeSocialUrlsField(p.nav_urls || "", {
+                  platform,
+                });
+                if (next && next !== String(p.nav_urls || "").trim()) {
+                  set("nav_urls", next);
+                }
+              }}
             />
             <p className="text-[10px] text-white/40 mt-1 leading-relaxed">
               {platform === "instagram"
