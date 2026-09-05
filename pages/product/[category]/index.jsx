@@ -339,7 +339,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                 className="fixed left-0 top-0 bottom-0 w-[85vw] max-w-[340px] bg-[#F7F9FB] z-[9001] overflow-y-auto pb-24 lg:hidden"
               >
                 <div className="flex items-center justify-between px-4 pt-16 pb-3 border-b border-slate-200 bg-white sticky top-0 z-10">
-                  <p className="font-black text-slate-800">篩選方案</p>
+                  <p className="font-bold text-slate-800">篩選方案</p>
                   <button
                     type="button"
                     onClick={() => setMobileFilterOpen(false)}
@@ -400,7 +400,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-4 sm:px-6 py-4 sm:py-5">
               <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                 <div className="min-w-0">
-                  <h1 className="text-[22px] sm:text-[28px] font-black text-slate-900 tracking-tight leading-tight">
+                  <h1 className="text-[22px] sm:text-[28px] font-bold text-slate-900 tracking-tight leading-tight">
                     {currentCategory?.name}
                   </h1>
                   {currentCategory?.description ? (
@@ -419,6 +419,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                   <label className="flex items-center gap-2 shrink-0 text-[13px] text-slate-600">
                     <MapPin className="w-4 h-4 text-[#0071EB]" />
                     <select
+                      aria-label="選擇國家／地區"
                       className="appearance-none bg-slate-50 border border-slate-200 rounded-full pl-3 pr-8 py-2 text-[13px] font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0071EB]/30 cursor-pointer"
                       value={currentCategory?.slug || ""}
                       onChange={(e) => {
@@ -455,7 +456,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                   <SlidersHorizontal className="w-4 h-4" />
                   篩選
                   {activeTags.length > 0 && (
-                    <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-black bg-[#FADE2B] text-[#111] rounded-full">
+                    <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold bg-[#FADE2B] text-[#111] rounded-full">
                       {activeTags.length}
                     </span>
                   )}
@@ -573,7 +574,7 @@ const CategoryPage = ({ currentCategory, categories, initialProducts }) => {
                               </p>
                             )}
                             <div className="flex items-end gap-1.5 mt-auto pt-2.5">
-                              <span className="text-[#0071EB] font-black text-[15px] sm:text-base tabular-nums leading-none">
+                              <span className="text-[#0071EB] font-bold text-[15px] sm:text-base tabular-nums leading-none">
                                 NT${price}
                                 <span className="text-[10px] sm:text-[11px] font-bold ml-0.5">
                                   起

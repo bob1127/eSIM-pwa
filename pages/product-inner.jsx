@@ -285,7 +285,7 @@ export default function ProductDetailComplete() {
             <div className="lg:col-span-5 space-y-6">
               {/* 標題與評分 */}
               <div>
-                <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                <h1 className="text-[28px] font-bold text-slate-900 mb-2">
                   {PRODUCT_DATA.title}
                 </h1>
                 <div className="flex items-center space-x-2 text-sm text-yellow-500 mb-4">
@@ -303,7 +303,7 @@ export default function ProductDetailComplete() {
                     {PRODUCT_DATA.rating} ({PRODUCT_DATA.reviews} reviews)
                   </span>
                 </div>
-                <div className="text-3xl font-bold text-slate-900">
+                <div className="text-[28px] font-bold text-slate-900">
                   ${PRODUCT_DATA.price}
                 </div>
               </div>

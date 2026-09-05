@@ -119,7 +119,7 @@ export default function EsimGuideCarousel() {
           <h2 className="text-[#315cff] font-bold tracking-widest text-sm mb-3">
             HOW TO INSTALL
           </h2>
-          <h3 className="text-3xl md:text-4xl font-extrabold text-slate-900">
+          <h3 className="text-[28px] md:text-[24px] font-bold text-slate-900">
             如何安裝 eSIM - (事前確認與準備)
           </h3>
         </div>
@@ -166,7 +166,7 @@ export default function EsimGuideCarousel() {
 
                 {/* 👉 右側：藍底文字敘述區 (完全仿照 8card) */}
                 <div className="w-full md:w-1/2 flex flex-col items-start text-left pt-6 md:pt-0">
-                  <span className="text-[#315cff] font-extrabold text-lg mb-4 tracking-widest">
+                  <span className="text-[#315cff] font-bold text-lg mb-4 tracking-widest">
                     {step.tag}
                   </span>
 
@@ -175,7 +175,7 @@ export default function EsimGuideCarousel() {
                     {step.title.map((line, i) => (
                       <span
                         key={i}
-                        className="bg-[#315cff] text-white px-4 py-1.5 text-2xl md:text-4xl font-black tracking-wide leading-tight shadow-sm inline-block"
+                        className="bg-[#315cff] text-white px-4 py-1.5 text-[24px] font-bold tracking-wide leading-tight shadow-sm inline-block"
                       >
                         {line}
                       </span>
@@ -224,7 +224,7 @@ export default function EsimGuideCarousel() {
               <p className="text-sm font-bold text-gray-500 mb-1 tracking-wide">
                 開始使用 eSIM 前的檢查
               </p>
-              <h2 className="text-3xl md:text-4xl font-black text-gray-900">
+              <h2 className="text-[28px] md:text-[24px] font-bold text-gray-900">
                 準備工作確認
               </h2>
             </div>
@@ -266,7 +266,7 @@ export default function EsimGuideCarousel() {
                       ，港澳部分機型支援。
                     </p>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[#06C755] font-bold hover:underline text-xs mt-2 transition-colors">
+                  <span className="inline-flex items-center gap-1 text-[#067A38] font-bold hover:underline text-xs mt-2 transition-colors">
                     查看 Apple 支援頁面清單 <ExternalLink className="w-3 h-3" />
                   </span>
                 </div>
@@ -289,7 +289,7 @@ export default function EsimGuideCarousel() {
                       />
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-200">
-                          <Lock className="w-8 h-8 text-[#06C755]" />
+                          <Lock className="w-8 h-8 text-[#067A38]" />
                           <div className="text-[10px] text-center font-bold text-gray-500 mt-1">
                             UNLOCKED
                           </div>
@@ -350,7 +350,7 @@ const CardItem = ({ step, title, illustration, children }) => {
     >
       {/* 標題區 */}
       <div className="px-6 pt-6 pb-2 flex items-start gap-3">
-        <span className="bg-[#06C755] text-white text-sm font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5">
+        <span className="bg-[#067A38] text-white text-sm font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5">
           {step}
         </span>
         <h3 className="font-bold text-lg text-gray-900 leading-tight">

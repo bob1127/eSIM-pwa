@@ -860,7 +860,7 @@ function PromoPanel({
           {loading ? (
             <LoadingIndicator layout="inline" label="載入中…" size="xs" />
           ) : (
-            <span className="text-[18px] font-black text-[#0A6CD0] tabular-nums">
+            <span className="text-[18px] font-bold text-[#0A6CD0] tabular-nums">
               {Number(points || 0).toLocaleString("zh-TW")}
               <span className="text-[12px] font-bold ml-1 text-gray-500">點</span>
             </span>
@@ -892,7 +892,7 @@ function PromoPanel({
                       {c.code}
                     </p>
                   </div>
-                  <span className="shrink-0 text-[12px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  <span className="shrink-0 text-[12px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
                     NT${Number(c.amount || 0)}
                   </span>
                 </li>

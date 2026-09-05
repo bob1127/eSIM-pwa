@@ -51,7 +51,7 @@ export default function ScrollAppleShowcase() {
     <div className="w-full max-w-[1700px] mx-auto mt-[-40px] px-4 md:px-8 font-['PP_Neue_Montreal',_sans-serif]">
       {/* 標題區塊 */}
       <div className="text-center mb-10">
-        <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">
+        <h2 className="text-[28px] md:text-[24px] font-bold text-slate-800 tracking-tight">
           iOS 影音安裝教學
         </h2>
         <p className="text-slate-500 mt-3 max-w-2xl mx-auto">

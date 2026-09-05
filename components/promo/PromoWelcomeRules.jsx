@@ -17,7 +17,7 @@ export default function PromoWelcomeRules() {
         </p>
         <h2
           id="promo-rules-heading"
-          className="text-2xl font-black text-slate-900 mb-2"
+          className="text-[24px] font-bold text-slate-900 mb-2"
         >
           新會員 50 元折價券｜活動規則
         </h2>

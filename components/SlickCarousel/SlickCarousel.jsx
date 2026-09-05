@@ -21,9 +21,9 @@ class ImageGalleryComponent extends React.Component {
         return (
             <div className="  relative">
                  <div className="txt-wrap z-[99999] flex flex-col justify-center items-center absolute left-[0%] bottom-[15%]">
-                <h3 className="text-[40px] font-normal text-[#fe5426]">LIGHT WARM</h3>
+                <h3 className="text-[28px] font-normal text-[#fe5426]">LIGHT WARM</h3>
                 <p className="text-[16px] font-bold text-center text-[#fe5426]">輕薄、保暖、可機洗。</p>
-                 <h3 className="text-[40px] font-normal text-[#fe5426]">OUTER</h3>
+                 <h3 className="text-[28px] font-normal text-[#fe5426]">OUTER</h3>
                  <a href="" className="border-white border-2 rounded-[30px] w-[100px] text-white text-center">Series</a>
                  <p className="text-[13px] w-2/3 mt-5 text-white text-center">本產品採用了獨特開發的「Air Thermal®」隔熱材質，具有輕薄、耐穿、保暖三大要素。</p>
              </div>

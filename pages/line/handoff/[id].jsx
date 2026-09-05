@@ -90,7 +90,7 @@ export default function LineHandoffPage() {
       </Head>
       <main className="min-h-[100dvh] bg-[#f3f6fb] px-4 py-10 flex items-start justify-center font-sans">
         <div className="w-full max-w-md rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
-          <div className="flex items-center gap-2 text-[#06C755]">
+          <div className="flex items-center gap-2 text-[#067A38]">
             <LineIconSvg className="w-6 h-6" />
             <h1 className="text-lg font-bold text-slate-800">轉專人客服</h1>
           </div>
@@ -117,7 +117,7 @@ export default function LineHandoffPage() {
               </pre>
               <a
                 href={lineUrl}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#06C755] text-white font-semibold text-[15px] py-3.5 no-underline hover:bg-[#05b34c]"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#067A38] text-white font-semibold text-[15px] py-3.5 no-underline hover:bg-[#056B30]"
               >
                 <LineIconSvg className="w-5 h-5" />
                 開啟 LINE 並帶入提問

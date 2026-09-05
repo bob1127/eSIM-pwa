@@ -18,9 +18,25 @@ import { ChevronRight, Tag, Shield, Truck, RotateCcw } from "lucide-react";
 import { LineIconSvg } from "@/components/social/SocialBrandIcons";
 import { QuarterRing } from "@/components/ui/QuarterRing";
 import { clientWarn, clientError } from "@/lib/clientLogger";
+import {
+  writePendingPayment,
+  clearPendingPayment,
+} from "@/lib/checkoutPendingPayment";
 
 // ── 步驟指示器 ──────────────────────────────────────────────────
 const STEPS = ["購物車", "資訊", "運送", "付款"];
+const PAYMENT_METHODS = [
+  {
+    id: "linepay",
+    title: "LINE Pay",
+    desc: "以 LINE App 快速付款",
+  },
+  {
+    id: "newebpay",
+    title: "藍新金流",
+    desc: "信用卡、超商代碼、虛擬帳號",
+  },
+];
 
 function Breadcrumb({ current = 1 }) {
   return (
@@ -172,7 +188,7 @@ function OrderSummary({
               href={lineOaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#06C755] bg-white text-[#06C755] text-[12px] font-bold px-4 py-2"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#067A38] bg-white text-[#067A38] text-[12px] font-bold px-4 py-2"
             >
               <LineIconSvg className="w-3.5 h-3.5" />
               尚未加好友？點此加入官方 LINE
@@ -182,7 +198,7 @@ function OrderSummary({
       )}
 
       {needLineFriend && !needLogin && (
-        <div className="mb-4 rounded-xl border border-[#06C755]/35 bg-[#06C755]/10 px-3.5 py-3">
+        <div className="mb-4 rounded-xl border border-[#067A38]/35 bg-[#067A38]/10 px-3.5 py-3">
           <p className="text-[13px] font-bold text-slate-800 leading-snug">
             還未加入官方 LINE？
           </p>
@@ -194,7 +210,7 @@ function OrderSummary({
             href={lineOaUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2.5 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2"
+            className="mt-2.5 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#067A38] hover:bg-[#056B30] text-white text-[12px] font-bold px-4 py-2"
           >
             <LineIconSvg className="w-3.5 h-3.5" />
             加入官方 LINE 立即使用優惠折扣
@@ -246,7 +262,7 @@ function OrderSummary({
         <span className="text-base font-bold text-slate-800">總計</span>
         <div className="text-right">
           <span className="text-[11px] text-gray-400 mr-1">TWD</span>
-          <span className="text-2xl font-black text-slate-900">
+          <span className="text-[24px] font-bold text-slate-900">
             NT${total.toLocaleString()}
           </span>
         </div>
@@ -292,6 +308,8 @@ export default function ShopCheckoutPage() {
   const [welcomeHint, setWelcomeHint] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [paymentMethod, setPaymentMethod] = useState("linepay");
+  const [submittingMethod, setSubmittingMethod] = useState(null);
 
   // 社群 / Email 登入 + 本機儲存 → 自動帶入空白欄位
   useEffect(() => {
@@ -507,6 +525,117 @@ export default function ShopCheckoutPage() {
     }
   };
 
+  const buildIdentity = () => ({
+    supabaseUserId: user?.id || null,
+    lineUserId: nextAuthSession?.user?.id || null,
+    authProvider: user?.id
+      ? "supabase"
+      : nextAuthSession?.user
+        ? "line"
+        : "guest",
+  });
+
+  const startNewebPayCheckout = async () => {
+    const identity = buildIdentity();
+    const orderRes = await fetch("/api/orders/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cartId,
+        orderInfo: { ...form, customerId: user?.id || null, ...identity },
+      }),
+    });
+    const orderResult = await orderRes.json();
+
+    if (!orderResult.success) {
+      if (orderResult.code === "CART_COMPLETED") {
+        localStorage.removeItem("medusa_cart_id");
+        alert(
+          orderResult.message ||
+            "購物車狀態已更新，請重新整理後再試一次結帳。",
+        );
+        window.location.reload();
+        return;
+      }
+      throw new Error(orderResult.message || "建立訂單失敗");
+    }
+
+    const { orderId, amount } = orderResult;
+    localStorage.removeItem("medusa_cart_id");
+
+    writePendingPayment({
+      method: "newebpay",
+      medusaOrderId: orderId,
+      amount,
+      email: form.email,
+      cartId,
+      preserveLocalCart: true,
+    });
+
+    sessionStorage.setItem(
+      "newebpay_checkout_payload",
+      JSON.stringify({
+        orderId,
+        amount,
+        orderInfo: {
+          ...form,
+          ...identity,
+          methods: ["CREDIT", "VACC", "WEBATM"],
+          payment_method: "CREDIT",
+        },
+      }),
+    );
+
+    await router.push("/checkout/payment/");
+  };
+
+  const startLinePayCheckout = async () => {
+    clearPendingPayment();
+    const identity = buildIdentity();
+
+    const linepayRes = await fetch("/api/linepay/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cartId,
+        orderInfo: {
+          ...form,
+          customerId: user?.id || null,
+          ...identity,
+          methods: ["LINEPAY"],
+          payment_method: "LINEPAY",
+        },
+      }),
+    });
+    const linepayData = await linepayRes.json();
+
+    if (!linepayRes.ok || !linepayData?.success || !linepayData?.paymentUrl) {
+      if (linepayData?.code === "CART_COMPLETED") {
+        localStorage.removeItem("medusa_cart_id");
+        alert(
+          linepayData.message ||
+            "購物車已結帳完成，請重新整理後再試一次。",
+        );
+        window.location.reload();
+        return { redirecting: false };
+      }
+      throw new Error(linepayData?.message || "LINE Pay 建單失敗");
+    }
+
+    writePendingPayment({
+      method: "linepay",
+      deferredOrder: true,
+      medusaOrderId: null,
+      orderNo: linepayData.orderNo,
+      amount: linepayData.amount,
+      cartId,
+      email: form.email,
+    });
+
+    window.location.href = linepayData.paymentUrl;
+    return { redirecting: true };
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
@@ -524,58 +653,27 @@ export default function ShopCheckoutPage() {
     }
 
     setIsSubmitting(true);
+    setSubmittingMethod(paymentMethod);
+    let redirecting = false;
     try {
       saveCheckoutProfile(form);
 
-      // 結帳身分「蓋章」：帶進訂單 metadata，會員中心可依此對回本人訂單
-      const identity = {
-        supabaseUserId: user?.id || null,
-        lineUserId: nextAuthSession?.user?.id || null,
-        authProvider: user?.id ? "supabase" : nextAuthSession?.user ? "line" : "guest",
-      };
-
-      // Step 1: 建立 Medusa 訂單
-      const orderRes = await fetch("/api/orders/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cartId,
-          orderInfo: { ...form, customerId: user?.id || null, ...identity },
-        }),
-      });
-      const orderResult = await orderRes.json();
-
-      if (!orderResult.success) {
-        throw new Error(orderResult.message || "建立訂單失敗");
+      if (paymentMethod === "linepay") {
+        const result = await startLinePayCheckout();
+        redirecting = Boolean(result?.redirecting);
+        return;
       }
 
-      const { orderId, amount } = orderResult;
-
-      // Step 2: 取得藍新付款表單並送出
-      const formRes = await fetch("/api/newebpay-generate-form", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          totalPrice: amount || physicalTotal,
-          orderInfo: { ...form, ...identity },
-          customOrderId: orderId,
-        }),
-      });
-
-      if (!formRes.ok) {
-        const errText = await formRes.text();
-        throw new Error(errText || "無法建立付款表單");
-      }
-
-      const html = await formRes.text();
-      document.open();
-      document.write(html);
-      document.close();
+      await startNewebPayCheckout();
+      redirecting = true;
     } catch (err) {
       clientError("結帳失敗:", err);
       alert(`發生錯誤：${err.message}`);
     } finally {
-      setIsSubmitting(false);
+      if (!redirecting) {
+        setIsSubmitting(false);
+        setSubmittingMethod(null);
+      }
     }
   };
 
@@ -716,26 +814,60 @@ export default function ShopCheckoutPage() {
               <h2 className="text-base font-bold text-slate-800 mb-4">
                 付款方式
               </h2>
-              <div className="border border-gray-200 rounded-xl px-4 py-4 flex items-center gap-3 bg-white">
-                <Shield className="w-5 h-5 text-slate-400 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-slate-700">
-                    藍新金流安全付款
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    支援信用卡、超商代碼、虛擬帳號、LINE Pay
-                  </p>
-                </div>
-                <div className="flex gap-1.5 ml-auto">
-                  {["VISA", "MC", "JCB"].map((c) => (
-                    <span
-                      key={c}
-                      className="text-[9px] font-black border border-gray-200 rounded px-1.5 py-0.5 text-slate-500"
+              <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 bg-white">
+                {PAYMENT_METHODS.map((method) => {
+                  const selected = paymentMethod === method.id;
+                  return (
+                    <label
+                      key={method.id}
+                      className={`flex items-center justify-between px-4 py-3.5 cursor-pointer transition-colors ${
+                        selected
+                          ? "bg-blue-50 border-l-2 border-blue-500"
+                          : "hover:bg-slate-50 border-l-2 border-transparent"
+                      }`}
                     >
-                      {c}
-                    </span>
-                  ))}
-                </div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value={method.id}
+                          checked={selected}
+                          onChange={() => setPaymentMethod(method.id)}
+                          className="accent-blue-600 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                            {method.id === "linepay" ? (
+                              <LineIconSvg className="w-4 h-4 shrink-0" />
+                            ) : (
+                              <Shield className="w-4 h-4 text-slate-400 shrink-0" />
+                            )}
+                            {method.title}
+                          </p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            {method.desc}
+                          </p>
+                        </div>
+                      </div>
+                      {method.id === "newebpay" ? (
+                        <div className="flex gap-1.5 ml-3 shrink-0">
+                          {["VISA", "MC", "JCB"].map((c) => (
+                            <span
+                              key={c}
+                              className="text-[9px] font-bold border border-gray-200 rounded px-1.5 py-0.5 text-slate-500"
+                            >
+                              {c}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="ml-3 text-[10px] font-bold text-[#067A38] border border-[#067A38]/30 rounded px-1.5 py-0.5 shrink-0">
+                          LINE
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
               </div>
             </section>
 
@@ -743,15 +875,23 @@ export default function ShopCheckoutPage() {
             <button
               type="submit"
               disabled={isSubmitting || physicalItems.length === 0}
-              className="w-full py-4 bg-[#3B9EFF] hover:bg-[#2B8EEF] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+              className={`w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm ${
+                paymentMethod === "linepay"
+                  ? "bg-[#067A38] hover:bg-[#056B30]"
+                  : "bg-[#3B9EFF] hover:bg-[#2B8EEF]"
+              }`}
             >
               {isSubmitting ? (
                 <>
                   <QuarterRing size="sm" className="text-white" />
-                  處理中…
+                  {submittingMethod === "linepay"
+                    ? "正在前往 LINE Pay…"
+                    : "正在前往藍新金流…"}
                 </>
+              ) : paymentMethod === "linepay" ? (
+                "LINE Pay 結帳"
               ) : (
-                "立即付款"
+                "藍新金流結帳"
               )}
             </button>
 

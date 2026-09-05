@@ -204,7 +204,7 @@ function EsimInstallQrModal({ esim, onClose, onConfirmCheck }) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
           <h3
             id="esim-install-qr-title"
-            className="text-sm font-black text-slate-900"
+            className="text-sm font-bold text-slate-900"
           >
             安裝 eSIM
           </h3>
@@ -283,7 +283,7 @@ function EsimNotInstalledModal({ esim, onClose, onInstall }) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
           <h3
             id="esim-not-installed-title"
-            className="text-sm font-black text-slate-900"
+            className="text-sm font-bold text-slate-900"
           >
             尚未安裝 eSIM
           </h3>
@@ -951,7 +951,7 @@ export default function MemberEsimQuerySheet({
 
       <div className="px-4 sm:px-5 pt-4 pb-5">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <h3 className="text-[17px] font-black text-slate-900 tracking-tight">
+          <h3 className="text-[17px] font-bold text-slate-900 tracking-tight">
             您的 eSIM
           </h3>
           {esims.length > 0 && (

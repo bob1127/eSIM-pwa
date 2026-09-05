@@ -18,7 +18,7 @@ export default function PromoPage() {
       }}
     >
       <div
-        className="min-h-screen pb-20 font-sans"
+        className="min-h-screen pb-20 font-sans overflow-x-hidden"
         style={{
           background:
             "linear-gradient(180deg, #F7F8FA 0%, #EEF1F6 45%, #F7F8FA 100%)",
@@ -45,19 +45,19 @@ export default function PromoPage() {
         <PromoLotteryMachine className=" " />
 
         {/* 拉霸機下方 Banner */}
-        <div className="w-full mb-10 bg-[#f11816] p-10 md:mb-14">
+        <div className="w-full mb-8 sm:mb-10 bg-[#f11816] px-3 py-5 sm:p-10 md:mb-14 overflow-x-hidden">
           <a
             href={LINE_OA}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full"
+            className="block w-full max-w-[1200px] mx-auto"
             aria-label="優惠活動 Banner"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/images/disccount/5572ea3a-0815-4e94-819d-24aee76826c0.png"
               alt="優惠活動 Banner"
-              className="block max-w-[1200px] border-8 border-white mx-auto h-auto"
+              className="block w-full h-auto max-w-full border-4 sm:border-8 border-white"
             />
           </a>
         </div>

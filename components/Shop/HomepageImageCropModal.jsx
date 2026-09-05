@@ -263,7 +263,7 @@ export default function HomepageImageCropModal({
       <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
           <div>
-            <p className="text-sm font-black text-slate-800">裁切圖片</p>
+            <p className="text-sm font-bold text-slate-800">裁切圖片</p>
             <p className="text-[11px] text-slate-500 mt-0.5">
               比例 {aspectHint} · 上傳上限{" "}
               {formatBytes(HOMEPAGE_IMAGE_UPLOAD_MAX_BYTES)} · 拖曳移動／滾輪縮放

@@ -38,7 +38,7 @@ function PromoCard() {
         出國移動更輕鬆
       </p>
       <p
-        className="relative z-10 mt-1 text-[40px] sm:text-[48px] lg:text-[52px] font-black leading-none tracking-tight"
+        className="relative z-10 mt-1 text-[28px] font-bold leading-none tracking-tight"
         style={{
           fontFamily: "system-ui, sans-serif",
           textShadow: "2px 2px 0 rgba(0,0,0,0.08)",
@@ -84,7 +84,7 @@ function CharterPhotoCard() {
 
       <div className="absolute inset-0 flex items-center justify-center z-10 px-4">
         <div className="rounded-lg border-2 border-white px-4 py-2 sm:px-6 sm:py-3 text-center bg-black/10 backdrop-blur-[2px]">
-          <p className="text-base sm:text-lg font-black text-white tracking-widest leading-tight">
+          <p className="text-base sm:text-lg font-bold text-white tracking-widest leading-tight">
             Jeko
           </p>
           <p className="text-xs sm:text-sm font-bold text-white mt-0.5 tracking-[0.2em]">

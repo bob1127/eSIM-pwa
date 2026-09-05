@@ -219,7 +219,7 @@ function ProductsTab({
     <div className="h-full min-h-0 flex flex-col bg-white border border-slate-200 rounded-xl sm:rounded-sm shadow-sm overflow-hidden">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-200 shrink-0">
         <div>
-          <h2 className="text-base font-black text-slate-800">商品列表</h2>
+          <h2 className="text-base font-bold text-slate-800">商品列表</h2>
           <p className="text-xs text-slate-400 mt-0.5">
             共 {displayed.length} 件
             {filterMode !== "all" ? `（篩選後）／全部 ${products.length} 件` : ""}
@@ -314,7 +314,7 @@ function ProductsTab({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-black text-slate-800 leading-snug break-words">
+                    <p className="text-sm font-bold text-slate-800 leading-snug break-words">
                       {p.name}
                     </p>
                     <p className="text-xs text-slate-400 mt-1 truncate">
@@ -352,7 +352,7 @@ function ProductsTab({
                   </div>
                   <div className="rounded-lg bg-blue-50 px-2 py-2">
                     <p className="text-[10px] text-slate-400 font-bold">分潤</p>
-                    <p className="text-xs font-black text-[#1E4AD1] mt-0.5">
+                    <p className="text-xs font-bold text-[#1E4AD1] mt-0.5">
                       {fmt(p.totalProfit)}
                     </p>
                   </div>
@@ -464,7 +464,7 @@ function ProductsTab({
                       </span>
                       <span className="text-xs text-slate-400 ml-0.5">張</span>
                     </td>
-                    <td className="px-5 py-4 text-right font-black text-[#1E4AD1]">
+                    <td className="px-5 py-4 text-right font-bold text-[#1E4AD1]">
                       {fmt(p.totalProfit)}
                     </td>
                     <td className="px-5 py-4 text-center">
@@ -1474,7 +1474,7 @@ function PricingTab({
               <MaterialIcon name="percent" size={22} className="text-[#1E4AD1]" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-black text-slate-800">商店加價設定</h3>
+              <h3 className="text-sm font-bold text-slate-800">商店加價設定</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 可選「比例加價」或「固定加價」。按「套用加價設定」後，
                 <strong className="text-slate-700">跟隨商店設定</strong>
@@ -1523,7 +1523,7 @@ function PricingTab({
                     max="10000"
                     value={globalFixed}
                     onChange={(e) => setGlobalFixed(e.target.value)}
-                    className="w-28 px-3 py-2.5 border border-slate-300 rounded-sm text-sm font-black text-slate-800 focus:border-[#1E4AD1] outline-none"
+                    className="w-28 px-3 py-2.5 border border-slate-300 rounded-sm text-sm font-bold text-slate-800 focus:border-[#1E4AD1] outline-none"
                   />
                 ) : (
                   <input
@@ -1532,7 +1532,7 @@ function PricingTab({
                     max="500"
                     value={globalMarkup}
                     onChange={(e) => setGlobalMarkup(e.target.value)}
-                    className="w-28 px-3 py-2.5 border border-slate-300 rounded-sm text-sm font-black text-slate-800 focus:border-[#1E4AD1] outline-none"
+                    className="w-28 px-3 py-2.5 border border-slate-300 rounded-sm text-sm font-bold text-slate-800 focus:border-[#1E4AD1] outline-none"
                   />
                 )}
                 <span className="text-sm font-bold text-slate-600">
@@ -1552,7 +1552,7 @@ function PricingTab({
               <p className="font-bold text-slate-700 mb-1">試算</p>
               <p>
                 底價 NT${exampleCost} → 售價{" "}
-                <span className="font-black text-[#1E4AD1]">NT${exampleSell}</span>
+                <span className="font-bold text-[#1E4AD1]">NT${exampleSell}</span>
                 ，預估分潤約 NT$
                 {Math.max(
                   0,
@@ -1571,7 +1571,7 @@ function PricingTab({
       <div className="flex-1 min-h-0 flex flex-col bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 sm:px-5 py-4 border-b border-slate-200 shrink-0">
           <div className="min-w-0">
-            <h3 className="text-sm font-black text-slate-800">商品自訂售價</h3>
+            <h3 className="text-sm font-bold text-slate-800">商品自訂售價</h3>
             <p className="text-xs text-slate-500 mt-0.5">
               點商品列展開，選擇「跟隨商店設定／比例加價／固定加價」，或直接改單一方案售價。
             </p>
@@ -1629,15 +1629,15 @@ function PricingTab({
           <div className="flex gap-6 sm:gap-8 text-sm flex-wrap">
             <div>
               <span className="text-slate-500 text-xs">底價成本合計</span>
-              <span className="ml-2 font-black text-slate-800">{fmt(totals.cost)}</span>
+              <span className="ml-2 font-bold text-slate-800">{fmt(totals.cost)}</span>
             </div>
             <div>
               <span className="text-slate-500 text-xs">預估分潤合計</span>
-              <span className="ml-2 font-black text-[#1E4AD1]">{fmt(totals.profit)}</span>
+              <span className="ml-2 font-bold text-[#1E4AD1]">{fmt(totals.profit)}</span>
             </div>
             <div>
               <span className="text-slate-500 text-xs">商品數</span>
-              <span className="ml-2 font-black text-slate-800">{totals.count}</span>
+              <span className="ml-2 font-bold text-slate-800">{totals.count}</span>
             </div>
           </div>
         </div>
@@ -1672,7 +1672,7 @@ function PricingTab({
                     className="w-full text-left flex items-start justify-between gap-2"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-black text-slate-800 leading-snug flex items-center gap-1.5">
+                      <p className="text-sm font-bold text-slate-800 leading-snug flex items-center gap-1.5">
                         {p.name}
                         {customActive && (
                           <span className="text-[9px] font-bold text-[#1E4AD1] bg-blue-50 px-1.5 py-0.5 rounded-sm shrink-0">
@@ -1691,7 +1691,7 @@ function PricingTab({
                     />
                   </button>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-[#1E4AD1] font-black">
+                    <span className="text-xs text-[#1E4AD1] font-bold">
                       預估分潤 {fmt(profit)}
                     </span>
                     <div className="flex gap-2">
@@ -1834,7 +1834,7 @@ function PricingTab({
                           </td>
                         )}
                         {visibleCols["預估分潤"] && (
-                          <td className="px-5 py-4 text-right font-black text-[#1E4AD1]">
+                          <td className="px-5 py-4 text-right font-bold text-[#1E4AD1]">
                             {fmt(profit)}
                           </td>
                         )}
@@ -1892,7 +1892,7 @@ function PricingTab({
                                 <div className="flex flex-col justify-end">
                                   <div className="rounded-sm bg-white border border-slate-200 px-4 py-3 text-xs text-slate-600">
                                     <p>售價 − 底價 − 2.8% 金流 = 您的分潤</p>
-                                    <p className="text-[#1E4AD1] font-black mt-1 text-sm">
+                                    <p className="text-[#1E4AD1] font-bold mt-1 text-sm">
                                       以最低方案起價估算：{fmt(profit)}
                                     </p>
                                   </div>
@@ -2030,7 +2030,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
           }`}
         >
           <div className="px-3 py-2 bg-slate-50 border-b border-slate-100">
-            <p className="text-[11px] font-black text-slate-600">選擇匯出內容</p>
+            <p className="text-[11px] font-bold text-slate-600">選擇匯出內容</p>
             <p className="text-[10px] text-slate-400 mt-0.5">
               Excel／Numbers 可直接開啟（UTF-8）
             </p>
@@ -2049,7 +2049,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
                     className="text-[#1E4AD1] mt-0.5 shrink-0"
                   />
                   <span className="min-w-0">
-                    <span className="block text-xs font-black text-slate-800">
+                    <span className="block text-xs font-bold text-slate-800">
                       {opt.label}
                       {opt.id === "full" ? (
                         <span className="ml-1.5 text-[10px] font-bold text-[#1E4AD1] bg-blue-50 px-1.5 py-0.5 rounded">
@@ -2116,10 +2116,10 @@ function ReportTab({ stats, partner, store, onGoTab }) {
               href={c.href}
               className="bg-white border border-slate-200 rounded-sm shadow-sm p-5 flex flex-col items-center gap-2 hover:border-[#1E4AD1] hover:shadow-md transition group text-center"
             >
-              <div className="w-12 h-12 rounded-full bg-[#1E4AD1] text-white flex items-center justify-center text-2xl shadow">
+              <div className="w-12 h-12 rounded-full bg-[#1E4AD1] text-white flex items-center justify-center text-[24px] shadow">
                 {c.icon}
               </div>
-              <p className="text-sm font-black text-slate-800">{c.label}</p>
+              <p className="text-sm font-bold text-slate-800">{c.label}</p>
               <p className="text-xs text-slate-400">{c.sub}</p>
             </Link>
           ) : (
@@ -2129,10 +2129,10 @@ function ReportTab({ stats, partner, store, onGoTab }) {
               onClick={c.onClick}
               className="bg-white border border-slate-200 rounded-sm shadow-sm p-5 flex flex-col items-center gap-2 hover:border-[#1E4AD1] hover:shadow-md transition group text-center"
             >
-              <div className="w-12 h-12 rounded-full bg-[#1E4AD1] text-white flex items-center justify-center text-2xl shadow">
+              <div className="w-12 h-12 rounded-full bg-[#1E4AD1] text-white flex items-center justify-center text-[24px] shadow">
                 {c.icon}
               </div>
-              <p className="text-sm font-black text-slate-800">{c.label}</p>
+              <p className="text-sm font-bold text-slate-800">{c.label}</p>
               <p className="text-xs text-slate-400">{c.sub}</p>
             </button>
           ),
@@ -2147,7 +2147,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 gap-3 flex-wrap">
               <div>
-                <h3 className="text-sm font-black text-slate-800">月次分潤報告</h3>
+                <h3 className="text-sm font-bold text-slate-800">月次分潤報告</h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
                   匯出可含商品明細、訂單逐筆與各項 KPI
                 </p>
@@ -2198,7 +2198,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
                       <td className="px-5 py-3.5 text-right text-slate-500">
                         {fmt(r.cost)}
                       </td>
-                      <td className="px-5 py-3.5 text-right font-black text-[#1E4AD1]">
+                      <td className="px-5 py-3.5 text-right font-bold text-[#1E4AD1]">
                         +{fmt(r.profit)}
                       </td>
                       <td className="px-5 py-3.5 text-center text-slate-700">
@@ -2207,7 +2207,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
                     </tr>
                   ))}
                   {monthly.length > 0 && (
-                    <tr className="bg-slate-100 font-black">
+                    <tr className="bg-slate-100 font-bold">
                       <td className="px-5 py-3 text-slate-700 text-xs">合計</td>
                       <td className="px-5 py-3 text-right text-slate-700">
                         {fmt(totals.revenue)}
@@ -2230,7 +2230,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
 
           <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-              <h3 className="text-sm font-black text-slate-800">最近訂單</h3>
+              <h3 className="text-sm font-bold text-slate-800">最近訂單</h3>
               <Link
                 href="/partner/orders"
                 className="text-xs border border-[#1E4AD1] text-[#1E4AD1] font-bold px-4 py-1.5 rounded-sm hover:bg-blue-50 transition"
@@ -2277,7 +2277,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-black text-[#1E4AD1]">
+                      <span className="text-sm font-bold text-[#1E4AD1]">
                         +{fmt(o.partner_profit)}
                       </span>
                       <MaterialIcon
@@ -2296,7 +2296,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
         <div className="w-full lg:w-72 space-y-4 shrink-0">
           <div className="bg-white border border-slate-200 rounded-sm shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-black text-slate-800">店鋪資訊</h3>
+              <h3 className="text-sm font-bold text-slate-800">店鋪資訊</h3>
               <Link
                 href="/partner/settings"
                 className="text-xs border border-slate-300 text-slate-600 px-3 py-1 rounded-sm hover:bg-slate-50 font-bold"
@@ -2320,7 +2320,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
           </div>
 
           <div className="bg-white border border-slate-200 rounded-sm shadow-sm p-5">
-            <h3 className="text-sm font-black text-slate-800 mb-3">分潤說明</h3>
+            <h3 className="text-sm font-bold text-slate-800 mb-3">分潤說明</h3>
             <ul className="space-y-2 text-xs text-slate-600">
               <li className="flex items-start gap-2">
                 <MaterialIcon
@@ -2362,7 +2362,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
           </div>
 
           <div className="bg-white border border-slate-200 rounded-sm shadow-sm p-5">
-            <h3 className="text-sm font-black text-slate-800 mb-3">累計 KPI</h3>
+            <h3 className="text-sm font-bold text-slate-800 mb-3">累計 KPI</h3>
             <dl className="space-y-2.5 text-xs">
               {[
                 ["累計分潤", fmt(totals.profit)],
@@ -2371,7 +2371,7 @@ function ReportTab({ stats, partner, store, onGoTab }) {
               ].map(([l, v]) => (
                 <div key={l} className="flex justify-between">
                   <dt className="text-slate-400">{l}</dt>
-                  <dd className="font-black text-slate-800">{v}</dd>
+                  <dd className="font-bold text-slate-800">{v}</dd>
                 </div>
               ))}
             </dl>

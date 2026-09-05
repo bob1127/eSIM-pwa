@@ -5,15 +5,22 @@ import {
   SITE_APPLE_TOUCH_ICON,
   PWA_LOGO,
 } from "../lib/pwaConfig";
-import { CF_IMG_BOOTSTRAP } from "../lib/cfImageBootstrap";
-import { isCfImagesEnabled } from "../lib/cfImageLoader";
+import { buildCfImgBootstrap } from "../lib/cfImageBootstrap";
+import {
+  getCfRemoteOriginAllowlist,
+  isCfImagesEnabled,
+} from "../lib/cfImageLoader";
 
 export default function Document() {
+  const cfBootstrap = isCfImagesEnabled()
+    ? buildCfImgBootstrap({ remoteOrigins: getCfRemoteOriginAllowlist() })
+    : null;
+
   return (
     <Html lang="zh-TW">
       <Head>
-        {isCfImagesEnabled() ? (
-          <script dangerouslySetInnerHTML={{ __html: CF_IMG_BOOTSTRAP }} />
+        {cfBootstrap ? (
+          <script dangerouslySetInnerHTML={{ __html: cfBootstrap }} />
         ) : null}
         <link rel="icon" href={SITE_FAVICON} type="image/png" sizes="32x32" />
         <link rel="icon" href={SITE_FAVICON_16} type="image/png" sizes="16x16" />

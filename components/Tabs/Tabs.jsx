@@ -80,7 +80,7 @@ export default function App() {
                              
 
                                 <p className="text-tiny text-white/60 uppercase font-bold">New</p>
-                                <h4 className="text-black font-medium text-2xl">Acme camera</h4>
+                                <h4 className="text-black font-medium text-[24px]">Acme camera</h4>
                          
                             </CardHeader>
 
@@ -160,7 +160,7 @@ export default function App() {
 
 </p>
                                                     {/* <img src={img01} alt="" className="w-full " /> */}
-                                                    {/* <span className="text-5xl after:content-['min '] text-orange-500">
+                                                    {/* <span className="text-[28px] after:content-['min '] text-orange-500">
                                                         30
                                                     </span> */}
 
@@ -201,7 +201,7 @@ export default function App() {
 </p>
                                                 <img src="
                                                 " alt="" />
-                                                {/* <span className="text-5xl after:content-['min '] text-orange-500">
+                                                {/* <span className="text-[28px] after:content-['min '] text-orange-500">
                                                     30
                                                 </span> */}
                                              

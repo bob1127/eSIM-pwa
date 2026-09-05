@@ -102,7 +102,7 @@ export default function ProductRatingBadge({
           />
         ))}
       </span>
-      <span className="font-black text-slate-800 tabular-nums">
+      <span className="font-bold text-slate-800 tabular-nums">
         {ratingValue.toFixed(1)}
       </span>
       <span className="text-slate-400 font-medium">

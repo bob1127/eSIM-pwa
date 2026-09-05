@@ -349,7 +349,7 @@ export default function LineIccidScreen({
               ›
             </motion.span>
           </span>
-          <h1 className="text-[17px] font-black tracking-tight text-[#0B1F40]">
+          <h1 className="text-[17px] font-bold tracking-tight text-[#0B1F40]">
             流量提醒
           </h1>
           <span className="inline-flex items-center gap-1 text-[12px] font-bold text-[#276EF1]">
@@ -406,7 +406,7 @@ export default function LineIccidScreen({
                 onClick={() => setBindSheetOpen(true)}
                 className="mb-3 w-full rounded-2xl border border-[#E6EAF2] bg-[#F7F9FC] px-3.5 py-3 text-left"
               >
-                <p className="text-[13px] font-black text-[#0B1F40]">
+                <p className="text-[13px] font-bold text-[#0B1F40]">
                   ✓ {memberGreetingLabel(memberName)}
                 </p>
                 <p className="mt-0.5 text-[12px] text-[#5B6B82]">
@@ -417,7 +417,7 @@ export default function LineIccidScreen({
 
             {showOrderOk ? (
               <div className="mb-3 rounded-2xl border border-[#E6EAF2] px-3.5 py-3">
-                <p className="text-[13px] font-black text-[#0B1F40]">
+                <p className="text-[13px] font-bold text-[#0B1F40]">
                   已開啟偏低提醒
                 </p>
                 <p className="mt-0.5 text-[12px] text-[#5B6B82]">
@@ -470,7 +470,7 @@ export default function LineIccidScreen({
                         }
                       >
                         <span
-                          className="block text-[13px] font-black"
+                          className="block text-[13px] font-bold"
                           style={{ color: on ? "#fff" : NAVY }}
                         >
                           {String(activeTopupId) === id ? "監控中 · " : ""}
@@ -524,7 +524,7 @@ export default function LineIccidScreen({
                       <>
                         <p>
                           剩餘{" "}
-                          <span className="font-black text-white">
+                          <span className="font-bold text-white">
                             {formatMb(viewUsage.remainingMb)}
                           </span>
                           {viewUsage.totalMb != null
@@ -608,7 +608,7 @@ export default function LineIccidScreen({
                     <button
                       type="submit"
                       disabled={loading || !liffReady}
-                      className="mt-3 w-full rounded-2xl bg-[#1E4AD1] py-3 text-[14px] font-black text-white shadow-[0_6px_16px_rgba(30,74,209,0.35)] disabled:opacity-60"
+                      className="mt-3 w-full rounded-2xl bg-[#1E4AD1] py-3 text-[14px] font-bold text-white shadow-[0_6px_16px_rgba(30,74,209,0.35)] disabled:opacity-60"
                     >
                       {loading ? (
                         <LoadingIndicator
@@ -616,7 +616,7 @@ export default function LineIccidScreen({
                           size="sm"
                           label="查詢中…"
                           className="justify-center w-full"
-                          labelClassName="text-sm font-black text-white"
+                          labelClassName="text-sm font-bold text-white"
                           spinnerClassName="text-white"
                         />
                       ) : isWeb ? (
@@ -652,7 +652,7 @@ export default function LineIccidScreen({
               訪客 · 點此登入
             </button>
           )}
-          <span className="text-[15px] font-black text-[#0B1F40]">
+          <span className="text-[15px] font-bold text-[#0B1F40]">
             {viewUsage?.remainingMb != null
               ? formatMb(viewUsage.remainingMb)
               : "—"}
@@ -678,7 +678,7 @@ export default function LineIccidScreen({
               (monitoringSelected ||
                 (esims.length > 1 && !selectedTopupId)))
           }
-          className="w-full rounded-2xl bg-gradient-to-b from-[#4C8DFF] to-[#276EF1] py-4 text-[15px] font-black tracking-wide text-white shadow-[0_8px_20px_rgba(39,110,241,0.35)] disabled:opacity-55"
+          className="w-full rounded-2xl bg-gradient-to-b from-[#4C8DFF] to-[#276EF1] py-4 text-[15px] font-bold tracking-wide text-white shadow-[0_8px_20px_rgba(39,110,241,0.35)] disabled:opacity-55"
         >
           {lineBindStatus === "loading" || bindLoading ? (
             <LoadingIndicator
@@ -686,7 +686,7 @@ export default function LineIccidScreen({
               size="sm"
               label="處理中…"
               className="justify-center w-full"
-              labelClassName="text-sm font-black text-white"
+              labelClassName="text-sm font-bold text-white"
               spinnerClassName="text-white"
             />
           ) : (

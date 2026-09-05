@@ -39,7 +39,7 @@ const ArrowButton = ({ onClick, disabled, direction }) => (
   </button>
 );
 
-const DotButton = ({ selected, onClick }) => (
+const DotButton = ({ selected, onClick, index = 0 }) => (
   <button
     className={`
       w-2.5 h-2.5 mx-1 rounded-full transition-all duration-300 shrink-0
@@ -47,6 +47,8 @@ const DotButton = ({ selected, onClick }) => (
     `}
     type="button"
     onClick={onClick}
+    aria-label={`切換到第 ${index + 1} 張投影片`}
+    aria-current={selected ? "true" : undefined}
   />
 );
 
@@ -238,6 +240,7 @@ const EmblaCarousel = ({ slides = [], options }) => {
               key={index}
               selected={index === selectedIndex}
               onClick={() => scrollTo(index)}
+              index={index}
             />
           ))}
         </div>

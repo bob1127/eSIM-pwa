@@ -126,7 +126,7 @@ function OrderItemsList({
                 <td className="py-2.5 px-2 text-right tabular-nums font-bold">
                   {fmt(line.sellUnit)}
                 </td>
-                <td className="py-2.5 pl-2 text-right tabular-nums font-black text-[#1E4AD1]">
+                <td className="py-2.5 pl-2 text-right tabular-nums font-bold text-[#1E4AD1]">
                   +{fmt(line.lineProfit)}
                 </td>
               </tr>
@@ -329,7 +329,7 @@ export default function OrderDetailModal({
             <Field label="底價成本">{fmt(order.b2b_cost)}</Field>
           )}
           <Field label={bossView ? "夥伴分潤" : "您的分潤"}>
-            <span className="font-black text-[#1E4AD1]">
+            <span className="font-bold text-[#1E4AD1]">
               +{fmt(order.partner_profit)}
             </span>
           </Field>
@@ -346,7 +346,7 @@ export default function OrderDetailModal({
           <Field label="付款方式">{paymentMethodLabel(order) || "—"}</Field>
           {bossView && platformProfit != null ? (
             <Field label="平台利潤">
-              <span className="font-black text-emerald-700">
+              <span className="font-bold text-emerald-700">
                 {fmt(platformProfit)}
               </span>
             </Field>

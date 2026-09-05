@@ -575,7 +575,7 @@ export default function FilterSideBar({
     return (
       <aside className="w-full rounded-xl overflow-hidden bg-white border border-slate-100 shadow-sm">
         <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50">
-          <p className="text-[13px] font-black text-slate-800 tracking-wide">
+          <p className="text-[13px] font-bold text-slate-800 tracking-wide">
             篩選方案
           </p>
         </div>
@@ -589,7 +589,7 @@ export default function FilterSideBar({
   return (
     <aside className="w-full rounded-xl overflow-hidden bg-white border border-slate-100 shadow-sm">
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 bg-slate-50">
-        <p className="text-[13px] font-black text-slate-800 tracking-wide">
+        <p className="text-[13px] font-bold text-slate-800 tracking-wide">
           篩選方案
         </p>
         {hasAny && (

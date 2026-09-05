@@ -71,7 +71,10 @@ import {
   hasBlockLevelCarrierHtml,
 } from "../../../lib/normalizeCarrierHtml";
 import { CARRIER_HTML_SANITIZE } from "../../../lib/carrierHtmlSanitize";
-import { resolveProductListingImage, resolveProductGalleryUrls } from "../../../lib/resolveProductListingImage";
+import {
+  resolveProductListingImage,
+  resolveProductGalleryUrls,
+} from "../../../lib/resolveProductListingImage";
 import {
   resolveMedusaImageUrl,
   resolveMedusaImageUrls,
@@ -85,6 +88,11 @@ import {
 import EsimRefundDisclosure from "../../../components/legal/EsimRefundDisclosure";
 import Image from "next/image";
 import SafeImage from "../../../components/SafeImage";
+import {
+  isStudentLongtermProduct,
+  resolveStudentLongtermSourceHref,
+} from "../../../lib/studentLongtermSourceLinks";
+import { resolveLongtermZoneParent } from "@/lib/productZoneCategories";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import { motion, AnimatePresence } from "framer-motion";
@@ -121,11 +129,13 @@ import {
   parseCarrierSpecsByCarrier,
   resolveCarrierSpecs,
   buildCarrierSpecDisplayItems,
+  findCarrierSpecEntry,
 } from "../../../lib/productCarrierSpecs";
 import {
   parseHotSaleTelecoms,
   isHotSaleTelecom,
 } from "../../../lib/productHotSale";
+import { isNativeIpTelecomLabel } from "../../../lib/carrierKeyedLookup";
 import { isNativeIpPlan } from "../../../lib/isNativeIpPlan";
 import { resolveProductDisplayTitle } from "../../../lib/productRouteTitle";
 import {
@@ -726,33 +736,35 @@ const CARRIER_INFO_MAP = {
     badges: [
       { text: "免VPN", type: "info" },
       { text: "中國電信", type: "5G" },
+      { text: "聯通", type: "5G" },
       { text: "CSL", type: "5G" },
-      { text: "澳門電信", type: "4G" },
+      { text: "CTM", type: "5G" },
     ],
     marketingBox: {
       bgColor: "bg-slate-50",
       borderColor: "border-slate-100",
       policyTitle: "公平使用政策 (FUP):",
-      policyDesc: "無限流量，實際速度依位置及網路環境而定。",
-      note: "出網為香港 IP，一般可免 VPN 使用 LINE／IG／FB。建議抵達後再安裝。",
+      policyDesc: "約 10 Mbps 的無限流量，實際速度可能有所變動。",
+      note: "出網為新加坡 IP（T+C），一般可免 VPN 使用 LINE／IG／FB，並支援 ChatGPT／TikTok。建議抵達後再安裝。",
     },
-    summaryPrefix: "短天數｜中國電信／CSL／澳門電信",
+    summaryPrefix: "短天數｜T+C｜約 10Mbps",
   },
   "短天數｜中國移動／香港移動／澳門電訊": {
     badges: [
       { text: "免VPN", type: "info" },
       { text: "中國電信", type: "5G" },
+      { text: "聯通", type: "5G" },
       { text: "CSL", type: "5G" },
-      { text: "澳門電信", type: "4G" },
+      { text: "CTM", type: "5G" },
     ],
     marketingBox: {
       bgColor: "bg-slate-50",
       borderColor: "border-slate-100",
       policyTitle: "公平使用政策 (FUP):",
-      policyDesc: "無限流量，實際速度依位置及網路環境而定。",
-      note: "出網為香港 IP，一般可免 VPN 使用 LINE／IG／FB。建議抵達後再安裝。",
+      policyDesc: "約 10 Mbps 的無限流量，實際速度可能有所變動。",
+      note: "出網為新加坡 IP（T+C），一般可免 VPN 使用 LINE／IG／FB。建議抵達後再安裝。",
     },
-    summaryPrefix: "短天數｜中國電信／CSL／澳門電信",
+    summaryPrefix: "短天數｜T+C｜約 10Mbps",
   },
   "長天數｜中國電信／聯通／CSL／澳門電訊": {
     badges: [
@@ -837,11 +849,10 @@ const CARRIER_INFO_MAP = {
       bgColor: "bg-slate-50",
       borderColor: "border-slate-100",
       policyTitle: "公平使用政策 (FUP):",
-      policyDesc:
-        "11 天起約 10 Mbps 吃到飽；1–10 天為短天數線路（香港 IP・中國電信／CSL）。",
-      note: "長天數電信：中國電信／聯通／CSL／澳門電訊（China Telecom / China Unicom / CSL / CTM）。",
+      policyDesc: "約 10 Mbps 的無限流量，實際速度可能有所變動。",
+      note: "短／長天數皆 T+C：中國電信／聯通／CSL／澳門電訊、新加坡 IP、約 10Mbps。一般可免 VPN 用 LINE／IG／FB。",
     },
-    summaryPrefix: "吃到飽｜中國電信／聯通／CSL／澳門電訊",
+    summaryPrefix: "吃到飽｜T+C｜約 10Mbps",
   },
 };
 
@@ -1866,7 +1877,7 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
         {activeTab === "desc" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+              <h3 className="text-[24px] font-bold text-slate-800 flex items-center gap-2">
                 <MaterialIcon
                   name="travel_explore"
                   size={24}
@@ -1976,7 +1987,7 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
           >
             <div className="flex justify-between items-center mb-6">
               {!usageHasSectionHead ? (
-                <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <h3 className="text-[24px] font-bold text-slate-800 flex items-center gap-2">
                   <MaterialIcon
                     name="tips_and_updates"
                     size={24}
@@ -2070,7 +2081,7 @@ const ProductTabs = ({ product, selectedCarrier, onProductUpdate }) => {
           >
             <div className="flex justify-between items-center mb-6">
               {!faqHasSectionHead ? (
-                <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <h3 className="text-[24px] font-bold text-slate-800 flex items-center gap-2">
                   <MaterialIcon
                     name="quiz"
                     size={24}
@@ -2346,7 +2357,8 @@ export async function getStaticProps({ params }) {
       overview_notices_by_carrier:
         parseOverviewNoticesByCarrier(rawOverviewNotices),
       image_url: resolveProductListingImage(product.thumbnail, {
-        categorySlug: categoryHandle || product.categories?.[0]?.handle || "uncategorized",
+        categorySlug:
+          categoryHandle || product.categories?.[0]?.handle || "uncategorized",
         handle: product.handle,
         categories: product.categories,
       }),
@@ -2894,6 +2906,27 @@ export default function ProductPage({
     );
   }, [variations, selectedAttributes["telecom"]]);
 
+  /** 學生／出差長天數：連回原本每日／總量／吃到飽（或短天數）商品 */
+  const studentLongtermSourceHref = useMemo(() => {
+    if (!isStudentLongtermProduct(product)) return null;
+    return resolveStudentLongtermSourceHref(
+      product,
+      selectedAttributes.telecom || "",
+    );
+  }, [product, selectedAttributes.telecom]);
+
+  const studentLongtermDaysHint = studentLongtermSourceHref ? (
+    <p className="mt-2.5 text-[12px] sm:text-[13px] text-slate-500">
+      <Link
+        href={studentLongtermSourceHref}
+        className="font-semibold text-[#1E4AD1] underline underline-offset-2 hover:text-[#1557c0]"
+      >
+        找不到你要的天數嗎？
+      </Link>
+      <span className="text-slate-400">　看完整方案（含較短天數）</span>
+    </p>
+  ) : null;
+
   const availableData = useMemo(() => {
     const currentTelecom = selectedAttributes["telecom"];
     const currentDays = selectedAttributes["days"];
@@ -3271,9 +3304,7 @@ export default function ProductPage({
       product?.carrier_specs_by_carrier ||
       {};
     const carrierSpec =
-      carrierSpecs[telecom] ||
-      carrierSpecs[carrierName] ||
-      null;
+      carrierSpecs[telecom] || carrierSpecs[carrierName] || null;
 
     return isNativeIpPlan(
       {
@@ -3301,12 +3332,7 @@ export default function ProductPage({
       telecom: selectedAttributes.telecom,
       carrierName,
     }),
-    [
-      currentVariation,
-      product,
-      selectedAttributes.telecom,
-      carrierName,
-    ],
+    [currentVariation, product, selectedAttributes.telecom, carrierName],
   );
 
   const displayProductName = useMemo(
@@ -3315,16 +3341,9 @@ export default function ProductPage({
   );
 
   const displaySeoTitle = useMemo(() => {
-    const raw =
-      product?.metadata?.seo_title || product?.seo_title || "";
-    return raw
-      ? resolveProductDisplayTitle(raw, routeTitleContext)
-      : "";
-  }, [
-    product?.metadata?.seo_title,
-    product?.seo_title,
-    routeTitleContext,
-  ]);
+    const raw = product?.metadata?.seo_title || product?.seo_title || "";
+    return raw ? resolveProductDisplayTitle(raw, routeTitleContext) : "";
+  }, [product?.metadata?.seo_title, product?.seo_title, routeTitleContext]);
 
   /**
    * 副標題：優先依電信商顯示。
@@ -3578,7 +3597,23 @@ export default function ProductPage({
     [mainSwiper, images.length],
   );
 
-  const pageSeo = buildProductSeo(
+  const breadcrumbCategorySlug = String(
+    router.query.category ||
+      product.category_slug ||
+      product.categories?.[0]?.handle ||
+      "",
+  );
+  const zoneParent = resolveLongtermZoneParent(product, router.query);
+  const breadcrumbCategoryLabel = zoneParent
+    ? zoneParent.label
+    : resolveProductCategoryBreadcrumbLabel(product, breadcrumbCategorySlug);
+  const breadcrumbCategoryHref = zoneParent
+    ? zoneParent.href
+    : breadcrumbCategorySlug
+      ? `/product/${breadcrumbCategorySlug}`
+      : null;
+
+  const pageSeoBase = buildProductSeo(
     {
       ...product,
       name: displayProductName,
@@ -3592,17 +3627,20 @@ export default function ProductPage({
     router.query.category,
     { variations, reviewAggregate },
   );
+  const pageSeo = zoneParent
+    ? {
+        ...pageSeoBase,
+        breadcrumbs: [
+          { name: "商店", path: "/product" },
+          { name: zoneParent.label, path: zoneParent.href },
+          {
+            name: displayProductName,
+            path: `/product/${breadcrumbCategorySlug}/${product?.slug || product?.handle || ""}`,
+          },
+        ],
+      }
+    : pageSeoBase;
 
-  const breadcrumbCategorySlug = String(
-    router.query.category ||
-      product.category_slug ||
-      product.categories?.[0]?.handle ||
-      "",
-  );
-  const breadcrumbCategoryLabel = resolveProductCategoryBreadcrumbLabel(
-    product,
-    breadcrumbCategorySlug,
-  );
   const coverageCountry = resolveCoverageCountry(
     product,
     breadcrumbCategorySlug,
@@ -3614,8 +3652,7 @@ export default function ProductPage({
     [
       displayProductName,
       displaySubtitle,
-      currentVariation?.title &&
-      currentVariation.title !== displayProductName
+      currentVariation?.title && currentVariation.title !== displayProductName
         ? currentVariation.title
         : null,
     ]
@@ -3804,9 +3841,9 @@ export default function ProductPage({
                     商店
                   </Link>
                   <span>/</span>
-                  {breadcrumbCategorySlug ? (
+                  {breadcrumbCategoryHref ? (
                     <Link
-                      href={`/product/${breadcrumbCategorySlug}`}
+                      href={breadcrumbCategoryHref}
                       className="hover:text-[#00befa]"
                     >
                       {breadcrumbCategoryLabel}
@@ -4198,6 +4235,15 @@ export default function ProductPage({
                               {isHotSaleTelecom(
                                 product.hot_sale_telecoms,
                                 opt,
+                              ) &&
+                              isNativeIpTelecomLabel(
+                                opt,
+                                findCarrierSpecEntry(
+                                  parseCarrierSpecsByCarrier(
+                                    product.carrier_specs_by_carrier,
+                                  ),
+                                  opt,
+                                ) || {},
                               ) ? (
                                 <Image
                                   src="/images/hot-sale.png"
@@ -4266,6 +4312,7 @@ export default function ProductPage({
                             </button>
                           ))}
                         </div>
+                        {studentLongtermDaysHint}
                       </div>
                     )}
 
@@ -4423,7 +4470,7 @@ export default function ProductPage({
                     {/* 價格 */}
                     <div className="flex flex-wrap items-baseline gap-2 mb-5">
                       <p
-                        className={`text-[28px] sm:text-[32px] font-bold tracking-tight ${
+                        className={`text-[28px] font-bold tracking-tight ${
                           displayPrice != null
                             ? "text-slate-900"
                             : "text-gray-300"
@@ -4617,7 +4664,7 @@ export default function ProductPage({
                       </button>
                     </div>
 
-                    <h1 className="text-2xl sm:text-[28px] lg:text-[32px] font-bold text-slate-900 leading-tight tracking-tight mb-1.5 flex flex-wrap items-center gap-2.5">
+                    <h1 className="text-[22px] sm:text-[26px] lg:text-[28px] font-bold text-black leading-[1.35] tracking-normal mb-1.5 flex flex-wrap items-center gap-2.5">
                       <span>{displayProductName}</span>
                       {showNativeIpBadge ? (
                         <span className="inline-flex items-center rounded-full bg-[#8B0000] px-3 py-1 text-[11px] sm:text-xs font-bold text-white tracking-wide shrink-0">
@@ -4645,7 +4692,7 @@ export default function ProductPage({
                     {/* 價格區 */}
                     <div className="flex flex-wrap items-center gap-3 mb-4 pb-5 border-b border-gray-100">
                       <p
-                        className={`text-3xl sm:text-4xl font-bold tracking-tight ${
+                        className={`text-[28px] sm:text-[24px] font-bold tracking-tight ${
                           isAllOptionsSelected && currentVariation?.price > 0
                             ? "text-slate-900"
                             : "text-gray-300"
@@ -4791,6 +4838,15 @@ export default function ProductPage({
                               {isHotSaleTelecom(
                                 product.hot_sale_telecoms,
                                 opt,
+                              ) &&
+                              isNativeIpTelecomLabel(
+                                opt,
+                                findCarrierSpecEntry(
+                                  parseCarrierSpecsByCarrier(
+                                    product.carrier_specs_by_carrier,
+                                  ),
+                                  opt,
+                                ) || {},
                               ) ? (
                                 <Image
                                   src="/images/hot-sale.png"
@@ -4866,6 +4922,7 @@ export default function ProductPage({
                             </button>
                           ))}
                         </div>
+                        {studentLongtermDaysHint}
                       </div>
                     )}
 
@@ -5103,7 +5160,7 @@ export default function ProductPage({
                     {/* 價格與雙 CTA（Anker Add to Cart + Buy Now） */}
                     <div className="flex flex-wrap items-center gap-3 mb-5">
                       <p
-                        className={`text-3xl sm:text-[34px] font-bold tracking-tight ${
+                        className={`text-[28px] font-bold tracking-tight ${
                           displayPrice != null
                             ? "text-slate-900"
                             : "text-gray-300"
@@ -5285,7 +5342,7 @@ export default function ProductPage({
                   <p className="truncate text-[10px] text-slate-500">
                     {choiceSummary || displayProductName}
                   </p>
-                  <p className="text-[15px] font-black text-slate-900">
+                  <p className="text-[15px] font-bold text-slate-900">
                     {displayTotal != null
                       ? `NT$${Number(displayTotal).toLocaleString()}`
                       : displayPrice != null

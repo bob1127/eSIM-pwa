@@ -78,7 +78,10 @@ export default function FadeCarousel() {
             {labels.map((lb, i) => (
               <button
                 key={lb}
+                type="button"
                 onClick={() => go(i)}
+                aria-label={`切換到 ${lb}`}
+                aria-current={i === index ? "true" : undefined}
                 className={`text-xs tracking-widest transition-colors ${
                   i === index
                     ? "text-white font-semibold"
@@ -98,10 +101,13 @@ export default function FadeCarousel() {
                 {slides.map((_, i) => (
                   <button
                     key={i}
+                    type="button"
                     onClick={() => go(i)}
+                    aria-label={`切換到第 ${i + 1} 張投影片`}
+                    aria-current={i === index ? "true" : undefined}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${
                       i === index
-                        ? "bg-[#0BAFD7] scale-110"
+                        ? "bg-[#07819F] scale-110"
                         : "bg-gray-300 hover:bg-gray-600"
                     }`}
                   />
@@ -111,7 +117,9 @@ export default function FadeCarousel() {
               {/* 底部箭頭 */}
               <div className="mt-6 flex flex-col gap-2">
                 <button
+                  type="button"
                   onClick={prev}
+                  aria-label="上一張"
                   className="group w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-black hover:text-white transition-colors"
                 >
                   <svg
@@ -125,7 +133,9 @@ export default function FadeCarousel() {
                   </svg>
                 </button>
                 <button
+                  type="button"
                   onClick={next}
+                  aria-label="下一張"
                   className="group w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-black hover:text-white transition-colors"
                 >
                   <svg
@@ -171,7 +181,7 @@ export default function FadeCarousel() {
                 <span className="text-stone-800 text-sm lg:text-base">
                   {slides[index].date}
                 </span>
-                <p className="text-xl lg:text-3xl text-stone-800 leading-snug font-bold lg:font-normal">
+                <p className="text-xl lg:text-[28px] text-stone-800 leading-snug font-bold lg:font-normal">
                   {slides[index].title}
                 </p>
 

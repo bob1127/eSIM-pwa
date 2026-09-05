@@ -97,7 +97,7 @@ export default function RevolutLikeHero() {
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 pt-24 pb-16">
         {/* Hero Copy */}
         <motion.div style={{ y: copyY, opacity: copyOpacity }}>
-          <h1 className="text-4xl md:text-6xl font-semibold tracking-tight">
+          <h1 className="text-[24px] md:text-[28px] font-semibold tracking-tight">
             Change the way you money
           </h1>
           <p className="mt-4 max-w-2xl text-black/70 text-base md:text-lg">
@@ -188,7 +188,7 @@ export default function RevolutLikeHero() {
                       {/* 漸層壓黑 + 文案（貼近 Revolut 卡片感） */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6 text-white">
-                        <h3 className="text-lg md:text-2xl font-semibold">
+                        <h3 className="text-lg md:text-[24px] font-semibold">
                           {s.title}
                         </h3>
                         <p className="text-white/90 text-sm md:text-base mt-1 max-w-[90%]">

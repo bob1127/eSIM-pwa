@@ -157,6 +157,7 @@ export default function HeroCountryPlanPicker() {
           <input
             ref={inputRef}
             type="text"
+            role="combobox"
             inputMode="search"
             value={query}
             onChange={(e) => {
@@ -185,6 +186,7 @@ export default function HeroCountryPlanPicker() {
             autoComplete="off"
             aria-expanded={dropdownOpen}
             aria-haspopup="listbox"
+            aria-autocomplete="list"
             aria-label="搜尋國家或方案關鍵字"
             className="min-w-0 flex-1 border-0 bg-transparent px-2 py-1 text-sm font-bold text-[#1d5cc5] placeholder:font-medium placeholder:text-slate-600 outline-none ring-0 shadow-none focus:border-0 focus:outline-none focus:ring-0"
           />
@@ -297,7 +299,7 @@ export default function HeroCountryPlanPicker() {
                     </span>
                   </span>
                   <span className="shrink-0 text-right">
-                    <span className="block text-sm font-black text-[#1d5cc5]">
+                    <span className="block text-sm font-bold text-[#1d5cc5]">
                       {formatPrice(plan.price)}
                     </span>
                     <MaterialIcon

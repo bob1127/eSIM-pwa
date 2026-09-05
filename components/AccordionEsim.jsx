@@ -46,7 +46,7 @@ export default function AccordionFeatureCard() {
               className="w-full flex items-center justify-between  px-5 py-4  transition-colors"
             >
               <div className="min-w-0">
-                <h4 className="text-2xl font-bold text-gray-900 truncate">
+                <h4 className="text-[24px] font-bold text-gray-900 truncate">
                   {it.title}
                 </h4>
                 <p className="text-[15px] font-semibold text-gray-500">

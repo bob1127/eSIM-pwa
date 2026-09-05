@@ -37,7 +37,7 @@ export default function PassUsageDonut({ remainingMb, usedMb, totalMb }) {
       />
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <p className="text-[10px] text-slate-400 font-bold">剩餘</p>
-        <p className="text-sm font-black text-[#1E4AD1]">
+        <p className="text-sm font-bold text-[#1E4AD1]">
           {formatMb(remainingMb)}
         </p>
         {totalMb != null ? (

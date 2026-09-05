@@ -35,7 +35,7 @@ export function chinaCmcc70MbpsKeyFeatures() {
       "**覆蓋範圍：** 國內主要城市與交通沿線。",
       "**網路速度：** 約 50–70 Mbps 吃到飽（實際依訊號與擁塞而定）。",
       "**數據路由：** 香港 IP；一般可免 VPN 使用 LINE／IG／FB。",
-      "**App 支援：** TikTok：Apple／Android 皆可。ChatGPT：Apple 較完整，Android 請改用網頁版。",
+      "**App 支援：** ChatGPT／TikTok **不保證**可用。若需要，請改選同頁 [CUCC+（中國聯通）](/product/china/china-unlimited-esim?data_amount=%E5%90%83%E5%88%B0%E9%A3%BD&days=20&telecom=cucc)。",
       "**本站方案：** 吃到飽；支援熱點；APN cmhk。建議抵達後再啟用。",
     ],
     "都會區測速多半約 50–70 Mbps。導航、社群與 720p～1080p 影音通常沒問題。僅供參考。",

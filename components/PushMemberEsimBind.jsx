@@ -248,7 +248,7 @@ export default function PushMemberEsimBind({
                   </p>
                   {isCurrentBound ? (
                     <span
-                      className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black text-white"
+                      className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
                       style={{ backgroundColor: PRIMARY }}
                     >
                       監控中

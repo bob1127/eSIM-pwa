@@ -58,7 +58,7 @@ function EmptyTitle({ className, ...props }: ComponentProps<"h3">) {
   return (
     <h3
       data-slot="empty-title"
-      className={cn("text-lg font-black tracking-tight text-slate-900", className)}
+      className={cn("text-lg font-bold tracking-tight text-slate-900", className)}
       {...props}
     />
   );

@@ -31,7 +31,7 @@ export default function Features() {
         <div className="pt-12 md:pt-20">
           {/* Section header */}
           <div className="section-title flex flex-col w-full py-10 justify-center items-center">
-            <h1 className="mb-4 text-3xl font-extrabold leading-none tracking-tight text-gray-900  lg:text-4xl dark:text-white dark:text-rose-500 text-center">
+            <h1 className="mb-4 text-[28px] font-bold leading-none tracking-tight text-gray-900  lg:text-[24px] dark:text-white dark:text-rose-500 text-center">
               {" "}
               專利技術建構的生態系健康檢測平台
             </h1>

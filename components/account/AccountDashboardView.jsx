@@ -455,7 +455,7 @@ export default function AccountDashboardView({
                           金額
                         </span>
                         <span
-                          className="font-black"
+                          className="font-bold"
                           style={{ color: ACCOUNT_THEME.dark }}
                         >
                           NT$ {formatNTD(latestOrder.total_amount)}
@@ -514,7 +514,7 @@ export default function AccountDashboardView({
               }
             >
               {needLineForWelcome && (
-                <div className="mb-3 rounded-lg border border-[#06C755]/35 bg-[#06C755]/10 px-3.5 py-3">
+                <div className="mb-3 rounded-lg border border-[#067A38]/35 bg-[#067A38]/10 px-3.5 py-3">
                   <p
                     className="text-[13px] font-bold leading-snug"
                     style={{ color: ACCOUNT_THEME.dark }}
@@ -533,7 +533,7 @@ export default function AccountDashboardView({
                       type="button"
                       onClick={bindLine}
                       disabled={lineBindStatus === "loading"}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2 disabled:opacity-60"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#067A38] hover:bg-[#056B30] text-white text-[12px] font-bold px-4 py-2 disabled:opacity-60"
                     >
                       <LineIconSvg className="w-3.5 h-3.5" />
                       {lineBindStatus === "loading"
@@ -742,7 +742,7 @@ export default function AccountDashboardView({
                         {row.label}
                       </span>
                       <span
-                        className="flex items-center gap-1 font-black"
+                        className="flex items-center gap-1 font-bold"
                         style={{ color: ACCOUNT_THEME.dark }}
                       >
                         {row.val}

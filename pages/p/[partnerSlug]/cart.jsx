@@ -138,7 +138,7 @@ export default function PartnerCart({ store }) {
                 >
                   <ArrowLeftIcon className="w-6 h-6" />
                 </button>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-[28px] font-bold text-gray-900">
                   購物車 ({cartItems.length})
                 </h1>
               </div>
@@ -240,7 +240,7 @@ export default function PartnerCart({ store }) {
 
                   <div className="w-full lg:w-[35%]">
                     <div className="sticky top-24 border border-gray-100 rounded-3xl p-8 bg-white shadow-lg shadow-gray-200/50">
-                      <h3 className="text-xl font-black mb-6 text-gray-900">
+                      <h3 className="text-xl font-bold mb-6 text-gray-900">
                         訂單摘要
                       </h3>
                       <div className="space-y-4 mb-6 text-sm font-medium">
@@ -260,7 +260,7 @@ export default function PartnerCart({ store }) {
                           <span className="text-base font-bold text-gray-500">
                             總計金額
                           </span>
-                          <span className="text-3xl font-black text-gray-900">
+                          <span className="text-[28px] font-bold text-gray-900">
                             NT$ {cartTotal}
                           </span>
                         </div>
@@ -289,7 +289,7 @@ export default function PartnerCart({ store }) {
             >
               <div className="w-full lg:w-[60%]">
                 <div className="mb-6 flex justify-between items-center px-2">
-                  <h2 className="text-2xl font-black text-gray-900">
+                  <h2 className="text-[24px] font-bold text-gray-900">
                     填寫接收資料
                   </h2>
                   <button
@@ -312,7 +312,7 @@ export default function PartnerCart({ store }) {
               <div className="w-full lg:w-[40%]">
                 <div className="sticky top-24 bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
                   <div className="p-6 bg-slate-900 text-white">
-                    <h3 className="text-xl font-black">訂單確認</h3>
+                    <h3 className="text-xl font-bold">訂單確認</h3>
                   </div>
                   <div className="p-6 space-y-5 max-h-[40vh] overflow-y-auto">
                     {cartItems.map((item, idx) => (
@@ -328,7 +328,7 @@ export default function PartnerCart({ store }) {
                             {item.color} / {item.size} × {item.quantity}
                           </p>
                         </div>
-                        <span className="text-sm font-black text-gray-900 whitespace-nowrap">
+                        <span className="text-sm font-bold text-gray-900 whitespace-nowrap">
                           NT$ {item.price * item.quantity}
                         </span>
                       </div>
@@ -339,7 +339,7 @@ export default function PartnerCart({ store }) {
                       <span className="text-base font-bold text-gray-500">
                         應付總額
                       </span>
-                      <span className="text-3xl font-black text-blue-600">
+                      <span className="text-[28px] font-bold text-blue-600">
                         NT$ {cartTotal}
                       </span>
                     </div>

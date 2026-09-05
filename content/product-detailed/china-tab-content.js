@@ -7,7 +7,7 @@
  *     - 中國移動
  *     - 中國聯通 GPT + TikTok (CUCC)
  *   china-unlimited-esim
- *     - CMCC 70Mbps（TikTok／ChatGPT）
+ *     - CMCC 70Mbps（較高速；ChatGPT／TikTok 不保證）
  *     - CUCC+（聯通・免 VPN 社群・TikTok／ChatGPT）
  *   china-total-esim
  *     - CMCC+
@@ -67,13 +67,13 @@ export function chinaCompareTableSection() {
       [
         `<strong>中國 eSIM 中國移動 70Mbps 吃到飽</strong>`,
         "中國移動<br>約 50～70 Mbps",
-        "要較高速<br>要 TikTok／ChatGPT",
+        "要較高速<br>一般社群上網",
         `${compareBullets([
           "吃到飽速度約落在 50～70 Mbps（實際依訊號與擁塞而定）。",
-          "TikTok：iPhone 與 Android 皆可使用。",
-          "ChatGPT：Apple 裝置較完整；Android 請改用網頁版。",
-          "出網多為香港 IP；一般可免 VPN 使用社群。",
-        ])}<div style="margin-top:8px;">可參考 ${link("/product/china/china-unlimited-esim/", "中國吃到飽 eSIM")}。</div>`,
+          "出網多為香港 IP；一般可免 VPN 使用 LINE／IG／FB。",
+          "ChatGPT／TikTok <strong>不保證</strong>可用。",
+          `若需要 ChatGPT／TikTok，請改選 ${link("/product/china/china-unlimited-esim?data_amount=%E5%90%83%E5%88%B0%E9%A3%BD&days=20&telecom=cucc", "CUCC+（中國聯通）")}。`,
+        ])}<div style="margin-top:8px;">可參考 ${link("/product/china/china-unlimited-esim/?telecom=cmcc-70", "CMCC 70Mbps 吃到飽")}。</div>`,
       ],
       [
         `<strong>中國 eSIM 中國聯通 GPT + TikTok</strong>`,
@@ -187,7 +187,7 @@ export function buildChinaCmccDetailed({
       16,
     )}
     ${paragraph(
-      `告別實體 SIM 與漫遊煩惱。可將裝置變為個人熱點；無需 VPN 即可存取 Google、YouTube、Facebook、Instagram 和 WhatsApp 等熱門應用（實際依當下路由）。若您需要 TikTok／ChatGPT，請改選 ${link("/product/china/china-daily-esim/", "中國聯通 GPT + TikTok")} 或 ${link("/product/china/china-unlimited-esim/", "CMCC 70Mbps 吃到飽")}。`,
+      `告別實體 SIM 與漫遊煩惱。可將裝置變為個人熱點；無需 VPN 即可存取 Google、YouTube、Facebook、Instagram 和 WhatsApp 等熱門應用（實際依當下路由）。若您需要 TikTok／ChatGPT，請改選 ${link("/product/china/china-daily-esim/", "中國聯通 GPT + TikTok")} 或 ${link("/product/china/china-unlimited-esim?data_amount=%E5%90%83%E5%88%B0%E9%A3%BD&days=20&telecom=cucc", "CUCC+ 吃到飽")}。`,
       20,
     )}
     ${chinaCompareTableSection()}
@@ -205,12 +205,14 @@ export function buildChinaCmccDetailed({
   return [planHtml, introHtml].join("\n");
 }
 
-/** CMCC 70Mbps 吃到飽（TikTok／ChatGPT） */
+/** CMCC 70Mbps 吃到飽（較高速；ChatGPT／TikTok 不保證） */
 export function buildChinaCmcc70Detailed({
   planTypeLabel = "吃到飽（約 50～70 Mbps）",
   speedHtml = "4G／LTE／5G；約 50～70 Mbps 吃到飽（實際依環境而定）",
   trafficBullet = "流量：約 50～70 Mbps 吃到飽；支援熱點",
 }) {
+  const cuccHref =
+    "/product/china/china-unlimited-esim?data_amount=%E5%90%83%E5%88%B0%E9%A3%BD&days=20&telecom=cucc";
   const planHtml = planCard(
     basePairs({
       carrierHtml: "中國移動（CMCC）4G／LTE／5G",
@@ -222,25 +224,25 @@ export function buildChinaCmcc70Detailed({
 
   const introHtml = productIntroSection(`
     ${paragraph(
-      "使用 jeko 專屬中國移動吃到飽 eSIM，自由連線中國大陸網路。無需 VPN，即可暢玩 TikTok、ChatGPT 及其他全球應用。高速資料與穩定訊號，適合旅行者與遠端工作者。",
+      "使用 jeko 專屬中國移動吃到飽 eSIM，自由連線中國大陸網路。出網多為香港 IP，實際測速常見約落在 50～70 Mbps 區間，適合導航、傳訊與一般社群。",
       16,
     )}
     ${paragraph(
-      "本方案出網多為香港 IP，實際測速常見約落在 50～70 Mbps 區間（訊號佳時也可能更高／更低），適合導航、社群與影音。",
+      `本方案<strong>不保證</strong>可使用 ChatGPT／TikTok。若您需要 ChatGPT 或 TikTok，請改選 ${link(cuccHref, "CUCC+（中國聯通）吃到飽")}。`,
       20,
     )}
     ${chinaCompareTableSection()}
     <h4 style="margin:24px 0 12px;font-size:16px;font-weight:700;color:#1e293b;">方案重點</h4>
     ${bulletList([
       "電信網路：中國移動・約 50～70 Mbps 吃到飽",
-      "TikTok：iPhone／Android 皆可；ChatGPT：Apple 較完整，Android 請用網頁版",
+      `ChatGPT／TikTok 不保證；需要請改選 ${link(cuccHref, "CUCC+")}`,
       "效期：抵達當地連網並開始使用數據後才開始計算",
       trafficBullet,
-      "僅數據：無門號／傳統通話／簡訊；支援熱點；免 VPN 社群（實際依路由）",
+      "僅數據：無門號／傳統通話／簡訊；支援熱點；一般可免 VPN 使用 LINE／IG／FB（實際依路由）",
     ])}
   `);
 
-  return [planHtml, tiktokSetupHtml, introHtml].join("\n");
+  return [planHtml, introHtml].join("\n");
 }
 
 /** 中國聯通 GPT + TikTok／CUCC+ */
@@ -495,7 +497,7 @@ export const CN_USAGE_CUCC_TIKTOK = buildChinaUsage({
 
 export const CN_USAGE_CMCC_70 = buildChinaUsage({
   title: "使用 jeko 中國移動 70Mbps 吃到飽的優勢",
-  subtitle: "較高速吃到飽・TikTok／ChatGPT",
+  subtitle: "較高速吃到飽・ChatGPT／TikTok 不保證",
   items: [
     {
       iconName: "speed",
@@ -504,8 +506,8 @@ export const CN_USAGE_CMCC_70 = buildChinaUsage({
     },
     {
       iconName: "apps",
-      title: "TikTok／ChatGPT",
-      descHtml: "雙平台 TikTok；ChatGPT 在 Android 請用網頁版。",
+      title: "ChatGPT／TikTok",
+      descHtml: `本線路<strong>不保證</strong>可用。若需要，請改選 <a href="/product/china/china-unlimited-esim?data_amount=%E5%90%83%E5%88%B0%E9%A3%BD&days=20&telecom=cucc" style="color:#2D5BE3;font-weight:700;text-decoration:underline;">CUCC+（中國聯通）</a>。`,
     },
     {
       iconName: "wifi_tethering",
@@ -521,7 +523,7 @@ export const CN_FAQ_CMCC = buildChinaFaq([
   {
     question: "支援 TikTok 嗎？",
     answerHtml: p(
-      `本標準中國移動方案<strong>不保證</strong> TikTok／ChatGPT。若需要，請改選「中國聯通 GPT + TikTok」或「CMCC 70Mbps」吃到飽。`,
+      `本標準中國移動方案<strong>不保證</strong> TikTok／ChatGPT。若需要，請改選 ${link("/product/china/china-unlimited-esim?data_amount=%E5%90%83%E5%88%B0%E9%A3%BD&days=20&telecom=cucc", "CUCC+（中國聯通）吃到飽")}。`,
       0,
     ),
   },
@@ -549,9 +551,9 @@ export const CN_FAQ_CUCC_TIKTOK = buildChinaFaq([
 export const CN_FAQ_CMCC_70 = buildChinaFaq([
   ...chinaSharedFaqItems("中國移動 70Mbps 吃到飽"),
   {
-    question: "ChatGPT 在 Android 不能用 App 嗎？",
+    question: "可以用 ChatGPT／TikTok 嗎？",
     answerHtml: p(
-      `依供應商說明：ChatGPT 在 Apple 裝置通常較完整；Android 請改用網頁版。TikTok 則雙平台皆可。`,
+      `本 CMCC 70Mbps 線路<strong>不保證</strong>可使用 ChatGPT／TikTok。若需要，請改選 ${link("/product/china/china-unlimited-esim?data_amount=%E5%90%83%E5%88%B0%E9%A3%BD&days=20&telecom=cucc", "CUCC+（中國聯通）吃到飽")}。`,
       0,
     ),
   },

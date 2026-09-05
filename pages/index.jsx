@@ -537,7 +537,7 @@ export default function Home() {
 
           <div className="logo-txt absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-50">
             <div className="flex flex-col items-center">
-              <p className="text-[40px]">Jeko eSIM</p>
+              <p className="text-[28px]">Jeko eSIM</p>
               <AlertBtn />
               <div className="group relative inline-flex cursor-default mt-4">
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-400 to-white opacity-0 transition-all duration-300 group-hover:translate-x-1.5 group-hover:translate-y-1.5 group-hover:opacity-100 shadow-inner" />
@@ -578,42 +578,47 @@ export default function Home() {
         </section> */}
 
         <section className="bg-white rounded-br-[60px] mt-20 rounded-bl-[60px] lg:rounded-br-[130px] lg:rounded-bl-[130px] pb-10 overflow-hidden">
-          <div className="flex flex-col gap-5 pt-4 lg:gap-0 lg:flex-row max-w-[1250px] mx-auto justify-between px-5 sm:px-6 lg:px-0">
-            <div className="txt min-w-0 w-full lg:max-w-[62%]">
-              <MaskText blockColor="#0A6CD0">
-                <h1 className="text-stone-900 font-extrabold leading-[1.2] text-[28px] sm:text-4xl lg:text-6xl tracking-wide lg:tracking-widest">
-                  全球旅遊eSIM
-                </h1>
-              </MaskText>
-              <MaskText blockColor="#0A6CD0">
-                <p className="text-stone-800 font-normal text-[14px] lg:text-[16px] mt-4 md:mt-6 leading-relaxed tracking-normal max-w-xl">
-                  日本、韓國、東南亞到歐美，一次找齊出國上網方案。
-                  <br className="hidden lg:block" />
-                  QR Code 即裝即用，免換實體卡，告別昂貴國際漫遊。
-                </p>
-              </MaskText>
-            </div>
-            <div className="flex items-start lg:items-end w-full lg:w-auto shrink-0">
-              <div className="flex flex-wrap gap-x-2 gap-y-2 sm:gap-x-3 text-[12px] sm:text-[14px] text-stone-700">
-                <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
-                  . 日本eSIM
-                </span>
-                <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
-                  . 韓國eSIM
-                </span>
-                <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
-                  . 出國上網
-                </span>
-                <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
-                  . 吃到飽網卡
-                </span>
-                <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
-                  . 免換卡eSIM
-                </span>
-                <span className="rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap">
-                  . 歐洲eSIM
-                </span>
-              </div>
+          <div className="mx-auto w-[92%] max-w-[1500px] pt-4">
+            <div className="flex flex-col gap-5 lg:gap-8 lg:flex-row lg:items-end justify-between">
+              <header className="txt min-w-0 w-full lg:max-w-[58%]">
+                <MaskText blockColor="#0A6CD0">
+                  <h1 className="text-black font-bold leading-[1.35] text-[22px] sm:text-[26px] lg:text-[28px] tracking-normal">
+                    全球旅遊eSIM
+                  </h1>
+                </MaskText>
+                <MaskText blockColor="#0A6CD0">
+                  <p className="text-black font-normal text-[15px] lg:text-[16px] mt-4 md:mt-5 leading-[28px] tracking-normal max-w-xl">
+                    日本、韓國、東南亞到歐美，一次找齊出國上網方案。
+                  </p>
+                  <p className="text-black font-normal text-[15px] lg:text-[16px] mt-1 leading-[28px] tracking-normal max-w-xl">
+                    QR Code 即裝即用，免換實體卡，告別昂貴國際漫遊。
+                  </p>
+                </MaskText>
+              </header>
+              <nav
+                aria-label="熱門 eSIM 關鍵字"
+                className="w-full lg:w-auto lg:max-w-[40%] shrink-0"
+              >
+                <ul className="flex flex-wrap gap-x-2 gap-y-2 sm:gap-x-3 text-[12px] sm:text-[13px] lg:justify-end">
+                  {[
+                    { label: "日本eSIM", href: "/product/japan/" },
+                    { label: "韓國eSIM", href: "/product/korea/" },
+                    { label: "出國上網", href: "/product/" },
+                    { label: "吃到飽網卡", href: "/product/" },
+                    { label: "免換卡eSIM", href: "/product/" },
+                    { label: "歐洲eSIM", href: "/product/europe/" },
+                  ].map((item) => (
+                    <li key={item.label}>
+                      <Link
+                        href={item.href}
+                        className="inline-block rounded-full px-2.5 py-1 sm:px-3 whitespace-nowrap text-[#666666] hover:text-[#0A6CD0] transition-colors"
+                      >
+                        · {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
             </div>
           </div>
           <Project />
@@ -631,8 +636,12 @@ export default function Home() {
         >
           <MaskText blockColor="#0A6CD0">
             <div className="main-title max-w-[1000px] mx-auto flex justify-center flex-col items-center text-center">
-              <h2 className="text-3xl lg:text-5xl font-bold">如何使用 eSIM?</h2>
-              <p className="mt-3">[ 幾個簡易步驟直接開始使用 ] </p>
+              <h2 className="text-[22px] sm:text-[24px] lg:text-[28px] font-bold text-black leading-[1.35]">
+                如何使用 eSIM?
+              </h2>
+              <p className="mt-3 text-[14px] sm:text-[16px] font-normal text-[#666666] leading-[28px]">
+                [ 幾個簡易步驟直接開始使用 ]
+              </p>
             </div>
           </MaskText>
           <div className="rounded-2xl py-4 md:py-10 lg:py-20 max-w-[1500px] mx-auto flex justify-center flex-col items-center mt-4 md:mt-8">
@@ -641,29 +650,29 @@ export default function Home() {
                 <div className="w-full lg:w-1/2 flex lg:pr-10 items-center flex-col text-center lg:text-left">
                   <div>
                     <div className="max-w-full lg:max-w-[280px] mx-auto lg:mx-0">
-                      <h3 className="text-2xl lg:text-3xl font-bold mt-4 lg:mt-2">
+                      <h3 className="text-[20px] sm:text-[22px] lg:text-[24px] font-bold text-black mt-4 lg:mt-2 leading-[1.35]">
                         什麼是 eSIM？
                       </h3>
                     </div>
-                    <p className="text-center lg:text-left font-bold text-2xl mt-2">
+                    <p className="text-center lg:text-left font-bold text-[18px] sm:text-[20px] text-black mt-2 leading-[1.5]">
                       告別實體 SIM 卡的束縛
                     </p>
-                    <p className="mt-4 leading-relaxed text-stone-900 text-sm lg:text-base">
+                    <p className="mt-4 leading-[28px] text-black text-[15px] lg:text-[16px] font-normal">
                       eSIM（嵌入式 SIM
                       卡）是新一代的網路技術。無需抽換實體卡片，只需掃描 QR Code
                       設定，抵達目的地後開啟數據漫遊，即可立即連接當地高速網路，省去保管實體卡片的麻煩。
                     </p>
-                    <h4 className="text-xl lg:text-2xl font-bold mt-8 lg:mt-10 text-stone-900">
+                    <h4 className="text-[17px] sm:text-[18px] font-bold mt-8 lg:mt-10 text-black leading-[1.4]">
                       未來旅遊 eSIM 趨勢
                     </h4>
-                    <p className="mt-3 leading-relaxed text-stone-900 text-sm lg:text-base">
+                    <p className="mt-3 leading-[28px] text-black text-[15px] lg:text-[16px] font-normal">
                       出國上網正快速從實體網卡轉向 eSIM。市場研究顯示，旅遊
                       eSIM 規模在 2025 至 2030 年預估可成長約 4.8
                       倍；台灣旅客也已有近半數把 eSIM
                       當作出國首選。新機雙 eSIM、美區 eSIM-only
                       等趨勢持續擴大，未來出國前線上購買、到站即連網，將成為自由行的標準配備。
                     </p>
-                    <ul className="mt-4 space-y-2 text-sm lg:text-base text-stone-800 leading-relaxed list-disc list-inside marker:text-[#0A6CD0]">
+                    <ul className="mt-4 space-y-2 text-[15px] lg:text-[16px] text-black font-normal leading-[28px] list-disc list-inside marker:text-[#0A6CD0]">
                       <li>免換卡、多國方案一次搞定，適合多趟旅程切換</li>
                       <li>雙 eSIM 機種普及，可同時保留門號與旅遊數據</li>
                       <li>QR Code 即裝即用，出發前完成設定更安心</li>
@@ -686,7 +695,7 @@ export default function Home() {
               <div className="flex flex-col w-full lg:w-[80%] mx-auto">
                 <div className="w-full flex items-start flex-col text-center lg:text-left">
                   <div>
-                    <h3 className="text-2xl mb-4 lg:text-3xl font-bold leading-snug">
+                    <h3 className="text-[20px] sm:text-[22px] lg:text-[24px] mb-4 font-bold text-black leading-[1.35]">
                       請確保您的手機
                       <br className="hidden lg:block" />
                       已解鎖且支援 eSIM
@@ -694,11 +703,11 @@ export default function Home() {
                     <a
                       href="/"
                       target="_blank"
-                      className="bg-[#0A6CD0] py-2 px-4 rounded-[12px]   !mt-4 text-white text-[16px] font-bold "
+                      className="bg-[#0A6CD0] py-2 px-4 rounded-[12px] !mt-4 text-white text-[16px] font-bold"
                     >
                       如何查看手機是否支援eSIM
                     </a>
-                    <p className="mt-4 leading-relaxed max-w-[600px] text-stone-900 text-sm lg:text-base mx-auto lg:mx-0">
+                    <p className="mt-4 leading-[28px] max-w-[600px] text-black text-[15px] lg:text-[16px] font-normal mx-auto lg:mx-0">
                       在購買前，請務必確認您的裝置支援 eSIM
                       功能且未被電信商鎖定（Sim-Lock Free）。 目前市面上新款
                       iPhone （XR/XS 以後機型）及多數 Android 旗艦機種皆已支援。
@@ -730,7 +739,9 @@ export default function Home() {
             <div className="bg-white rounded-[16px] md:rounded-[20px] w-full md:w-[90%] lg:w-[80%] mx-auto p-2 sm:p-6 lg:p-10 mt-6 md:mt-16 shadow-sm border border-slate-100">
               <MaskText blockColor="#0A6CD0">
                 <div className="main-title max-w-[1000px] mx-auto flex justify-center flex-col items-center text-center">
-                  <h2 className="text-2xl lg:text-3xl font-bold">啟用設定</h2>
+                  <h2 className="text-[22px] sm:text-[24px] font-bold text-black leading-[1.35]">
+                    啟用設定
+                  </h2>
                 </div>
               </MaskText>
               <div className="flex justify-center mt-3 mb-5 sm:mt-4 sm:mb-10">
@@ -770,7 +781,7 @@ export default function Home() {
                             {item.step}
                           </div>
                           <div className="flex flex-1 items-center justify-between gap-4 min-w-0">
-                            <h3 className="text-lg lg:text-xl font-bold text-slate-800">
+                            <h3 className="text-[16px] lg:text-[18px] font-bold text-black">
                               {item.title}
                             </h3>
                             <svg
@@ -791,12 +802,12 @@ export default function Home() {
 
                         {openInstallSteps[item.step] && (
                           <div className="mt-3 pl-0 lg:pl-[82px]">
-                            <p className="text-sm lg:text-base text-slate-600 leading-relaxed mb-6">
+                            <p className="text-[15px] lg:text-[16px] text-black font-normal leading-[28px] mb-6">
                               {item.desc}
                             </p>
 
                             {item.subDesc && (
-                              <p className="text-sm lg:text-base font-semibold text-slate-700 mb-3">
+                              <p className="text-[15px] lg:text-[16px] font-bold text-black mb-3 leading-[28px]">
                                 {item.subDesc}
                               </p>
                             )}
@@ -806,7 +817,7 @@ export default function Home() {
                                 {item.bullets.map((bullet) => (
                                   <li
                                     key={bullet}
-                                    className="flex gap-2 text-sm lg:text-base text-slate-600 leading-relaxed"
+                                    className="flex gap-2 text-[15px] lg:text-[16px] text-black font-normal leading-[28px]"
                                   >
                                     <span className="text-[#147AD7] font-bold shrink-0">
                                       →
@@ -818,7 +829,7 @@ export default function Home() {
                             )}
 
                             {item.note && (
-                              <p className="text-sm lg:text-base text-slate-600 leading-relaxed mb-6 bg-amber-50 border border-amber-100 rounded-lg p-4">
+                              <p className="text-[15px] lg:text-[16px] text-black font-normal leading-[28px] mb-6 bg-amber-50 border border-amber-100 rounded-lg p-4">
                                 {item.note}
                               </p>
                             )}
@@ -830,10 +841,10 @@ export default function Home() {
                                     key={method.image}
                                     className="min-w-0 w-[90%] mx-auto sm:w-full sm:mx-0"
                                   >
-                                    <h4 className="text-base font-bold text-slate-800 mb-1.5">
+                                    <h4 className="text-[16px] font-bold text-black mb-1.5 leading-[1.4]">
                                       {method.title}
                                     </h4>
-                                    <p className="text-sm text-slate-600 leading-relaxed mb-2">
+                                    <p className="text-[14px] text-[#666666] font-normal leading-[28px] mb-2">
                                       {method.desc}
                                     </p>
                                     <button
@@ -889,10 +900,10 @@ export default function Home() {
                             {item.step}
                           </div>
                           <div className="flex flex-col justify-center w-full">
-                            <h3 className="text-lg lg:text-xl font-bold text-slate-800 mb-1 group-hover:text-[#147AD7] transition-colors">
+                            <h3 className="text-[16px] lg:text-[18px] font-bold text-black mb-1 group-hover:text-[#147AD7] transition-colors">
                               {item.title}
                             </h3>
-                            <p className="text-sm lg:text-base text-slate-600 leading-relaxed">
+                            <p className="text-[15px] lg:text-[16px] text-[#666666] font-normal leading-[28px]">
                               {item.desc}
                             </p>
                           </div>
@@ -955,7 +966,7 @@ export default function Home() {
                       d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     ></path>
                   </svg>
-                  <p className="text-sm text-slate-700 leading-relaxed">
+                  <p className="text-[14px] text-black font-normal leading-[28px]">
                     <span className="font-bold text-[#147AD7]">貼心提醒：</span>
                     請務必在有 WiFi 或網路的環境下掃描安裝。掃描後請勿刪除 eSIM
                     方案，一旦刪除將無法再次掃描使用。如果在安裝過程遇到問題，請截圖並{" "}
@@ -998,7 +1009,7 @@ export default function Home() {
           <div className="flex flex-col max-w-[1450px] mx-auto lg:flex-row gap-12 lg:gap-20">
             <div className="w-full lg:w-1/4 flex flex-col justify-between">
               <div>
-                <h2 className="text-4xl md:text-6xl font-serif font-bold text-[#0F356B] mb-8 md:mb-10 tracking-wide">
+                <h2 className="text-[28px] font-serif font-bold text-black mb-8 md:mb-10 tracking-normal leading-[1.35]">
                   Notification
                 </h2>
                 <ul className="space-y-5 mb-10">
@@ -1006,12 +1017,12 @@ export default function Home() {
                     <li
                       key={index}
                       onClick={() => setActiveTab(index)}
-                      className={`cursor-pointer text-sm font-bold tracking-wide transition-all duration-300 ${activeTab === index ? "text-[#0F356B] translate-x-2" : "text-gray-500 hover:text-[#0F356B] hover:translate-x-1"}`}
+                      className={`cursor-pointer text-[14px] font-bold tracking-normal transition-all duration-300 ${activeTab === index ? "text-black translate-x-2" : "text-[#999999] hover:text-black hover:translate-x-1"}`}
                     >
                       <span className="relative inline-block pb-1">
                         {filter}
                         <span
-                          className={`absolute bottom-0 left-0 h-[2px] bg-[#0F356B] transition-all duration-300 ${activeTab === index ? "w-full" : "w-0"}`}
+                          className={`absolute bottom-0 left-0 h-[2px] bg-black transition-all duration-300 ${activeTab === index ? "w-full" : "w-0"}`}
                         ></span>
                       </span>
                     </li>
@@ -1054,7 +1065,7 @@ export default function Home() {
                   className="news-item group relative flex flex-col md:flex-row items-start md:items-center bg-[#F2F2F2] border border-transparent hover:border-gray-200 hover:bg-white transition-colors duration-300 rounded-xl p-6 cursor-pointer"
                 >
                   <div className="flex items-center gap-4 mb-3 md:mb-0 md:w-[220px] flex-shrink-0">
-                    <span className="text-[#2E68C0] font-bold text-sm font-sans tracking-wider">
+                    <span className="text-[#2E68C0] font-bold text-[14px] font-sans tracking-normal">
                       {item.date}
                     </span>
                     <span className="text-[10px] text-[#2E68C0] border border-[#2E68C0]/30 px-2 py-1 rounded bg-white font-bold">
@@ -1062,7 +1073,7 @@ export default function Home() {
                     </span>
                   </div>
                   <div className="flex-grow pr-12">
-                    <h3 className="text-gray-800 font-medium text-sm md:text-base leading-relaxed group-hover:text-[#0F356B] transition-colors">
+                    <h3 className="text-black font-bold text-[15px] md:text-[16px] leading-[28px] group-hover:text-[#0A6CD0] transition-colors">
                       {item.title}
                     </h3>
                   </div>
@@ -1077,13 +1088,13 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="cta-btn bg-[#1C82E0] max-w-[1450px]    w-[93%]  mx-auto rounded-[20px] lg:rounded-[33px] p-6 lg:p-10 mt-10">
+        <section className="cta-btn bg-[#1566B5] max-w-[1450px]    w-[93%]  mx-auto rounded-[20px] lg:rounded-[33px] p-6 lg:p-10 mt-10">
           <div className="w-full lg:w-[90%] flex mx-auto flex-col">
             <div className="title flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 lg:gap-0">
-              <h3 className="text-white font-bold tracking-wider text-xl lg:text-[26px]">
+              <h3 className="text-white font-bold tracking-normal text-[20px] lg:text-[24px] leading-[1.35]">
                 遇到問題需要協助？
               </h3>
-              <span className="text-white text-sm lg:text-[14px] opacity-80 lg:opacity-100">
+              <span className="text-white/90 text-[14px] font-normal leading-[28px]">
                 歡迎聯繫我們客服，馬上為你解決
               </span>
             </div>
@@ -1095,12 +1106,12 @@ export default function Home() {
               <div className="cta-btn group bg-[#0069CA] mt-6 lg:mt-4 rounded-[10px] p-2 cursor-pointer w-full">
                 <div className="inner group-hover:bg-white bg-transparent duration-500 p-6 lg:p-8 rounded-[10px] flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-0">
                   <div className="w-full lg:w-1/2">
-                    <h3 className="text-white group-hover:ml-0 lg:group-hover:ml-6 group-hover:text-[#0069CA] duration-300 font-bold text-xl lg:text-2xl">
+                    <h3 className="text-white group-hover:ml-0 lg:group-hover:ml-6 group-hover:text-[#0069CA] duration-300 font-bold text-[18px] lg:text-[20px] leading-[1.4]">
                       LINE 官方客服
                     </h3>
                   </div>
                   <div className="border-t lg:border-t-0 lg:border-l-1 w-full lg:w-[55%] flex justify-start lg:justify-end !group-hover:w-full lg:!group-hover:w-[55%] duration-300 border-gray-50/30 lg:border-gray-50 pt-4 lg:pt-0 pl-0 lg:pl-5 group-hover:border-[#0069CA]">
-                    <span className="text-white group-hover:mr-0 lg:group-hover:mr-10 duration-500 w-full lg:w-[300px] group-hover:text-[#0069CA] text-sm lg:text-[14px] leading-relaxed">
+                    <span className="text-white group-hover:mr-0 lg:group-hover:mr-10 duration-500 w-full lg:w-[300px] group-hover:text-[#0069CA] text-[14px] lg:text-[16px] font-normal leading-[28px]">
                       直接使用 LINE
                       與我們聯繫，真人客服即時在線。如有使用問題請直接加入好友詢問。
                     </span>
@@ -1112,12 +1123,12 @@ export default function Home() {
               <div className="cta-btn group bg-[#0069CA] mt-6 lg:mt-4 rounded-[10px] p-2 cursor-pointer w-full">
                 <div className="inner group-hover:bg-white bg-transparent duration-500 p-6 lg:p-8 rounded-[10px] flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-0">
                   <div className="w-full lg:w-1/2">
-                    <h3 className="text-white group-hover:ml-0 lg:group-hover:ml-6 group-hover:text-[#0069CA] duration-300 font-bold text-xl lg:text-2xl">
+                    <h3 className="text-white group-hover:ml-0 lg:group-hover:ml-6 group-hover:text-[#0069CA] duration-300 font-bold text-[18px] lg:text-[20px] leading-[1.4]">
                       其他詢問
                     </h3>
                   </div>
                   <div className="border-t lg:border-t-0 lg:border-l-1 w-full lg:w-[55%] flex justify-start lg:justify-end !group-hover:w-full lg:!group-hover:w-[55%] duration-300 border-gray-50/30 lg:border-gray-50 pt-4 lg:pt-0 pl-0 lg:pl-5 group-hover:border-[#0069CA]">
-                    <span className="text-white group-hover:mr-0 lg:group-hover:mr-10 duration-500 w-full lg:w-[300px] group-hover:text-[#0069CA] text-sm lg:text-[14px] leading-relaxed">
+                    <span className="text-white group-hover:mr-0 lg:group-hover:mr-10 duration-500 w-full lg:w-[300px] group-hover:text-[#0069CA] text-[14px] lg:text-[16px] font-normal leading-[28px]">
                       合作 / 分潤合作 / 其他詢問
                     </span>
                   </div>
@@ -1138,7 +1149,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setImageLightbox(null)}
-            className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-2xl text-white transition-colors hover:bg-white/30"
+            className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-[24px] text-white transition-colors hover:bg-white/30"
             aria-label="關閉"
           >
             ×

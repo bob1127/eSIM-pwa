@@ -74,7 +74,7 @@ export default function PromoBannerCarousel({
   if (!slides.length) return null;
 
   return (
-    <div className={`relative w-full ${className}`}>
+    <div className={`relative w-full overflow-x-hidden ${className}`}>
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex touch-pan-y">
           {slides.map((slide) => {
@@ -84,7 +84,7 @@ export default function PromoBannerCarousel({
                 <img
                   src={slide.src}
                   alt={slide.alt}
-                  className="block w-full h-auto"
+                  className="block w-full h-auto max-w-full"
                   draggable={false}
                 />
               </div>

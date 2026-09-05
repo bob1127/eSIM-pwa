@@ -66,7 +66,7 @@ const MARGIN = 1 + PROFIT / 100;
 const HKD_TO_TWD = Number(process.env.HKD_TO_TWD || 4.5);
 const BATCH = 40;
 const SPEED_RULE = "限速約 50–70 Mbps 吃到飽";
-const APPS_LABEL = "熱點分享、ChatGPT、TikTok";
+const APPS_LABEL = "熱點分享；ChatGPT／TikTok 不保證（請選 CUCC+）";
 
 function retailFromCost(costTwd) {
   return Math.ceil((costTwd * MARGIN) / 10) * 10 - 1;
@@ -188,8 +188,8 @@ function toVariant(row) {
         ip_type: "香港 IP",
         route_type: LINE,
         hotspot: true,
-        gpt: true,
-        tiktok: true,
+        gpt: false,
+        tiktok: false,
         gemini: false,
         speed_rule: SPEED_RULE,
         network_speed: "約 50–70 Mbps",
@@ -282,7 +282,7 @@ async function patchMeta(c, productId, rows) {
 
   meta.subtitle_by_carrier = {
     ...(meta.subtitle_by_carrier || {}),
-    [TELECOM]: "移動 CMCC｜香港IP｜限速約50–70Mbps｜支援 TikTok／ChatGPT",
+    [TELECOM]: "移動 CMCC｜香港IP｜限速約50–70Mbps｜ChatGPT／TikTok不保證",
   };
   delete meta.subtitle_by_carrier?.["CMCC+"];
 
@@ -303,7 +303,7 @@ async function patchMeta(c, productId, rows) {
     ...(meta.overview_notices_by_carrier || {}),
     [TELECOM]: {
       fup_notice:
-        "香港IP漫遊｜限速約 50–70 Mbps 吃到飽。TikTok 雙端可用；ChatGPT 於 Apple 較完整，Android 建議網頁版。",
+        "香港IP漫遊｜限速約 50–70 Mbps 吃到飽。ChatGPT／TikTok 不保證；若需要請改選 CUCC+（中國聯通）。",
       activation_notice: "建議抵達中國大陸後再啟用 eSIM；APN 多為自動設定（cmhk）",
     },
   };

@@ -336,22 +336,36 @@ export default function ScrollHero() {
           h2 {
             line-height: 1.2;
             margin: 0;
+            color: #fff;
           }
 
           h1 {
             font-weight: 400;
             font-size: clamp(3rem, 4vw, 5rem);
+            color: #fff;
           }
           h2 {
             font-weight: 700;
             font-size: clamp(1.35rem, 2vw, 1.85rem);
             letter-spacing: 0.02em;
+            color: #fff;
           }
           p {
             font-size: 1.125rem;
             font-weight: 400;
             line-height: 1.4;
             margin: 0;
+            color: #fff;
+          }
+
+          .hero-content .hero-content-copy h2,
+          .hero-content .hero-content-copy p {
+            color: #fff;
+          }
+
+          .scroll-hero-wrapper :global(h1),
+          .scroll-hero-wrapper :global(h2) {
+            color: #fff !important;
           }
 
           section {

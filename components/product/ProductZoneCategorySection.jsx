@@ -11,7 +11,7 @@ export default function ProductZoneCategorySection() {
     <section className="bg-white rounded-xl border border-slate-100 px-3 sm:px-5 py-4 sm:py-5">
       <div className="flex items-end justify-between gap-3 mb-3 sm:mb-4">
         <div>
-          <h2 className="text-[16px] sm:text-[18px] font-black text-slate-900 tracking-tight">
+          <h2 className="text-[16px] sm:text-[18px] font-bold text-slate-900 tracking-tight">
             專區分類
           </h2>
           <p className="mt-0.5 text-[12px] sm:text-[13px] text-slate-500">
@@ -31,7 +31,7 @@ export default function ProductZoneCategorySection() {
             <p className="relative text-[11px] font-bold text-[#1E4AD1] tracking-wide">
               {zone.pill}
             </p>
-            <h3 className="relative mt-1 text-[17px] sm:text-[19px] font-black text-slate-900 group-hover:text-[#1E4AD1] transition-colors">
+            <h3 className="relative mt-1 text-[17px] sm:text-[19px] font-bold text-slate-900 group-hover:text-[#1E4AD1] transition-colors">
               {zone.label}
             </h3>
             <p className="relative mt-1.5 text-[12px] text-slate-500 leading-relaxed">

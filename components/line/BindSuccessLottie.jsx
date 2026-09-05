@@ -33,7 +33,7 @@ export default function BindSuccessLottie({ className = "" }) {
   if (!animationData) {
     return (
       <div className={`flex items-center justify-center ${box}`} aria-hidden>
-        <span className="text-4xl">✓</span>
+        <span className="text-[24px]">✓</span>
       </div>
     );
   }

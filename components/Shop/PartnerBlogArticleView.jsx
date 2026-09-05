@@ -201,7 +201,7 @@ export default function PartnerBlogArticleView({
       <div className={`${shellClass} pt-8 lg:pt-10`}>
         <Link
           href={isMain ? "/blog/" : `/p/${domain}/`}
-          className="inline-block text-[13px] font-black tracking-[0.2em] uppercase text-slate-900 mb-4"
+          className="inline-block text-[13px] font-bold tracking-[0.2em] uppercase text-slate-900 mb-4"
         >
           {isMain ? "NEWS" : brand}
         </Link>
@@ -404,7 +404,7 @@ export default function PartnerBlogArticleView({
       {related.length ? (
         <section className="border-t border-slate-100 w-full">
           <div className={`${shellClass} pt-10 pb-4 flex items-end justify-between gap-4`}>
-            <h2 className="text-[15px] font-black text-slate-900">推薦閱讀</h2>
+            <h2 className="text-[15px] font-bold text-slate-900">推薦閱讀</h2>
             {prevPost ? (
               <Link
                 href={articleHref(prevPost.slug)}

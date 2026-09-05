@@ -159,7 +159,7 @@ export default function Home() {
               你最專業的夥伴
             </h2>
           <h1
-              className="text-[64px] md:text-[110px] font-black text-[#111] leading-none mb-6 tracking-tight"
+              className="text-[28px] font-bold text-[#111] leading-none mb-6 tracking-tight"
               style={{ fontFamily: "Arial, sans-serif" }}
             >
               Jeko eSIM
@@ -197,7 +197,7 @@ export default function Home() {
                 eSIM 種類
               </span>
               <span
-                className="text-[44px] md:text-[68px] font-black text-[#111] leading-none tracking-tighter"
+                className="text-[28px] font-bold text-[#111] leading-none tracking-tighter"
                 style={{ fontFamily: "Arial, sans-serif" }}
               >
                 2000
@@ -217,7 +217,7 @@ export default function Home() {
               </span>
               <div className="flex flex-col items-center">
                 <span
-                  className="text-[44px] md:text-[68px] font-black text-[#0071EB] leading-none tracking-tighter"
+                  className="text-[28px] font-bold text-[#0071EB] leading-none tracking-tighter"
                   style={{ fontFamily: "Arial, sans-serif" }}
                 >
                   50
@@ -252,7 +252,7 @@ export default function Home() {
 
               {/* 內容區塊 (垂直置中) */}
               <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
-                <h3 className="text-white text-[24px] md:text-[32px] font-bold mb-4 tracking-wider drop-shadow-md">
+                <h3 className="text-white text-[24px] md:text-[28px] font-bold mb-4 tracking-wider drop-shadow-md">
                     立即申請合作
                   </h3>
                 <p className="text-white/90 text-[14px] md:text-[15px] leading-[1.8] mb-8 max-w-[90%] md:max-w-[80%] font-medium drop-shadow-md">
@@ -296,7 +296,7 @@ export default function Home() {
 
               {/* 內容區塊 (垂直置中) */}
               <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
-                <h3 className="text-white text-[24px] md:text-[32px] font-bold mb-4 tracking-wider drop-shadow-md">
+                <h3 className="text-white text-[24px] md:text-[28px] font-bold mb-4 tracking-wider drop-shadow-md">
                     隨時隨地開啟你的eSIM生活{" "}
                   </h3>
                 <p className="text-white/90 text-[14px] md:text-[15px] leading-[1.8] mb-8 max-w-[90%] md:max-w-[85%] font-medium drop-shadow-md">
@@ -392,7 +392,7 @@ export default function Home() {
       ========================================= */}
       <section className="hidden relative w-full bg-white pb-20 pt-4 z-20">
         <div className="mx-auto max-w-[800px] w-[92%] flex flex-col items-center">
-          <h2 className="text-[22px] md:text-[28px] font-black text-[#1E4AD1] mb-6 tracking-wider text-center">
+          <h2 className="text-[22px] md:text-[28px] font-bold text-[#1E4AD1] mb-6 tracking-wider text-center">
             合作模式與教學說明
           </h2>
           <div className="w-full aspect-video rounded-xl overflow-hidden shadow-[0_10px_40px_rgb(0,0,0,0.15)] border-[4px] md:border-[8px] border-[#EFF6FC] bg-black">
@@ -434,7 +434,7 @@ export default function Home() {
                 </div>
               </Copy>
               <Copy blockColor="#1E4AD1">
-                <h2 className="text-[28px] md:text-[36px] font-black text-[#333] mb-12 tracking-wider">
+                <h2 className="text-[28px] font-bold text-[#333] mb-12 tracking-wider">
                   {copy.advantageTitleBefore}
                   <span className="text-[#1E4AD1]">
                     {copy.advantageTitleHighlight}
@@ -454,10 +454,10 @@ export default function Home() {
                         {card.title[1]}
                       </h3>
                     {card.big ? (
-                      <div className="text-[54px] font-black text-[#333] my-4 leading-none">
+                      <div className="text-[28px] font-bold text-[#333] my-4 leading-none">
                         {card.big.num}
                         {card.big.suffix ? (
-                          <span className="text-[32px]">{card.big.suffix}</span>
+                          <span className="text-[28px]">{card.big.suffix}</span>
                         ) : null}{" "}
                         {card.big.badge ? (
                           <span className="text-lg text-[#215dcd]">
@@ -503,7 +503,7 @@ export default function Home() {
                 </div>
 
                 <div className="bg-[#1E4AD1] text-white py-3 px-6 md:px-16 text-center font-bold text-[16px] md:text-[18px] tracking-widest pl-12">
-                    <span className="text-[#FADE2B] font-black">
+                    <span className="text-[#FADE2B] font-bold">
                       {copy.banner.lead}
                     </span>
                     {copy.banner.rest}
@@ -514,16 +514,16 @@ export default function Home() {
                       <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
                         {copy.banner.discountLabel}
                       </span>
-                      <span className="text-5xl font-black text-[#1E4AD1]">
+                      <span className="text-[28px] font-bold text-[#1E4AD1]">
                         {copy.banner.discount}
-                        <span className="text-3xl">%</span>
+                        <span className="text-[28px]">%</span>
                       </span>
                       <span className="mt-1 text-xs font-bold text-slate-500">
                         專屬碼九折
                       </span>
                     </div>
 
-                    <div className="text-4xl text-slate-300 font-black hidden md:block">
+                    <div className="text-[24px] text-slate-300 font-bold hidden md:block">
                       →
                     </div>
 
@@ -531,9 +531,9 @@ export default function Home() {
                       <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
                         {copy.banner.shareLabel}
                       </span>
-                      <span className="text-6xl md:text-7xl font-black text-[#1E4AD1]">
+                      <span className="text-[28px] font-bold text-[#1E4AD1]">
                         {copy.banner.share}
-                        <span className="text-4xl">%</span>
+                        <span className="text-[24px]">%</span>
                       </span>
                       <span className="mt-1 text-xs font-bold text-slate-500">
                         分潤 ÷ 九折後實付
@@ -546,7 +546,7 @@ export default function Home() {
                       <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
                         {copy.banner.costLabel}
                       </span>
-                      <span className="text-4xl md:text-5xl font-black text-[#1E4AD1]">
+                      <span className="text-[24px] md:text-[28px] font-bold text-[#1E4AD1]">
                         透明
                       </span>
                       <span className="mt-1 text-xs font-bold text-slate-500">
@@ -554,7 +554,7 @@ export default function Home() {
                       </span>
                     </div>
 
-                    <div className="text-4xl text-slate-300 font-black hidden md:block">
+                    <div className="text-[24px] text-slate-300 font-bold hidden md:block">
                       →
                     </div>
 
@@ -562,7 +562,7 @@ export default function Home() {
                       <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
                         {copy.banner.profitLabel}
                       </span>
-                      <span className="text-5xl md:text-6xl font-black text-[#1E4AD1]">
+                      <span className="text-[28px] font-bold text-[#1E4AD1]">
                         {copy.banner.profit}
                       </span>
                       <span className="mt-1 text-xs font-bold text-slate-500">
@@ -576,13 +576,13 @@ export default function Home() {
                       <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
                         {copy.banner.baseLabel}
                       </span>
-                      <span className="text-5xl font-black text-[#1E4AD1]">
+                      <span className="text-[28px] font-bold text-[#1E4AD1]">
                         {copy.banner.base}
-                        <span className="text-3xl">%</span>
+                        <span className="text-[28px]">%</span>
                       </span>
                     </div>
 
-                    <div className="text-4xl text-slate-300 font-black hidden md:block">
+                    <div className="text-[24px] text-slate-300 font-bold hidden md:block">
                       +
                     </div>
 
@@ -590,13 +590,13 @@ export default function Home() {
                       <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
                         {copy.banner.bonusLabel}
                       </span>
-                      <span className="text-5xl font-black text-[#1E4AD1]">
+                      <span className="text-[28px] font-bold text-[#1E4AD1]">
                         {copy.banner.bonus}
-                        <span className="text-3xl">%</span>
+                        <span className="text-[28px]">%</span>
                       </span>
                     </div>
 
-                    <div className="text-4xl text-slate-300 font-black hidden md:block">
+                    <div className="text-[24px] text-slate-300 font-bold hidden md:block">
                       =
                     </div>
 
@@ -604,9 +604,9 @@ export default function Home() {
                       <span className="bg-[#e4ecf9] text-[#1E4AD1] font-bold px-3 py-1 rounded text-sm mb-2">
                         {copy.banner.maxLabel}
                       </span>
-                      <span className="text-6xl md:text-7xl font-black text-[#1E4AD1]">
+                      <span className="text-[28px] font-bold text-[#1E4AD1]">
                         {copy.banner.max}
-                        <span className="text-4xl">%</span>
+                        <span className="text-[24px]">%</span>
                       </span>
                     </div>
                   </div>
@@ -634,7 +634,7 @@ export default function Home() {
               <span className="text-xl text-[#FADE2B]">\</span>
               <span className="border-b-2 border-[#1E4AD1] pb-0.5">
                 {copy.ctaTitle.before}
-                <span className="text-[#1E4AD1] font-black tracking-wide">
+                <span className="text-[#1E4AD1] font-bold tracking-wide">
                   {copy.ctaTitle.highlight}
                 </span>
                 {copy.ctaTitle.after}
@@ -682,7 +682,7 @@ export default function Home() {
                 </h3>
               </Copy>
               <Copy blockColor="#1E4AD1">
-                <h2 className="text-[26px] md:text-[34px] font-black text-[#1E4AD1] mb-6 tracking-wider text-center">
+                <h2 className="text-[26px] md:text-[28px] font-bold text-[#1E4AD1] mb-6 tracking-wider text-center">
                   {copy.flow.title}
                 </h2>
               </Copy>
@@ -737,7 +737,7 @@ export default function Home() {
                     </div>
                     <div className="flex-1 flex items-center justify-between p-6 md:p-8 relative">
                       <div className="flex flex-col items-center">
-                        <span className="font-black text-[#333] text-[16px]">
+                        <span className="font-bold text-[#333] text-[16px]">
                           {copy.flow.step1.main}
                         </span>
                         <span className="text-[13px] text-[#666] mt-1">
@@ -757,7 +757,7 @@ export default function Home() {
 
                   <div className="flex flex-col md:flex-row items-stretch border-t-2 border-[#1E4AD1]">
                     <div className="w-full md:w-[220px] bg-[#1E4AD1] text-white flex flex-col items-center justify-center py-6 md:py-8">
-                      <span className="text-[18px] font-black italic leading-none mb-1">
+                      <span className="text-[18px] font-bold italic leading-none mb-1">
                         PARTNER
                       </span>
                       <span className="text-[14px] font-bold">
@@ -766,7 +766,7 @@ export default function Home() {
                     </div>
                     <div className="flex-1 flex items-center justify-between p-6 md:p-8 relative bg-[#F8FAFC]">
                       <div className="flex flex-col items-center">
-                        <span className="font-black text-[#333] text-[16px]">
+                        <span className="font-bold text-[#333] text-[16px]">
                           {copy.flow.partnerStep1.main}
                         </span>
                         <span className="text-[13px] text-[#666] mt-1">
@@ -789,7 +789,7 @@ export default function Home() {
                           <span className="text-[11px] font-bold text-[#1E4AD1]">
                             對帳單確認後
                           </span>
-                          <span className="text-[16px] font-black text-[#1E4AD1]">
+                          <span className="text-[16px] font-bold text-[#1E4AD1]">
                             匯款至指定帳戶
                           </span>
                         </div>
@@ -823,7 +823,7 @@ export default function Home() {
         <div className="max-w-[1100px] mx-auto px-4 md:px-8">
           {/* 標題 */}
           <Copy blockColor="#1E4AD1">
-            <h2 className="text-[28px] md:text-[32px] font-black text-[#111] mb-8 tracking-wider">
+            <h2 className="text-[28px] font-bold text-[#111] mb-8 tracking-wider">
               合作夥伴召集
             </h2>
           </Copy>
@@ -859,7 +859,7 @@ export default function Home() {
                     <span className="text-[6px] text-gray-500 leading-none mb-0.5">
                       接口eSIM
                     </span>
-                    <span className="text-[12px] font-black leading-none tracking-tight">
+                    <span className="text-[12px] font-bold leading-none tracking-tight">
                       Jeko
                     </span>
                   </div>
@@ -867,7 +867,7 @@ export default function Home() {
 
                 {/* 中間大字標題 */}
                 <div className="relative z-10 text-center mt-4">
-                  <h3 className="text-[42px] md:text-[48px] font-black text-[#111] leading-[1.2] tracking-widest">
+                  <h3 className="text-[28px] font-bold text-[#111] leading-[1.2] tracking-widest">
                       夥伴募集
                       <br />
                       開始
@@ -887,7 +887,7 @@ export default function Home() {
                   </h4>
                 <div className="flex items-center text-[13px] font-medium text-[#111]">
                     <span>2024.01.04</span>
-                    <span className="text-[#FADE2B] mx-3 text-[14px] font-black">
+                    <span className="text-[#FADE2B] mx-3 text-[14px] font-bold">
                       #
                     </span>
                     <span>可以自由決定您的利潤</span>
@@ -916,7 +916,7 @@ export default function Home() {
                       <span className="text-[8px] text-white/90 leading-none mb-1">
                         接口eSIM
                       </span>
-                      <span className="text-[14px] text-white font-black leading-none tracking-wider">
+                      <span className="text-[14px] text-white font-bold leading-none tracking-wider">
                         Jeko
                       </span>
                     </div>
@@ -929,7 +929,7 @@ export default function Home() {
                     </h4>
                     <div className="flex items-center text-[12px] md:text-[13px] font-medium text-[#111]">
                       <span>{news.date}</span>
-                      <span className="text-[#FADE2B] mx-2 font-black">#</span>
+                      <span className="text-[#FADE2B] mx-2 font-bold">#</span>
                       <span className="line-clamp-1">{news.category}</span>
                     </div>
                   </div>

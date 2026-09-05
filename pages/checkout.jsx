@@ -113,7 +113,7 @@ const CheckoutPage = () => {
         className="bg-slate-50 min-h-screen py-10"
       >
         <div className="max-w-3xl mx-auto px-4">
-          <h1 className="text-3xl font-bold mb-8 text-slate-900">
+          <h1 className="text-[22px] sm:text-[26px] md:text-[28px] font-bold mb-8 text-black leading-[1.35]">
             結帳資料填寫
           </h1>
 

@@ -89,7 +89,7 @@ const HorizontalScroll = () => {
 
                     <section className="sec1 pin flex-shrink-0 w-[100vw] md:w-[50vw] ">
                         {/* <span>公司里程碑：Company Milestones</span> */}
-                        <h1 className="text-[22px] font-black">2024年：</h1>
+                        <h1 className="text-[22px] font-bold">2024年：</h1>
                         <div className="col flex gap-12">
                             <p className="text-[14px]">Obtained ISO 13485 certification for international <br/>medical device quality management systems
                                 Received four patents, including the first U.S. patent
@@ -101,7 +101,7 @@ const HorizontalScroll = () => {
 
                     <section className=" ">
                         <span className="anim">Advanced</span>
-                        <h1 className="text-[22px] font-black">2023年</h1>
+                        <h1 className="text-[22px] font-bold">2023年</h1>
                         <div className="col flex gap-12">
                             <p className="text-[14px]">Launched the UltraPeace – Instant H. pylori Urea Breath Test Kit System<br />
 
@@ -112,7 +112,7 @@ const HorizontalScroll = () => {
 
                     <section className="sec1 pin flex-shrink-0 w-[100vw] md:w-[50vw] ">
 
-                        <h1 className="text-[22px] font-black">2022年</h1>
+                        <h1 className="text-[22px] font-bold">2022年</h1>
                         <div className="col anim flex gap-12">
                             <p className="text-[14px]">Received four patents 
                             </p>
@@ -120,7 +120,7 @@ const HorizontalScroll = () => {
                     </section>
                     <section className="sec1 pin flex-shrink-0 w-[100vw] md:w-[50vw] ">
 
-                        <h1 className="text-[22px] font-black">2021年</h1>
+                        <h1 className="text-[22px] font-bold">2021年</h1>
                         <div className="col anim flex gap-12">
                             <p className="text-[14px]">Achieved ISO 9001:2015 certification for quality management systems
                                 Received four patents
@@ -132,7 +132,7 @@ const HorizontalScroll = () => {
 
                     <section className="sec1 pin flex-shrink-0 w-[100vw] md:w-[50vw] ">
 
-                        <h1 className="text-[22px] font-black">2020年</h1>
+                        <h1 className="text-[22px] font-bold">2020年</h1>
                         <div className="col anim flex gap-12">
                             <p className="text-[14px]">Expanded international business to Japan, China, Thailand, and India
                                 Received three patents
@@ -144,7 +144,7 @@ const HorizontalScroll = () => {
 
                     <section className="sec1 pin flex-shrink-0 w-[100vw] md:w-[50vw] ">
 
-                        <h1 className="text-[22px] font-black">2018~2019年</h1>
+                        <h1 className="text-[22px] font-bold">2018~2019年</h1>
                         <div className="col anim flex gap-12">
                             <p className="text-[14px]">Launched the Humming Probe pH measurement system in the Taiwanese market
                                 Received eight patents
@@ -156,7 +156,7 @@ const HorizontalScroll = () => {
 
                     <section className="sec1 pin flex-shrink-0 w-[100vw] md:w-[50vw] ">
 
-                        <h1 className="text-[22px] font-black">2017年</h1>
+                        <h1 className="text-[22px] font-bold">2017年</h1>
                         <div className="col anim flex gap-12">
                             <p className="text-[14px]">Established the factory and introduced automated production lines
                             </p>
@@ -164,7 +164,7 @@ const HorizontalScroll = () => {
                     </section>
                     <section className="sec1 pin flex-shrink-0 w-[100vw] md:w-[50vw] ">
 
-                        <h1 className="text-[22px] font-black">2016年:</h1>
+                        <h1 className="text-[22px] font-bold">2016年:</h1>
                         <div className="col anim flex gap-12">
                             <p className="text-[14px]">UltraE Co., Ltd. was founded through the Taiwan Germination Program <br/> ( a startup initiative)
                                 Received the first domestic patent

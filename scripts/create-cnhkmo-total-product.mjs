@@ -82,9 +82,8 @@ const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const CATEGORY_IDS = ["pcat_01KZJNBW76333EH5XBG62QJEHW"]; // kongkong 中港澳
 const THUMB =
   process.env.CNHKMO_TOTAL_THUMB ||
-  process.env.CNHKMO_DAILY_THUMB ||
-  process.env.CNHKMO_UNLIMITED_THUMB ||
-  "https://www.jeko-esim.com.tw/images/%E5%88%86%E9%A1%9EeSIM-%E4%B8%AD%E6%B8%AF%E6%BE%B3.png";
+  process.env.CNHKMO_PRODUCT_THUMB ||
+  "https://www.jeko-esim.com.tw/images/sim/%E7%94%A2%E5%93%81/esim-%E4%B8%AD%E6%B8%AF%E6%BE%B3.png";
 
 function retailFromCost(costTwd, profitPercent) {
   return Math.ceil((costTwd * (1 + profitPercent / 100)) / 10) * 10 - 1;

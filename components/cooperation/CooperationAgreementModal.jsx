@@ -99,7 +99,7 @@ export default function CooperationAgreementModal({
                 </p>
                 <h3
                   id="coop-agreement-title"
-                  className="text-[19px] md:text-[21px] font-black text-slate-900 tracking-wide"
+                  className="text-[19px] md:text-[21px] font-bold text-slate-900 tracking-wide"
                 >
                   請詳閱以下內容至頁尾
                 </h3>
@@ -132,7 +132,7 @@ export default function CooperationAgreementModal({
               </div>
 
               <div>
-                <h4 className="text-[14px] font-black text-slate-900 mb-3">
+                <h4 className="text-[14px] font-bold text-slate-900 mb-3">
                   {detail.label}特別約定
                 </h4>
                 <ul className="space-y-2.5">
@@ -149,7 +149,7 @@ export default function CooperationAgreementModal({
               </div>
 
               <div className="pt-1 border-t border-slate-100">
-                <h4 className="text-[14px] font-black text-slate-900 mb-3 mt-4">
+                <h4 className="text-[14px] font-bold text-slate-900 mb-3 mt-4">
                   共通約定
                 </h4>
                 <ul className="space-y-2.5">
@@ -166,7 +166,7 @@ export default function CooperationAgreementModal({
               </div>
 
               <div className="pt-1 border-t border-slate-100">
-                <h4 className="text-[14px] font-black text-slate-900 mb-3 mt-4">
+                <h4 className="text-[14px] font-bold text-slate-900 mb-3 mt-4">
                   {CONTENT_DISCLAIMER.title}
                 </h4>
                 <ul className="space-y-2.5">

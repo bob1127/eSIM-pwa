@@ -223,17 +223,17 @@ function TicketModal({ item, onClose }) {
             </div>
 
             {/* 標題 */}
-            <h2 className="text-lg font-black text-gray-900 leading-snug mb-1">
+            <h2 className="text-lg font-bold text-gray-900 leading-snug mb-1">
               {item.title}
             </h2>
             <p className="text-sm text-gray-500 mb-3">{item.subtitle}</p>
 
             {/* 價格 */}
             <div className="flex items-center gap-2 mb-4">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FFD43A] text-[10px] font-black text-slate-800">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FFD43A] text-[10px] font-bold text-slate-800">
                 KK
               </span>
-              <span className="text-2xl font-black text-gray-900">
+              <span className="text-[24px] font-bold text-gray-900">
                 {item.priceLabel}
               </span>
             </div>
@@ -266,7 +266,7 @@ function TicketModal({ item, onClose }) {
               href={item.url}
               target="_blank"
               rel="noopener noreferrer sponsored"
-              className="block w-full text-center py-4 rounded-xl bg-[#0A6CD0] hover:bg-[#095bb8] text-white text-base font-black shadow-lg transition-colors"
+              className="block w-full text-center py-4 rounded-xl bg-[#0A6CD0] hover:bg-[#095bb8] text-white text-base font-bold shadow-lg transition-colors"
             >
               {isKlookItem(item) ? "立即預訂" : "立即購票"}
             </a>
@@ -321,20 +321,20 @@ function KKdayCard({ item, onClick }) {
         <p className="text-[11px] text-gray-600 line-clamp-1">
           {item.subtitle}
         </p>
-        <h3 className="mt-1 text-[15px] font-black text-gray-900 leading-snug line-clamp-2 min-h-[2.5rem]">
+        <h3 className="mt-1 text-[15px] font-bold text-gray-900 leading-snug line-clamp-2 min-h-[2.5rem]">
           {item.title}
         </h3>
 
         <div className="mt-3 flex items-center gap-1.5 min-w-0">
           <span
             className={[
-              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-black",
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold",
               klook ? "bg-[#00B259] text-white" : "bg-[#FFD43A] text-slate-800",
             ].join(" ")}
           >
             {klook ? "KL" : "KK"}
           </span>
-          <span className="text-base font-black text-gray-900">
+          <span className="text-base font-bold text-gray-900">
             {item.priceLabel}
           </span>
         </div>

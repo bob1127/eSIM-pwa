@@ -247,7 +247,7 @@ function LinePushBlock({ isDark }) {
         className={[
           "flex w-full items-center justify-center gap-2 rounded-xl py-2.5 px-3",
           "text-[13px] font-bold transition",
-          "bg-[#06C755] hover:brightness-105 text-white",
+          "bg-[#067A38] hover:brightness-105 text-white",
           isDark ? "shadow-[0_2px_8px_rgba(0,0,0,0.2)]" : "",
         ].join(" ")}
       >
@@ -266,7 +266,7 @@ function LinePushBlock({ isDark }) {
           className={
             isDark
               ? "underline underline-offset-2 decoration-white/40 hover:text-white hover:decoration-white"
-              : "underline underline-offset-2 decoration-slate-300 hover:text-[#06C755] hover:decoration-[#06C755]"
+              : "underline underline-offset-2 decoration-slate-300 hover:text-[#067A38] hover:decoration-[#067A38]"
           }
         >
           加入官方 LINE 後，點擊開啟流量提醒綁定

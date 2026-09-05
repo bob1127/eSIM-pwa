@@ -152,13 +152,13 @@ export default function CompatibilityPage() {
       <div className="min-h-screen bg-slate-50 pb-20">
         {/* 1. Header & Search Section */}
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-4">
+          <h1 className="text-[22px] sm:text-[26px] md:text-[28px] font-bold text-black mb-4 leading-[1.35]">
             查詢您的裝置是否支援 eSIM
           </h1>
-          <p className="text-slate-500 text-lg mb-4">
+          <p className="text-[15px] sm:text-[16px] text-[#666666] font-normal leading-[28px] mb-4">
             輸入型號關鍵字，或點擊下方品牌分類查看完整列表
           </p>
-          <p className="text-[13px] text-slate-400 max-w-xl mx-auto leading-relaxed mb-8">
+          <p className="text-[13px] sm:text-[14px] text-[#999999] font-normal max-w-xl mx-auto leading-[28px] mb-8">
             {getCompatibilityUpdateNotice()}
             <span className="block mt-1">
               維護週期：{ESIM_COMPATIBLE_DEVICES_UPDATE_INTERVAL} · 資料截至{" "}
@@ -376,7 +376,7 @@ export default function CompatibilityPage() {
         <div className="max-w-4xl mx-auto px-6 mt-20">
           <div className="bg-blue-50 border border-blue-100 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-6">
             <div className="bg-white p-4 rounded-full shadow-sm text-blue-600">
-              <span className="text-3xl font-black">?</span>
+              <span className="text-[28px] font-bold">?</span>
             </div>
             <div className="flex-1">
               <h3 className="text-xl font-bold text-slate-800 mb-2">

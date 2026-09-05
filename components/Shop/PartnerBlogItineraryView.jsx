@@ -35,7 +35,7 @@ function DaysAccordion({ days, activeId, onJump }) {
               onClick={() => setOpenId(open ? null : day.id)}
               className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left"
             >
-              <span className="text-[13px] font-black text-slate-800">
+              <span className="text-[13px] font-bold text-slate-800">
                 {day.title}
               </span>
               <span
@@ -147,7 +147,7 @@ export default function PartnerBlogItineraryView({
 
       {days.map((day) => (
         <section key={day.id} className="mb-12">
-          <h2 className="text-[13px] font-black tracking-[0.18em] uppercase text-slate-400 mb-6">
+          <h2 className="text-[13px] font-bold tracking-[0.18em] uppercase text-slate-400 mb-6">
             {day.title}
           </h2>
           {(day.stops || []).map((stop) => (
@@ -157,7 +157,7 @@ export default function PartnerBlogItineraryView({
               className="scroll-mt-24 mb-14 pb-10 border-b border-slate-100 last:border-0"
             >
               <div className="flex flex-wrap items-end justify-between gap-2 mb-4">
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                <h3 className="text-xl sm:text-[24px] font-bold text-slate-900">
                   {stop.name}
                 </h3>
                 {stop.duration ? (

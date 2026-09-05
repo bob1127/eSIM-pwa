@@ -44,7 +44,7 @@ export default function TestFulfillmentPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-20 px-4 font-sans">
       <div className="max-w-2xl w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">
+        <h1 className="text-[24px] font-bold text-slate-800 mb-2">
           🚀 eSIM 發貨與寄信測試面板
         </h1>
         <p className="text-slate-500 text-sm mb-8">

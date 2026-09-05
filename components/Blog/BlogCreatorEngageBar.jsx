@@ -305,7 +305,7 @@ export default function BlogCreatorEngageBar({
             <div className="flex items-center gap-2">
               <Link
                 href={creatorProfileHref(creatorKey)}
-                className="block min-w-0 flex-1 text-[14px] font-black truncate hover:opacity-90"
+                className="block min-w-0 flex-1 text-[14px] font-bold truncate hover:opacity-90"
               >
                 {authorName}
               </Link>

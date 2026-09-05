@@ -123,7 +123,7 @@ function StatCard({ label, value, growth, growthGood, loading, sub, icon, iconBg
         ) : null}
       </div>
       <p
-        className="text-xl sm:text-2xl font-black mt-2 tabular-nums"
+        className="text-xl sm:text-[24px] font-bold mt-2 tabular-nums"
         style={{ color: UI.dark }}
       >
         {loading ? "…" : value}
@@ -317,7 +317,7 @@ export default function PartnerDashboard() {
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
               <h1
-                className="text-xl font-black tracking-tight"
+                className="text-xl font-bold tracking-tight"
                 style={{ color: UI.dark }}
               >
                 儀表板
@@ -418,7 +418,7 @@ export default function PartnerDashboard() {
                         navigator.clipboard.writeText(referralCouponCode);
                         alert(`已複製折扣碼 ${referralCouponCode}`);
                       }}
-                      className="font-mono font-black underline-offset-2 hover:underline"
+                      className="font-mono font-bold underline-offset-2 hover:underline"
                       style={{ color: UI.dark }}
                     >
                       {referralCouponCode}
@@ -497,7 +497,7 @@ export default function PartnerDashboard() {
                 size={18}
                 style={{ color: UI.mid }}
               />
-              <h2 className="text-sm font-black" style={{ color: UI.dark }}>
+              <h2 className="text-sm font-bold" style={{ color: UI.dark }}>
                 商品分潤占比
               </h2>
             </div>
@@ -514,7 +514,7 @@ export default function PartnerDashboard() {
               className="flex items-center justify-between px-4 py-3"
               style={{ borderBottom: `1px solid ${UI.border}` }}
             >
-              <h2 className="text-sm font-black" style={{ color: UI.dark }}>
+              <h2 className="text-sm font-bold" style={{ color: UI.dark }}>
                 最近訂單
               </h2>
               <Link
@@ -622,7 +622,7 @@ export default function PartnerDashboard() {
                           {fmt(order.total_amount)}
                         </td>
                         <td
-                          className="px-4 py-3 text-right font-black"
+                          className="px-4 py-3 text-right font-bold"
                           style={{ color: UI.dark }}
                         >
                           +{fmt(order.partner_profit)}
@@ -644,7 +644,7 @@ export default function PartnerDashboard() {
           {/* 推廣提升 */}
           <div>
             <h2
-              className="text-sm font-black mb-2"
+              className="text-sm font-bold mb-2"
               style={{ color: UI.dark }}
             >
               推廣提升

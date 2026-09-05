@@ -156,7 +156,7 @@ const FullScreenSlider = () => {
           </div>
         </div>
 
-        <div className="slide-year absolute top-1/2 right-1/5 transform -translate-x-1/2 -translate-y-1/2 text-white uppercase text-[32px]">
+        <div className="slide-year absolute top-1/2 right-1/5 transform -translate-x-1/2 -translate-y-1/2 text-white uppercase text-[28px]">
           <div className="years flex flex-col items-center">
             <div>{slideYears[currentSlideIndex]}</div>
           </div>

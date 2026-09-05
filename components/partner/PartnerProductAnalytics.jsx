@@ -293,7 +293,7 @@ function buildExternalTooltip(tipRef, { totalProfit = 0 } = {}) {
         <span class="mt-1.5 w-2.5 h-2.5 rounded-sm shrink-0" style="background:${color}"></span>
         <div class="min-w-0">
           <p class="text-[12px] font-bold text-slate-800 leading-snug break-words">${escapeHtml(name)}</p>
-          <p class="mt-1 text-[12px] tabular-nums text-[#1E4AD1] font-black">${fmt(value)} · ${pct}%</p>
+          <p class="mt-1 text-[12px] tabular-nums text-[#1E4AD1] font-bold">${fmt(value)} · ${pct}%</p>
         </div>
       </div>
     `;
@@ -328,7 +328,7 @@ function KpiCard({ icon, label, value, sub, accent = BLUE, loading }) {
           <MaterialIcon name={icon} size={16} className="text-slate-400" />
           <span className="text-[11px] font-bold tracking-wide">{label}</span>
         </div>
-        <p className="text-2xl sm:text-[1.75rem] font-black tabular-nums text-slate-900 tracking-tight leading-none">
+        <p className="text-[24px] sm:text-[1.75rem] font-bold tabular-nums text-slate-900 tracking-tight leading-none">
           {loading ? "…" : value}
         </p>
         {sub ? (
@@ -751,7 +751,7 @@ export default function PartnerProductAnalytics({
           <div>
             <div className="flex items-center gap-2">
               <MaterialIcon name="show_chart" size={18} className="text-[#1E4AD1]" />
-              <h3 className="text-sm font-black text-slate-800">
+              <h3 className="text-sm font-bold text-slate-800">
                 收益趨勢（依{granLabel}）
               </h3>
             </div>
@@ -816,7 +816,7 @@ export default function PartnerProductAnalytics({
                     <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
                       合計
                     </p>
-                    <p className="text-sm font-black text-slate-800 tabular-nums">
+                    <p className="text-sm font-bold text-slate-800 tabular-nums">
                       {fmt(totals.profit)}
                     </p>
                   </div>

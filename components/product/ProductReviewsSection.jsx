@@ -1123,7 +1123,7 @@ export default function ProductReviewsSection({
             {/* 評價摘要：大分數 + 直方圖 + 撰寫按鈕 */}
             <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-10 mb-8 pb-8 border-b border-slate-100">
               <div className="shrink-0 text-center lg:text-left lg:min-w-[140px]">
-                <p className="text-5xl font-black text-slate-900 tracking-tight leading-none">
+                <p className="text-[28px] font-bold text-slate-900 tracking-tight leading-none">
                   {reviews.length ? avgRating.toFixed(1) : "—"}
                 </p>
                 <div className="mt-2 flex justify-center lg:justify-start">

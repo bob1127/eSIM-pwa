@@ -163,6 +163,8 @@ const EmblaCarousel = (props) => {
             <DotButton
               key={index}
               onClick={() => onDotButtonClick(index)}
+              aria-label={`切換到第 ${index + 1} 張投影片`}
+              aria-current={index === selectedIndex ? "true" : undefined}
               className={"embla__dot".concat(
                 index === selectedIndex ? " embla__dot--selected" : ""
               )}

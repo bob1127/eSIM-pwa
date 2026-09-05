@@ -135,7 +135,7 @@ export default function AppInstallGuideModal({
                         ? "Mac"
                         : "Android"}
                   </p>
-                  <h2 className="text-lg font-black text-slate-900 mt-0.5">
+                  <h2 className="text-lg font-bold text-slate-900 mt-0.5">
                     {meta.title}
                   </h2>
                   <p className="text-[12px] text-slate-500 mt-1 leading-snug">

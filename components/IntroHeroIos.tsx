@@ -129,7 +129,7 @@ export default function IntroHero() {
     <>
       <section className="relative bg-white flex flex-col items-center justify-center">
         <motion.div
-          className="z-10 text-4xl flex flex-col justify-center items-center font-extrabold mb-4"
+          className="z-10 text-[24px] flex flex-col justify-center items-center font-bold mb-4"
           initial={{ scale: 2.2, y: 0, opacity: 0 }}
           animate={logoControls}
         >
@@ -139,7 +139,7 @@ export default function IntroHero() {
           <span className="text-[26px]">iOS</span>
         </motion.div>
         <motion.div
-          className="font-bold text-neutral-800 text-[45px] mb-6"
+          className="font-bold text-neutral-800 text-[28px] mb-6"
           initial={{ opacity: 0, y: 0, scale: 0.95 }}
           animate={titleControls}
         >
@@ -168,7 +168,7 @@ export default function IntroHero() {
           initial={{ opacity: 0, y: 40 }}
           animate={textControls}
         >
-          <h1 className="text-3xl font-bold">選擇您的旅遊地區</h1>
+          <h1 className="text-[28px] font-bold">選擇您的旅遊地區</h1>
           <p className="text-neutral-600 mt-2">Powered by Motion + Tailwind</p>
         </motion.div>
       </section>
@@ -177,7 +177,7 @@ export default function IntroHero() {
         ref={sectionA}
         className="bg-white mt-[80px] pt-[60px] pb-[160px] flex flex-col items-center"
       >
-        <h2 className="text-4xl font-bold mb-12 text-center">
+        <h2 className="text-[24px] font-bold mb-12 text-center">
           eSIM Tutorial <br /> 出國當日可於有網路的狀態下完成 1~7 步驟
         </h2>
         {renderSteps(y1A, y2A, y3A)}
@@ -186,7 +186,7 @@ export default function IntroHero() {
         ref={sectionB}
         className="bg-white mt-[80px] pt-[60px] pb-[160px] flex flex-col items-center"
       >
-        <h2 className="text-4xl font-bold mb-12 text-center">
+        <h2 className="text-[24px] font-bold mb-12 text-center">
           啟用 eSIM <br /> eSIM 安裝及設定
         </h2>
         {renderSteps(y1B, y2B, y3B)}
@@ -195,7 +195,7 @@ export default function IntroHero() {
         ref={sectionC}
         className="bg-white mt-[80px] pt-[60px] pb-[160px] flex flex-col items-center"
       >
-        <h2 className="text-4xl font-bold mb-12 text-center">
+        <h2 className="text-[24px] font-bold mb-12 text-center">
           切換 eSIM <br /> 抵達目的地後再進行 ⑧~10 步驟
         </h2>
         {renderSteps(y1C, y2C, y3C)}

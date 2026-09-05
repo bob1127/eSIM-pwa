@@ -105,7 +105,7 @@ function StatGrid({ items }) {
           <p className="text-[12px] font-bold tracking-wider text-[#8B96A5] mb-2 break-words">
             {s.label}
           </p>
-          <p className="text-[22px] sm:text-[26px] md:text-[30px] font-black text-[#111] leading-tight tracking-tight break-words">
+          <p className="text-[22px] sm:text-[26px] md:text-[30px] font-bold text-[#111] leading-tight tracking-tight break-words">
             {s.value}
             <span className="ml-1.5 text-[12px] md:text-[13px] font-bold text-[#5B6570]">
               {s.unit}
@@ -197,7 +197,7 @@ export default function EsimFutureTrendsSection() {
           </div>
           <div className="overflow-hidden max-w-full">
             <Copy blockColor="#1E4AD1">
-              <h2 className="text-[22px] sm:text-2xl md:text-3xl lg:text-[32px] font-bold text-gray-900 leading-[1.45] sm:leading-[1.6] tracking-wide mb-8 break-words">
+              <h2 className="text-[22px] sm:text-[24px] md:text-[28px] font-bold text-gray-900 leading-[1.45] sm:leading-[1.6] tracking-wide mb-8 break-words">
                 未來 eSIM 趨勢，與智慧手機支援浪潮
               </h2>
             </Copy>
@@ -220,7 +220,7 @@ export default function EsimFutureTrendsSection() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-5 flex-wrap">
-              <span className="text-[11px] font-black tracking-[0.14em] text-[#1E4AD1] uppercase">
+              <span className="text-[11px] font-bold tracking-[0.14em] text-[#1E4AD1] uppercase">
                 Future
               </span>
               <span className="text-[13px] font-bold text-[#111]">
@@ -232,7 +232,7 @@ export default function EsimFutureTrendsSection() {
 
           <div className="lg:border-l lg:border-slate-200 lg:pl-10 min-w-0">
             <div className="flex items-center gap-2 mb-5 flex-wrap">
-              <span className="text-[11px] font-black tracking-[0.14em] text-[#1E4AD1] uppercase">
+              <span className="text-[11px] font-bold tracking-[0.14em] text-[#1E4AD1] uppercase">
                 Devices
               </span>
               <span className="text-[13px] font-bold text-[#111]">

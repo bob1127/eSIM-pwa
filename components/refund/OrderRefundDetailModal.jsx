@@ -49,7 +49,7 @@ export default function OrderRefundDetailModal({ order, onClose, onReapply }) {
       <div className="bg-white rounded-sm shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
-            <h3 className="font-black text-[#1e3a5f]">
+            <h3 className="font-bold text-[#1e3a5f]">
               訂單 #{order.id} · {title}
             </h3>
             <p className="text-xs text-slate-500 mt-0.5 truncate">
@@ -59,7 +59,7 @@ export default function OrderRefundDetailModal({ order, onClose, onReapply }) {
           <button
             type="button"
             onClick={onClose}
-            className="text-2xl text-slate-400 px-2"
+            className="text-[24px] text-slate-400 px-2"
           >
             ×
           </button>

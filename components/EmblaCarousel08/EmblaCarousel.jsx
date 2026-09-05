@@ -95,7 +95,7 @@ const EmblaCarousel = (props) => {
                       </div>
                     )}
                     <div className="txt mt-5 flex-col flex justify-center items-center w-4/5 mx-auto">
-                      <b className="text-[18px] font-extrabold text-center">
+                      <b className="text-[18px] font-bold text-center">
                         {slide.title}
                       </b>
                       <p className="text-[14px] text-rose-500 font-bold text-center">
@@ -127,6 +127,8 @@ const EmblaCarousel = (props) => {
             <DotButton
               key={index}
               onClick={() => onDotButtonClick(index)}
+              aria-label={`切換到第 ${index + 1} 張投影片`}
+              aria-current={index === selectedIndex ? "true" : undefined}
               className={"embla__dot".concat(
                 index === selectedIndex ? " embla__dot--selected" : ""
               )}

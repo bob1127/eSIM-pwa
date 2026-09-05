@@ -85,7 +85,7 @@ function Seg({ value, onChange, options }) {
           key={o.id}
           type="button"
           onClick={() => onChange(o.id)}
-          className={`flex-1 py-1.5 text-[11px] font-black ${
+          className={`flex-1 py-1.5 text-[11px] font-bold ${
             value === o.id ? "bg-white text-slate-900" : "text-white/60 hover:text-white"
           }`}
         >
@@ -103,7 +103,7 @@ function ItemStackEditor({ items, onChange }) {
       {list.map((it, i) => (
         <div key={i} className="rounded-lg bg-black/30 border border-white/10 p-2">
           <div className="flex items-center gap-1 mb-1">
-            <span className="text-[10px] font-black text-white/40">#{i + 1}</span>
+            <span className="text-[10px] font-bold text-white/40">#{i + 1}</span>
             <button
               type="button"
               className="ml-auto p-0.5 text-white/40 hover:text-red-300"
@@ -270,7 +270,7 @@ function DesignFields({ p, set, type }) {
   const splitCard = CARD_DESIGN_TYPES.has(type);
   return (
     <div className="mt-4 pt-3 border-t border-white/10">
-      <p className="text-[10px] font-black tracking-widest text-white/35 mb-2">
+      <p className="text-[10px] font-bold tracking-widest text-white/35 mb-2">
         {splitCard ? "外觀 · 整體" : "外觀"}
       </p>
       {textFlow ? (
@@ -359,7 +359,7 @@ function DesignFields({ p, set, type }) {
               key={o.id}
               type="button"
               onClick={() => set("width", o.id)}
-              className={`py-1.5 text-[11px] font-black rounded ${
+              className={`py-1.5 text-[11px] font-bold rounded ${
                 (p.width || "full") === o.id
                   ? "bg-white text-slate-900"
                   : "bg-white/5 text-white/60 hover:text-white"
@@ -393,7 +393,7 @@ function DesignFields({ p, set, type }) {
                   key={o.id}
                   type="button"
                   onClick={() => set("height_mode", o.id)}
-                  className={`py-1.5 text-[11px] font-black rounded ${
+                  className={`py-1.5 text-[11px] font-bold rounded ${
                     (p.height_mode || "auto") === o.id
                       ? "bg-white text-slate-900"
                       : "bg-white/5 text-white/60 hover:text-white"
@@ -453,7 +453,7 @@ function DesignFields({ p, set, type }) {
 
       {splitCard ? (
         <div className="mt-4 pt-3 border-t border-white/10">
-          <p className="text-[10px] font-black tracking-widest text-white/35 mb-2">
+          <p className="text-[10px] font-bold tracking-widest text-white/35 mb-2">
             外觀 · 卡片
           </p>
           <ColorAccordion
@@ -712,7 +712,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
       return (
         <>
           <textarea
-            className={`${inputCls} min-h-[72px] text-lg font-black leading-snug`}
+            className={`${inputCls} min-h-[72px] text-lg font-bold leading-snug`}
             value={p.text || ""}
             onChange={(e) => set("text", e.target.value)}
           />
@@ -814,7 +814,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
           <div className="rounded-lg bg-white/5 border border-dashed border-white/20 py-2 mb-2">
             <div className="mx-auto bg-[#94a3b8]/40" style={{ height: p.height || 32, width: "70%" }} />
           </div>
-          <p className="text-center text-xs font-black mb-1">{p.height || 32}px</p>
+          <p className="text-center text-xs font-bold mb-1">{p.height || 32}px</p>
           <input
             type="range"
             min="8"
@@ -938,7 +938,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
                     <div key={i} className="rounded bg-violet-400/70" />
                   ))}
                 </div>
-                <p className="mt-2 text-[11px] font-black">{n} 欄</p>
+                <p className="mt-2 text-[11px] font-bold">{n} 欄</p>
               </button>
             ))}
           </div>
@@ -962,7 +962,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
                   key={o.label}
                   type="button"
                   onClick={() => resizeLayout({ rows: o.rows, cols: o.cols })}
-                  className={`py-1.5 text-[11px] font-black rounded ${
+                  className={`py-1.5 text-[11px] font-bold rounded ${
                     Number(p.rows) === o.rows && Number(p.cols) === o.cols
                       ? "bg-white text-slate-900"
                       : "bg-white/5 text-white/60 hover:text-white"
@@ -1185,7 +1185,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
           <div className="flex items-center gap-3 mb-3 rounded-lg bg-amber-500/15 p-3">
             <MaterialIcon name={p.icon || "travel_explore"} size={28} />
             <div className="min-w-0">
-              <p className="text-sm font-black truncate">{p.title || "標題"}</p>
+              <p className="text-sm font-bold truncate">{p.title || "標題"}</p>
               <p className="text-[11px] text-white/60 truncate">{p.text}</p>
             </div>
           </div>
@@ -1299,9 +1299,9 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
       return (
         <>
           <div className="rounded-xl bg-[#93003c] p-4 mb-3 text-center">
-            <p className="font-black">{p.title || "標題"}</p>
+            <p className="font-bold">{p.title || "標題"}</p>
             <p className="text-[11px] text-white/80 mt-1">{p.text}</p>
-            <span className="inline-block mt-2 px-3 py-1 rounded-full bg-white text-[#93003c] text-[11px] font-black">
+            <span className="inline-block mt-2 px-3 py-1 rounded-full bg-white text-[#93003c] text-[11px] font-bold">
               {p.button || "按鈕"}
             </span>
           </div>
@@ -1323,7 +1323,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
       return (
         <>
           <p className="text-center mb-3">
-            <span className="text-4xl font-black text-teal-300">{p.value || "0"}</span>
+            <span className="text-[24px] font-bold text-teal-300">{p.value || "0"}</span>
             <span className="text-lg text-white/50">{p.suffix}</span>
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -1592,7 +1592,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
                       key={n}
                       type="button"
                       onClick={() => set("visible", n)}
-                      className={`py-1.5 text-[11px] font-black rounded ${
+                      className={`py-1.5 text-[11px] font-bold rounded ${
                         Number(p.visible || 4) === n
                           ? "bg-white text-slate-900"
                           : "bg-white/10 text-white/70"
@@ -1730,7 +1730,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
                   key={n}
                   type="button"
                   onClick={() => set("visible", n)}
-                  className={`py-1.5 text-[11px] font-black rounded ${
+                  className={`py-1.5 text-[11px] font-bold rounded ${
                     Number(p.visible || 1) === n
                       ? "bg-white text-slate-900"
                       : "bg-white/10 text-white/70"
@@ -1768,7 +1768,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
                   key={o.id}
                   type="button"
                   onClick={() => set("effect", o.id)}
-                  className={`py-1.5 text-[11px] font-black rounded ${
+                  className={`py-1.5 text-[11px] font-bold rounded ${
                     (p.effect || "slide") === o.id
                       ? "bg-white text-slate-900"
                       : "bg-white/10 text-white/70"
@@ -1831,7 +1831,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
                   key={o.id}
                   type="button"
                   onClick={() => set("layout", o.id)}
-                  className={`py-1.5 text-[11px] font-black rounded ${
+                  className={`py-1.5 text-[11px] font-bold rounded ${
                     (p.layout || "cards") === o.id
                       ? "bg-white text-slate-900"
                       : "bg-white/5 text-white/60 hover:text-white"
@@ -1865,7 +1865,7 @@ function SettingsCore({ block, onChangeProps, onChangeColumnsCount, onChangeLayo
                       key={n}
                       type="button"
                       onClick={() => set("visible", n)}
-                      className={`py-1.5 text-[11px] font-black rounded ${
+                      className={`py-1.5 text-[11px] font-bold rounded ${
                         Number(p.visible || 2) === n
                           ? "bg-white text-slate-900"
                           : "bg-white/10 text-white/70"

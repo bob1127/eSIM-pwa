@@ -124,7 +124,7 @@ export default function AccountBossPartnersPanel() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-black text-[#1E4AD1]">合作夥伴審核</h3>
+          <h3 className="text-base font-bold text-[#1E4AD1]">合作夥伴審核</h3>
           <p className="text-xs text-slate-500 mt-0.5">
             批准後夥伴可至{" "}
             <Link href="/partner/login" className="text-[#0071EB] font-bold hover:underline">

@@ -81,7 +81,7 @@ export default function LineTrafficUsageCard({
     <section className="mb-3 rounded-[16px] bg-white p-4 shadow-[0_4px_16px_rgba(26,40,80,0.06)]">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-[16px] font-black text-[#1A1A1A]">剩餘流量</h2>
+          <h2 className="text-[16px] font-bold text-[#1A1A1A]">剩餘流量</h2>
           <p className="mt-0.5 text-[11px] text-[#888888]">
             {productName || "會員方案"} · 每張都可查，通知只綁一張
           </p>
@@ -91,7 +91,7 @@ export default function LineTrafficUsageCard({
             type="button"
             onClick={onRefresh}
             disabled={loading}
-            className="rounded-full px-3 py-1.5 text-[11px] font-black text-white disabled:opacity-50"
+            className="rounded-full px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50"
             style={{ backgroundColor: BLUE }}
           >
             {loading ? (
@@ -100,7 +100,7 @@ export default function LineTrafficUsageCard({
                 size="xs"
                 label="查詢中"
                 className="justify-center"
-                labelClassName="text-[11px] font-black text-white"
+                labelClassName="text-[11px] font-bold text-white"
                 spinnerClassName="text-white"
               />
             ) : (
@@ -129,7 +129,7 @@ export default function LineTrafficUsageCard({
                   key={id}
                   type="button"
                   onClick={() => onViewChange?.(id)}
-                  className="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-black"
+                  className="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold"
                   style={
                     on
                       ? { backgroundColor: BLUE, color: "#fff" }
@@ -185,7 +185,7 @@ export default function LineTrafficUsageCard({
               />
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                 <p className="text-[10px] font-bold text-[#888888]">剩餘</p>
-                <p className="text-[13px] font-black" style={{ color: BLUE }}>
+                <p className="text-[13px] font-bold" style={{ color: BLUE }}>
                   {formatMb(remaining)}
                 </p>
                 {pct != null ? (
@@ -224,7 +224,7 @@ export default function LineTrafficUsageCard({
           </div>
           {barData ? (
             <div className="mt-4 h-36 border-t border-[#EEF1F6] pt-3">
-              <p className="mb-2 text-[12px] font-black text-[#1A1A1A]">
+              <p className="mb-2 text-[12px] font-bold text-[#1A1A1A]">
                 各方案剩餘比較
               </p>
               <Bar

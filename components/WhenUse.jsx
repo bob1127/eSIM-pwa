@@ -24,7 +24,7 @@ export default function Header() {
             <section className="px-[20px] md:px-0  flex center ">
                 <div className=" container mx-auto md:px-10 lg:px-10">
 
-                    <h1 className="mt-2  text-center text-4xl font-bold uppercase">
+                    <h1 className="mt-2  text-center text-[24px] font-bold uppercase">
 
 
                     </h1>

@@ -39,11 +39,11 @@ export function auKddi10MbpsKeyFeatures() {
   );
 }
 
-/** SoftBank / KDDI 10Mbps（T+C 雙網）— 沿用既有 */
+/** SoftBank / KDDI 10Mbps（T+C 雙網漫遊・新加坡 IP） */
 export function softbankKddi10MbpsKeyFeatures() {
   return pack(
     [
-      "KDDI／SoftBank 雙網自動切換，日本 IP，無限流量。",
+      "KDDI／SoftBank 雙網自動切換（漫遊），出網為**新加坡 IP**，無限流量。",
       "**每日 1GB 高速後約 10Mbps 吃到飽**：高速用完後可持續上網。",
       "**支援 4G／5G**，適合導航、傳訊與輕量影音。",
     ],

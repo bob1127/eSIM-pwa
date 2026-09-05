@@ -117,7 +117,7 @@ function MetricCard({ label, value, hint, icon, iconBg }) {
         ) : null}
       </div>
       <p
-        className="text-xl sm:text-2xl font-black mt-2 tabular-nums"
+        className="text-xl sm:text-[24px] font-bold mt-2 tabular-nums"
         style={{ color: UI.dark }}
       >
         {value}
@@ -367,7 +367,7 @@ export default function PartnerOrdersPage() {
         <div className="px-4 sm:px-6 pt-5 pb-4 flex items-start justify-between gap-3 flex-wrap">
           <div className="min-w-0">
             <h1
-              className="text-xl font-black tracking-tight"
+              className="text-xl font-bold tracking-tight"
               style={{ color: UI.dark }}
             >
               訂單分潤
@@ -611,7 +611,7 @@ export default function PartnerOrdersPage() {
                             分潤
                           </p>
                           <p
-                            className="font-black mt-0.5"
+                            className="font-bold mt-0.5"
                             style={{ color: UI.dark }}
                           >
                             {fmt(order.partner_profit)}
@@ -751,7 +751,7 @@ export default function PartnerOrdersPage() {
                             </td>
                           )}
                           <td
-                            className="px-5 py-4 font-black"
+                            className="px-5 py-4 font-bold"
                             style={{ color: UI.dark }}
                           >
                             +{fmt(order.partner_profit)}

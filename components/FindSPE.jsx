@@ -57,7 +57,7 @@ export default function Header() {
                             </li>
                         </ul>
                         <Button radius="full" href='#' className="bg-gray-800 mt-3  text-white shadow-lg">
-                            <a href="https://www.ultraehp.com/hummingprobe/en/UH1.html" className='font-black'>More</a>
+                            <a href="https://www.ultraehp.com/hummingprobe/en/UH1.html" className='font-bold'>More</a>
 
                         </Button>
                     </div>
@@ -97,7 +97,7 @@ export default function Header() {
                             </li>
                         </ul>
                         <Button radius="full" href='#' className="bg-gray-800 mt-3  text-white shadow-lg">
-                            <a href="https://www.ultraehp.com/hummingprobe/en/UH2.html" className='font-black'>More</a>
+                            <a href="https://www.ultraehp.com/hummingprobe/en/UH2.html" className='font-bold'>More</a>
 
                         </Button>
                     </div>
@@ -134,7 +134,7 @@ export default function Header() {
                             </li>
                         </ul>
                         <Button radius="full" href='#' className="bg-gray-800 mt-3  text-white shadow-lg">
-                            <a href="https://www.ultraehp.com/hummingprobe/en/UH2-GAS.html" className='font-black'>More</a>
+                            <a href="https://www.ultraehp.com/hummingprobe/en/UH2-GAS.html" className='font-bold'>More</a>
 
                         </Button>
                     </div>
@@ -176,7 +176,7 @@ export default function Header() {
                             </li>
                         </ul>
                         <Button radius="full" href='#' className="bg-gray-800 mt-3  text-white shadow-lg">
-                            <a href="https://www.ultraehp.com/hummingprobe/en/UX100.html" className='font-black'>More</a>
+                            <a href="https://www.ultraehp.com/hummingprobe/en/UX100.html" className='font-bold'>More</a>
 
                         </Button>
                         <Image loader={myLoader01} src='UX100.webp' placeholder="empty" width={470}
@@ -216,7 +216,7 @@ export default function Header() {
                          
                         </ul>
                         <Button radius="full" href='#' className="bg-gray-800 mt-3  text-white shadow-lg">
-                            <a href="https://www.ultraehp.com/hummingprobe/en/UX200.html" className='font-black'>More</a>
+                            <a href="https://www.ultraehp.com/hummingprobe/en/UX200.html" className='font-bold'>More</a>
 
                         </Button>
                         <Image loader={myLoader01} loading="lazy" placeholder="empty" src='UX200-en.webp' width={470} alt="UX200免校正酸鹼檢測儀" height={470}></Image>
@@ -252,7 +252,7 @@ export default function Header() {
                             </li>
                         </ul>
                         <Button radius="full" href='#' className="bg-gray-800 mt-3  text-white shadow-lg">
-                            <a href="https://www.ultraehp.com/hummingprobe/en/CS200.html" className='font-black'>More</a>
+                            <a href="https://www.ultraehp.com/hummingprobe/en/CS200.html" className='font-bold'>More</a>
 
                         </Button>
                         <Image loader={myLoader01} loading="lazy" placeholder="empty" src='CS200-en.webp' width={470} alt="CS200 磁石變頻攪拌器" height={470}></Image>

@@ -710,7 +710,7 @@ export default function DataEstimatorModal({
                           <span className="text-sm font-bold text-slate-700">
                             建議流量門檻
                           </span>
-                          <span className="text-2xl font-bold text-[#00a8e0] tabular-nums leading-none">
+                          <span className="text-[24px] font-bold text-[#00a8e0] tabular-nums leading-none">
                             ≥ {suggestedGb} GB
                           </span>
                         </div>

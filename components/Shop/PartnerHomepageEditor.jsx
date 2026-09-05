@@ -196,7 +196,7 @@ export default function PartnerHomepageEditor({
         {open ? (
           <div className="w-[min(100vw-2rem,380px)] max-h-[min(80vh,640px)] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-black text-slate-800">首頁編輯模式</p>
+              <p className="text-sm font-bold text-slate-800">首頁編輯模式</p>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -290,7 +290,7 @@ export default function PartnerHomepageEditor({
                         className="rounded-xl border border-slate-100 bg-slate-50/80 p-3 space-y-2"
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-[11px] font-black text-slate-500">
+                          <p className="text-[11px] font-bold text-slate-500">
                             投影片 {i + 1}
                           </p>
                           <button
@@ -427,7 +427,7 @@ export default function PartnerHomepageEditor({
                     key={i}
                     className="rounded-xl border border-slate-100 bg-slate-50/80 p-3 space-y-2"
                   >
-                    <p className="text-[11px] font-black text-slate-500">
+                    <p className="text-[11px] font-bold text-slate-500">
                       卡片 {i + 1}
                     </p>
                     <Field

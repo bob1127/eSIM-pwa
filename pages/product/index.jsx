@@ -305,7 +305,7 @@ const AllProductsPage = ({ initialProducts }) => {
                               </p>
                             )}
                             <div className="flex items-end gap-1.5 mt-auto pt-2.5">
-                              <span className="text-[#0071EB] font-black text-[15px] sm:text-base tabular-nums leading-none">
+                              <span className="text-[#0071EB] font-bold text-[15px] sm:text-base tabular-nums leading-none">
                                 {price > 0 ? (
                                   <>
                                     NT${price}

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
-import { cfImgSrc } from "@/lib/cfImageLoader";
+import { cfImgSrc, unwrapCfImageSrc } from "@/lib/cfImageLoader";
 
 /** Jetpack / WP「投影片」區塊 */
 export function isWpSlideshowNode(node) {
@@ -121,6 +121,11 @@ export default function WpSlideshow({
               alt={current.alt || ""}
               className="relative z-0 w-full h-auto max-h-[70vh] object-contain pointer-events-none"
               loading="lazy"
+              onError={(e) => {
+                const el = e.currentTarget;
+                const orig = unwrapCfImageSrc(el.getAttribute("src") || src);
+                if (orig && el.getAttribute("src") !== orig) el.src = orig;
+              }}
             />
           </button>
         ) : (
@@ -130,6 +135,11 @@ export default function WpSlideshow({
             alt={current.alt || ""}
             className="relative z-0 w-full h-auto max-h-[70vh] object-contain"
             loading="lazy"
+            onError={(e) => {
+              const el = e.currentTarget;
+              const orig = unwrapCfImageSrc(el.getAttribute("src") || src);
+              if (orig && el.getAttribute("src") !== orig) el.src = orig;
+            }}
           />
         )}
 

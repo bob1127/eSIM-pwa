@@ -119,7 +119,7 @@ export default function AccountShell({
         <span className="flex-1 text-left truncate">{item.label}</span>
         {badge > 0 && (
           <span
-            className="min-w-[18px] h-[18px] px-1 text-white text-[10px] font-black flex items-center justify-center"
+            className="min-w-[18px] h-[18px] px-1 text-white text-[10px] font-bold flex items-center justify-center"
             style={{
               backgroundColor: "#1E4AD1",
               borderRadius: ACCOUNT_UI.radiusSm,
@@ -148,7 +148,7 @@ export default function AccountShell({
             />
           ) : (
             <span
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[12px] font-black shrink-0"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[12px] font-bold shrink-0"
               style={{ backgroundColor: SHOPIFY_UI.accentBg }}
             >
               {initials}
@@ -237,7 +237,7 @@ export default function AccountShell({
             />
           </span>
           <span
-            className="font-black text-sm tracking-tight hidden lg:inline"
+            className="font-bold text-sm tracking-tight hidden lg:inline"
             style={{ color: SHOPIFY_UI.textPrimary }}
           >
             {brandLabel || "Jeko"}
@@ -285,7 +285,7 @@ export default function AccountShell({
                 />
               ) : (
                 <span
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-black shrink-0"
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
                   style={{ backgroundColor: SHOPIFY_UI.accentBg }}
                 >
                   {initials}
@@ -541,7 +541,7 @@ export function MemberProfileHeader({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h1
-              className="text-xl sm:text-2xl font-black tracking-tight"
+              className="text-xl sm:text-[24px] font-bold tracking-tight"
               style={{ color: ACCOUNT_THEME.dark }}
             >
               {user?.name || "會員"}
@@ -690,7 +690,7 @@ export function NavyPanel({ title, icon, action, children, className = "" }) {
             )}
             {title && (
               <h3
-                className="text-sm font-black truncate"
+                className="text-sm font-bold truncate"
                 style={{ color: ACCOUNT_THEME.dark }}
               >
                 {title}
@@ -723,7 +723,7 @@ export function StatusBanner({ status = "good", title, message }) {
         />
       </div>
       <div className="flex-1 flex flex-col justify-center px-4 py-3 text-white">
-        <p className="text-lg sm:text-xl font-black">{title}</p>
+        <p className="text-lg sm:text-xl font-bold">{title}</p>
         {message && (
           <p className="text-xs sm:text-sm text-white/80 mt-0.5">{message}</p>
         )}
@@ -781,7 +781,7 @@ export function MetricTile({
         ) : null}
       </div>
       <p
-        className="text-xl sm:text-2xl font-black mt-2 tabular-nums leading-tight"
+        className="text-xl sm:text-[24px] font-bold mt-2 tabular-nums leading-tight"
         style={{ color: ACCOUNT_THEME.dark }}
       >
         {value}
@@ -822,7 +822,7 @@ export function HrTableShell({ title, filters, actions, children }) {
         style={{ borderBottom: `1px solid ${ACCOUNT_THEME.border}` }}
       >
         <h2
-          className="text-base font-black"
+          className="text-base font-bold"
           style={{ color: ACCOUNT_THEME.dark }}
         >
           {title}
@@ -868,7 +868,7 @@ export function QuickActionCard({ icon, title, desc, onClick, href }) {
         />
       </div>
       <p
-        className="font-black text-sm"
+        className="font-bold text-sm"
         style={{ color: ACCOUNT_THEME.dark }}
       >
         {title}

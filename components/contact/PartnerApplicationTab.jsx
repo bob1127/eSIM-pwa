@@ -92,7 +92,7 @@ export default function PartnerApplicationTab() {
           size={48}
           className="text-[#2b579a] mx-auto mb-4"
         />
-        <h2 className="text-xl font-black text-[#1e3a5f] mb-2">洽詢已送出</h2>
+        <h2 className="text-xl font-bold text-[#1e3a5f] mb-2">洽詢已送出</h2>
         <p className="text-sm text-slate-500 mb-2 max-w-md mx-auto">
           我們已收到您的合作意向，專人將與您聯繫。若希望立即建立賣場，也可直接完成線上申請。
         </p>
@@ -112,7 +112,7 @@ export default function PartnerApplicationTab() {
       {/* 雙欄介紹 — 參考幻冬舎登入頁 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-slate-200">
         <div className="p-6 sm:p-8 bg-white border-b lg:border-b-0 lg:border-r border-slate-200">
-          <h2 className="text-lg font-black text-[#1e3a5f] mb-2">
+          <h2 className="text-lg font-bold text-[#1e3a5f] mb-2">
             Jeko eSIM 合作夥伴計畫
           </h2>
           <p className="text-sm text-slate-500 leading-relaxed mb-6">
@@ -151,7 +151,7 @@ export default function PartnerApplicationTab() {
         </div>
 
         <div className="p-6 sm:p-8 bg-white">
-          <h3 className="text-sm font-black text-[#1e3a5f] mb-1">
+          <h3 className="text-sm font-bold text-[#1e3a5f] mb-1">
             還不確定？先留下洽詢
           </h3>
           <p className="text-xs text-slate-500 mb-4">

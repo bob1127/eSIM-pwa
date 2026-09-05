@@ -102,7 +102,7 @@ export function StoreDonutChart({ storeShare, totalRevenue }) {
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <p className="text-[10px] text-slate-400">總營收</p>
-          <p className="text-xs font-black text-[#1E4AD1]">
+          <p className="text-xs font-bold text-[#1E4AD1]">
             {Math.round(totalRevenue).toLocaleString("zh-TW")}
           </p>
         </div>

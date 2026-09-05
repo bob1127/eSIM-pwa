@@ -21,7 +21,7 @@ const VideoPlayer = () => {
       {!isPlaying && (
         <div className="absolute inset-0 flex items-center justify-center cursor-pointer" onClick={handlePlayClick}>
           <img src={posterUrl} alt="Video Poster" className="w-full h-full object-cover" />
-          <button className="absolute text-white text-3xl font-bold">▶</button>
+          <button className="absolute text-white text-[28px] font-bold">▶</button>
         </div>
       )}
 

@@ -477,7 +477,7 @@ export default function ShopProductPage() {
                 {PRODUCT.badge}
               </span>
 
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug -mt-2">
+              <h1 className="text-xl sm:text-[24px] font-bold text-slate-900 leading-snug -mt-2">
                 {PRODUCT.title}
               </h1>
 
@@ -508,7 +508,7 @@ export default function ShopProductPage() {
 
               {/* 價格 */}
               <div className="flex items-center gap-2.5">
-                <span className="text-2xl font-bold text-slate-900">
+                <span className="text-[24px] font-bold text-slate-900">
                   NT${PRODUCT.price.toLocaleString()}
                 </span>
                 <span className="text-[11px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded">
@@ -521,7 +521,7 @@ export default function ShopProductPage() {
 
               {/* 優惠碼框 */}
               <div className="flex items-stretch border border-[#B8D9FF] bg-[#E8F3FF] overflow-hidden">
-                <div className="flex items-center justify-center px-4 bg-[#3B9EFF] text-white text-lg font-black shrink-0 border-r border-dashed border-white/50">
+                <div className="flex items-center justify-center px-4 bg-[#3B9EFF] text-white text-lg font-bold shrink-0 border-r border-dashed border-white/50">
                   ${Math.round(PRODUCT.saveAmount / 30)}
                 </div>
                 <div className="flex-1 px-3 py-2.5 flex items-center justify-between gap-2">
@@ -793,7 +793,7 @@ export default function ShopProductPage() {
 
         {/* ── Overview ── */}
         <section id="overview" className={`${CONTAINER} pt-16 pb-8`}>
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">
+          <h2 className="text-[24px] font-bold text-slate-900 mb-4">
             Unleash Mighty 240W Charging
           </h2>
           <p className="text-[14px] text-slate-800 max-w-3xl leading-relaxed">
@@ -823,9 +823,9 @@ export default function ShopProductPage() {
         {/* ── Reviews ── */}
         <section id="reviews" className="bg-white border-t border-slate-200/80">
           <div className={`${CONTAINER} py-14`}>
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Reviews</h2>
+            <h2 className="text-[24px] font-bold text-slate-900 mb-2">Reviews</h2>
             <div className="flex items-center gap-2 mb-8">
-              <span className="text-3xl font-bold text-slate-900">
+              <span className="text-[28px] font-bold text-slate-900">
                 {PRODUCT.rating}
               </span>
               <div>

@@ -221,11 +221,11 @@ export default function IntroHero() {
       {/* 1. Hero Animation Section */}
       <section className="relative bg-white min-h-screen flex flex-col items-center justify-center pt-20 overflow-hidden">
         <motion.div
-          className="z-10 flex flex-col justify-center items-center font-extrabold mb-8 relative"
+          className="z-10 flex flex-col justify-center items-center font-bold mb-8 relative"
           initial={{ scale: 2.2, y: 0, opacity: 0 }}
           animate={logoControls}
         >
-          <div className="logo bg-[#1757ff] text-white rounded-[20px] flex justify-center items-center w-[120px] h-[120px] md:w-[180px] md:h-[180px] shadow-xl text-2xl md:text-4xl">
+          <div className="logo bg-[#1757ff] text-white rounded-[20px] flex justify-center items-center w-[120px] h-[120px] md:w-[180px] md:h-[180px] shadow-xl text-[24px]">
             ESIM
           </div>
 
@@ -234,7 +234,7 @@ export default function IntroHero() {
             initial={{ opacity: 0 }}
             animate={titleControls}
           >
-            <h1 className="text-stone-800 tracking-widest text-3xl md:text-6xl font-bold leading-loose mb-2">
+            <h1 className="text-stone-800 tracking-widest text-[28px] font-bold leading-loose mb-2">
               如何在iOS裝置上安裝並啟用eSIM？
             </h1>
             <span className="text-xl md:text-[26px] text-gray-500">
@@ -265,15 +265,15 @@ export default function IntroHero() {
           ref={sectionA}
           className=" mt-[80px] pt-[30px] pb-[260px] flex flex-col items-center"
         >
-          <h2 className="text-3xl md:text-4xl font-bold  text-center leading-tight">
+          <h2 className="text-[28px] md:text-[24px] font-bold  text-center leading-tight">
             eSIM 安裝教學
           </h2>
-          <h3 className="text-2xl font-bold mt-3">
+          <h3 className="text-[24px] font-bold mt-3">
             安裝eSIM 方式 (建議事前先安裝)
           </h3>{" "}
           <span className="text-lg md:text-lg mt-8 text-stone-800 text-center  w-[80%] max-w-[550px] font-normal">
             建議在國內先安裝好eSIM，{" "}
-            <b className="text-[#eb3737] font-extrabold text-xl">
+            <b className="text-[#eb3737] font-bold text-xl">
               因為eSIM 安裝需要有穩定訊號
             </b>{" "}
             ，<br></br>
@@ -281,18 +281,18 @@ export default function IntroHero() {
           </span>
         </section>
 
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center leading-tight">
+        <h2 className="text-[28px] md:text-[24px] font-bold mb-12 text-center leading-tight">
           第一種安裝方式 <br /> <br />
           長按eSIM QR碼
         </h2>
 
         <span className="  text-stone-800 max-w-[550px] text-center font-normal">
           此方法適用於
-          <b className="text-[#eb3737] font-extrabold text-xl">
+          <b className="text-[#eb3737] font-bold text-xl">
             iOS17.4及以上版本
           </b>
           。 Jeko將您訂單中的eSIM安裝和啟動資訊
-          <b className="text-[#eb3737] font-extrabold text-xl">
+          <b className="text-[#eb3737] font-bold text-xl">
             傳送至您的電子郵件地址
           </b>
           。長按郵件中的eSIM QRcode，在彈出的提示中點選「加入eSIM」選項。
@@ -312,10 +312,10 @@ export default function IntroHero() {
           ref={sectionA}
           className=" mt-[80px] pt-[30px] pb-[260px] flex flex-col items-center"
         >
-          <h2 className="text-3xl md:text-4xl font-bold  text-center leading-tight">
+          <h2 className="text-[28px] md:text-[24px] font-bold  text-center leading-tight">
             eSIM 安裝教學
           </h2>
-          <h3 className="text-2xl font-bold mt-3">
+          <h3 className="text-[24px] font-bold mt-3">
             安裝eSIM 的三種方式 (建議事前先安裝)
           </h3>{" "}
           <span className="text-lg md:text-lg mt-8 text-stone-800 text-center  w-[80%] max-w-[550px] font-normal">
@@ -324,7 +324,7 @@ export default function IntroHero() {
           </span>
         </section>
 
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center leading-tight">
+        <h2 className="text-[28px] md:text-[24px] font-bold mb-12 text-center leading-tight">
           第一種安裝方式 <br />{" "}
           <span className="text-lg md:text-xl text-stone-800 font-normal">
             用iPhone相機掃描QR碼
@@ -342,7 +342,7 @@ export default function IntroHero() {
         ref={sectionC}
         className="bg-white mt-[80px] pt-[60px] pb-[160px] flex flex-col items-center"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center leading-tight">
+        <h2 className="text-[28px] md:text-[24px] font-bold mb-12 text-center leading-tight">
           第一種安裝方式 <br />{" "}
           <span className="text-lg md:text-xl text-stone-800 font-normal">
             長按eSIM 直接安裝
@@ -372,7 +372,7 @@ export default function IntroHero() {
         ref={sectionC}
         className="bg-white mt-[80px] pt-[60px] pb-[160px] flex flex-col items-center"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center leading-tight">
+        <h2 className="text-[28px] md:text-[24px] font-bold mb-12 text-center leading-tight">
           第二種安裝方式 <br />{" "}
           <span className="text-lg md:text-xl text-stone-800 font-normal">
             在手機設定頁面掃描
@@ -403,7 +403,7 @@ export default function IntroHero() {
         ref={sectionD}
         className="bg-gray-50 mt-[80px] pt-[60px] pb-[160px] flex flex-col items-center"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center leading-tight">
+        <h2 className="text-[28px] md:text-[24px] font-bold mb-12 text-center leading-tight">
           第三種安裝方式 <br />{" "}
           <span className="text-lg md:text-xl text-stone-800 font-normal">
             從「照片」應用程式新增 eSIM
@@ -481,7 +481,7 @@ const CardItem = ({ step, title, illustration, children }) => {
       className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
     >
       <div className="px-6 pt-6 pb-2 flex items-start gap-3">
-        <span className="bg-[#06C755] text-white text-sm font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5">
+        <span className="bg-[#067A38] text-white text-sm font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5">
           {step}
         </span>
         <h3 className="font-bold text-lg text-gray-900 leading-tight">

@@ -304,6 +304,7 @@ export default function NavbarSiteSearch({
             <input
               ref={inputRef}
               type="text"
+              role="combobox"
               value={query}
               onChange={(e) => onChange(e.target.value)}
               onFocus={() => setOpen(true)}
@@ -312,6 +313,7 @@ export default function NavbarSiteSearch({
               aria-autocomplete="list"
               aria-controls={listId}
               aria-expanded={showPanel}
+              aria-haspopup="listbox"
               className={
                 isBar
                   ? "w-full h-9 rounded-full bg-[#EAF1FB] border-0 pl-9 pr-8 text-[13px] text-slate-800 placeholder:text-slate-600 outline-none ring-0 focus:outline-none focus:ring-1 focus:ring-[#1E4AD1]/35 [&::-webkit-search-cancel-button]:appearance-none"
@@ -371,6 +373,7 @@ export default function NavbarSiteSearch({
           <input
             ref={inputRef}
             type="text"
+            role="combobox"
             value={query}
             onChange={(e) => onChange(e.target.value)}
             placeholder={ph}
@@ -378,6 +381,7 @@ export default function NavbarSiteSearch({
             aria-autocomplete="list"
             aria-controls={listId}
             aria-expanded={showPanel}
+            aria-haspopup="listbox"
             className="w-full h-9 rounded-full bg-[#EAF1FB] border-0 pl-9 pr-8 text-[13px] text-slate-800 placeholder:text-slate-600 outline-none focus:ring-1 focus:ring-[#1E4AD1]/35 [&::-webkit-search-cancel-button]:appearance-none"
           />
           {query ? (
@@ -444,6 +448,7 @@ export default function NavbarSiteSearch({
               <input
                 ref={inputRef}
                 type="text"
+                role="combobox"
                 value={query}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={ph}
@@ -451,6 +456,7 @@ export default function NavbarSiteSearch({
                 aria-autocomplete="list"
                 aria-controls={listId}
                 aria-expanded={showPanel}
+                aria-haspopup="listbox"
                 className={inputClassName}
               />
               {query ? (

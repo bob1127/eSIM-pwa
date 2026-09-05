@@ -157,11 +157,11 @@ export default function IntroHero() {
       <section className="relative bg-white min-h-screen flex flex-col items-center justify-center pt-20 overflow-hidden">
         {/* Logo & Title */}
         <motion.div
-          className="z-10 flex flex-col justify-center items-center font-extrabold mb-8 relative"
+          className="z-10 flex flex-col justify-center items-center font-bold mb-8 relative"
           initial={{ scale: 2.2, y: 0, opacity: 0 }}
           animate={logoControls}
         >
-          <div className="logo bg-[#1757ff] text-white rounded-[20px] flex justify-center items-center w-[120px] h-[120px] md:w-[180px] md:h-[180px] shadow-xl text-2xl md:text-4xl">
+          <div className="logo bg-[#1757ff] text-white rounded-[20px] flex justify-center items-center w-[120px] h-[120px] md:w-[180px] md:h-[180px] shadow-xl text-[24px]">
             ESIM
           </div>
 
@@ -170,7 +170,7 @@ export default function IntroHero() {
             initial={{ opacity: 0 }}
             animate={titleControls}
           >
-            <h1 className="text-stone-800 tracking-widest text-3xl md:text-6xl font-bold leading-loose mb-2">
+            <h1 className="text-stone-800 tracking-widest text-[28px] font-bold leading-loose mb-2">
               如何在iOS裝置上安裝並啟用eSIM？
             </h1>
             <span className="text-xl md:text-[26px] text-gray-500">
@@ -205,7 +205,7 @@ export default function IntroHero() {
           initial={{ opacity: 0, y: 40 }}
           animate={textControls}
         >
-          <h2 className="text-2xl font-bold">選擇您的旅遊地區</h2>
+          <h2 className="text-[24px] font-bold">選擇您的旅遊地區</h2>
           <p className="text-neutral-600 mt-2">Powered by Motion + Tailwind</p>
         </motion.div>
       </section>
@@ -215,14 +215,14 @@ export default function IntroHero() {
         <div className="container mx-auto px-4 md:px-8">
           {/* Section Header */}
           <div className="flex items-start gap-4 mb-12">
-            <div className="w-12 h-12 rounded-full bg-[#06C755] flex items-center justify-center shrink-0 text-white font-bold text-2xl shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-[#067A38] flex items-center justify-center shrink-0 text-white font-bold text-[24px] shadow-sm">
               1
             </div>
             <div>
               <p className="text-sm font-bold text-gray-500 mb-1 tracking-wide">
                 開始使用 eSIM 前的檢查
               </p>
-              <h2 className="text-3xl md:text-4xl font-black text-gray-900">
+              <h2 className="text-[28px] md:text-[24px] font-bold text-gray-900">
                 準備工作確認
               </h2>
             </div>
@@ -265,7 +265,7 @@ export default function IntroHero() {
                       ，港澳部分機型支援。
                     </p>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[#06C755] font-bold hover:underline text-xs mt-2 transition-colors">
+                  <span className="inline-flex items-center gap-1 text-[#067A38] font-bold hover:underline text-xs mt-2 transition-colors">
                     查看 Apple 支援頁面清單 <ExternalLink className="w-3 h-3" />
                   </span>
                 </div>
@@ -289,7 +289,7 @@ export default function IntroHero() {
                       />
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-200">
-                          <Lock className="w-8 h-8 text-[#06C755]" />
+                          <Lock className="w-8 h-8 text-[#067A38]" />
                           <div className="text-[10px] text-center font-bold text-gray-500 mt-1">
                             UNLOCKED
                           </div>
@@ -341,9 +341,9 @@ export default function IntroHero() {
         ref={sectionA}
         className="bg-white mt-[80px] pt-[60px] pb-[160px] flex flex-col items-center"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center leading-tight">
+        <h2 className="text-[28px] md:text-[24px] font-bold mb-12 text-center leading-tight">
           eSIM Tutorial <br />{" "}
-          <span className="text-lg md:text-2xl text-gray-500 font-normal">
+          <span className="text-lg md:text-[24px] text-gray-500 font-normal">
             出國當日可於有網路的狀態下完成 1~7 步驟
           </span>
         </h2>
@@ -354,9 +354,9 @@ export default function IntroHero() {
         ref={sectionB}
         className="bg-gray-50 mt-[80px] pt-[60px] pb-[160px] flex flex-col items-center"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center leading-tight">
+        <h2 className="text-[28px] md:text-[24px] font-bold mb-12 text-center leading-tight">
           啟用 eSIM <br />{" "}
-          <span className="text-lg md:text-2xl text-gray-500 font-normal">
+          <span className="text-lg md:text-[24px] text-gray-500 font-normal">
             eSIM 安裝及設定
           </span>
         </h2>
@@ -367,9 +367,9 @@ export default function IntroHero() {
         ref={sectionC}
         className="bg-white mt-[80px] pt-[60px] pb-[160px] flex flex-col items-center"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center leading-tight">
+        <h2 className="text-[28px] md:text-[24px] font-bold mb-12 text-center leading-tight">
           切換 eSIM <br />{" "}
-          <span className="text-lg md:text-2xl text-gray-500 font-normal">
+          <span className="text-lg md:text-[24px] text-gray-500 font-normal">
             抵達目的地後再進行 ⑧~10 步驟
           </span>
         </h2>
@@ -435,7 +435,7 @@ const CardItem = ({
     >
       {/* 標題區 */}
       <div className="px-6 pt-6 pb-2 flex items-start gap-3">
-        <span className="bg-[#06C755] text-white text-sm font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5">
+        <span className="bg-[#067A38] text-white text-sm font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5">
           {step}
         </span>
         <h3 className="font-bold text-lg text-gray-900 leading-tight">

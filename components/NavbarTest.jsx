@@ -153,25 +153,25 @@ const Navbar = () => {
       <div className="flex ml-5 flex-row justify-center items-center">
         <Link
           href="/gift"
-          className="text-[#d1d5db] font-extrabold ml-4 text-[14px]"
+          className="text-[#d1d5db] font-bold ml-4 text-[14px]"
         >
           送禮專區
         </Link>
         <Link
           href="/qa"
-          className="text-[#d1d5db] font-extrabold ml-10 text-[14px]"
+          className="text-[#d1d5db] font-bold ml-10 text-[14px]"
         >
           購物說明
         </Link>
         <Link
           href="/about"
-          className="ml-10 text-[#d1d5db] font-extrabold text-[14px]"
+          className="ml-10 text-[#d1d5db] font-bold text-[14px]"
         >
           關於我們
         </Link>
         <Link
           href="/size"
-          className="ml-10 text-[#d1d5db] font-extrabold text-[14px]"
+          className="ml-10 text-[#d1d5db] font-bold text-[14px]"
         >
           尺寸參考
         </Link>

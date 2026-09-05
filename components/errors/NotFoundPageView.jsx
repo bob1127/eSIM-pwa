@@ -17,7 +17,7 @@ export default function NotFoundPageView({ showHomeLink = true }) {
           Oops
         </p>
         <h1
-          className="text-[72px] md:text-[110px] font-black text-[#111] leading-none mb-4 tracking-tight"
+          className="text-[28px] font-bold text-[#111] leading-none mb-4 tracking-tight"
           style={{ fontFamily: "Arial, sans-serif" }}
         >
           404

@@ -150,7 +150,7 @@ function ProductCard({ product, domain }) {
         </h3>
         <div className="flex items-end gap-1.5 mt-auto pt-2.5">
           {price > 0 ? (
-            <span className="text-[#0071EB] font-black text-[15px] sm:text-base tabular-nums leading-none">
+            <span className="text-[#0071EB] font-bold text-[15px] sm:text-base tabular-nums leading-none">
               NT${price.toLocaleString()}
               <span className="text-[10px] sm:text-[11px] font-bold ml-0.5">起</span>
             </span>
@@ -176,7 +176,7 @@ function PromoCard({ card, editMode }) {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-        <h2 className="text-white text-xl sm:text-2xl font-bold">{card.title}</h2>
+        <h2 className="text-white text-xl sm:text-[24px] font-bold">{card.title}</h2>
         <p className="text-white/80 text-sm mt-1">{card.subtitle}</p>
       </div>
       {editMode ? (
@@ -307,7 +307,7 @@ export default function PartnerStorefront({ store, products }) {
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="min-w-0">
-                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+                <h2 className="text-[24px] sm:text-[28px] font-bold text-slate-900">
                   {countryLabel
                     ? `${countryLabel} eSIM 方案`
                     : display.plans?.title || "Must-Have eSIM Selections"}
@@ -375,7 +375,7 @@ export default function PartnerStorefront({ store, products }) {
       {/* Discover banner */}
       <section className={`${CONTAINER} pb-16 sm:pb-20`}>
         <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+          <h2 className="text-[24px] sm:text-[28px] font-bold text-slate-900">
             {display.discover.section_title}
           </h2>
           {isOwner ? (
@@ -399,7 +399,7 @@ export default function PartnerStorefront({ store, products }) {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
           <div className="absolute inset-0 flex flex-col justify-center items-start px-8 sm:px-14 gap-2">
-            <h3 className="text-white text-2xl sm:text-3xl font-bold leading-tight">
+            <h3 className="text-white text-[24px] sm:text-[28px] font-bold leading-tight">
               {display.discover.title}
             </h3>
             <p className="text-white/90 text-sm sm:text-base">

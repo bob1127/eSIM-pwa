@@ -489,7 +489,7 @@ export default function Slider() {
                   : "min-h-0"
               }`}
             >
-              <h1 className="text-[44px] md:text-[68px] lg:text-[94px] font-black leading-[1.08] tracking-tight drop-shadow-lg italic">
+              <h1 className="text-[28px] font-bold leading-[1.08] tracking-tight drop-shadow-lg italic">
                 Jeko eSIM
               </h1>
               <p className="mt-2 md:mt-3 text-[15px] md:text-lg text-white/95 font-medium drop-shadow-md">

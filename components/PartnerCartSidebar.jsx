@@ -133,7 +133,7 @@ export default function PartnerCartSidebar({ storeDomain, storeId }) {
         }`}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-base font-black text-slate-800 flex items-center gap-2">
+          <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
             <ShoppingBagIcon className="w-5 h-5 text-[#3B9EFF]" />
             eSIM 購物車
             {totalCount > 0 && (
@@ -186,7 +186,7 @@ export default function PartnerCartSidebar({ storeDomain, storeId }) {
           <div className="border-t border-gray-100 px-5 py-4 space-y-3 bg-white">
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-500">小計</span>
-              <span className="text-base font-black text-slate-800">
+              <span className="text-base font-bold text-slate-800">
                 {displayTotal}
               </span>
             </div>

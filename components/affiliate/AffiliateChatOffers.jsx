@@ -242,7 +242,7 @@ export function AffiliateOfferModal({ item, onClose }) {
               )}
             </div>
 
-            <h2 className="text-lg font-black text-gray-900 leading-snug mb-1">
+            <h2 className="text-lg font-bold text-gray-900 leading-snug mb-1">
               {item.title}
             </h2>
             {item.kind === "hotel" && item.sellPriceLabel ? (
@@ -294,7 +294,7 @@ export function AffiliateOfferModal({ item, onClose }) {
             <div className="flex items-center justify-between gap-4 mb-3">
               <div className="flex items-center gap-2 min-w-0">
                 <span
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${brand.markClass}`}
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${brand.markClass}`}
                 >
                   {brand.mark}
                 </span>
@@ -302,7 +302,7 @@ export function AffiliateOfferModal({ item, onClose }) {
                   <p className="text-[11px] text-gray-400">
                     {item.kind === "hotel" ? "優惠價格" : "最低價格"}
                   </p>
-                  <p className="text-xl font-black text-gray-900 truncate">
+                  <p className="text-xl font-bold text-gray-900 truncate">
                     {item.priceLabel}
                   </p>
                 </div>
@@ -322,7 +322,7 @@ export function AffiliateOfferModal({ item, onClose }) {
               href={item.url}
               target="_blank"
               rel="noopener noreferrer sponsored"
-              className="block w-full text-center py-4 rounded-xl text-white text-base font-black shadow-lg transition-colors"
+              className="block w-full text-center py-4 rounded-xl text-white text-base font-bold shadow-lg transition-colors"
               style={{ backgroundColor: brand.accent }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = brand.accentHover;
@@ -398,18 +398,18 @@ function AffiliateOfferCard({ item, onClick }) {
         <p className="text-[11px] text-gray-400 line-clamp-1">
           {item.subtitle}
         </p>
-        <h3 className="mt-1 text-[14px] font-black text-gray-900 leading-snug line-clamp-2 min-h-[2.4rem]">
+        <h3 className="mt-1 text-[14px] font-bold text-gray-900 leading-snug line-clamp-2 min-h-[2.4rem]">
           {item.title}
         </h3>
 
         <div className="mt-2.5 flex items-center gap-1.5 min-w-0">
           <span
-            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-black ${brand.markClass}`}
+            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${brand.markClass}`}
           >
             {brand.mark}
           </span>
           <div className="min-w-0">
-            <span className="text-[15px] font-black text-gray-900">
+            <span className="text-[15px] font-bold text-gray-900">
               {item.priceLabel}
             </span>
             {item.sellPriceLabel && (

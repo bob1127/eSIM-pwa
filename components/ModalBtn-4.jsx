@@ -23,7 +23,7 @@ export default function App() {
                     <Image loader={myLoader01} height={500} alt='go-shopping-icon' className="" width={500} src='goShopping.webp'></Image>
 
                     <div className="txt flex flex-col justify-center items-center ">
-                        <p className="font-extrabold text-black  text-[30px]">Buy Now </p>
+                        <p className="font-bold text-black  text-[30px]">Buy Now </p>
                         <b className="text-[18px] mt-[20px]">Buy Now</b>
                         <span>Only Taiwan Area</span>
                     </div>

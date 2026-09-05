@@ -403,7 +403,7 @@ export default function Navbar({ className }: NavbarProps) {
               aria-label="Jeko eSIM 首頁"
               className="flex items-center gap-1 select-none shrink-0"
             >
-              <span className="text-[20px] lg:text-[22px] font-black tracking-tighter">
+              <span className="text-[20px] lg:text-[22px] font-bold tracking-tighter">
                 <span className="text-[#0A6CD0]">Jeko</span>
                 <span className="text-[#24A148]">.eSIM</span>
               </span>
@@ -474,7 +474,7 @@ export default function Navbar({ className }: NavbarProps) {
               <Link
                 href="/Cart"
                 aria-label="進入購物車"
-                className="bg-[#F4596A] hover:bg-[#e04556] text-white text-xs font-bold px-3 py-2 lg:px-6 lg:py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+                className="bg-[#C6283A] hover:bg-[#B02333] text-white text-xs font-bold px-3 py-2 lg:px-6 lg:py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
               >
                 <ShoppingCartIcon className="w-4 h-4" />
                 <span className="hidden lg:inline">進入購物車</span>
@@ -578,7 +578,7 @@ export default function Navbar({ className }: NavbarProps) {
                   {openMega === "categories" && (
                     <>
                       <div className="mb-2">
-                        <p className="mt-1 text-sm font-black text-gray-900">
+                        <p className="mt-1 text-sm font-bold text-gray-900">
                           精選eSIM
                         </p>
                       </div>
@@ -603,7 +603,7 @@ export default function Navbar({ className }: NavbarProps) {
                       )}
                       <div className="mt-3 pt-3 border-t border-gray-100">
                         <div className="mb-2">
-                          <p className="mt-1 text-sm font-black text-gray-900">
+                          <p className="mt-1 text-sm font-bold text-gray-900">
                             真．不限速 高速上網
                           </p>
                         </div>
@@ -674,7 +674,7 @@ export default function Navbar({ className }: NavbarProps) {
                   <p className="text-[11px] text-[#0A6CD0] font-bold">
                     歡迎回來
                   </p>
-                  <p className="text-sm font-black text-slate-800">
+                  <p className="text-sm font-bold text-slate-800">
                     {isLoggedIn ? userName : "訪客，請先登入"}
                   </p>
                 </div>
@@ -701,7 +701,7 @@ export default function Navbar({ className }: NavbarProps) {
                   <p className="text-[11px] font-bold text-[#0A6CD0] uppercase tracking-widest pl-2 mb-1">
                     吃到飽
                   </p>
-                  <p className="text-sm font-black text-slate-800 pl-2 mb-2">
+                  <p className="text-sm font-bold text-slate-800 pl-2 mb-2">
                     真．不限速 高速上網
                   </p>
                   <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 mb-2">
@@ -882,7 +882,7 @@ export default function Navbar({ className }: NavbarProps) {
               className="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-slate-100 p-6 text-center"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-xl font-black text-slate-900 mb-2">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
                 {comingSoonLabel}
               </h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-5">
@@ -926,7 +926,7 @@ function MobileSimpleNavItem({
     return (
       <button type="button" onClick={onClick} className={className}>
         <div className="text-slate-500">{icon}</div>
-        <span className="text-[13px] font-black text-slate-700">{label}</span>
+        <span className="text-[13px] font-bold text-slate-700">{label}</span>
         <span className="ml-auto text-[10px] font-bold text-[#0A6CD0] bg-blue-50 px-2 py-0.5 rounded-full">
           即將上線
         </span>
@@ -937,7 +937,7 @@ function MobileSimpleNavItem({
   return (
     <Link href={href} onClick={onClick} className={className}>
       <div className="text-slate-500">{icon}</div>
-      <span className="text-[13px] font-black text-slate-700">{label}</span>
+      <span className="text-[13px] font-bold text-slate-700">{label}</span>
     </Link>
   );
 }

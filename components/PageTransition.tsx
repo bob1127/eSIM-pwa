@@ -32,7 +32,7 @@ export default function PageTransition({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ delay: 0.4, duration: 0.8 }}
-              className="text-3xl font-bold"
+              className="text-[28px] font-bold"
             >
               Your Logo
             </motion.h1>

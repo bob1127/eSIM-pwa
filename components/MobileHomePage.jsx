@@ -86,7 +86,7 @@ function MobileHeroCardAction({ children, onClick, href, icon, loading }) {
   const inner = (
     <>
       <MaterialIcon name={icon} size={20} className="shrink-0 text-[#1d5cc5]" />
-      <span className="flex-1 min-w-0 text-[13px] font-bold leading-tight text-black inline-flex items-center gap-2">
+      <span className="flex-1 min-w-0 text-[13px] font-bold leading-[1.4] text-black inline-flex items-center gap-2">
         {loading ? (
           <>
             <QuarterRing size="xs" />
@@ -186,15 +186,15 @@ function MobileHeroCarousel() {
       <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-b from-black/20 via-black/15 to-black/60" />
 
       <div className="absolute left-0 right-0 top-[28%] z-20 px-5">
-        <h1 className="text-[40px] font-black leading-[1.08] tracking-tight text-white drop-shadow-lg italic">
+        <h1 className="text-[28px] font-bold leading-[1.35] tracking-normal text-white drop-shadow-lg">
           Jeko eSIM
         </h1>
-        <p className="mt-2 text-[14px] text-white/95 font-medium drop-shadow-md">
+        <p className="mt-2 text-[14px] text-white/95 font-normal leading-[28px] drop-shadow-md">
           接口eSIM 成為您連接世界的接口
         </p>
         <Link
           href="/product"
-          className="mt-4 inline-flex items-center gap-1.5 bg-white text-[#1d5cc5] rounded-full px-5 py-2 text-sm font-bold shadow-md active:scale-[0.98] transition-transform"
+          className="mt-4 inline-flex items-center gap-1.5 bg-white text-[#1d5cc5] rounded-full px-5 py-2 text-[14px] font-bold shadow-md active:scale-[0.98] transition-transform"
         >
           查看 eSIM 方案
           <MaterialIcon name="arrow_forward" size={16} />

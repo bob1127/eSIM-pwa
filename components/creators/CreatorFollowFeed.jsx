@@ -87,7 +87,7 @@ function ArticleCarousel({ label, posts, onOpenInner }) {
   return (
     <section>
       <div className="flex items-center justify-between mb-3 px-0.5">
-        <h3 className="text-[17px] font-black text-slate-900">{label}</h3>
+        <h3 className="text-[17px] font-bold text-slate-900">{label}</h3>
         <div className="flex gap-1.5">
           <button
             type="button"
@@ -124,7 +124,7 @@ function ArticleCarousel({ label, posts, onOpenInner }) {
                   className="w-full h-full object-cover"
                 />
                 <span
-                  className={`absolute top-2 left-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-black shadow-sm ${rankTone(
+                  className={`absolute top-2 left-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm ${rankTone(
                     post.rank,
                   )}`}
                 >
@@ -216,7 +216,7 @@ export default function CreatorFollowFeed({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-end gap-4">
-          <span className="text-[22px] font-black text-slate-900">{heading}</span>
+          <span className="text-[22px] font-bold text-slate-900">{heading}</span>
           {heading === "追蹤中" ? (
             <Link href="/creators/" className="text-[15px] text-slate-400 pb-0.5">
               發現
@@ -305,7 +305,7 @@ export default function CreatorFollowFeed({
 
       {bookmarkMode ? (
         <div className="space-y-6 pt-2">
-          <h2 className="text-[22px] font-black text-slate-900">你的收藏</h2>
+          <h2 className="text-[22px] font-bold text-slate-900">你的收藏</h2>
           {rows.length === 0 ? (
             <p className="text-sm text-slate-500 leading-relaxed">
               尚未收藏任何文章。在文章頁點愛心即可加入收藏。

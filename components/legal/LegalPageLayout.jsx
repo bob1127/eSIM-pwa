@@ -33,13 +33,13 @@ export default function LegalPageLayout({
                 height={56}
                 className="w-12 h-12 object-contain transition-transform group-hover:scale-105"
               />
-              <span className="text-[22px] font-black tracking-tighter leading-none">
+              <span className="text-[22px] font-bold tracking-tighter leading-none">
                 <span className="text-[#0A6CD0]">Jeko</span>
                 <span className="text-[#24A148]">.eSIM</span>
               </span>
             </Link>
 
-            <h1 className="text-2xl font-black text-slate-900 mb-2">{title}</h1>
+            <h1 className="text-[24px] font-bold text-slate-900 mb-2">{title}</h1>
             {subtitle && (
               <p className="text-sm text-slate-500 leading-relaxed max-w-md mx-auto">
                 {subtitle}
@@ -93,7 +93,7 @@ export default function LegalPageLayout({
                     href={SOCIAL_LINKS.line}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#06C755] hover:underline"
+                    className="text-[#067A38] hover:underline"
                   >
                     LINE 官方帳號
                   </a>
@@ -117,7 +117,7 @@ export default function LegalPageLayout({
 export function LegalSection({ title, children }) {
   return (
     <section className="bg-blue-50/30 border border-blue-100 rounded-2xl p-5 md:p-6">
-      <h2 className="text-[15px] font-black text-[#1a56db] mb-4 pb-2 border-b border-blue-100">
+      <h2 className="text-[15px] font-bold text-[#1a56db] mb-4 pb-2 border-b border-blue-100">
         {title}
       </h2>
       <div className="text-[13px] text-slate-600 leading-relaxed space-y-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_li]:marker:text-[#1a56db] [&_strong]:text-slate-800 [&_a]:text-[#1a56db] [&_a]:underline">

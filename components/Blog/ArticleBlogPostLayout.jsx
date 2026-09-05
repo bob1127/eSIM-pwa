@@ -78,7 +78,7 @@ function RelatedArticlesSection({ posts = [] }) {
     return (
       <section className="mt-16 pt-10 border-t border-[#eee]">
         <div className="flex items-baseline gap-3 mb-8">
-          <h2 className="text-[20px] font-black tracking-widest text-[#111]">
+          <h2 className="text-[20px] font-bold tracking-widest text-[#111]">
             RELATED
           </h2>
           <span className="text-[14px] text-[#666]">相關文章</span>
@@ -94,7 +94,7 @@ function RelatedArticlesSection({ posts = [] }) {
     <section className="mt-16 pt-10 border-t border-[#eee]">
       <div className="flex items-baseline justify-between gap-3 mb-8">
         <div className="flex items-baseline gap-3">
-          <h2 className="text-[20px] font-black tracking-widest text-[#111]">
+          <h2 className="text-[20px] font-bold tracking-widest text-[#111]">
             RELATED
           </h2>
           <span className="text-[14px] text-[#666]">相關文章</span>
@@ -148,7 +148,7 @@ function RelatedArticlesSection({ posts = [] }) {
                 dangerouslySetInnerHTML={{ __html: item.title.rendered }}
               />
               <div className="flex items-center gap-2 text-[12px] text-[#888]">
-                <span className="w-6 h-6 rounded-full bg-[#0A6CD0] text-white text-[8px] font-black flex items-center justify-center shrink-0">
+                <span className="w-6 h-6 rounded-full bg-[#0A6CD0] text-white text-[8px] font-bold flex items-center justify-center shrink-0">
                   J
                 </span>
                 <span>{formatDateJP(item.date)}</span>
@@ -277,7 +277,7 @@ function ShareBar({ url, title }) {
       key: "line",
       label: "LINE 傳送",
       onClick: shareLine,
-      className: "text-[#06C755]",
+      className: "text-[#067A38]",
       icon: <LineAppIconSvg className="w-4 h-4" />,
     },
   ];
@@ -597,7 +597,7 @@ export default function ArticleBlogPostLayout({
                 站在你J編
               </p>
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-full bg-[#0A6CD0] text-white flex items-center justify-center text-[13px] font-black shrink-0">
+                <div className="w-16 h-16 rounded-full bg-[#0A6CD0] text-white flex items-center justify-center text-[13px] font-bold shrink-0">
                   JEKO
                 </div>
                 <div className="min-w-0 flex-1">

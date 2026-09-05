@@ -214,15 +214,15 @@ function BlogArticleCard({ slide }) {
               alt=""
               className="h-6 w-6 shrink-0 rounded-full object-cover bg-stone-100 ring-1 ring-stone-200"
             />
-            <span className="truncate text-[12px] sm:text-[13px] font-semibold text-stone-800">
+            <span className="truncate text-[12px] sm:text-[13px] font-bold text-black">
               {authorName}
             </span>
           </div>
 
           {location ? (
-            <p className="mb-1.5 flex items-center gap-1 text-[11px] sm:text-xs leading-snug text-stone-500">
+            <p className="mb-1.5 flex items-center gap-1 text-[12px] sm:text-[13px] font-normal leading-[1.5] text-[#666666]">
               <MapPinIcon
-                className="h-3.5 w-3.5 shrink-0 text-stone-500"
+                className="h-3.5 w-3.5 shrink-0 text-[#999999]"
                 aria-hidden="true"
               />
               <span className="truncate">{location}</span>
@@ -230,18 +230,18 @@ function BlogArticleCard({ slide }) {
           ) : null}
 
           <h3
-            className="mb-2 line-clamp-3 text-[15px] sm:text-base md:text-[17px] font-bold leading-snug text-black group-hover/card:opacity-80"
+            className="mb-2 line-clamp-3 text-[15px] sm:text-[16px] md:text-[17px] font-bold leading-[1.4] text-black group-hover/card:opacity-80"
             dangerouslySetInnerHTML={{ __html: slide.title }}
           />
 
           {slide.description ? (
             <p
-              className="mb-3 line-clamp-2 text-[12px] sm:text-[13px] leading-relaxed text-stone-500"
+              className="mb-3 line-clamp-2 text-[13px] sm:text-[14px] font-normal leading-[28px] text-[#666666]"
               dangerouslySetInnerHTML={{ __html: slide.description }}
             />
           ) : null}
 
-          <p className="mt-auto pt-1 text-[10px] sm:text-[11px] tracking-wide text-stone-500 uppercase">
+          <p className="mt-auto pt-1 text-[12px] font-normal tracking-normal text-[#999999]">
             {metaDate}
             {hashTags.length ? (
               <>
@@ -609,17 +609,17 @@ export default function InfoPage({
           </div>
           <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 pt-10 sm:pt-14">
             <div className="mb-8 flex flex-col gap-4 md:mb-10 md:flex-row md:items-end md:justify-between">
-              <div className="flex items-baseline gap-3">
-                <h2 className="text-4xl font-bold tracking-tight text-black sm:text-5xl md:text-6xl">
+              <header className="min-w-0">
+                <p className="text-[13px] sm:text-[14px] font-bold tracking-normal text-[#666666]">
                   NEWS
-                </h2>
-                <span className="text-stone-300" aria-hidden>
-                  /
-                </span>
-                <p className="text-sm tracking-wider text-stone-600 sm:text-[15px]">
-                  文章精選
                 </p>
-              </div>
+                <h1 className="mt-1 text-[22px] sm:text-[26px] lg:text-[28px] font-bold tracking-normal text-black leading-[1.35]">
+                  旅遊知識
+                </h1>
+                <p className="mt-1.5 text-[14px] sm:text-[16px] font-normal text-[#666666] leading-[28px]">
+                  文章精選・出國攻略
+                </p>
+              </header>
 
               <BlogFilterSelects
                 tabs={articleTabs}
@@ -700,17 +700,17 @@ export default function InfoPage({
         <section className="relative z-50 w-full bg-white pb-16 sm:pb-20 border-t border-stone-100">
           <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 pt-10 sm:pt-14">
             <div className="mb-8 flex flex-col gap-4 md:mb-10 md:flex-row md:items-end md:justify-between">
-              <div className="flex items-baseline gap-3">
-                <h2 className="text-4xl font-bold tracking-tight text-black sm:text-5xl md:text-6xl">
+              <header className="min-w-0">
+                <p className="text-[13px] sm:text-[14px] font-bold tracking-normal text-[#666666]">
                   JOURNAL
-                </h2>
-                <span className="text-stone-300" aria-hidden>
-                  /
-                </span>
-                <p className="text-sm tracking-wider text-stone-600 sm:text-[15px]">
-                  旅遊札記
                 </p>
-              </div>
+                <h2 className="mt-1 text-[22px] sm:text-[24px] lg:text-[28px] font-bold tracking-normal text-black leading-[1.35]">
+                  旅遊札記
+                </h2>
+                <p className="mt-1.5 text-[14px] sm:text-[16px] font-normal text-[#666666] leading-[28px]">
+                  合作夥伴分享的旅途故事
+                </p>
+              </header>
             </div>
 
             {journalSlides.length > 0 ? (
@@ -795,10 +795,10 @@ export default function InfoPage({
                 </div>
               </div>
               <div className="text-white">
-                <h2 className="text-4xl font-extrabold tracking-wide md:text-5xl">
+                <h2 className="text-[22px] sm:text-[24px] md:text-[28px] font-bold tracking-normal leading-[1.35] text-white">
                   出國前一定要知道的 eSIM 使用重點
                 </h2>
-                <p className="mt-6 max-w-xl text-sm leading-loose text-white/80 md:text-base">
+                <p className="mt-5 max-w-xl text-[15px] md:text-[16px] font-normal leading-[28px] text-white/90">
                   在購買 eSIM 前，請先確認手機是否支援 eSIM
                   功能，並建議在出國前完成安裝與設定。部分方案需要在抵達目的地後才會啟用，請避免提前切換，以確保方案正常生效。
                 </p>
@@ -823,16 +823,17 @@ export default function InfoPage({
         <section className="relative z-50 w-full bg-white/50 backdrop-blur-2xl backdrop-saturate-150 shadow-lg min-h-[500px] pb-20">
           <div className="mx-auto max-w-[1400px] w-[90%] sm:w-[85%] lg:w-[70%] py-10 sm:py-16">
             <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-8 sm:mb-12">
-              <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3">
-                <div>
-                  <h2 className="text-6xl sm:text-[44px] lg:text-[52px] leading-[1] font-extrabold text-stone-700">
-                    Knowledge
-                  </h2>
-                </div>
-                <span className="text-xs sm:text-sm text-stone-600 sm:pb-1">
-                  / 知識小幫手
-                </span>
-              </div>
+              <header className="min-w-0">
+                <p className="text-[13px] sm:text-[14px] font-bold tracking-normal text-[#666666]">
+                  Knowledge
+                </p>
+                <h2 className="mt-1 text-[22px] sm:text-[24px] lg:text-[28px] font-bold tracking-normal text-black leading-[1.35]">
+                  知識小幫手
+                </h2>
+                <p className="mt-1.5 text-[14px] sm:text-[16px] font-normal text-[#666666] leading-[28px]">
+                  eSIM 安裝、疑難排解與出國常見問答
+                </p>
+              </header>
 
               {/* 知識區：分類／地區下拉 */}
               <BlogFilterSelects
@@ -890,14 +891,14 @@ export default function InfoPage({
                           >
                             <div className="p-5 sm:p-7 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-6">
                               <div className="flex items-center justify-between sm:block">
-                                <div className="text-xs sm:text-sm text-slate-400 min-w-0 sm:min-w-[110px]">
+                                <div className="text-[12px] sm:text-[13px] font-normal text-[#999999] min-w-0 sm:min-w-[110px]">
                                   {it.date}
                                 </div>
                               </div>
                               <div className="flex-1">
                                 <BlogDotTags tags={it.tags} />
                                 <h3
-                                  className="mt-3 text-[16px] sm:text-[18px] font-semibold leading-7 text-slate-900"
+                                  className="mt-3 text-[16px] sm:text-[18px] font-bold leading-[28px] text-black"
                                   dangerouslySetInnerHTML={{ __html: it.title }}
                                 />
                               </div>
@@ -927,7 +928,7 @@ export default function InfoPage({
                                   </div>
                                   <div>
                                     <div
-                                      className="text-sm leading-7 text-slate-600 prose prose-sm max-w-none"
+                                      className="text-[15px] lg:text-[16px] font-normal leading-[28px] text-black prose prose-sm max-w-none"
                                       dangerouslySetInnerHTML={{
                                         __html: it.excerptHTML,
                                       }}
@@ -935,7 +936,7 @@ export default function InfoPage({
                                     <div className="mt-5 flex flex-col sm:flex-row gap-3">
                                       <Link
                                         href={`/blog/${it.slug}`}
-                                        className="inline-flex justify-center items-center rounded-full bg-[#1f57b8] px-5 py-2 text-sm font-semibold text-white hover:bg-blue-800 w-full sm:w-auto"
+                                        className="inline-flex justify-center items-center rounded-full bg-[#1f57b8] px-5 py-2 text-[14px] font-bold text-white hover:bg-blue-800 w-full sm:w-auto"
                                       >
                                         閱讀全文
                                       </Link>
@@ -946,7 +947,7 @@ export default function InfoPage({
                                           e.stopPropagation();
                                           setActiveKnowledgeId(null);
                                         }}
-                                        className="inline-flex justify-center items-center rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 w-full sm:w-auto"
+                                        className="inline-flex justify-center items-center rounded-full border border-slate-300 bg-white px-5 py-2 text-[14px] font-bold text-black hover:bg-slate-50 w-full sm:w-auto"
                                       >
                                         收合文章
                                       </button>

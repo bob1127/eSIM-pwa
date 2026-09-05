@@ -482,7 +482,7 @@ function Carousel({
                             <span className=' '>Humming Probe UX200</span>
                             <Link href='../Products/product01'>CN</Link>
                         </motion.div> */}
-                            <motion.h1 className="text-[26px] text-[#333333] w-full xl:w-2/3  font-black leading-[31px]" variants={fadeInUp}>  Humming Probe UH1免校正微量酸鹼電極
+                            <motion.h1 className="text-[26px] text-[#333333] w-full xl:w-2/3  font-bold leading-[31px]" variants={fadeInUp}>  Humming Probe UH1免校正微量酸鹼電極
 
                                 <br></br> <p className="text-[18px] text-orange-500 font-bold ">酸鹼試片/酸鹼檢測/pH試片電極/pH電極/pH試片
 </p>

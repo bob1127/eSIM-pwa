@@ -151,11 +151,11 @@ function OrderCard({ order, onRefresh, getAuthHeaders }) {
                 </span>
               )}
             </div>
-            <h3 className="font-black text-slate-800 truncate">{orderItemSummary(order)}</h3>
+            <h3 className="font-bold text-slate-800 truncate">{orderItemSummary(order)}</h3>
             <p className="text-sm text-slate-500 mt-0.5">{formatDate(order.created_at)}</p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <p className="text-lg font-black text-slate-900">
+            <p className="text-lg font-bold text-slate-900">
               NT$ {formatNTD(order.total_amount)}
             </p>
             <button

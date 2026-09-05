@@ -104,7 +104,7 @@ export default function PartnerBlogListView({
               <p className="text-[12px] font-bold text-slate-400 mb-2">
                 夥伴精選
               </p>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              <h1 className="text-[24px] sm:text-[28px] font-bold text-slate-900 tracking-tight">
                 {category || "精選文章"}
               </h1>
               <p className="mt-2 text-sm text-slate-500">
@@ -135,7 +135,7 @@ export default function PartnerBlogListView({
                     <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-white/80 mb-2">
                       {featured.categoryLabel}
                     </p>
-                    <h2 className="text-white text-xl sm:text-2xl lg:text-3xl font-bold leading-snug">
+                    <h2 className="text-white text-xl sm:text-[24px] lg:text-[28px] font-bold leading-snug">
                       {featured.title}
                     </h2>
                     <PartnerBlogByline
@@ -190,7 +190,7 @@ export default function PartnerBlogListView({
                 />
                 <div className="absolute inset-0 bg-black/40" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white gap-2">
-                  <span className="text-lg sm:text-xl font-black tracking-tight">
+                  <span className="text-lg sm:text-xl font-bold tracking-tight">
                     {store?.store_name || "JEKO"}
                   </span>
                   <span className="text-[12px] font-bold tracking-wide border-b border-white/80 pb-0.5">

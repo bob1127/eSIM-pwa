@@ -27,7 +27,7 @@ export default function Testimonials() {
 
           {/* Section header */}
           <div className="section-title flex flex-col w-full py-10 justify-center items-center">
-            <h1 className="mb-4 text-3xl font-extrabold leading-none tracking-tight text-gray-900  lg:text-4xl dark:text-white dark:text-rose-500  text-center">如果還不確定是否適用<br/>立即聯絡專人體驗我們的產品</h1>
+            <h1 className="mb-4 text-[28px] font-bold leading-none tracking-tight text-gray-900  lg:text-[24px] dark:text-white dark:text-rose-500  text-center">如果還不確定是否適用<br/>立即聯絡專人體驗我們的產品</h1>
             <p className="mb-6 text-lg font-normal text-gray-500 lg:text-xl sm:px-16 xl:px-48 dark:text-gray-400">快來跟我們聊聊吧</p>
 
           </div>

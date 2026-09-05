@@ -246,7 +246,7 @@ export default function AccountSupportView({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h1
-              className="text-xl sm:text-2xl font-black tracking-tight"
+              className="text-xl sm:text-[24px] font-bold tracking-tight"
               style={{ color: UI.dark }}
             >
               安裝與支援
@@ -318,7 +318,7 @@ export default function AccountSupportView({
                       : UI.soft,
                   }}
                 />
-                <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                <h3 className="text-sm font-bold" style={{ color: UI.dark }}>
                   eSIM 安裝狀態
                 </h3>
               </div>
@@ -351,7 +351,7 @@ export default function AccountSupportView({
               className="px-4 sm:px-5 py-3.5"
               style={{ borderBottom: `1px solid ${UI.border}` }}
             >
-              <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+              <h3 className="text-sm font-bold" style={{ color: UI.dark }}>
                 建議事項
               </h3>
             </div>
@@ -416,7 +416,7 @@ export default function AccountSupportView({
               className="px-4 sm:px-5 py-3.5 flex items-center justify-between"
               style={{ borderBottom: `1px solid ${UI.border}` }}
             >
-              <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+              <h3 className="text-sm font-bold" style={{ color: UI.dark }}>
                 安裝教學
               </h3>
               <SecondaryBtn onClick={onGuideClick}>依裝置開啟</SecondaryBtn>
@@ -572,7 +572,7 @@ export default function AccountSupportView({
                 </dt>
                 <dd>
                   <p
-                    className="font-black text-base leading-snug"
+                    className="font-bold text-base leading-snug"
                     style={{ color: UI.dark }}
                   >
                     早上 09:00 – 晚上 12:00
@@ -615,7 +615,7 @@ export default function AccountSupportView({
                 rel="noopener noreferrer"
                 className="w-full inline-flex items-center justify-center gap-1.5 h-8 px-3.5 text-[13px] font-semibold text-white transition"
                 style={{
-                  backgroundColor: "#06C755",
+                  backgroundColor: "#067A38",
                   borderRadius: "0.5rem",
                 }}
               >

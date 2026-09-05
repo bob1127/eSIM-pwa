@@ -124,7 +124,7 @@ function StatPill({ icon, iconBg, label, value, sub }) {
         <MaterialIcon name={icon} size={20} className="text-white" />
       </div>
       <div className="min-w-0">
-        <p className="text-lg font-black tabular-nums leading-tight" style={{ color: AUI.dark }}>
+        <p className="text-lg font-bold tabular-nums leading-tight" style={{ color: AUI.dark }}>
           {value}
         </p>
         <p className="text-[11px] font-semibold truncate" style={{ color: AUI.soft }}>
@@ -282,7 +282,7 @@ export default function PartnerAnalyticsPage() {
         {/* 頁首 + 期間切換 */}
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="text-xl font-black tracking-tight" style={{ color: AUI.dark }}>
+            <h1 className="text-xl font-bold tracking-tight" style={{ color: AUI.dark }}>
               分潤分析
             </h1>
             <p className="text-xs sm:text-sm mt-1" style={{ color: AUI.mid }}>
@@ -318,7 +318,7 @@ export default function PartnerAnalyticsPage() {
         {/* 歡迎橫幅 */}
         <Card className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-base font-black" style={{ color: AUI.dark }}>
+            <p className="text-base font-bold" style={{ color: AUI.dark }}>
               {greeting}，{displayName || "夥伴"}！
             </p>
             <p className="text-xs mt-1" style={{ color: AUI.mid }}>
@@ -449,7 +449,7 @@ export default function PartnerAnalyticsPage() {
             style={{ borderBottom: `1px solid ${AUI.border}` }}
           >
             <div className="min-w-0">
-              <h2 className="text-sm font-black" style={{ color: AUI.dark }}>
+              <h2 className="text-sm font-bold" style={{ color: AUI.dark }}>
                 商品分潤排行
               </h2>
               <p className="text-[11px] mt-0.5" style={{ color: AUI.soft }}>
@@ -594,7 +594,7 @@ export default function PartnerAnalyticsPage() {
                           {fmt(row.avgProfit)}
                         </td>
                         <td
-                          className="px-4 py-2.5 text-right font-black tabular-nums"
+                          className="px-4 py-2.5 text-right font-bold tabular-nums"
                           style={{ color: AUI.dark }}
                         >
                           {fmt(row.profit)}
@@ -611,7 +611,7 @@ export default function PartnerAnalyticsPage() {
                     }}
                   >
                     <td
-                      className="px-4 py-3 font-black"
+                      className="px-4 py-3 font-bold"
                       colSpan={5}
                       style={{ color: AUI.dark }}
                     >
@@ -631,7 +631,7 @@ export default function PartnerAnalyticsPage() {
                     </td>
                     <td className="px-4 py-3" />
                     <td
-                      className="px-4 py-3 text-right font-black tabular-nums"
+                      className="px-4 py-3 text-right font-bold tabular-nums"
                       style={{ color: AUI.dark }}
                     >
                       <span
@@ -654,7 +654,7 @@ export default function PartnerAnalyticsPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-sm font-black" style={{ color: AUI.dark }}>
+                <h2 className="text-sm font-bold" style={{ color: AUI.dark }}>
                   熱銷商品
                 </h2>
                 <p className="text-[11px] mt-0.5" style={{ color: AUI.soft }}>
@@ -703,7 +703,7 @@ export default function PartnerAnalyticsPage() {
                         </div>
                       )}
                       <span
-                        className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full text-[10px] font-black text-white flex items-center justify-center"
+                        className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
                         style={{ backgroundColor: AUI.dark }}
                       >
                         {idx + 1}
@@ -725,7 +725,7 @@ export default function PartnerAnalyticsPage() {
                             訂單數
                           </p>
                           <p
-                            className="text-sm font-black tabular-nums"
+                            className="text-sm font-bold tabular-nums"
                             style={{ color: AUI.dark }}
                           >
                             {row.count} 筆
@@ -739,7 +739,7 @@ export default function PartnerAnalyticsPage() {
                             分潤金額
                           </p>
                           <p
-                            className="text-sm font-black tabular-nums"
+                            className="text-sm font-bold tabular-nums"
                             style={{ color: AUI.dark }}
                           >
                             {fmt(row.profit)}
@@ -854,7 +854,7 @@ export default function PartnerAnalyticsPage() {
                         <p className="text-[10px] font-bold uppercase text-slate-400">
                           分潤
                         </p>
-                        <p className="text-sm font-black tabular-nums text-[#1E4AD1]">
+                        <p className="text-sm font-bold tabular-nums text-[#1E4AD1]">
                           +{fmt(order.partner_profit)}
                         </p>
                       </div>

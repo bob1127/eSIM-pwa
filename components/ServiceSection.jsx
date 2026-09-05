@@ -106,7 +106,7 @@ function JobCard({
           ))}
         </div>
 
-        <h3 className="text-[22px] leading-[1.5] font-extrabold text-[#2C5164] mb-3 transition-colors duration-300 group-hover:text-[#07819F]">
+        <h3 className="text-[22px] leading-[1.5] font-bold text-[#2C5164] mb-3 transition-colors duration-300 group-hover:text-[#07819F]">
           {title}
         </h3>
         <p className="text-[14px] leading-relaxed text-[#5B7382] mb-6 flex-grow">
@@ -155,10 +155,10 @@ export default function PickUpJobsSection() {
     () => ({
       // 留學生／出差：共用 lib/productZoneCategories（各國分開；變體稍後再加）
       student: PRODUCT_ZONE_DEFS.find((z) => z.key === "student").countries.map(
-        (c) => zoneCountryToServiceCard(c, "留學"),
+        (c) => zoneCountryToServiceCard(c, "留學", "student"),
       ),
       business: PRODUCT_ZONE_DEFS.find((z) => z.key === "business").countries.map(
-        (c) => zoneCountryToServiceCard(c, "出差"),
+        (c) => zoneCountryToServiceCard(c, "出差", "business"),
       ),
       // 來源：/esim-selection 原生 IP 規則（日／韓／泰／越）；產品尚未上架，先放國家入口卡
       native: [
@@ -554,7 +554,7 @@ export default function PickUpJobsSection() {
             className="mb-8 md:mb-10 text-center"
             data-aos="fadeup-smooth"
           >
-            <h2 className="inline-flex items-center gap-3 text-[32px] md:text-[48px] leading-none font-extrabold text-[#2C5164]">
+            <h2 className="inline-flex items-center gap-3 text-[28px] leading-none font-bold text-[#2C5164]">
               為您提供最優質的連線方案
               <span className="inline-grid h-9 w-9 place-items-center rounded-md bg-white/70 border border-[#CAE6F1]" aria-hidden="true">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">

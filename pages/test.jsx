@@ -41,7 +41,7 @@ export default function MyEsimPage() {
       {/* --- 左側側邊欄 (Sidebar) --- */}
       <div className="w-64 bg-slate-900 text-white hidden md:block">
         <div className="p-6">
-          <h1 className="text-2xl font-bold tracking-widest text-blue-400">
+          <h1 className="text-[24px] font-bold tracking-widest text-blue-400">
             JEKO eSIM
           </h1>
           <p className="text-xs text-slate-400 mt-1">極客數位企業社</p>
@@ -84,7 +84,7 @@ export default function MyEsimPage() {
         {/* 內容區域 */}
         <main className="p-8">
           <div className="mb-8">
-            <h3 className="text-2xl font-bold text-gray-900">
+            <h3 className="text-[24px] font-bold text-gray-900">
               我的 eSIM 行李箱
             </h3>
             <p className="text-gray-500">查看您購買的所有上網方案與安裝代碼</p>

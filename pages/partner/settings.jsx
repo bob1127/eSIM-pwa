@@ -482,7 +482,7 @@ export default function PartnerSettingsPage() {
           </div>
 
           <div className="border-t border-slate-100 pt-6">
-            <h2 className="text-sm font-black text-slate-800 mb-1">Footer 資訊</h2>
+            <h2 className="text-sm font-bold text-slate-800 mb-1">Footer 資訊</h2>
             <p className="text-xs text-slate-400 mb-4">
               顯示於賣場頁面最底部；留空就不顯示該列。社群連結需含完整網址（https://…）
             </p>
@@ -579,7 +579,7 @@ export default function PartnerSettingsPage() {
               </div>
             </div>
 
-            <h3 className="text-xs font-black text-slate-700 uppercase mt-6 mb-3">
+            <h3 className="text-xs font-bold text-slate-700 uppercase mt-6 mb-3">
               社群連結（IG / FB / LINE）
             </h3>
             <div className="grid grid-cols-1 gap-3">
@@ -679,7 +679,7 @@ export default function PartnerSettingsPage() {
                     <PhotoIcon className="w-5 h-5 text-slate-300" />
                   )}
                 </div>
-                <p className="font-black text-slate-800 text-base">
+                <p className="font-bold text-slate-800 text-base">
                   {storeName || "您的店鋪名稱"}
                 </p>
               </div>

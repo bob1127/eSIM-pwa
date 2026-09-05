@@ -25,7 +25,7 @@ const MenuFade = () => {
         <div className="flex">
           <div className="w-1/3"></div>
           <div className="w-1/3 flex justify-center">
-            <div className="logo font-extrabold">TRAVEL</div>
+            <div className="logo font-bold">TRAVEL</div>
           </div>
           <div className="w-1/3 flex justify-end">
             <div
@@ -63,7 +63,7 @@ const MenuFade = () => {
             </div>
             <div className="absolute bottom-0 left-0 w-full">
               <div className="flex justify-between px-5">
-                <b className="text-[34px] text-[#fc4e2b]">BOOKING</b>
+                <b className="text-[28px] text-[#fc4e2b]">BOOKING</b>
                 <b className="text-[30px]">➣</b>
               </div>
             </div>
@@ -84,7 +84,7 @@ const MenuFade = () => {
             </div>
             <div className="absolute bottom-0 left-0 w-full">
               <div className="flex justify-between px-5">
-                <b className="text-[34px] text-[#fc4e2b]">SHOP</b>
+                <b className="text-[28px] text-[#fc4e2b]">SHOP</b>
                 <b className="text-[30px]">➣</b>
               </div>
             </div>
@@ -113,7 +113,7 @@ const MenuFade = () => {
                 </div>
                 <div className="txt absolute z-[99] bottom-0 w-full">
                   <div className="left pl-5 pb-4 w-1/2 overflow-hidden relative">
-                    <p className="font-extrabold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
+                    <p className="font-bold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
                       旅遊行程
                     </p>
                     <p className="text-[14px] text-white">路線</p>
@@ -135,7 +135,7 @@ const MenuFade = () => {
                 </div>
                 <div className="txt absolute z-[99] bottom-0 w-full">
                   <div className="left pl-5 pb-4 w-1/2 overflow-hidden relative">
-                    <p className="font-extrabold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
+                    <p className="font-bold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
                       旅遊行程
                     </p>
                     <p className="text-[14px] text-white">路線</p>
@@ -157,7 +157,7 @@ const MenuFade = () => {
                 </div>
                 <div className="txt absolute z-[99] bottom-0 w-full">
                   <div className="left pl-5 pb-4 w-1/2 overflow-hidden relative">
-                    <p className="font-extrabold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
+                    <p className="font-bold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
                       旅遊行程
                     </p>
                     <p className="text-[14px] text-white">路線</p>
@@ -179,7 +179,7 @@ const MenuFade = () => {
                 </div>
                 <div className="txt absolute z-[99] bottom-0 w-full">
                   <div className="left pl-5 pb-4 w-1/2 overflow-hidden relative">
-                    <p className="font-extrabold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
+                    <p className="font-bold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
                       旅遊行程
                     </p>
                     <p className="text-[14px] text-white">路線</p>
@@ -201,7 +201,7 @@ const MenuFade = () => {
                 </div>
                 <div className="txt absolute z-[99] bottom-0 w-full">
                   <div className="left pl-5 pb-4 w-1/2 overflow-hidden relative">
-                    <p className="font-extrabold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
+                    <p className="font-bold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
                       旅遊行程
                     </p>
                     <p className="text-[14px] text-white">路線</p>
@@ -223,7 +223,7 @@ const MenuFade = () => {
                 </div>
                 <div className="txt absolute z-[99] bottom-0 w-full">
                   <div className="left pl-5 pb-4 w-1/2 overflow-hidden relative">
-                    <p className="font-extrabold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
+                    <p className="font-bold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
                       旅遊行程
                     </p>
                     <p className="text-[14px] text-white">路線</p>
@@ -245,7 +245,7 @@ const MenuFade = () => {
                 </div>
                 <div className="txt absolute z-[99] bottom-0 w-full">
                   <div className="left pl-5 pb-4 w-1/2 overflow-hidden relative">
-                    <p className="font-extrabold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
+                    <p className="font-bold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
                       旅遊行程
                     </p>
                     <p className="text-[14px] text-white">路線</p>
@@ -267,7 +267,7 @@ const MenuFade = () => {
                 </div>
                 <div className="txt absolute z-[99] bottom-0 w-full">
                   <div className="left pl-5 pb-4 w-1/2 overflow-hidden relative">
-                    <p className="font-extrabold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
+                    <p className="font-bold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
                       旅遊行程
                     </p>
                     <p className="text-[14px] text-white">路線</p>
@@ -289,7 +289,7 @@ const MenuFade = () => {
                 </div>
                 <div className="txt absolute z-[99] bottom-0 w-full">
                   <div className="left pl-5 pb-4 w-1/2 overflow-hidden relative">
-                    <p className="font-extrabold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
+                    <p className="font-bold text-white text-[22px] relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-white after:origin-left after:transition-all after:duration-500 group-hover:after:w-full">
                       旅遊行程
                     </p>
                     <p className="text-[14px] text-white">路線</p>

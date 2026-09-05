@@ -201,12 +201,12 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
 
       <div className="main-title relative flex flex-col w-full max-w-[100vw] pl-3 overflow-hidden">
         <div className="big-txt absolute z-10 left-0 bottom-[-20%] md:bottom-[-55%] pointer-events-none">
-          <p className="font-extrabold text-[64px] sm:text-[120px] md:text-[220px] text-white/10 tracking-normal whitespace-nowrap">
+          <p className="font-bold text-[28px] text-white/10 tracking-normal whitespace-nowrap">
             JEKO NOTE
           </p>
         </div>
         <div className="static z-50">
-          <h2 className="text-3xl lg:text-5xl font-bold text-white">NEWS</h2>
+          <h2 className="text-[28px] font-bold text-white">NEWS</h2>
           <p className="text-white text-lg mt-2">相關文章</p>
 
           <span className="tracking-widest  text-[14px] mt-3 leading-relaxed text-stone-100 font-normal  px-4 lg:px-0">
@@ -333,6 +333,8 @@ const EmblaCarousel = ({ options = { dragFree: true, loop: true } }) => {
             <DotButton
               key={index}
               onClick={() => onDotButtonClick(index)}
+              aria-label={`切換到第 ${index + 1} 張投影片`}
+              aria-current={index === selectedIndex ? "true" : undefined}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
                 index === selectedIndex ? "bg-stone-100 w-6" : "bg-slate-300"
               }`}

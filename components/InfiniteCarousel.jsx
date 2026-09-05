@@ -190,13 +190,14 @@ export default function SilkyCarousel({
           return (
             <button
               key={index}
+              type="button"
               onClick={() => goToSlide(index)}
+              aria-label={`切換到第 ${index + 1} 張投影片`}
               className={`h-1.5 rounded-full transition-all duration-700 ease-in-out ${
                 activeDotIndex === index
-                  ? "w-10 bg-[#0BAFD7]"
+                  ? "w-10 bg-[#07819F]"
                   : "w-3 bg-gray-300 hover:bg-gray-400"
               }`}
-              aria-label={`Go to slide ${index + 1}`}
             />
           );
         })}

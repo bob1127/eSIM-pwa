@@ -44,7 +44,7 @@ export default function App() {
                 {/* Nearly half of the global population is estimated to be infected with H. pylori */}
               </h3>
               <div className="mt-2 flex items-center gap-x-2">
-                <h2 className="md:text-3xl lg:text-5xl text-black font-bold tracking-tight ">
+                <h2 className="md:text-[28px] text-black font-bold tracking-tight ">
                   免校正拋棄式pH電極
                 </h2>
               </div>

@@ -19,7 +19,7 @@ export function chinaDailyCmccKeyFeatures() {
       "**網路速度：** 依每日額度提供高速；用完後多數約 128kbps（每日重置，以結帳頁為準）。",
       "**數據路由：** 香港 IP 漫遊；一般可免 VPN 使用常見社群（非保證每位用戶／每個時段）。",
       "**本站方案：** 每日型；支援熱點。標準移動方案不保證 TikTok／ChatGPT。",
-      "**使用注意：** 若需 TikTok／ChatGPT，請改選中國聯通 GPT + TikTok 或 CMCC 70Mbps 吃到飽。",
+      "**使用注意：** 若需 TikTok／ChatGPT，請改選 [CUCC+ 吃到飽](/product/china/china-unlimited-esim?data_amount=%E5%90%83%E5%88%B0%E9%A3%BD&days=20&telecom=cucc)。",
     ],
     "高速額度內都會區測速常見可到數十 Mbps；降速至約 128kbps 後僅適合傳訊。僅供參考。",
   );

@@ -124,7 +124,7 @@ export default function InfoPage({ posts = [] }) {
             {/* Tabs 區塊 */}
             <div className="title flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
               <div className="flex items-center justify-center">
-                <h2 className="text-[36px] font-bold text-slate-900">NEWS</h2>
+                <h2 className="text-[28px] font-bold text-slate-900">NEWS</h2>
                 <div className="mx-4 text-slate-400">/</div>
                 <p className="text-[15px] text-stone-800 tracking-wider">
                   旅遊文章知識精選
@@ -202,7 +202,7 @@ export default function InfoPage({ posts = [] }) {
               </div>
 
               <div className="text-white">
-                <h2 className="text-4xl font-extrabold tracking-wide md:text-5xl">
+                <h2 className="text-[24px] font-bold tracking-wide md:text-[28px]">
                   出國前一定要知道的 eSIM 使用重點
                 </h2>
                 <p className="mt-6 max-w-xl text-sm leading-loose text-white/80 md:text-base">
@@ -236,7 +236,7 @@ export default function InfoPage({ posts = [] }) {
                 <p className="text-sky-500 font-semibold tracking-wide text-sm sm:text-base">
                   Latest
                 </p>
-                <h2 className="text-[36px] sm:text-[44px] lg:text-[52px] leading-[1] font-extrabold text-slate-900">
+                <h2 className="text-[28px] leading-[1] font-bold text-slate-900">
                   News
                 </h2>
               </div>
@@ -395,8 +395,8 @@ export default function InfoPage({ posts = [] }) {
           <div className="grid grid-cols-1 md:grid-cols-2 max-w-[1400px] w-[80%]">
             <div>
               <div>
-                <h2 className="text-[43px] font-bold">
-                  CONTACT <span className="text-[43px] text-[#3d94f2]">US</span>
+                <h2 className="text-[28px] font-bold">
+                  CONTACT <span className="text-[28px] text-[#3d94f2]">US</span>
                 </h2>
                 <p>如遇到問題請立即聯繫我們</p>
               </div>

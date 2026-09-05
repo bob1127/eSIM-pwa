@@ -47,7 +47,7 @@ export default function PartnerDashboardDonut({ share = [], totalProfit = 0, loa
             />
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <p className="text-[9px] text-slate-400 font-bold">合計</p>
-              <p className="text-xs font-black text-slate-700">{fmt(totalProfit)}</p>
+              <p className="text-xs font-bold text-slate-700">{fmt(totalProfit)}</p>
             </div>
           </>
         ) : (

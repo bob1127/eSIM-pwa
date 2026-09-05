@@ -148,7 +148,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
           size={36}
           className="mx-auto text-slate-400"
         />
-        <p className="text-sm font-black text-slate-600">使用期間已過期</p>
+        <p className="text-sm font-bold text-slate-600">使用期間已過期</p>
         <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
           此 eSIM 已結束效期，不再顯示用量圖表。
         </p>
@@ -184,7 +184,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
           size={36}
           className="mx-auto text-[#1E4AD1]/50"
         />
-        <p className="text-sm font-black text-slate-700">{title}</p>
+        <p className="text-sm font-bold text-slate-700">{title}</p>
         <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
           {hint}
         </p>
@@ -211,7 +211,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
     <div className="space-y-4">
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-black text-[#1E4AD1] flex items-center gap-1.5">
+          <h4 className="text-sm font-bold text-[#1E4AD1] flex items-center gap-1.5">
             <AccountIcon name="donut_large" size={18} />
             用量比例
           </h4>
@@ -235,7 +235,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
                 />
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <p className="text-[10px] text-slate-400 font-bold">剩餘</p>
-                  <p className="text-sm font-black text-[#1E4AD1]">
+                  <p className="text-sm font-bold text-[#1E4AD1]">
                     {formatMb(remaining)}
                   </p>
                 </div>
@@ -283,7 +283,7 @@ export default function TrafficUsageCharts({ esims, results, selectedId, loading
               <p className="text-[11px] font-bold text-slate-400 tracking-wide">
                 吃到飽／無固定額度 · 使用流量
               </p>
-              <p className="text-3xl font-black text-[#1E4AD1]">
+              <p className="text-[28px] font-bold text-[#1E4AD1]">
                 {formatMb(used)}
               </p>
               <p className="text-xs text-slate-500">

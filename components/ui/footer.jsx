@@ -64,7 +64,7 @@ export default function Footer({
               className="inline-block select-none"
               aria-label="Jeko eSIM 首頁"
             >
-              <span className="text-[28px] font-black tracking-tight text-[#0A6CD0] leading-none">
+              <span className="text-[28px] font-bold tracking-tight text-[#0A6CD0] leading-none">
                 JEKO
               </span>
             </Link>
@@ -203,7 +203,7 @@ export default function Footer({
                 className="inline-block select-none"
                 aria-label="Jeko eSIM 首頁"
               >
-                <span className="text-[48px] font-black tracking-tight text-[#0A6CD0] leading-none">
+                <span className="text-[28px] font-bold tracking-tight text-[#0A6CD0] leading-none">
                   JEKO
                 </span>
               </Link>
@@ -560,7 +560,7 @@ export default function Footer({
             className="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-slate-100 p-6 text-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-xl font-black text-slate-900 mb-2">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">
               蝦皮快速兌換
             </h3>
             <p className="text-sm text-slate-500 leading-relaxed mb-5">

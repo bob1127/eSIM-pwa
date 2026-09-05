@@ -33,7 +33,7 @@ const ParallaxImage = ({ src, alt, title, subtitle = "NEWS" }) => {
             ARTICLE
           </div>
           {title ? (
-            <h1 className="text-xl md:text-3xl lg:text-[28px] font-bold leading-[1.6] tracking-wider text-center max-w-[80%] whitespace-pre-wrap mt-6">
+            <h1 className="text-xl md:text-[28px] font-bold leading-[1.6] tracking-wider text-center max-w-[80%] whitespace-pre-wrap mt-6">
               {title}
             </h1>
           ) : null}

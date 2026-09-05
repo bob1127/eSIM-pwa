@@ -94,7 +94,7 @@ export default function LineTrafficUsageHero({
             />
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
               <p className="text-[11px] font-semibold text-[#3A5A8C]">剩餘流量</p>
-              <p className="text-[22px] font-black tracking-tight text-[#0B1F40]">
+              <p className="text-[22px] font-bold tracking-tight text-[#0B1F40]">
                 {formatMb(remaining)}
               </p>
               {pct != null ? (
@@ -105,7 +105,7 @@ export default function LineTrafficUsageHero({
             </div>
           </div>
           <div className="mt-3 text-center">
-            <p className="text-[14px] font-black text-[#0B1F40]">
+            <p className="text-[14px] font-bold text-[#0B1F40]">
               {productName || "使用用量"}
             </p>
             <p className="mt-0.5 text-[12px] text-[#3A5A8C]">
@@ -138,7 +138,7 @@ export default function LineTrafficUsageHero({
         </motion.div>
       ) : (
         <div className="relative z-[1] max-w-[260px] text-center">
-          <p className="text-[18px] font-black text-[#0B1F40]">使用用量</p>
+          <p className="text-[18px] font-bold text-[#0B1F40]">使用用量</p>
           <p className="mt-2 text-[13px] leading-relaxed text-[#3A5A8C]">
             登入會員選 eSIM，或輸入 ICCID 後，這裡會顯示剩餘流量圖表。
           </p>

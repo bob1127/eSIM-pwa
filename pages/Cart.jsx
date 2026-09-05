@@ -1062,7 +1062,7 @@ const CartPage = () => {
                 className="w-full bg-white p-4 md:p-8 rounded-2xl shadow-sm"
               >
                 <div className="mb-4 md:mb-8">
-                  <h1 className="text-xl md:text-3xl font-bold text-gray-900">
+                  <h1 className="text-[22px] md:text-[28px] font-bold text-black leading-[1.35]">
                     購物車 ({displayItems.length})
                   </h1>
                 </div>
@@ -1107,7 +1107,7 @@ const CartPage = () => {
                                   item.name
                                 )}
                               </h2>
-                              <p className="shrink-0 text-[15px] md:text-lg font-black text-[#0071EB] tabular-nums">
+                              <p className="shrink-0 text-[15px] md:text-lg font-bold text-[#0071EB] tabular-nums">
                                 ${item.price}
                               </p>
                             </div>
@@ -1208,7 +1208,7 @@ const CartPage = () => {
                             <span className="text-lg font-bold text-gray-900">
                               總計
                             </span>
-                            <span className="text-2xl font-bold text-gray-900">
+                            <span className="text-[24px] font-bold text-gray-900">
                               ${displayTotal}
                             </span>
                           </div>
@@ -1243,7 +1243,7 @@ const CartPage = () => {
                 {/* 🌟 左側：結帳表單 (CheckoutForm) */}
                 <div className="w-full lg:w-[65%]">
                   <div className="mb-6 flex justify-between items-center">
-                    <h2 className="text-3xl font-bold text-gray-900">
+                    <h2 className="text-[28px] font-bold text-gray-900">
                       結帳
                     </h2>
                     <button
@@ -1268,7 +1268,7 @@ const CartPage = () => {
                 {/* 🌟 右側：固定明細卡片 (Bluehost 風格) */}
                 <div className="w-full lg:w-[35%]">
                   <div className="sticky top-24">
-                    <h3 className="text-2xl font-bold mb-4 text-gray-900">
+                    <h3 className="text-[24px] font-bold mb-4 text-gray-900">
                       購物明細
                     </h3>
 
@@ -1338,7 +1338,7 @@ const CartPage = () => {
                           <span className="text-base font-bold text-gray-900">
                             應付總額
                           </span>
-                          <span className="text-2xl font-bold text-gray-900">
+                          <span className="text-[24px] font-bold text-gray-900">
                             ${payableTotal}
                           </span>
                         </div>
@@ -1456,7 +1456,7 @@ const CartPage = () => {
                               </div>
 
                               {needLineVerify && !isLoggedIn && isWelcomeCouponCode(coupon) && (
-                                <div className="rounded-xl border border-[#06C755]/40 bg-emerald-50/80 px-3.5 py-3">
+                                <div className="rounded-xl border border-[#067A38]/40 bg-emerald-50/80 px-3.5 py-3">
                                   <p className="text-[13px] font-bold text-slate-800 leading-snug">
                                     新會員 50 元：請用 LINE 驗證
                                   </p>
@@ -1469,7 +1469,7 @@ const CartPage = () => {
                                       type="button"
                                       onClick={() => handleApplyCoupon()}
                                       disabled={isApplyingCoupon}
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2 disabled:opacity-60"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#067A38] hover:bg-[#056B30] text-white text-[12px] font-bold px-4 py-2 disabled:opacity-60"
                                     >
                                       <LineIconSvg className="w-3.5 h-3.5" />
                                       {isApplyingCoupon
@@ -1480,7 +1480,7 @@ const CartPage = () => {
                                       href={lineOaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#06C755] bg-white text-[#06C755] text-[12px] font-bold px-4 py-2"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#067A38] bg-white text-[#067A38] text-[12px] font-bold px-4 py-2"
                                     >
                                       尚未加好友？加入官方 LINE
                                     </a>
@@ -1508,7 +1508,7 @@ const CartPage = () => {
                                       href={lineOaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#06C755] bg-white text-[#06C755] text-[12px] font-bold px-4 py-2"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#067A38] bg-white text-[#067A38] text-[12px] font-bold px-4 py-2"
                                     >
                                       <LineIconSvg className="w-3.5 h-3.5" />
                                       尚未加好友？點此加入官方 LINE
@@ -1770,7 +1770,7 @@ const CartPage = () => {
                     />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2 className="text-[24px] font-bold text-gray-900 mb-2">
                   付款完成！
                 </h2>
                 <p className="text-gray-600 mb-8">

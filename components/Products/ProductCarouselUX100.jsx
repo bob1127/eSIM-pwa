@@ -499,7 +499,7 @@ function Carousel({
                             <span className=' '>Humming Probe UX200</span>
                             <Link href='../Products/product01'>CN</Link>
                         </motion.div> */}
-                            <motion.h1 className="text-[26px] text-[#333333]  font-black leading-[31px]" variants={fadeInUp}>      極安簡測-胃幽門桿菌尿素呼氣檢測系統<br></br> <p className="text-[24px] text-orange-500 font-bold ">(UBT-Pro)</p>
+                            <motion.h1 className="text-[26px] text-[#333333]  font-bold leading-[31px]" variants={fadeInUp}>      極安簡測-胃幽門桿菌尿素呼氣檢測系統<br></br> <p className="text-[24px] text-orange-500 font-bold ">(UBT-Pro)</p>
                             </motion.h1>
                             <motion.p className="dark: text-slate-300 " variants={fadeInUp}>
 

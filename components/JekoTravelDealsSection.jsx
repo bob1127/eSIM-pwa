@@ -160,15 +160,15 @@ export default function JekoTravelDealsSection() {
                 ].join(" ")}
               >
                 <span
-                  className="block text-[13px] sm:text-[15px] font-black tracking-tight"
+                  className="block text-[13px] sm:text-[14px] font-bold tracking-normal"
                   style={active ? { color: tab.accent } : undefined}
                 >
                   {tab.label}
                 </span>
                 <span
                   className={[
-                    "mt-0.5 block text-[10px] sm:text-[11px] font-medium leading-tight",
-                    active ? "text-slate-500" : "text-slate-400",
+                    "mt-0.5 block text-[10px] sm:text-[11px] font-normal leading-tight",
+                    active ? "text-[#666666]" : "text-[#999999]",
                   ].join(" ")}
                 >
                   {tab.hint}
@@ -195,8 +195,8 @@ export default function JekoTravelDealsSection() {
                 aria-selected={active}
                 onClick={() => setCountryId(tab.id)}
                 className={[
-                  "relative shrink-0 pb-3 text-[15px] sm:text-base font-medium tracking-tight transition-colors",
-                  active ? "" : "text-gray-500 hover:text-gray-800",
+                  "relative shrink-0 pb-3 text-[14px] sm:text-[16px] font-bold tracking-normal transition-colors",
+                  active ? "" : "text-[#999999] hover:text-black",
                 ].join(" ")}
                 style={active ? { color: accent } : undefined}
               >

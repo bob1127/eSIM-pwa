@@ -191,7 +191,7 @@ function GuestLoginGate({ embedded = false, className = "" }) {
       <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-2">
         會員限定
       </p>
-      <h4 className="text-base font-black text-stone-900 mb-1">
+      <h4 className="text-base font-bold text-stone-900 mb-1">
         請先登入會員
       </h4>
       <p className="text-sm text-stone-500 leading-relaxed mb-4">
@@ -984,7 +984,7 @@ export default function PushNotificationSection({
                   aria-hidden
                 />
                 <div className="flex-1 min-w-0 text-white">
-                  <h3 className="text-2xl md:text-[28px] font-bold leading-snug">
+                  <h3 className="text-[24px] md:text-[28px] font-bold leading-snug">
                     流量快用完時通知我
                   </h3>
                   <p className="text-sm md:text-[15px] text-white/85 mt-2 leading-relaxed max-w-lg">

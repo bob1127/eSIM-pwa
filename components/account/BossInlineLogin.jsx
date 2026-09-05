@@ -47,7 +47,7 @@ export default function BossInlineLogin({ onLoginSuccess }) {
             <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider">
               Medusa 總部驗證
             </p>
-            <h3 className="text-lg font-black">夥伴審核需先登入</h3>
+            <h3 className="text-lg font-bold">夥伴審核需先登入</h3>
           </div>
         </div>
         <p className="text-sm text-blue-100 leading-relaxed">
@@ -100,7 +100,7 @@ export default function BossInlineLogin({ onLoginSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 text-white text-sm font-black rounded-sm disabled:opacity-60"
+            className="w-full py-3 text-white text-sm font-bold rounded-sm disabled:opacity-60"
             style={{ backgroundColor: ACCENT.primary }}
           >
             {loading ? "驗證中…" : "登入總部後台"}

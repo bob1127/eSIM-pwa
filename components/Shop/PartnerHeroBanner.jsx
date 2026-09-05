@@ -81,7 +81,7 @@ function ClassicHero({ store, hero, domain }) {
         >
           {hero.eyebrow}
         </p>
-        <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.1] mb-4">
+        <h1 className="text-[28px] font-bold tracking-tight leading-[1.1] mb-4">
           {hero.displayTitle}
         </h1>
         <p
@@ -213,7 +213,7 @@ function SliderHero({ hero, editable, onEditCarousel }) {
                       }}
                     >
                       {slide.title ? (
-                        <h2 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1]">
+                        <h2 className="text-[24px] md:text-[28px] font-bold tracking-tight leading-[1.1]">
                           {slide.title}
                         </h2>
                       ) : null}

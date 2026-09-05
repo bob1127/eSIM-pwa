@@ -8,6 +8,45 @@ import { clientWarn, clientError } from "@/lib/clientLogger";
 
 const PLATFORM_FX = getClientPlatformFxRates();
 
+const APN_COLLAPSE_CHARS = 48;
+
+/** 長 APN（多國）預設收折，避免表格列被撐爆 */
+function CollapsibleApn({ apn }: { apn?: string | null }) {
+  const text = String(apn || "").trim() || "Manual";
+  const needsCollapse = text.length > APN_COLLAPSE_CHARS || text.includes("|");
+  const [open, setOpen] = useState(false);
+
+  if (!needsCollapse) {
+    return (
+      <div className="text-xs text-gray-500 font-mono break-all">{text}</div>
+    );
+  }
+
+  const preview = text.slice(0, APN_COLLAPSE_CHARS).replace(/\s+$/, "");
+  const countryHint = (text.match(/[A-Z]{2}:/g) || []).length;
+
+  return (
+    <div className="max-w-[11rem]">
+      <div
+        className={`text-xs text-gray-500 font-mono break-all ${
+          open ? "" : "line-clamp-2"
+        }`}
+      >
+        {open ? text : `${preview}…`}
+      </div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="mt-1 text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline"
+      >
+        {open
+          ? "收合 APN"
+          : `展開 APN${countryHint > 1 ? `（約 ${countryHint} 國）` : ""}`}
+      </button>
+    </div>
+  );
+}
+
 /**
  * 將 location / code 正規化成 ISO token 列表。
  * 例："CN,HK,MO" → ["CN","HK","MO"]；"Hong Kong" → ["HK"]
@@ -514,10 +553,12 @@ const COUNTRIES: Record<string, CountryConfig> = {
   },
   AU: {
     emoji: "🇦🇺",
-    name: "澳洲 (純澳)",
+    name: "澳洲",
     pure: true,
     codes: ["AU", "AUS", "AUSTRALIA"],
     namePrefixes: ["Australia-", "Australia "],
+    /** 含澳的全球 72 國包（標「多國」）；仍排除紐澳雙國與其他 Global */
+    includeSkuIncludes: ["Global 72 countries", "Global72countries"],
     keywords: [],
     exclude: ["ASIA", "GLOBAL", "NEW ZEALAND", "AU,NZ", "紐澳", "澳紐"],
   },
@@ -1169,6 +1210,26 @@ function matchesNamePrefixes(
   });
 }
 
+/** location 或 networks「XX:」是否涵蓋指定國碼別名 */
+function planCoversAliases(
+  p: {
+    location?: string;
+    code?: string;
+    networks?: string;
+    operator?: string;
+  },
+  aliases: string[],
+): boolean {
+  if (!aliases.length) return false;
+  const tokens = normalizeLocationTokens(String(p.location || p.code || ""));
+  if (aliases.some((a) => tokens.includes(a))) return true;
+  const nets = String(p.networks || p.operator || "").toUpperCase();
+  return aliases.some((a) => {
+    const c = escapeRegExp(String(a).toUpperCase().trim());
+    return c.length > 0 && new RegExp(`(?:^|\\|)${c}:`).test(nets);
+  });
+}
+
 /** 方案是否符合選中的國家／區域（純單國＝location 精確單碼） */
 function planMatchesCountry(
   p: {
@@ -1253,9 +1314,15 @@ function planMatchesCountry(
     return false;
   }
 
-  // 單國 SKU 或加掛 SKU（Europe-43 / Europe 43 countries）— exclude 之前就過
+  // 單國 SKU 或加掛 SKU（Europe-43 / Global 72）— exclude 之前就過
   if (uniqueIsThisCountry || prefixHit || extraSkuHit) {
-    if (config.pure) return true;
+    if (config.pure) {
+      // 純單國選品加掛多國 SKU：須實際涵蓋本國（networks／location）
+      if (extraSkuHit && !uniqueIsThisCountry && !prefixHit) {
+        if (!planCoversAliases(p, aliases)) return false;
+      }
+      return true;
+    }
   }
   if (extraSkuHit && !config.pure) return true;
   if (prefixHit && !config.pure) return true;
@@ -2285,6 +2352,25 @@ export default function GlobalPlanScanner() {
             : 0;
         const ownerProfitDisc = paidGross - partnerProfitDisc;
 
+        // 純單國選品內的加掛全球／多國包（如澳洲＋Global 72）標「多國」
+        const multiSkuHit = (config.includeSkuIncludes || []).some((s) =>
+          hayIncludesSku(
+            [p.name, p.channel_dataplan_name, p.code]
+              .map((x) => stripPlanText(String(x || "")))
+              .join(" "),
+            s,
+          ),
+        );
+        const auAliases = normalizeAliasCodes(config.codes || []);
+        const locTokens = normalizeLocationTokens(
+          String(p.location || p.code || ""),
+        );
+        const isPrimaryCountryPlan =
+          matchesNamePrefixes(planFieldTexts(p), config.namePrefixes) ||
+          (locTokens.length === 1 && auAliases.includes(locTokens[0]));
+        const isMultiCountryTag =
+          Boolean(config.pure) && multiSkuHit && !isPrimaryCountryPlan;
+
         return {
           ...p,
           ...details,
@@ -2309,10 +2395,17 @@ export default function GlobalPlanScanner() {
           partnerProfitDisc,
           ownerProfitDisc,
           dayInt: parseInt(p.day) || 0,
-          typeLabel: details.isNative ? `🔴 ${config.name}原生` : "🔵 漫遊線路",
-          typeClass: details.isNative
-            ? "bg-red-50 text-red-700 border border-red-100"
-            : "bg-blue-50 text-blue-700 border border-blue-100",
+          isMultiCountryTag,
+          typeLabel: isMultiCountryTag
+            ? "🌐 多國"
+            : details.isNative
+              ? `🔴 ${config.name}原生`
+              : "🔵 漫遊線路",
+          typeClass: isMultiCountryTag
+            ? "bg-violet-50 text-violet-800 border border-violet-100"
+            : details.isNative
+              ? "bg-red-50 text-red-700 border border-red-100"
+              : "bg-blue-50 text-blue-700 border border-blue-100",
           isSaved: savedPlanIds.includes(p.id),
         };
       });
@@ -2488,7 +2581,7 @@ export default function GlobalPlanScanner() {
         {noIndex}
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
           <div className="max-w-md w-full bg-white border border-gray-200 rounded-2xl p-8 text-center shadow-sm">
-            <div className="text-4xl mb-3">🔒</div>
+            <div className="text-[24px] mb-3">🔒</div>
             <h1 className="text-lg font-bold text-gray-800 mb-2">
               內部工具｜需要管理者權限
             </h1>
@@ -2533,7 +2626,7 @@ export default function GlobalPlanScanner() {
       <div className="max-w-[1600px] mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-[24px] font-bold text-gray-800">
             eSIM 選品神器 (Pro版)
           </h1>
           <button
@@ -2658,9 +2751,10 @@ export default function GlobalPlanScanner() {
                 )}
                 {selectedCountry === "AU" && (
                   <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 max-w-lg">
-                    純澳吃到飽／每日／總量最長<strong> 30 天</strong>。供應商正式目錄已無{" "}
-                    <code className="text-[10px]">Total60GB-60</code>。若要紐澳雙國比價 →
-                    「🇦🇺🇳🇿📅 紐澳長天數」（預設 30天+）。
+                    純澳吃到飽／每日／總量最長<strong> 30 天</strong>；另含覆蓋澳洲的{" "}
+                    <strong>Global 72 國</strong>（類型欄標「🌐 多國」，多為 365 天總量包）。供應商已無{" "}
+                    <code className="text-[10px]">Total60GB-60</code>。紐澳雙國比價 →
+                    「🇦🇺🇳🇿📅 紐澳長天數」。
                   </p>
                 )}
                 {selectedCountry === "ANZ" && (
@@ -3206,7 +3300,7 @@ export default function GlobalPlanScanner() {
                   說明
                 </th>
                 <th className="p-4 w-32">降速規則</th>
-                <th className="p-4 w-32">APN / 設定</th>
+                <th className="p-4 w-32">APN 手動設定</th>
                 <th className="p-4 w-24 text-right">成本 (TWD)</th>
                 <th className="p-4 w-28 text-right">
                   建議售價
@@ -3331,9 +3425,7 @@ export default function GlobalPlanScanner() {
                     >
                       {p.setupMode}
                     </div>
-                    <div className="text-xs text-gray-500 font-mono break-all">
-                      {p.apn || "Manual"}
-                    </div>
+                    <CollapsibleApn apn={p.apn} />
                     <div className="text-[10px] text-gray-400 border border-gray-100 px-1 rounded inline-block mt-1">
                       {p.ipRegion}
                     </div>
@@ -3418,7 +3510,7 @@ export default function GlobalPlanScanner() {
           </table>
           {filteredPlans.length === 0 && (
             <div className="p-20 text-center text-gray-400 flex flex-col items-center">
-              <div className="text-6xl mb-4">🔍</div>
+              <div className="text-[28px] mb-4">🔍</div>
               <p className="font-bold">沒有找到符合的方案</p>
               <button
                 onClick={() => setFilterName("ALL")}

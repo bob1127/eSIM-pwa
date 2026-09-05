@@ -54,7 +54,7 @@ export function RevenueSplitDonut({
           />
         )}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <p className="text-lg font-black" style={{ color: SHOPIFY_UI.textPrimary }}>
+          <p className="text-lg font-bold" style={{ color: SHOPIFY_UI.textPrimary }}>
             {rate}%
           </p>
           <p className="text-[9px] font-bold" style={{ color: SHOPIFY_UI.textTertiary }}>
@@ -86,7 +86,7 @@ export function RevenueSplitDonut({
 export function CountCircle({ value = 0, color = "#008060" }) {
   return (
     <div
-      className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-black shrink-0"
+      className="w-20 h-20 rounded-full flex items-center justify-center text-white text-[24px] font-bold shrink-0"
       style={{ backgroundColor: color }}
     >
       {value}
@@ -166,7 +166,7 @@ export function MiniShareRing({ percent = 0, color = "#2c6ecb" }) {
         }}
       />
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <span className="text-[11px] font-black" style={{ color: SHOPIFY_UI.textPrimary }}>
+        <span className="text-[11px] font-bold" style={{ color: SHOPIFY_UI.textPrimary }}>
           {percent}%
         </span>
       </div>

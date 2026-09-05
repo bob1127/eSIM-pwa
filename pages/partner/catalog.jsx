@@ -153,7 +153,7 @@ function PoolProductCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-black text-slate-800 leading-snug break-words">
+          <p className="text-sm font-bold text-slate-800 leading-snug break-words">
             {p.name}
           </p>
           <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
@@ -186,7 +186,7 @@ function PoolProductCard({
         </div>
         <div className="rounded-lg bg-blue-50 px-2 py-2">
           <p className="text-[10px] text-slate-400 font-bold">分潤</p>
-          <p className="text-xs font-black text-[#1E4AD1] mt-0.5 tabular-nums">
+          <p className="text-xs font-bold text-[#1E4AD1] mt-0.5 tabular-nums">
             +{fmt(p.profit)}
           </p>
         </div>
@@ -239,7 +239,7 @@ function ListedProductCard({ p, busyId, onToggle }) {
     <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-black text-slate-800 leading-snug break-words">
+          <p className="text-sm font-bold text-slate-800 leading-snug break-words">
             {p.name}
           </p>
           <p className="text-xs text-slate-400 mt-1">{p.category}</p>
@@ -265,7 +265,7 @@ function ListedProductCard({ p, busyId, onToggle }) {
         </div>
         <div className="rounded-lg bg-blue-50 px-2 py-2">
           <p className="text-[10px] text-slate-400 font-bold">分潤</p>
-          <p className="text-xs font-black text-[#1E4AD1] mt-0.5">+{fmt(p.profit)}</p>
+          <p className="text-xs font-bold text-[#1E4AD1] mt-0.5">+{fmt(p.profit)}</p>
         </div>
       </div>
       <p className="mt-2 text-[11px] text-slate-400">
@@ -753,7 +753,7 @@ export default function PartnerCatalogPage() {
             />
             <div className="min-w-0">
               <p className="text-[10px] sm:text-xs text-slate-500 truncate">{s.label}</p>
-              <p className="text-base sm:text-xl font-black text-slate-800 tabular-nums">
+              <p className="text-base sm:text-xl font-bold text-slate-800 tabular-nums">
                 {loading ? "…" : s.value}
                 <span className="text-[10px] sm:text-xs font-bold text-slate-400 ml-0.5 sm:ml-1">
                   {s.unit}
@@ -776,7 +776,7 @@ export default function PartnerCatalogPage() {
               <div className="flex flex-col gap-3 px-4 py-4 border-b border-slate-200">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <h2 className="text-base font-black text-slate-800">商品池</h2>
+                    <h2 className="text-base font-bold text-slate-800">商品池</h2>
                     <p className="text-xs text-slate-500 mt-0.5">
                       依國家與條件篩選後加入店鋪 · 共{" "}
                       {loading ? "…" : poolList.length} 項
@@ -976,7 +976,7 @@ export default function PartnerCatalogPage() {
                           <td className="px-5 py-4 text-right font-bold text-slate-800">
                             {fmt(p.sellPrice)}
                           </td>
-                          <td className="px-5 py-4 text-right font-black text-[#1E4AD1]">
+                          <td className="px-5 py-4 text-right font-bold text-[#1E4AD1]">
                             +{fmt(p.profit)}
                           </td>
                           <td className="px-5 py-4 align-top">
@@ -1030,7 +1030,7 @@ export default function PartnerCatalogPage() {
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-4 border-b border-slate-200">
               <div>
-                <h2 className="text-base font-black text-slate-800">已上架商品</h2>
+                <h2 className="text-base font-bold text-slate-800">已上架商品</h2>
                 <p className="text-xs text-slate-500 mt-1">
                   主站下架或刪除的方案會自動標示「主站已下架」並從賣場下架；請移除選品或待主站恢復後再啟用。
                 </p>
@@ -1146,7 +1146,7 @@ export default function PartnerCatalogPage() {
                         <td className="px-4 py-4 align-top text-right tabular-nums font-bold text-slate-800 whitespace-nowrap">
                           {fmt(p.sellPrice)}
                         </td>
-                        <td className="px-4 py-4 align-top text-right tabular-nums font-black text-[#1E4AD1] whitespace-nowrap">
+                        <td className="px-4 py-4 align-top text-right tabular-nums font-bold text-[#1E4AD1] whitespace-nowrap">
                           +{fmt(p.profit)}
                         </td>
                         <td className="px-4 py-4 align-top text-center">

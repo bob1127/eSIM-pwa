@@ -7,13 +7,13 @@ import MobileCardCarousel from "@/components/MobileCardCarousel";
 function brandMark(partner) {
   if (partner === "kkday") {
     return (
-      <span className="inline-flex h-5 items-center rounded bg-[#FFD43A] px-1.5 text-[9px] font-black text-slate-800">
+      <span className="inline-flex h-5 items-center rounded bg-[#FFD43A] px-1.5 text-[9px] font-bold text-slate-800">
         KKday
       </span>
     );
   }
   return (
-    <span className="inline-flex h-5 items-center rounded bg-[#ff5722] px-1.5 text-[9px] font-black text-white">
+    <span className="inline-flex h-5 items-center rounded bg-[#ff5722] px-1.5 text-[9px] font-bold text-white">
       Klook
     </span>
   );
@@ -58,7 +58,7 @@ function AffiliateCard({ item }) {
           {item.title}
         </p>
         {item.priceLabel ? (
-          <p className="mt-1 text-[12px] font-black text-slate-800">
+          <p className="mt-1 text-[12px] font-bold text-slate-800">
             {item.priceLabel}
           </p>
         ) : null}
@@ -94,7 +94,7 @@ export default function ItineraryAffiliateCards({
 
   return (
     <div className="mt-8">
-      <p className="text-[13px] font-black text-slate-900 mb-3">推薦體驗</p>
+      <p className="text-[13px] font-bold text-slate-900 mb-3">推薦體驗</p>
       <div className="sm:hidden">
         <MobileCardCarousel
           slideClassName="min-w-0 flex-[0_0_92%]"

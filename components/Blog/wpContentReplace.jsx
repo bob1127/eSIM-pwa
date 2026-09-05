@@ -17,8 +17,42 @@ import WpSlideshow, {
   readAutoplay,
 } from "@/components/Blog/WpSlideshow";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
-import { cfImgSrc } from "@/lib/cfImageLoader";
+import { cfImgSrc, unwrapCfImageSrc } from "@/lib/cfImageLoader";
 import { domToReact, attributesToProps } from "html-react-parser";
+
+function WpContentImg({ src, alt, className, onClick, ariaLabel }) {
+  const handleError = (e) => {
+    const el = e?.currentTarget;
+    if (!el) return;
+    const orig = unwrapCfImageSrc(el.getAttribute("src") || src);
+    if (orig && el.getAttribute("src") !== orig) {
+      el.setAttribute("src", orig);
+    }
+  };
+
+  const img = (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      onError={handleError}
+    />
+  );
+
+  if (!onClick) return img;
+
+  return (
+    <button
+      type="button"
+      className="wp-single-img__btn"
+      onClick={onClick}
+      aria-label={ariaLabel}
+    >
+      {img}
+    </button>
+  );
+}
 
 export function createWpContentReplace({
   normalizeUrl = normalizeWpAssetUrl,
@@ -78,34 +112,22 @@ export function createWpContentReplace({
           return null;
         }
         const globalIndex = imageCursor++;
-        const src = cfImgSrc(normalizeUrl(node.attribs.src), 960);
+        const orig = normalizeUrl(node.attribs.src);
+        const src = cfImgSrc(orig, 960);
         const alt = node.attribs.alt || "";
         const clickable = typeof onOpenLightbox === "function";
 
         return (
           <div className={imageWrapperClassName}>
-            {clickable ? (
-              <button
-                type="button"
-                className="wp-single-img__btn"
-                onClick={() => onOpenLightbox(globalIndex)}
-                aria-label={`查看圖片 ${globalIndex + 1}`}
-              >
-                <img
-                  src={src}
-                  alt={alt}
-                  className={imageClassName}
-                  loading="lazy"
-                />
-              </button>
-            ) : (
-              <img
-                src={src}
-                alt={alt}
-                className={imageClassName}
-                loading="lazy"
-              />
-            )}
+            <WpContentImg
+              src={src}
+              alt={alt}
+              className={imageClassName}
+              onClick={
+                clickable ? () => onOpenLightbox(globalIndex) : undefined
+              }
+              ariaLabel={`查看圖片 ${globalIndex + 1}`}
+            />
           </div>
         );
       }

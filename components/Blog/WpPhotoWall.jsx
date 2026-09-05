@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { normalizeWpAssetUrl } from "@/lib/wordpress";
-import { cfImgSrc } from "@/lib/cfImageLoader";
+import { cfImgSrc, unwrapCfImageSrc } from "@/lib/cfImageLoader";
 import MediaGalleryLightbox from "@/components/MediaGalleryLightbox";
 import {
   GUTTER_WIDTH,
@@ -487,6 +487,13 @@ export default function WpPhotoWall({
                             loading="lazy"
                             data-width={Math.round(cell.width)}
                             data-height={Math.round(cell.height)}
+                            onError={(e) => {
+                              const el = e.currentTarget;
+                              const orig = unwrapCfImageSrc(el.getAttribute("src") || "");
+                              if (orig && el.getAttribute("src") !== orig) {
+                                el.src = orig;
+                              }
+                            }}
                           />
                         </button>
                       );

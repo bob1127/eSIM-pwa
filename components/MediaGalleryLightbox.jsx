@@ -295,7 +295,7 @@ export default function MediaGalleryLightbox({
                 >
                   <MaterialIcon
                     name="chevron_left"
-                    className="w-10 h-10 sm:w-14 sm:h-14 text-[40px] sm:text-[56px]"
+                    className="w-10 h-10 sm:w-14 sm:h-14 text-[28px]"
                   />
                 </button>
                 <button
@@ -306,7 +306,7 @@ export default function MediaGalleryLightbox({
                 >
                   <MaterialIcon
                     name="chevron_right"
-                    className="w-10 h-10 sm:w-14 sm:h-14 text-[40px] sm:text-[56px]"
+                    className="w-10 h-10 sm:w-14 sm:h-14 text-[28px]"
                   />
                 </button>
               </>

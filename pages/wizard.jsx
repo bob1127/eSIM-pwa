@@ -167,7 +167,7 @@ export default function WizardPage() {
         <div className="max-w-5xl mx-auto">
           {/* 標題區 */}
           <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-[28px] font-bold text-gray-900 mb-2">
               AI 智慧選購嚮導
             </h1>
             <p className="text-gray-500">
@@ -245,7 +245,7 @@ export default function WizardPage() {
                           />
                           <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
                           <div className="absolute bottom-3 left-3 text-white text-left">
-                            <div className="text-2xl">{c.flag}</div>
+                            <div className="text-[24px]">{c.flag}</div>
                             <div className="font-bold text-lg">{c.name}</div>
                           </div>
                         </button>
@@ -325,7 +325,7 @@ export default function WizardPage() {
                                 : "border-gray-200 bg-white hover:border-gray-300"
                             }`}
                           >
-                            <div className="text-2xl">{app.icon}</div>
+                            <div className="text-[24px]">{app.icon}</div>
                             <div className="font-bold text-gray-900 flex-1 text-left">
                               {app.name}
                             </div>
@@ -386,7 +386,7 @@ export default function WizardPage() {
                           }}
                           className="w-full p-4 rounded-xl border flex items-start gap-4 hover:border-blue-400 hover:shadow-md transition-all bg-white text-left"
                         >
-                          <div className="text-3xl pt-1">{h.icon}</div>
+                          <div className="text-[28px] pt-1">{h.icon}</div>
                           <div>
                             <div className="font-bold text-gray-900 text-lg">
                               {h.name}
@@ -415,7 +415,7 @@ export default function WizardPage() {
                     <div className="w-20 h-20 bg-gradient-to-tr from-blue-400 to-cyan-300 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-200">
                       <Zap className="w-10 h-10 text-white fill-current" />
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    <h2 className="text-[24px] font-bold text-gray-900 mb-2">
                       分析完成！
                     </h2>
                     <p className="text-gray-500 mb-8">
@@ -460,7 +460,7 @@ export default function WizardPage() {
                           </div>
 
                           <div className="mt-4 flex items-end gap-2 border-t pt-3">
-                            <span className="text-3xl font-bold text-gray-900">
+                            <span className="text-[28px] font-bold text-gray-900">
                               NT$ {recommendedPlan.price}
                             </span>
                             <span className="text-sm text-gray-400 mb-1">
@@ -566,7 +566,7 @@ export default function WizardPage() {
                 {isResultReady && recommendedPlan && (
                   <div className="mt-8 pt-6 border-t border-dashed border-gray-300 flex justify-between items-center">
                     <span className="font-bold text-gray-900">預估金額</span>
-                    <span className="text-2xl font-bold text-blue-600">
+                    <span className="text-[24px] font-bold text-blue-600">
                       NT$ {recommendedPlan.price}
                     </span>
                   </div>

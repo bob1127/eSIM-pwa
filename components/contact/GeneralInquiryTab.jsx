@@ -66,7 +66,7 @@ export default function GeneralInquiryTab() {
     return (
       <div className="p-8 sm:p-12 text-center bg-white">
         <MaterialIcon name="check_circle" size={48} className="text-emerald-500 mx-auto mb-4" />
-        <h2 className="text-xl font-black text-[#1e3a5f] mb-2">已收到您的諮詢</h2>
+        <h2 className="text-xl font-bold text-[#1e3a5f] mb-2">已收到您的諮詢</h2>
         <p className="text-sm text-slate-500 mb-6">我們將於 1～3 個工作天內以 Email 回覆。</p>
         <button
           type="button"

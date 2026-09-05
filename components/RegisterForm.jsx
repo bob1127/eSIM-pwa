@@ -229,7 +229,7 @@ const RegisterForm = ({ onSuccess }) => {
               type="button"
               onClick={() => sendCode("new")}
               disabled={sending || cooldown > 0}
-              className={`whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold shadow-sm transition ${sending || cooldown > 0 ? "bg-white/30 text-white/70" : "bg-white/95 text-[#1C82E0] hover:bg-white"}`}
+              className={`whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold shadow-sm transition ${sending || cooldown > 0 ? "bg-white/30 text-white/70" : "bg-white/95 text-[#1566B5] hover:bg-white"}`}
             >
               {sending
                 ? "寄送中..."
@@ -258,7 +258,7 @@ const RegisterForm = ({ onSuccess }) => {
                 type="button"
                 onClick={handleVerifyCode}
                 disabled={verifying || isCodeVerified}
-                className={`whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold shadow-sm transition ${verifying || isCodeVerified ? "bg-emerald-500 text-white" : "bg-white/95 text-[#1C82E0]"}`}
+                className={`whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold shadow-sm transition ${verifying || isCodeVerified ? "bg-emerald-500 text-white" : "bg-white/95 text-[#1566B5]"}`}
               >
                 {verifying
                   ? "驗證中..."
@@ -297,7 +297,7 @@ const RegisterForm = ({ onSuccess }) => {
         <button
           type="submit"
           disabled={registering || !isCodeVerified}
-          className={`mt-2 w-full rounded-full py-2.5 text-sm font-semibold tracking-wide shadow-sm transition ${registering || !isCodeVerified ? "bg-white/40 text-[#1C82E0] cursor-not-allowed" : "bg-white/95 text-[#1C82E0] hover:bg-white"}`}
+          className={`mt-2 w-full rounded-full py-2.5 text-sm font-semibold tracking-wide shadow-sm transition ${registering || !isCodeVerified ? "bg-white/40 text-[#1566B5] cursor-not-allowed" : "bg-white/95 text-[#1566B5] hover:bg-white"}`}
         >
           {registering ? "註冊中..." : "立即註冊"}
         </button>
@@ -317,7 +317,7 @@ const RegisterForm = ({ onSuccess }) => {
           <button
             type="button"
             onClick={handleLineLogin}
-            className="flex items-center justify-center gap-2.5 w-full rounded-full bg-[#06C755] border border-transparent py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:brightness-105 shadow-sm"
+            className="flex items-center justify-center gap-2.5 w-full rounded-full bg-[#067A38] border border-transparent py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:brightness-105 shadow-sm"
           >
             <LineIconSvg className="w-5 h-5" />
             LINE

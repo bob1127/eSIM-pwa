@@ -504,7 +504,7 @@ function BrandHeader() {
           height={56}
           className="w-12 h-12 object-contain transition-transform group-hover:scale-105"
         />
-        <span className="text-[22px] font-black tracking-tighter leading-none">
+        <span className="text-[22px] font-bold tracking-tighter leading-none">
           <span className="text-[#0A6CD0]">Jeko</span>
           <span className="text-[#24A148]">.eSIM</span>
         </span>
@@ -592,7 +592,7 @@ function StepIndicator({ current, total }) {
               className="flex flex-col items-center gap-1 flex-1"
             >
               <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black transition-all duration-300 ${
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-300 ${
                   done
                     ? "bg-[#1a56db] text-white"
                     : active
@@ -866,7 +866,7 @@ function InfoBanner({ cooperationModel }) {
       </div>
       <div className="px-4 py-3 flex items-center justify-between gap-3">
         <p className="text-[14px] text-slate-500">{benefitCopy}</p>
-        <p className="text-lg font-black text-[#1a56db] shrink-0">NT$ 0</p>
+        <p className="text-lg font-bold text-[#1a56db] shrink-0">NT$ 0</p>
       </div>
     </div>
   );
@@ -1246,7 +1246,7 @@ export default function RegisterDistributor() {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-black text-slate-900 mb-3">
+            <h1 className="text-[24px] font-bold text-slate-900 mb-3">
               申請已送出！
             </h1>
             <p className="text-slate-500 text-sm leading-relaxed mb-4">
@@ -1372,7 +1372,7 @@ export default function RegisterDistributor() {
               <p className="text-[11px] font-bold text-[#1a56db] uppercase tracking-widest mb-1">
                 Step {step} / {STEPS.length} · {STEPS[step - 1].label}
               </p>
-              <h1 className="text-xl font-black text-slate-900 mb-1">
+              <h1 className="text-xl font-bold text-slate-900 mb-1">
                 {step === 3
                   ? step3Title.title
                   : step === 4
@@ -1392,7 +1392,7 @@ export default function RegisterDistributor() {
             {step === 1 && (
               <div className="flex flex-col gap-6">
                 <div className="space-y-2.5">
-                  <p className="text-[13px] font-black text-slate-800">
+                  <p className="text-[13px] font-bold text-slate-800">
                     選擇合作模式 <span className="text-red-500">*</span>
                   </p>
                   <SelectCard
@@ -1410,7 +1410,7 @@ export default function RegisterDistributor() {
                 </div>
 
                 <div className="space-y-2.5">
-                  <p className="text-[13px] font-black text-slate-800">
+                  <p className="text-[13px] font-bold text-slate-800">
                     您的合作身份 <span className="text-red-500">*</span>
                   </p>
                   <div className="flex flex-col gap-2.5">
@@ -1641,7 +1641,7 @@ export default function RegisterDistributor() {
             {step === 4 && (
               <div className="flex flex-col gap-6">
                 <div className="space-y-2.5">
-                  <p className="text-[13px] font-black text-slate-800">
+                  <p className="text-[13px] font-bold text-slate-800">
                     選擇合作模式 <span className="text-red-500">*</span>
                   </p>
                   <SelectCard
@@ -1661,7 +1661,7 @@ export default function RegisterDistributor() {
                 {/* 小白友善說明 + 代碼（商店需自訂；連結模式自動發放） */}
                 {form.cooperationModel === "referral" ? (
                   <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 space-y-3">
-                    <p className="text-[13px] font-black text-[#1a56db]">
+                    <p className="text-[13px] font-bold text-[#1a56db]">
                       專屬分潤連結：系統自動發放
                     </p>
                     <p className="text-[12px] text-slate-600 leading-relaxed">
@@ -1684,7 +1684,7 @@ export default function RegisterDistributor() {
                 ) : (
                   <>
                     <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 space-y-3">
-                      <p className="text-[13px] font-black text-[#1a56db]">
+                      <p className="text-[13px] font-bold text-[#1a56db]">
                         什麼是「專屬商店網址代碼」？
                       </p>
                       <p className="text-[12px] text-slate-600 leading-relaxed">

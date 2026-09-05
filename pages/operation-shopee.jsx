@@ -360,7 +360,7 @@ export default function Home() {
           <div className="w-full border border-gray-200 border-l-0 bg-white">
             {/* TOP TITLE */}
             <div className="border-b border-gray-200 bg-[#1a5ad1] px-6 md:px-16 lg:px-20 py-8 md:py-10 flex flex-col justify-center">
-              <h2 className="text-3xl md:text-5xl text-stone-50 lg:text-6xl font-bold">
+              <h2 className="text-[28px] text-stone-50 lg:text-[28px] font-bold">
                 STEP-01
               </h2>
               <h3 className="text-stone-200 text-xl">事前準備</h3>
@@ -517,7 +517,7 @@ export default function Home() {
                               id="prep-compat"
                               className="more-info scroll-mt-32"
                             >
-                              <p className="font-extrabold mb-6 text-xl">
+                              <p className="font-bold mb-6 text-xl">
                                 請確認您的手機同時具備 eSIM 相容性 以及
                                 電信商解鎖（無鎖機）
                               </p>
@@ -541,7 +541,7 @@ export default function Home() {
                               id="prep-unlock"
                               className="more-info mt-8 border-t border-gray-100 pt-8 pb-4 scroll-mt-32"
                             >
-                              <p className="font-extrabold mb-6 text-xl">
+                              <p className="font-bold mb-6 text-xl">
                                 如何確認我的 iPhone 是否已解鎖？
                               </p>
                               <div className="img-wrap">
@@ -636,7 +636,7 @@ export default function Home() {
         >
           <div className="w-full border border-gray-200 border-l-0">
             <div className="border-b border-gray-200 bg-[#1a5ad1] px-6 md:px-16 lg:px-20 py-8 md:py-10 flex flex-col justify-center">
-              <h1 className="text-3xl md:text-5xl text-stone-50 lg:text-6xl font-bold">
+              <h1 className="text-[28px] text-stone-50 lg:text-[28px] font-bold">
                 INSTALL
               </h1>
               <b className="mt-2 text-stone-400 text-sm md:text-base">
@@ -719,7 +719,7 @@ export default function Home() {
         >
           <div className="w-full border border-gray-200 border-l-0 bg-white">
             <div className="border-b border-gray-200 bg-[#1a5ad1] px-6 md:px-16 lg:px-20 py-8 md:py-10 flex flex-col justify-center">
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-stone-50">
+              <h1 className="text-[28px] font-bold text-stone-50">
                 SHOPEE
               </h1>
               <span className="mt-2 text-sm md:text-base text-stone-200">

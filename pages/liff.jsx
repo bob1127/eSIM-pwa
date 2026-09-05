@@ -91,7 +91,7 @@ export default function LiffEntryPage() {
         ) : null}
         <a
           href="/"
-          className="mt-8 text-[13px] font-semibold text-[#06C755] underline-offset-2 hover:underline"
+          className="mt-8 text-[13px] font-semibold text-[#067A38] underline-offset-2 hover:underline"
         >
           直接進入官網
         </a>

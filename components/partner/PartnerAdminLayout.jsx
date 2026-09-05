@@ -237,7 +237,7 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
             <MaterialIcon name="storefront" size={16} />
           </div>
           <span
-            className="font-black text-sm tracking-tight hidden sm:inline max-w-[140px] truncate"
+            className="font-bold text-sm tracking-tight hidden sm:inline max-w-[140px] truncate"
             style={{ color: SHOPIFY_UI.textPrimary }}
           >
             {brandText}
@@ -286,7 +286,7 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
               className="flex items-center gap-1 pl-0.5 pr-1.5 sm:pr-2 h-9 rounded-lg hover:bg-slate-100 transition"
             >
               <span
-                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-black shrink-0"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold shrink-0"
                 style={{ backgroundColor: SHOPIFY_UI.accentBg }}
               >
                 {initials}
@@ -356,7 +356,7 @@ export default function PartnerAdminLayout({ title, children, footerNotice }) {
           >
             <div className="flex items-center gap-2 px-1.5 py-1.5 rounded-lg">
               <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[11px] font-black shrink-0"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[11px] font-bold shrink-0"
                 style={{ backgroundColor: SHOPIFY_UI.accentBg }}
               >
                 J
@@ -603,7 +603,7 @@ export function StatCard({ label, value, sub, accent = false, onClick }) {
         {label}
       </p>
       <p
-        className={`text-xl sm:text-2xl font-black ${
+        className={`text-xl sm:text-[24px] font-bold ${
           accent ? "text-white" : "text-[#1a1a1a]"
         }`}
       >
@@ -641,7 +641,7 @@ export function StatusBanner({ title, message, status = "good" }) {
         />
       </div>
       <div className="min-w-0">
-        <p className="font-black text-base sm:text-lg">{title}</p>
+        <p className="font-bold text-base sm:text-lg">{title}</p>
         <p className="text-xs sm:text-sm text-white/80 mt-0.5 leading-relaxed">
           {message}
         </p>

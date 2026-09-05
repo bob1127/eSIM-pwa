@@ -230,7 +230,7 @@ const RegisterForm = ({ onSuccess, storeDomain }) => {
         <button
           type="submit"
           disabled={registering || !isCodeVerified}
-          className={`mt-4 w-full rounded-xl py-3.5 text-base font-black tracking-wide shadow-lg transition ${registering || !isCodeVerified ? "bg-white/30 text-white/60 cursor-not-allowed" : "bg-white text-[#1e3a8a] hover:bg-gray-50"}`}
+          className={`mt-4 w-full rounded-xl py-3.5 text-base font-bold tracking-wide shadow-lg transition ${registering || !isCodeVerified ? "bg-white/30 text-white/60 cursor-not-allowed" : "bg-white text-[#1e3a8a] hover:bg-gray-50"}`}
         >
           {registering ? "註冊中..." : "立即註冊"}
         </button>
@@ -253,7 +253,7 @@ const RegisterForm = ({ onSuccess, storeDomain }) => {
                 callbackUrl: `${window.location.origin}/p/${storeDomain}/account`,
               })
             }
-            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] py-3 text-[14px] font-bold text-white transition hover:brightness-105 shadow-sm"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#067A38] py-3 text-[14px] font-bold text-white transition hover:brightness-105 shadow-sm"
           >
             <LineIconSvg className="w-5 h-5" />
             LINE
@@ -325,7 +325,7 @@ const ForgotPasswordForm = ({ onClose }) => {
           <button
             type="submit"
             disabled={status === "sending"}
-            className="w-full bg-white text-[#1e3a8a] hover:bg-gray-50 font-black rounded-xl py-3.5 transition-colors"
+            className="w-full bg-white text-[#1e3a8a] hover:bg-gray-50 font-bold rounded-xl py-3.5 transition-colors"
           >
             {status === "sending" ? "發送中..." : "寄送重設連結"}
           </button>
@@ -457,7 +457,7 @@ export default function PartnerLoginRegisterPage({ store }) {
           <div className="absolute -top-20 -right-20 w-40 h-40 bg-[#0064e0] rounded-full blur-3xl opacity-50 pointer-events-none"></div>
 
           <div className="mb-8 text-center relative z-10">
-            <h1 className="text-3xl font-black tracking-tight text-white">
+            <h1 className="text-[28px] font-bold tracking-tight text-white">
               會員登入
             </h1>
             <p className="mt-2 text-sm text-blue-200 font-medium">
@@ -473,7 +473,7 @@ export default function PartnerLoginRegisterPage({ store }) {
                     setSelected("login");
                     setShowForgot(false);
                   }}
-                  className={`pb-3 text-sm font-black tracking-widest transition-all ${selected === "login" ? "text-white border-b-2 border-white" : "text-white/50 hover:text-white/80"}`}
+                  className={`pb-3 text-sm font-bold tracking-widest transition-all ${selected === "login" ? "text-white border-b-2 border-white" : "text-white/50 hover:text-white/80"}`}
                 >
                   登入
                 </button>
@@ -482,7 +482,7 @@ export default function PartnerLoginRegisterPage({ store }) {
                     setSelected("sign-up");
                     setShowForgot(false);
                   }}
-                  className={`pb-3 text-sm font-black tracking-widest transition-all ${selected === "sign-up" ? "text-white border-b-2 border-white" : "text-white/50 hover:text-white/80"}`}
+                  className={`pb-3 text-sm font-bold tracking-widest transition-all ${selected === "sign-up" ? "text-white border-b-2 border-white" : "text-white/50 hover:text-white/80"}`}
                 >
                   註冊
                 </button>
@@ -542,7 +542,7 @@ export default function PartnerLoginRegisterPage({ store }) {
                       <button
                         type="submit"
                         disabled={loggingIn}
-                        className={`mt-4 w-full rounded-xl bg-white py-3.5 text-base font-black text-[#1e3a8a] shadow-lg transition-all hover:bg-gray-50 ${loggingIn ? "opacity-60 cursor-not-allowed" : ""}`}
+                        className={`mt-4 w-full rounded-xl bg-white py-3.5 text-base font-bold text-[#1e3a8a] shadow-lg transition-all hover:bg-gray-50 ${loggingIn ? "opacity-60 cursor-not-allowed" : ""}`}
                       >
                         {loggingIn ? "登入中…" : "登入"}
                       </button>
@@ -580,7 +580,7 @@ export default function PartnerLoginRegisterPage({ store }) {
                               callbackUrl: `${window.location.origin}/p/${store.domain}/account`,
                             })
                           }
-                          className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] py-3 text-[14px] font-bold text-white transition hover:brightness-105 shadow-sm"
+                          className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#067A38] py-3 text-[14px] font-bold text-white transition hover:brightness-105 shadow-sm"
                         >
                           <LineIconSvg className="w-5 h-5" />
                           LINE
@@ -627,7 +627,7 @@ export default function PartnerLoginRegisterPage({ store }) {
                 </svg>
               </div>
               <div>
-                <p className="text-lg font-black text-emerald-300 tracking-wide mb-2">
+                <p className="text-lg font-bold text-emerald-300 tracking-wide mb-2">
                   登入成功！
                 </p>
                 <p className="text-sm text-blue-100 font-medium">

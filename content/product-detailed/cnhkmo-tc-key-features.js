@@ -50,16 +50,16 @@ export function cnhkmoTcTotalKeyFeatures() {
 export function cnhkmoTcUnlimKeyFeatures() {
   return pack(
     [
-      "本吃到飽方案：11 天起走電信／聯通／CSL／澳門電訊（約 10Mbps・新加坡 IP）；1～10 天為短天數香港 IP 線路。",
+      "本吃到飽方案：短／長天數皆走電信／聯通／CSL／澳門電訊（約 10Mbps・新加坡 IP・T+C）；短天數 1～10 天、長天數 11 天起。",
       "**基本介紹與特色**",
       "**市場地位：** 一卡三地，適合短住到長住。",
       "**覆蓋範圍：** 中國大陸、香港、澳門。",
-      "**網路速度：** 長天數約 10Mbps 吃到飽；短天數 FUP 不限流量。",
-      "**數據路由：** 長天數新加坡 IP；短天數香港 IP。",
-      "**本站方案：** 免 VPN 社群；長天數支援 ChatGPT／TikTok／Gemini。",
+      "**網路速度：** 約 10Mbps 吃到飽（FUP）。",
+      "**數據路由：** 新加坡 IP 漫遊。",
+      "**本站方案：** 免 VPN 社群；支援熱點與 ChatGPT／TikTok／Gemini。",
       "**使用注意：** 建議抵達後再啟用。",
     ],
-    "長天數進入 FUP 後測速多半約 7～12Mbps。短天數香港 IP 下 LINE／IG／FB 一般可免 VPN。僅供參考。",
+    "進入 FUP 後測速多半約 7～12Mbps。新加坡 IP 下 LINE／IG／FB／TikTok 一般可免 VPN。僅供參考。",
   );
 }
 

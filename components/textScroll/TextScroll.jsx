@@ -63,7 +63,7 @@ export default function Home() {
                 />
               
                 <div ref={slider} className={styles.slider}>
-                    <p className='text-rose-400 dark:text-slate-100 text-xl lg:text-2xl hidden md:block' ref={firstText}>Instant Helicobacter  Kit -
+                    <p className='text-rose-400 dark:text-slate-100 text-xl lg:text-[24px] hidden md:block' ref={firstText}>Instant Helicobacter  Kit -
 </p>
                     <p className='text-rose-400 hidden md:block dark:text-slate-100  hidden lg:block' ref={secondText}>Non-invasiveNon-invasive
 </p>

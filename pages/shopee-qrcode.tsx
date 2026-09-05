@@ -40,13 +40,13 @@ export default function ShopeeQRCodePage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-[#1C82E0] flex items-center justify-center px-4 py-16">
+      <div className="min-h-screen bg-[#1566B5] flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-4xl mx-auto flex flex-col lg:flex-row gap-8 text-white">
           {/* 左側：表單區 */}
           <div className="flex-1  bg-white/5 hover:bg-white/15 duration-300 border border-white/20 shadow-xl px-6 py-8 md:px-10 md:py-10 backdrop-blur-sm">
             {/* 標題 */}
             <div className="mb-8 text-center md:text-left">
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-wide">
+              <h1 className="text-[24px] md:text-[28px] font-semibold tracking-wide">
                 eSIM 蝦皮訂單兌換
               </h1>
               <p className="mt-2 text-xs md:text-sm text-white/70">
@@ -86,7 +86,7 @@ export default function ShopeeQRCodePage() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`mt-4 w-full rounded-full bg-white/95 py-2.5 text-sm font-semibold text-[#1C82E0] tracking-wide shadow-sm transition hover:bg-white ${
+                className={`mt-4 w-full rounded-full bg-white/95 py-2.5 text-sm font-semibold text-[#1566B5] tracking-wide shadow-sm transition hover:bg-white ${
                   loading ? "opacity-60 cursor-not-allowed" : ""
                 }`}
               >
@@ -95,8 +95,8 @@ export default function ShopeeQRCodePage() {
                     layout="inline"
                     size="xs"
                     label="處理中…"
-                    labelClassName="text-sm font-semibold text-[#1C82E0]"
-                    spinnerClassName="text-[#1C82E0]"
+                    labelClassName="text-sm font-semibold text-[#1566B5]"
+                    spinnerClassName="text-[#1566B5]"
                   />
                 ) : (
                   "產生 QRCode 並寄送"

@@ -30,7 +30,7 @@ const CountdownItem = ({ unit, text }) => {
       <div className="relative w-full overflow-hidden text-center">
         <span
           ref={ref}
-          className="block text-lg xl:text-2xl font-medium text-white md:text-4xl lg:text-6xl xl:text-7xl"
+          className="block text-lg xl:text-[24px] font-medium text-white md:text-[24px] lg:text-[28px]"
         >
           {time}
         </span>

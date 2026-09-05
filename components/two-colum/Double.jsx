@@ -58,7 +58,7 @@ export default function Index({ projects, reversed }) {
     >
       <div className="txt w-full  md:w-[50%] p-[15px]  lg:p-8">
         <div className="border-2 border-green-400">
-          <h1 className="text-black text-[40px]">特價商品，現實搶購 </h1>
+          <h1 className="text-black text-[28px]">特價商品，現實搶購 </h1>
           <p className="mt-3">
             Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorem,
             neque alias voluptates aliquam vitae officia fuga repudiandae fugit

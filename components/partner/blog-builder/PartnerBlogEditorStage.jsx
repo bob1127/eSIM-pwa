@@ -39,12 +39,12 @@ export default function PartnerBlogEditorStage({
                 className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <p className="absolute bottom-4 left-4 right-4 text-white text-lg sm:text-2xl font-bold leading-snug">
+              <p className="absolute bottom-4 left-4 right-4 text-white text-lg sm:text-[24px] font-bold leading-snug">
                 {meta.title || title || ""}
               </p>
             </div>
           ) : (
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-6">
+            <h1 className="text-xl sm:text-[24px] font-bold text-slate-900 mb-6">
               {meta?.title || title || "未命名文章"}
             </h1>
           )}

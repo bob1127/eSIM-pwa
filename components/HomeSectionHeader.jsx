@@ -44,7 +44,7 @@ export default function HomeSectionHeader({
             />
           </svg>
         </span>
-        <span className="text-[12px] sm:text-sm text-gray-800 font-medium leading-snug group-hover:text-[#1d5cc5] transition-colors">
+        <span className="text-[13px] sm:text-[14px] text-[#666666] font-normal leading-[1.5] group-hover:text-[#1d5cc5] transition-colors">
           {moreLabel}
         </span>
       </Link>
@@ -54,14 +54,14 @@ export default function HomeSectionHeader({
     <div className={`mb-5 lg:mb-7 ${className}`}>
       {eyebrow ? (
         <p
-          className="text-[13px] sm:text-sm font-bold tracking-wide"
+          className="text-[13px] sm:text-[14px] font-bold tracking-normal"
           style={{ color: ACCENT }}
         >
           {eyebrow}
         </p>
       ) : null}
       <div className="mt-1.5 flex items-center justify-between gap-3 sm:gap-6">
-        <h2 className="min-w-0 text-2xl sm:text-[28px] lg:text-[32px] font-black text-gray-900 tracking-tight leading-tight">
+        <h2 className="min-w-0 text-[22px] sm:text-[24px] lg:text-[28px] font-bold text-black tracking-normal leading-[1.35]">
           {title}
         </h2>
         {more}

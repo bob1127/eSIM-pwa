@@ -15,7 +15,7 @@ import {
   ChevronUp,
   LayoutDashboard,
 } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useCart } from "@/components/context/CartContext";
 import NavbarSiteSearch from "@/components/Navbar/NavbarSiteSearch";
 import { supabase } from "@/lib/supabaseClient";
@@ -65,6 +65,22 @@ function useShopMemberAuth() {
     null;
 
   return { isLoggedIn, userName, userImage };
+}
+
+async function shopMemberLogout() {
+  try {
+    await supabase.auth.signOut();
+  } catch {
+    /* ignore */
+  }
+  try {
+    await signOut({ redirect: false });
+  } catch {
+    /* ignore */
+  }
+  if (typeof window !== "undefined") {
+    window.location.href = "/shop/";
+  }
 }
 
 function MemberAvatarIcon({ size = 18, isLoggedIn, userImage, userName }) {
@@ -131,19 +147,6 @@ function MemberNavControl({
     );
   }
 
-  if (!isPartnerNav) {
-    return (
-      <Link
-        href={loginHref}
-        className={memberBtnClass}
-        aria-label={memberAria}
-        title={userName}
-      >
-        {memberIcon}
-      </Link>
-    );
-  }
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -165,15 +168,43 @@ function MemberNavControl({
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push(loginHref)}>
-            <User className="size-4" />
-            會員後台
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push(partnerAdminHref)}>
-            <LayoutDashboard className="size-4" />
-            商店後台
-          </DropdownMenuItem>
+          {isPartnerNav ? (
+            <>
+              <DropdownMenuItem onClick={() => router.push(loginHref)}>
+                <User className="size-4" />
+                會員後台
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push(partnerAdminHref)}>
+                <LayoutDashboard className="size-4" />
+                商店後台
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <>
+              <DropdownMenuItem onClick={() => router.push("/account")}>
+                <User className="size-4" />
+                會員中心 / 訂單
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/partner/dashboard")}>
+                <LayoutDashboard className="size-4" />
+                合作夥伴後台
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={() => {
+            const ok =
+              typeof window !== "undefined" &&
+              window.confirm("確定要登出嗎？");
+            if (!ok) return;
+            shopMemberLogout();
+          }}
+        >
+          登出
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -797,7 +828,7 @@ function PartnerEsimDropdown({ homeHref, countries = [], visible }) {
     >
       <div className={`${CONTAINER} py-5 sm:py-6`}>
         <div className="flex items-center justify-between gap-3 mb-4">
-          <p className="text-[11px] font-black tracking-[0.14em] text-slate-400 uppercase">
+          <p className="text-[11px] font-bold tracking-[0.14em] text-slate-400 uppercase">
             eSIM 方案
           </p>
           <Link
@@ -810,7 +841,7 @@ function PartnerEsimDropdown({ homeHref, countries = [], visible }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1">
           <Link
             href={`${homeHref}#plans`}
-            className="rounded-lg px-3 py-2.5 text-[13px] font-black text-slate-900 bg-slate-50 hover:bg-[#EEF3FF] hover:text-[#1E4AD1] transition-colors"
+            className="rounded-lg px-3 py-2.5 text-[13px] font-bold text-slate-900 bg-slate-50 hover:bg-[#EEF3FF] hover:text-[#1E4AD1] transition-colors"
           >
             全部方案
           </Link>
@@ -1055,7 +1086,7 @@ export default function ShopNavbar({
                   >
                     <button
                       type="button"
-                      className={`relative h-full flex items-center gap-1 px-2.5 xl:px-3 text-[13px] font-black whitespace-nowrap transition-colors ${
+                      className={`relative h-full flex items-center gap-1 px-2.5 xl:px-3 text-[13px] font-bold whitespace-nowrap transition-colors ${
                         activeKey === PARTNER_ESIM_MENU_KEY
                           ? "text-[#1E4AD1]"
                           : "text-slate-800 hover:text-[#1E4AD1]"
@@ -1229,7 +1260,7 @@ export default function ShopNavbar({
                 }`}
               >
                 {isPartnerNav ? (
-                  <span className="shrink-0 text-[11px] font-black tracking-[0.12em] text-slate-400 pr-3 border-r border-slate-200">
+                  <span className="shrink-0 text-[11px] font-bold tracking-[0.12em] text-slate-400 pr-3 border-r border-slate-200">
                     商品分類
                   </span>
                 ) : null}
@@ -1237,7 +1268,7 @@ export default function ShopNavbar({
                   {isPartnerNav ? (
                     <Link
                       href={`${homeHref}#plans`}
-                      className="relative h-full flex items-center px-3.5 text-[13px] font-black text-slate-900 whitespace-nowrap hover:text-slate-700"
+                      className="relative h-full flex items-center px-3.5 text-[13px] font-bold text-slate-900 whitespace-nowrap hover:text-slate-700"
                     >
                       全部方案
                     </Link>
@@ -1368,7 +1399,7 @@ export default function ShopNavbar({
               <nav className="flex-1 py-2 overflow-y-auto">
                 {isPartnerNav ? (
                   <>
-                    <p className="px-4 pt-2 pb-1 text-[10px] font-black tracking-[0.14em] text-[#1E4AD1]">
+                    <p className="px-4 pt-2 pb-1 text-[10px] font-bold tracking-[0.14em] text-[#1E4AD1]">
                       商品分類
                     </p>
                     <div>
@@ -1384,7 +1415,7 @@ export default function ShopNavbar({
                         }
                         aria-expanded={mobileExpanded === PARTNER_ESIM_MENU_KEY}
                       >
-                        <span className="text-[14px] font-black text-[#1E4AD1]">
+                        <span className="text-[14px] font-bold text-[#1E4AD1]">
                           eSIM 方案
                         </span>
                         {mobileExpanded === PARTNER_ESIM_MENU_KEY ? (
@@ -1482,7 +1513,7 @@ export default function ShopNavbar({
                 )}
                 <div className="border-t border-slate-100 mt-2 pt-2">
                   {isPartnerNav ? (
-                    <p className="px-4 pt-1 pb-1 text-[10px] font-black tracking-[0.14em] text-slate-400">
+                    <p className="px-4 pt-1 pb-1 text-[10px] font-bold tracking-[0.14em] text-slate-400">
                       本店服務
                     </p>
                   ) : null}
@@ -1522,6 +1553,58 @@ export default function ShopNavbar({
                       <LayoutDashboard className="size-5" />
                       商店後台
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const ok =
+                          typeof window !== "undefined" &&
+                          window.confirm("確定要登出嗎？");
+                        if (!ok) return;
+                        setMobileOpen(false);
+                        shopMemberLogout();
+                      }}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-red-600 text-sm font-bold justify-center hover:bg-red-50"
+                    >
+                      登出
+                    </button>
+                  </>
+                ) : isLoggedIn ? (
+                  <>
+                    <Link
+                      href="/account"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 bg-black text-white text-sm font-bold justify-center"
+                    >
+                      <MemberAvatarIcon
+                        size={20}
+                        isLoggedIn={isLoggedIn}
+                        userImage={userImage}
+                        userName={userName}
+                      />
+                      會員中心 / 訂單
+                    </Link>
+                    <Link
+                      href="/partner/dashboard"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 border border-slate-200 text-slate-800 text-sm font-bold justify-center hover:bg-slate-50"
+                    >
+                      <LayoutDashboard className="size-5" />
+                      合作夥伴後台
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const ok =
+                          typeof window !== "undefined" &&
+                          window.confirm("確定要登出嗎？");
+                        if (!ok) return;
+                        setMobileOpen(false);
+                        shopMemberLogout();
+                      }}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-red-600 text-sm font-bold justify-center hover:bg-red-50"
+                    >
+                      登出
+                    </button>
                   </>
                 ) : (
                   <Link
@@ -1535,7 +1618,7 @@ export default function ShopNavbar({
                       userImage={userImage}
                       userName={userName}
                     />
-                    {isLoggedIn ? "會員中心" : "登入 / 註冊"}
+                    登入 / 註冊
                   </Link>
                 )}
               </div>

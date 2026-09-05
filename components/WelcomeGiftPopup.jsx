@@ -101,7 +101,7 @@ export default function WelcomeGiftPopup() {
 
             <h2
               id="welcome-gift-title"
-              className="text-[22px] font-black text-slate-900 leading-snug tracking-tight"
+              className="text-[22px] font-bold text-slate-900 leading-snug tracking-tight"
             >
               為您贈上好禮！
               <br />

@@ -202,7 +202,7 @@ export default function PartnerCategoryView({
           {/* 右側內容 */}
           <div className="flex-1 min-w-0">
             <header className="pb-6 border-b border-slate-200">
-              <h1 className="text-[28px] sm:text-[34px] font-bold text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-[28px] font-bold text-slate-900 tracking-tight leading-tight">
                 {meta.title}
               </h1>
               <p className="mt-2 text-[13px] sm:text-[14px] text-slate-500 leading-relaxed max-w-2xl">

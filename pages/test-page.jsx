@@ -30,7 +30,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-white text-slate-900 font-sans">
       {/* --- 1. 導覽列 Navbar --- */}
       <nav className="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto border-b border-gray-50">
-        <div className="text-2xl font-black tracking-tighter text-blue-600">
+        <div className="text-[24px] font-bold tracking-tighter text-blue-600">
           JEKO eSIM
         </div>
         <div className="hidden md:flex space-x-8 font-medium text-gray-600">
@@ -58,7 +58,7 @@ export default function HomePage() {
           <span className="bg-blue-100 text-blue-700 px-4 py-1 rounded-full text-sm font-bold uppercase tracking-widest">
             Global Connection
           </span>
-          <h1 className="text-5xl md:text-7xl font-black mt-6 mb-8 leading-tight">
+          <h1 className="text-[28px] font-bold mt-6 mb-8 leading-tight">
             環遊世界，
             <br />
             <span className="text-blue-600">網路不間斷</span>
@@ -68,7 +68,7 @@ export default function HomePage() {
             高速方案。免換卡、免排隊、即買即用，讓您的旅程更輕鬆。
           </p>
           <div className="flex justify-center space-x-4">
-            <button className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-lg shadow-xl shadow-blue-200 hover:scale-105 transition">
+            <button className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-xl shadow-blue-200 hover:scale-105 transition">
               立即挑選方案
             </button>
           </div>
@@ -79,7 +79,7 @@ export default function HomePage() {
       <section className="px-8 py-20 max-w-7xl mx-auto" id="shop">
         <div className="flex justify-between items-end mb-12">
           <div>
-            <h2 className="text-3xl font-bold">熱門目的地</h2>
+            <h2 className="text-[28px] font-bold">熱門目的地</h2>
             <p className="text-gray-400 mt-2">根據台灣旅人最愛的出國選擇</p>
           </div>
           <button className="text-blue-600 font-bold hover:underline">
@@ -114,7 +114,7 @@ export default function HomePage() {
                   {product.description}
                 </p>
                 <div className="flex justify-between items-center pt-4 border-t border-gray-50">
-                  <span className="text-xl font-black text-slate-900">
+                  <span className="text-xl font-bold text-slate-900">
                     NT$ {product.price}
                   </span>
                   <button
@@ -134,7 +134,7 @@ export default function HomePage() {
       <footer className="bg-slate-950 text-white py-20 px-8">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="col-span-1 md:col-span-2">
-            <h3 className="text-2xl font-black mb-6">JEKO eSIM</h3>
+            <h3 className="text-[24px] font-bold mb-6">JEKO eSIM</h3>
             <p className="text-slate-400 max-w-xs">
               極客數位企業社旗下品牌。我們致力於提供全球旅人最穩定、最快速的數位
               SIM 卡體驗。

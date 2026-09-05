@@ -279,7 +279,7 @@ export default function LineIccidPreviewPage() {
       <Layout>
         <div className="min-h-[100dvh] bg-[#F5F7FA]">
           <div className="sticky top-0 z-[900] border-b border-stone-300 bg-white/95 px-4 py-3 backdrop-blur">
-            <p className="text-[13px] font-black text-stone-900">
+            <p className="text-[13px] font-bold text-stone-900">
               流量提醒 · 流程預覽（假資料，邏輯同正式站）
             </p>
             <p className="mt-0.5 text-[11px] text-stone-500">

@@ -85,7 +85,7 @@ export default function DeleteStoreSection({ store, onDeleted }) {
   return (
     <>
       <div className="border-t border-red-100 pt-6 mt-2">
-        <h2 className="text-sm font-black text-red-700 mb-1">危險區域</h2>
+        <h2 className="text-sm font-bold text-red-700 mb-1">危險區域</h2>
 
         {isDeleted ? (
           <p className="text-xs text-slate-500 leading-relaxed">

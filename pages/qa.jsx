@@ -42,7 +42,7 @@ export default function QaPage() {
           <div id={`faq-${cat.id}`} className="space-y-5 scroll-mt-24">
             {cat.items.map((item) => (
               <div key={item.question}>
-                <h3 className="text-[14px] font-black text-slate-900 mb-1.5">
+                <h3 className="text-[14px] font-bold text-slate-900 mb-1.5">
                   {item.question}
                 </h3>
                 <p className="text-[13px] text-slate-600 leading-relaxed">

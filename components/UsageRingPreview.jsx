@@ -109,7 +109,7 @@ export default function UsageRingPreview({
           <p className="mb-2 text-center text-[11px] font-bold tracking-wide text-slate-400">
             使用流量
           </p>
-          <p className="mb-3 text-center text-[32px] font-black leading-none tracking-tight text-[#1E4AD1]">
+          <p className="mb-3 text-center text-[28px] font-bold leading-none tracking-tight text-[#1E4AD1]">
             {formatMb(used) || "0 MB"}
           </p>
         </>
@@ -142,7 +142,7 @@ export default function UsageRingPreview({
                 <p className="text-[11px] font-bold tracking-wide text-slate-400">
                   吃到飽
                 </p>
-                <p className="mt-1 text-[13px] font-black text-slate-500">
+                <p className="mt-1 text-[13px] font-bold text-slate-500">
                   無固定額度
                 </p>
               </>
@@ -151,10 +151,10 @@ export default function UsageRingPreview({
                 <p className="text-[10px] font-bold tracking-wide text-slate-400">
                   剩餘流量
                 </p>
-                <p className="mt-0.5 text-[22px] font-black leading-none tracking-tight text-slate-900">
+                <p className="mt-0.5 text-[22px] font-bold leading-none tracking-tight text-slate-900">
                   {formatMb(remaining) || "—"}
                 </p>
-                <p className="mt-1 text-[12px] font-black text-[#1E4AD1]">
+                <p className="mt-1 text-[12px] font-bold text-[#1E4AD1]">
                   {total > 0 ? `${Math.round(pct)}%` : "—"}
                 </p>
               </>

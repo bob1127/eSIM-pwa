@@ -55,7 +55,7 @@ export default function BindSuccessSheet({
           />
           <h2
             id="bind-success-title"
-            className="mt-2 text-[28px] font-black tracking-tight text-[#111111]"
+            className="mt-2 text-[28px] font-bold tracking-tight text-[#111111]"
           >
             {title}
           </h2>

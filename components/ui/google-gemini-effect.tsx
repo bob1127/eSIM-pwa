@@ -21,7 +21,7 @@ export const GoogleGeminiEffect = ({
 }) => {
   return (
     <div className={cn("sticky h-screen overflow-hidden top-80", className)}>
-      <p className="text-lg md:text-7xl font-normal pb-4 text-center bg-clip-text text-transparent bg-gradient-to-b from-neutral-100 to-neutral-300">
+      <p className="text-lg md:text-[28px] font-normal pb-4 text-center bg-clip-text text-transparent bg-gradient-to-b from-neutral-100 to-neutral-300">
         {title || `你的每趟旅程，我都在線`}
       </p>
       <p className="text-xs md:text-xl font-normal text-center text-neutral-400 mt-4 max-w-lg mx-auto">

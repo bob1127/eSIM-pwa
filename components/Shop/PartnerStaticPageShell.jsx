@@ -41,7 +41,7 @@ export default function PartnerStaticPageShell({
           <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#1E4AD1] mb-2">
             {brand}
           </p>
-          <h1 className="text-[26px] sm:text-[32px] font-bold text-slate-900 leading-snug">
+          <h1 className="text-[26px] sm:text-[28px] font-bold text-slate-900 leading-snug">
             {title}
           </h1>
           {description ? (

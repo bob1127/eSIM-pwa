@@ -40,7 +40,7 @@ const TopCards = () => {
                         受試ID(編號):
                     </span>
                     <div className="bottom mt-4">
-                        <p className='text-2xl max-number font-bold'>A123239</p>
+                        <p className='text-[24px] max-number font-bold'>A123239</p>
                     </div>
                 </div>
             </div>
@@ -50,7 +50,7 @@ const TopCards = () => {
                         最高血糖值:
                     </span>
                     <div className="bottom mt-4">
-                        <p className='text-2xl max-number font-bold'>{maxCurrentValue}</p>
+                        <p className='text-[24px] max-number font-bold'>{maxCurrentValue}</p>
                         <p className='text-gray-600'>mg/dl</p>
                     </div>
                 </div>

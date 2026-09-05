@@ -94,7 +94,7 @@ function GuestRefundForm() {
     return (
       <div className="p-8 text-center bg-white border-t border-slate-200">
         <MaterialIcon name="mark_email_read" size={48} className="text-[#2b579a] mx-auto mb-4" />
-        <h2 className="text-lg font-black text-[#1e3a5f] mb-2">退換款聯繫已送出</h2>
+        <h2 className="text-lg font-bold text-[#1e3a5f] mb-2">退換款聯繫已送出</h2>
         <p className="text-sm text-slate-500 max-w-md mx-auto">
           客服將核對訂單後以 Email 回覆。若您有會員帳號，建議登入後至會員中心可更快追蹤進度。
         </p>
@@ -316,7 +316,7 @@ export default function RefundContactTab() {
       )}
 
       <div className="px-4 sm:px-6 py-4 border-b border-slate-200 bg-white/80">
-        <h3 className="text-sm font-black text-[#1e3a5f]">
+        <h3 className="text-sm font-bold text-[#1e3a5f]">
           {status === "authenticated" ? "或填寫表單由客服協助" : "退換款聯繫表單"}
         </h3>
         <p className="text-xs text-slate-400 mt-0.5">

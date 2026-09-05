@@ -103,7 +103,7 @@ export default function IijApnReminderModal({
                     APN 設定值
                   </p>
                   <p
-                    className={`mt-1 text-xl font-black tracking-wide select-all ${
+                    className={`mt-1 text-xl font-bold tracking-wide select-all ${
                       squareCorners ? "text-[#1E4AD1]" : "text-[#0A6CD0]"
                     }`}
                   >

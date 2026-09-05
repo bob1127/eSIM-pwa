@@ -386,7 +386,7 @@ export function ReportPeriodBar({
     <div className="bg-white border-b border-slate-200 px-4 py-3 sm:px-5 flex flex-col gap-3">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 sm:flex-wrap min-w-0">
-          <span className="text-xs sm:text-sm font-black text-slate-800 border border-slate-300 px-3 py-2 sm:px-4 sm:py-1.5 bg-white rounded-lg sm:rounded-none w-fit">
+          <span className="text-xs sm:text-sm font-bold text-slate-800 border border-slate-300 px-3 py-2 sm:px-4 sm:py-1.5 bg-white rounded-lg sm:rounded-none w-fit">
             報表期間
           </span>
           {analyticsMode ? (
@@ -396,7 +396,7 @@ export function ReportPeriodBar({
                   key={g.id}
                   type="button"
                   onClick={() => onGranularityChange(g.id)}
-                  className={`min-w-[2.5rem] px-3 py-1.5 text-xs font-black rounded-md transition ${
+                  className={`min-w-[2.5rem] px-3 py-1.5 text-xs font-bold rounded-md transition ${
                     granularity === g.id
                       ? "bg-[#1E4AD1] text-white shadow-sm"
                       : "text-slate-600 hover:text-slate-900"
@@ -440,7 +440,7 @@ export function ReportPeriodBar({
         <button
           type="button"
           onClick={onExport || (() => window.print())}
-          className="inline-flex items-center justify-center gap-2 font-black text-sm px-4 py-2.5 sm:px-5 sm:py-2 shadow-sm transition shrink-0 text-[#111] hover:brightness-95 rounded-lg sm:rounded-none w-full sm:w-auto lg:w-auto"
+          className="inline-flex items-center justify-center gap-2 font-bold text-sm px-4 py-2.5 sm:px-5 sm:py-2 shadow-sm transition shrink-0 text-[#111] hover:brightness-95 rounded-lg sm:rounded-none w-full sm:w-auto lg:w-auto"
           style={{ backgroundColor: PARTNER_UI.yellow }}
         >
           <MaterialIcon name="download" size={18} />
@@ -476,7 +476,7 @@ export function DobermanStatusBanner({ title, message, loading }) {
         />
       </div>
       <div className="min-w-0">
-        <p className="text-lg sm:text-2xl font-black text-white tracking-wide leading-snug">
+        <p className="text-lg sm:text-[24px] font-bold text-white tracking-wide leading-snug">
           {loading ? (
             <span className="inline-flex items-center gap-2">
               <QuarterRing size="sm" className="text-white" />
@@ -516,7 +516,7 @@ export function DobermanPanel({ icon, title, rows, children, href, help }) {
               )}
               <span className="truncate">{row.label}</span>
             </span>
-            <span className="text-xl sm:text-2xl font-black text-[#1E4AD1] tabular-nums shrink-0">
+            <span className="text-xl sm:text-[24px] font-bold text-[#1E4AD1] tabular-nums shrink-0">
               {row.value}
               {row.unit && (
                 <span className="text-xs font-bold text-slate-500 ml-1">
@@ -550,7 +550,7 @@ export function DobermanTopCard({
             {topLabel}
           </p>
         </div>
-        <p className="text-xl sm:text-2xl font-black text-[#1E4AD1] tabular-nums shrink-0">
+        <p className="text-xl sm:text-[24px] font-bold text-[#1E4AD1] tabular-nums shrink-0">
           {count}
           <span className="text-xs font-bold text-slate-500 ml-0.5">
             {countUnit}

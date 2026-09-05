@@ -148,8 +148,8 @@ function EsimProfileCard({
       <h2
         className={
           compact
-            ? "mb-1 text-base font-extrabold text-slate-900"
-            : "mb-1 text-lg font-extrabold text-slate-900"
+            ? "mb-1 text-base font-bold text-slate-900"
+            : "mb-1 text-lg font-bold text-slate-900"
         }
       >
         {profile.name || `eSIM #${index + 1}`}
@@ -234,7 +234,7 @@ function EsimProfileCard({
           className="flex w-full items-center justify-between gap-3 text-left"
           aria-expanded={settingsOpen}
         >
-          <h3 className="text-sm font-extrabold text-slate-900">
+          <h3 className="text-sm font-bold text-slate-900">
             此 eSIM 相關設定
           </h3>
           <span className="shrink-0 text-xs font-bold text-[#1a56db]">
@@ -815,7 +815,7 @@ export default function ThankYouPage() {
             <div className="mb-4 flex items-start justify-between gap-3">
               <h2
                 id="esim-guide-title"
-                className="text-base font-extrabold text-slate-900"
+                className="text-base font-bold text-slate-900"
               >
                 如何安裝使用 eSIM
               </h2>
@@ -839,7 +839,7 @@ export default function ThankYouPage() {
               </li>
             </ol>
 
-            <h3 className="mb-3 text-sm font-extrabold text-slate-900">
+            <h3 className="mb-3 text-sm font-bold text-slate-900">
               貼心提示
             </h3>
             <ol className="mb-5 list-decimal space-y-1.5 pl-5 text-xs leading-relaxed text-slate-600">

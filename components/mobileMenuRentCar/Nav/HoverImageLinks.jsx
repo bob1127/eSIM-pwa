@@ -51,7 +51,7 @@ const Link = ({ heading, imgSrc, subheading, href }) => {
             staggerChildren: 0.075,
             delayChildren: 0.25,
           }}
-          className="relative z-10 block text-4xl font-bold text-neutral-500 transition-colors duration-500 group-hover:text-neutral-50 md:text-6xl"
+          className="relative z-10 block text-[24px] font-bold text-neutral-500 transition-colors duration-500 group-hover:text-neutral-50 md:text-[28px]"
         >
           {heading.split("").map((l, i) => (
             <motion.span
@@ -60,7 +60,7 @@ const Link = ({ heading, imgSrc, subheading, href }) => {
                 whileHover: { x: 16 },
               }}
               transition={{ type: "spring" }}
-              className="inline-block text-[30px] font-extrabold"
+              className="inline-block text-[30px] font-bold"
               key={i}
             >
               {l}
@@ -103,7 +103,7 @@ const Link = ({ heading, imgSrc, subheading, href }) => {
         transition={{ type: "spring" }}
         className="relative z-10 p-4"
       >
-        <FiArrowRight className="text-5xl text-neutral-50" />
+        <FiArrowRight className="text-[28px] text-neutral-50" />
       </motion.div>
     </motion.a>
   );

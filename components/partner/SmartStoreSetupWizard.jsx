@@ -323,7 +323,7 @@ export default function SmartStoreSetupWizard({
           />
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-black mt-0.5">
+              <h2 className="text-lg font-bold mt-0.5">
                 {STEPS[step]?.title || "智慧開立商店"}
               </h2>
               <p className="text-xs text-blue-100 mt-1">
@@ -335,7 +335,7 @@ export default function SmartStoreSetupWizard({
               <button
                 type="button"
                 onClick={onClose}
-                className="text-white/80 hover:text-white text-2xl leading-none px-1"
+                className="text-white/80 hover:text-white text-[24px] leading-none px-1"
                 aria-label="關閉"
               >
                 ×
@@ -377,7 +377,7 @@ export default function SmartStoreSetupWizard({
                   borderColor: "rgba(250,222,43,0.5)",
                 }}
               >
-                <p className="text-sm font-black text-[#1E4AD1]">
+                <p className="text-sm font-bold text-[#1E4AD1]">
                   歡迎使用智慧選品開立商店
                 </p>
                 <p className="text-sm text-slate-600 mt-2 leading-relaxed">
@@ -508,7 +508,7 @@ export default function SmartStoreSetupWizard({
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <p className="text-sm text-slate-600">
                   已選{" "}
-                  <span className="font-black text-[#1E4AD1]">
+                  <span className="font-bold text-[#1E4AD1]">
                     {selectedIds.length}
                   </span>{" "}
                   款
@@ -635,7 +635,7 @@ export default function SmartStoreSetupWizard({
             <div className="py-6 text-center space-y-4">
               {phase === "idle" || phase === "error" ? (
                 <>
-                  <h3 className="text-xl font-black text-[#1E4AD1]">
+                  <h3 className="text-xl font-bold text-[#1E4AD1]">
                     準備好了嗎？開始生成商店
                   </h3>
                   <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
@@ -654,7 +654,7 @@ export default function SmartStoreSetupWizard({
                       size="xl"
                       className="absolute inset-0 h-20 w-20 text-[#1E4AD1]"
                     />
-                    <div className="absolute inset-0 flex items-center justify-center text-sm font-black text-[#1E4AD1]">
+                    <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[#1E4AD1]">
                       {progress}%
                     </div>
                   </div>
@@ -685,7 +685,7 @@ export default function SmartStoreSetupWizard({
                       className="text-[#1E4AD1]"
                     />
                   </div>
-                  <h3 className="text-xl font-black text-[#1E4AD1]">
+                  <h3 className="text-xl font-bold text-[#1E4AD1]">
                     成功建立商店！
                   </h3>
                   <p className="text-sm text-slate-500">
@@ -714,7 +714,7 @@ export default function SmartStoreSetupWizard({
                 onClick={() =>
                   setStep((s) => Math.min(s + 1, STEPS.length - 1))
                 }
-                className="px-5 py-2.5 rounded-full text-sm font-black text-white disabled:opacity-40 min-h-[44px]"
+                className="px-5 py-2.5 rounded-full text-sm font-bold text-white disabled:opacity-40 min-h-[44px]"
                 style={{ backgroundColor: PARTNER_UI.navy }}
               >
                 下一步
@@ -724,7 +724,7 @@ export default function SmartStoreSetupWizard({
                 type="button"
                 disabled={!selectedIds.length}
                 onClick={runGenerate}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-black text-[#111] disabled:opacity-40 min-h-[44px]"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold text-[#111] disabled:opacity-40 min-h-[44px]"
                 style={{ backgroundColor: PARTNER_UI.yellow }}
               >
                 <MaterialIcon name="auto_awesome" size={18} />

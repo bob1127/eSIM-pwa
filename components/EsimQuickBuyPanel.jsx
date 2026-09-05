@@ -382,7 +382,7 @@ function ListingProductCard({ product, onSelect }) {
             {tags.join(" · ")}
           </p>
         ) : null}
-        <p className="mt-auto pt-1.5 text-[17px] font-black tabular-nums leading-none text-[#0071EB]">
+        <p className="mt-auto pt-1.5 text-[17px] font-bold tabular-nums leading-none text-[#0071EB]">
           {formatPrice(product.minPrice)}
           <span className="ml-0.5 text-[12px] font-bold">起</span>
         </p>
@@ -483,7 +483,7 @@ function TelecomList({ product, onSelect }) {
               )}
             </div>
             <div className="shrink-0 text-right">
-              <p className="text-[15px] font-black text-[#0071EB]">
+              <p className="text-[15px] font-bold text-[#0071EB]">
                 {min > 0 ? `${formatPrice(min)}起` : ""}
               </p>
               <MaterialIcon
@@ -698,7 +698,7 @@ function CheckoutSpecPanel({
             <p className="mt-0.5 text-[13px] font-bold text-[#1E4AD1]">
               {telecom}
             </p>
-            <p className="mt-1.5 text-[20px] font-black text-[#1E4AD1]">
+            <p className="mt-1.5 text-[20px] font-bold text-[#1E4AD1]">
               {formatPrice(selectedVariant?.price)}
             </p>
           </div>
@@ -1089,7 +1089,7 @@ export default function EsimQuickBuyPanel({ onCloseSheet } = {}) {
         ) : (
           <span className="w-[52px]" />
         )}
-        <p className="min-w-0 flex-1 truncate text-center text-[17px] font-black text-slate-900">
+        <p className="min-w-0 flex-1 truncate text-center text-[17px] font-bold text-slate-900">
           {title}
         </p>
         <span className="w-[52px]" />

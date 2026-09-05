@@ -146,7 +146,7 @@ export default function CartRelatedEsimCarousel({ cartItems = [] }) {
                     {p.subtitle}
                   </p>
                 ) : null}
-                <p className="mt-1.5 text-[13px] md:text-[14px] font-black tabular-nums text-[#0071EB]">
+                <p className="mt-1.5 text-[13px] md:text-[14px] font-bold tabular-nums text-[#0071EB]">
                   {formatPrice(p.minPrice)}
                 </p>
               </div>

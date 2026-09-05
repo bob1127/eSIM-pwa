@@ -21,13 +21,13 @@ function DigitReel({ value, spinning }) {
     : String(value ?? "0");
 
   return (
-    <div className="relative flex-1 h-full min-w-0 flex items-center justify-center">
+    <div className="relative flex-1 h-full min-w-0 flex items-center justify-center overflow-hidden">
       <span
-        className={`font-black select-none leading-none ${
+        className={`font-bold select-none leading-none ${
           spinning ? "blur-[1.5px] opacity-90" : ""
         }`}
         style={{
-          fontSize: "clamp(1.9rem, 7.5vw, 3.5rem)",
+          fontSize: "clamp(1.35rem, 6.2vw, 3.5rem)",
           color: "#6b0008",
           textShadow:
             "0 1px 0 rgba(255,255,255,0.55), 0 2px 4px rgba(0,0,0,0.25)",
@@ -41,6 +41,7 @@ function DigitReel({ value, spinning }) {
 
 /**
  * 拉霸機：僅機身 +「拉一下！」；中獎寫入會員優惠券（需登入）
+ * 每位會員終身限抽一次
  */
 export default function PromoLotteryMachine({ className = "" }) {
   const { token, user: supabaseUser, loading: supabaseLoading } = useUser();
@@ -56,14 +57,9 @@ export default function PromoLotteryMachine({ className = "" }) {
   const [result, setResult] = useState(null);
   const [savedCoupon, setSavedCoupon] = useState(null);
   const [message, setMessage] = useState("");
+  const [alreadyPlayed, setAlreadyPlayed] = useState(false);
   const dragRef = useRef({ active: false, startY: 0, pull: 0 });
   const tickRef = useRef(null);
-
-  useEffect(() => {
-    return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
-    };
-  }, []);
 
   const authHeaders = useCallback(() => {
     const headers = { "Content-Type": "application/json" };
@@ -71,8 +67,44 @@ export default function PromoLotteryMachine({ className = "" }) {
     return headers;
   }, [token]);
 
+  useEffect(() => {
+    return () => {
+      if (tickRef.current) clearInterval(tickRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!authReady || !isLoggedIn) {
+      setAlreadyPlayed(false);
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/promo/lottery-spin", {
+          method: "GET",
+          headers: authHeaders(),
+          credentials: "include",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled || !res.ok || !data.success) return;
+        if (data.played) {
+          setAlreadyPlayed(true);
+          setMessage("每位會員限抽一次，您已參加過本活動。");
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, isLoggedIn, authHeaders]);
+
+  const canSpin = isLoggedIn && !spinning && !alreadyPlayed;
+
   const runSpin = useCallback(async () => {
-    if (spinning) return;
+    if (spinning || alreadyPlayed) return;
     if (!isLoggedIn) {
       setMessage("請先登入會員才能參加拉霸。");
       return;
@@ -98,6 +130,7 @@ export default function PromoLotteryMachine({ className = "" }) {
     const spinStarted = Date.now();
     let apiResult = null;
     let apiError = null;
+    let playedAlready = false;
 
     try {
       const res = await fetch("/api/promo/lottery-spin", {
@@ -109,6 +142,7 @@ export default function PromoLotteryMachine({ className = "" }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
         apiError = data.error || "抽獎失敗";
+        playedAlready = Boolean(data.alreadyPlayed);
       } else {
         apiResult = data;
       }
@@ -126,9 +160,11 @@ export default function PromoLotteryMachine({ className = "" }) {
         setDigits(["0", "0", "0", "0"]);
         setResult(null);
         setMessage(apiError || "抽獎失敗，請稍後再試");
+        if (playedAlready) setAlreadyPlayed(true);
         return;
       }
 
+      setAlreadyPlayed(!LOTTERY_TEST_UNLIMITED);
       const prize = apiResult.prize;
       setResult(prize);
 
@@ -146,14 +182,14 @@ export default function PromoLotteryMachine({ className = "" }) {
         setMessage(
           LOTTERY_TEST_UNLIMITED
             ? "下次加油！"
-            : "下次加油！明天再來。",
+            : "下次加油！每位會員限抽一次。",
         );
       }
     }, wait);
-  }, [spinning, isLoggedIn, authHeaders]);
+  }, [spinning, alreadyPlayed, isLoggedIn, authHeaders]);
 
   const onPointerDown = (e) => {
-    if (spinning || !isLoggedIn) return;
+    if (!canSpin) return;
     dragRef.current = { active: true, startY: e.clientY, pull: 0 };
     setDragging(true);
     e.currentTarget.setPointerCapture?.(e.pointerId);
@@ -181,20 +217,20 @@ export default function PromoLotteryMachine({ className = "" }) {
 
   return (
     <section
-      className={`w-full overflow-visible py-9 sm:py-12 ${className}`}
+      className={`w-full overflow-x-hidden py-8 sm:py-12 ${className}`}
       style={{ backgroundColor: "#f11816" }}
     >
-      <div className="relative mx-auto w-full max-w-[640px] md:max-w-[700px] px-3 sm:px-5">
+      <div className="relative mx-auto w-full max-w-[640px] md:max-w-[700px] px-3 sm:px-5 overflow-hidden sm:overflow-visible">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={LOTTERY_BODY_IMG}
           alt="抽獎機機身"
-          className="relative z-0 w-full h-auto select-none pointer-events-none"
+          className="relative z-0 w-full h-auto max-w-full select-none pointer-events-none"
           draggable={false}
         />
 
         <div
-          className="absolute z-[1] flex items-stretch pointer-events-none"
+          className="absolute z-[1] flex items-stretch pointer-events-none overflow-hidden"
           style={{
             left: "21.5%",
             width: "56.3%",
@@ -205,9 +241,9 @@ export default function PromoLotteryMachine({ className = "" }) {
           {showMissOnReels ? (
             <div className="w-full h-full flex items-center justify-center px-1">
               <span
-                className="font-black select-none leading-none tracking-wider whitespace-nowrap"
+                className="font-bold select-none leading-none tracking-wider whitespace-nowrap"
                 style={{
-                  fontSize: "clamp(1.15rem, 4.9vw, 2.1rem)",
+                  fontSize: "clamp(0.95rem, 4.2vw, 2.1rem)",
                   color: "#6b0008",
                   textShadow:
                     "0 1px 0 rgba(255,255,255,0.55), 0 2px 4px rgba(0,0,0,0.25)",
@@ -251,7 +287,7 @@ export default function PromoLotteryMachine({ className = "" }) {
           role="button"
           tabIndex={0}
           aria-label="下拉拉桿開始抽獎"
-          aria-disabled={spinning || !isLoggedIn}
+          aria-disabled={!canSpin}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -263,7 +299,7 @@ export default function PromoLotteryMachine({ className = "" }) {
             }
           }}
           className={`absolute z-[3] touch-none outline-none ${
-            !isLoggedIn || spinning
+            !canSpin
               ? "cursor-not-allowed"
               : "cursor-grab active:cursor-grabbing"
           }`}
@@ -278,24 +314,28 @@ export default function PromoLotteryMachine({ className = "" }) {
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col items-center gap-2">
+      <div className="mt-4 flex flex-col items-center gap-2 px-3">
         {!isLoggedIn && authReady ? (
           <Link
             href="/login?redirect=/promo"
-            className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-[#5c1a00] font-black text-sm sm:text-base px-9 py-3 shadow-lg hover:brightness-105"
+            className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-[#5c1a00] font-bold text-sm sm:text-base px-9 py-3 shadow-lg hover:brightness-105"
           >
             拉一下！
           </Link>
         ) : (
           <button
             type="button"
-            disabled={spinning || !isLoggedIn}
+            disabled={!canSpin}
             onClick={runSpin}
-            className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-[#5c1a00] font-black text-sm sm:text-base px-9 py-3 shadow-lg disabled:opacity-45 disabled:cursor-not-allowed hover:brightness-105"
+            className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-[#5c1a00] font-bold text-sm sm:text-base px-9 py-3 shadow-lg disabled:opacity-45 disabled:cursor-not-allowed hover:brightness-105"
           >
-            {spinning ? "…" : "拉一下！"}
+            {spinning ? "…" : alreadyPlayed ? "已抽過" : "拉一下！"}
           </button>
         )}
+
+        <p className="text-center text-[11px] sm:text-xs text-white/75 max-w-sm">
+          每位新會員限抽一次，中獎折價券會存入會員中心。
+        </p>
 
         {message && (
           <p

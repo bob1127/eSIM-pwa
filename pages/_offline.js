@@ -20,10 +20,10 @@ export default function OfflinePage() {
         <div className="bg-white p-8 md:p-10 rounded-3xl shadow-xl max-w-md w-full border border-slate-100 animate-fadeIn">
           
           {/* 大圖示 */}
-          <div className="text-7xl mb-6 animate-bounce-slow">✈️</div>
+          <div className="text-[28px] mb-6 animate-bounce-slow">✈️</div>
           
           {/* 主標題 */}
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-4">
+          <h1 className="text-[24px] md:text-[28px] font-bold text-slate-800 mb-4">
             您目前處於離線狀態
           </h1>
           

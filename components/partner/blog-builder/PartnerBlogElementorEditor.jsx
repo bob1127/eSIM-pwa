@@ -677,7 +677,7 @@ export default function PartnerBlogElementorEditor({
           {meta?.title || title}
         </p>
         {dirty ? (
-          <span className="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-400 text-slate-900">
+          <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400 text-slate-900">
             未儲存
           </span>
         ) : saveHint ? (
@@ -784,7 +784,7 @@ export default function PartnerBlogElementorEditor({
             }
             setPublishOpen(true);
           }}
-          className={`shrink-0 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-black rounded disabled:opacity-50 ${
+          className={`shrink-0 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded disabled:opacity-50 ${
             dirty
               ? "bg-amber-400 text-slate-900 hover:bg-amber-300"
               : "bg-[#93003c] hover:bg-[#b0104c] text-white"
@@ -820,7 +820,7 @@ export default function PartnerBlogElementorEditor({
               : "hidden"
           } lg:relative lg:inset-auto lg:flex lg:w-[260px] shrink-0 flex-col border-r border-white/10 bg-[#1f2124]`}
         >
-          <div className="flex text-[11px] font-black border-b border-white/10">
+          <div className="flex text-[11px] font-bold border-b border-white/10">
             <button
               type="button"
               onClick={() => {
@@ -845,7 +845,7 @@ export default function PartnerBlogElementorEditor({
           <div className="flex-1 overflow-y-auto p-3">
             {WIDGET_GROUPS.map((g) => (
               <div key={g.id} className="mb-4">
-                <p className="text-[10px] font-black tracking-widest text-white/40 mb-2">
+                <p className="text-[10px] font-bold tracking-widest text-white/40 mb-2">
                   {g.label}
                 </p>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -1073,7 +1073,7 @@ export default function PartnerBlogElementorEditor({
           <button
             type="button"
             disabled={saving}
-            className="px-3 py-2 text-xs font-black rounded bg-[#93003c]"
+            className="px-3 py-2 text-xs font-bold rounded bg-[#93003c]"
             onClick={async () => {
               const ok = await onSave();
               if (ok !== false) {
@@ -1101,7 +1101,7 @@ export default function PartnerBlogElementorEditor({
           <button
             type="button"
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-black rounded bg-[#93003c] disabled:opacity-80 min-w-[96px] justify-center"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded bg-[#93003c] disabled:opacity-80 min-w-[96px] justify-center"
             onClick={async (e) => {
               const btn = e.currentTarget;
               const ok = await onPublish();
@@ -1160,7 +1160,7 @@ function InlineEditPopover({
         <div className="flex items-center gap-1">
           <MaterialIcon name={chrome.icon} size={18} />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-black truncate">{widgetLabel(block.type)}</p>
+            <p className="text-xs font-bold truncate">{widgetLabel(block.type)}</p>
             {chrome.hint ? (
               <p className="text-[10px] text-white/80 truncate">{chrome.hint}</p>
             ) : null}
@@ -1198,7 +1198,7 @@ function GuardModal({ title, body, onCancel, children, hideCancel = false }) {
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-md rounded-xl bg-[#1f2124] border border-white/10 p-4 text-white shadow-2xl">
-        <p className="text-sm font-black">{title}</p>
+        <p className="text-sm font-bold">{title}</p>
         <p className="text-[12px] text-white/60 mt-2 leading-relaxed">{body}</p>
         <div className="flex justify-end gap-2 mt-4">
           {!hideCancel ? (
@@ -1221,20 +1221,20 @@ function PublishRibbon({ onClose }) {
   return (
     <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/50 p-4">
       <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-[#1f2124] border border-white/10 text-white shadow-2xl px-6 pt-10 pb-6 text-center">
-        <div className="pointer-events-none absolute -right-12 top-5 rotate-45 bg-[#FADE2B] text-slate-900 text-[11px] font-black tracking-[0.28em] px-14 py-1.5 shadow-md">
+        <div className="pointer-events-none absolute -right-12 top-5 rotate-45 bg-[#FADE2B] text-slate-900 text-[11px] font-bold tracking-[0.28em] px-14 py-1.5 shadow-md">
           成功發布
         </div>
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">
           <MaterialIcon name="check_circle" size={32} />
         </div>
-        <p className="text-base font-black">文章已發布</p>
+        <p className="text-base font-bold">文章已發布</p>
         <p className="text-[12px] text-white/55 mt-1.5 leading-relaxed">
           主站與夥伴商店前台都會出現此文。
         </p>
         <button
           type="button"
           onClick={onClose}
-          className="mt-5 px-5 py-2 text-xs font-black rounded-lg bg-white text-slate-900"
+          className="mt-5 px-5 py-2 text-xs font-bold rounded-lg bg-white text-slate-900"
         >
           完成
         </button>

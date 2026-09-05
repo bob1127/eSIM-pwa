@@ -154,7 +154,7 @@ export default function RefundRequestModal({
             <p className="text-xs font-bold text-sky-600 uppercase tracking-wide">
               {isDispute ? "售後／爭議申請" : "未開通退款申請"}
             </p>
-            <h3 className="text-lg font-black text-slate-900">
+            <h3 className="text-lg font-bold text-slate-900">
               訂單 #{order.id}
             </h3>
             <p className="text-xs text-slate-500 mt-1">{eligibility.hint}</p>
@@ -162,7 +162,7 @@ export default function RefundRequestModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-2xl leading-none px-2"
+            className="text-slate-400 hover:text-slate-600 text-[24px] leading-none px-2"
             aria-label="關閉"
           >
             ×
@@ -276,7 +276,7 @@ export default function RefundRequestModal({
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="w-20 h-20 border-2 border-dashed border-slate-200 rounded-sm text-slate-400 text-2xl hover:border-sky-400 hover:text-sky-500"
+                    className="w-20 h-20 border-2 border-dashed border-slate-200 rounded-sm text-slate-400 text-[24px] hover:border-sky-400 hover:text-sky-500"
                   >
                     +
                   </button>

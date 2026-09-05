@@ -141,7 +141,7 @@ export function buildJpSoftBankKddiDetailed({
   trafficBullet,
   extraBullets = [],
   carrierHtml = "KDDI 5G、SoftBank 5G",
-  routeHtml = "漫遊",
+  routeHtml = "漫遊（新加坡 IP）",
 }) {
   const planHtml = planCard(
     basePairs({
@@ -175,7 +175,7 @@ export function buildJpSoftBankKddiDetailed({
     <h4 style="margin:24px 0 12px;font-size:16px;font-weight:700;color:#1e293b;">方案重點</h4>
     ${bulletList([
       networkBullet,
-      "數據路由：漫遊；多數裝置 APN 可自動帶入",
+      `數據路由：${routeHtml}；多數裝置 APN 可自動帶入`,
       "效期：抵達當地連網並開始使用數據後才開始計算",
       trafficBullet,
       "僅數據：無門號／傳統通話／簡訊；支援熱點；不支援 TikTok／部分日本在地 App",
@@ -500,7 +500,7 @@ export const JP_DAILY_SOFTBANK_ONLY_DETAILED = (() => {
 export const JP_DAILY_TRIPLE_DETAILED = buildJpSoftBankKddiDetailed({
   planTypeLabel: "每日型",
   carrierHtml: "KDDI、SoftBank、Docomo（三網切換）",
-  routeHtml: "漫遊",
+  routeHtml: "漫遊（香港 IP）",
   speedHtml:
     "4G／LTE／5G（每日高速額度內）；高速用完後降速可持續使用，隔日重置",
   trafficBullet:

@@ -97,7 +97,7 @@ export default function MissionWallSection({ headingAs = "h2" }) {
         <header className="text-center text-white mb-8 md:mb-10">
           <Heading
             id="mission-wall-heading"
-            className="text-3xl md:text-4xl font-black tracking-tight"
+            className="text-[28px] md:text-[24px] font-bold tracking-tight"
           >
             任務牆
           </Heading>
@@ -124,10 +124,10 @@ export default function MissionWallSection({ headingAs = "h2" }) {
               />
             </a>
             <div className="p-6 md:p-8">
-              <span className="inline-flex items-center rounded-full bg-[#06C755] text-white text-[11px] font-bold px-3 py-1 mb-4">
+              <span className="inline-flex items-center rounded-full bg-[#067A38] text-white text-[11px] font-bold px-3 py-1 mb-4">
                 LINE
               </span>
-              <h3 className="text-lg font-black text-[#1e3a5f] mb-2">
+              <h3 className="text-lg font-bold text-[#1e3a5f] mb-2">
                 官方帳號
               </h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-4">
@@ -141,7 +141,7 @@ export default function MissionWallSection({ headingAs = "h2" }) {
               >
                 <LineAppIconSvg className="w-12 h-12 shrink-0" />
                 <div>
-                  <p className="text-xl font-black text-[#2b579a] leading-none group-hover:underline">
+                  <p className="text-xl font-bold text-[#2b579a] leading-none group-hover:underline">
                     {CONTACT_INFO.lineDisplay}
                   </p>
                   <p className="text-xs text-slate-400 mt-1.5">
@@ -171,10 +171,10 @@ export default function MissionWallSection({ headingAs = "h2" }) {
                     />
                   ) : null}
                   <div className="relative bg-white rounded-2xl border border-slate-200/80 p-5 pt-8 text-center shadow-sm h-full">
-                    <span className="absolute -top-4 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-[#2b579a] text-white text-sm font-black flex items-center justify-center shadow">
+                    <span className="absolute -top-4 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-[#2b579a] text-white text-sm font-bold flex items-center justify-center shadow">
                       {step.n}
                     </span>
-                    <p className="text-sm font-black text-[#2b579a] mb-1.5">
+                    <p className="text-sm font-bold text-[#2b579a] mb-1.5">
                       {step.title}
                     </p>
                     <p className="text-xs text-slate-500 leading-relaxed">
@@ -281,7 +281,7 @@ function MissionCard({ mission, onApply }) {
               </span>
             ) : null}
           </div>
-          <h3 className="text-[15px] font-black text-[#1e3a5f] leading-snug">
+          <h3 className="text-[15px] font-bold text-[#1e3a5f] leading-snug">
             {mission.title}
           </h3>
         </div>
@@ -303,7 +303,7 @@ function MissionCard({ mission, onApply }) {
         <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1">
           Reward
         </p>
-        <p className="text-lg font-black text-[#2b579a] leading-none mb-3">
+        <p className="text-lg font-bold text-[#2b579a] leading-none mb-3">
           {mission.reward}
         </p>
         <p className="text-[11px] text-slate-400 mb-4">{eligibility.hint}</p>
@@ -312,7 +312,7 @@ function MissionCard({ mission, onApply }) {
           <button
             type="button"
             onClick={() => onApply(mission)}
-            className="inline-flex items-center justify-center gap-1.5 w-full h-10 rounded-full bg-[#06C755] text-white text-sm font-black hover:brightness-110 active:scale-[0.98] transition"
+            className="inline-flex items-center justify-center gap-1.5 w-full h-10 rounded-full bg-[#067A38] text-white text-sm font-bold hover:brightness-110 active:scale-[0.98] transition"
           >
             接任務吧
             <MaterialIcon name="arrow_forward" size={16} />
@@ -671,7 +671,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
       >
         <div className="px-5 sm:px-7 py-4 border-b border-slate-200 bg-[#F8FAFD] flex items-center justify-between gap-3 shrink-0">
           <div>
-            <h3 className="text-lg font-black text-[#1e3a5f] leading-tight">
+            <h3 className="text-lg font-bold text-[#1e3a5f] leading-tight">
               接任務吧
             </h3>
             {mission.title !== "接任務吧" ? (
@@ -706,7 +706,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
             ].map((item) => (
               <li key={item.n} className="text-center">
                 <span
-                  className={`mx-auto w-7 h-7 rounded-full flex items-center justify-center text-xs font-black ${
+                  className={`mx-auto w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
                     step >= item.n
                       ? "bg-[#2b579a] text-white"
                       : "bg-slate-100 text-slate-400"
@@ -733,7 +733,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
               <div className="mx-auto w-12 h-12 rounded-full bg-[#E8F8EE] text-[#067A38] flex items-center justify-center">
                 <MaterialIcon name="check" size={26} />
               </div>
-              <p className="text-lg font-black text-[#1e3a5f]">申請已送出</p>
+              <p className="text-lg font-bold text-[#1e3a5f]">申請已送出</p>
               <p className="text-sm text-slate-600 leading-relaxed">
                 {successMsg}
               </p>
@@ -788,7 +788,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
                         }`}
                       >
                         <p
-                          className={`text-sm font-black ${
+                          className={`text-sm font-bold ${
                             selected ? "text-[#2b579a]" : "text-[#1e3a5f]"
                           }`}
                         >
@@ -915,7 +915,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
               <button
                 type="button"
                 onClick={resetAndClose}
-                className="h-10 px-5 rounded-full bg-[#2b579a] text-white text-sm font-black hover:brightness-110"
+                className="h-10 px-5 rounded-full bg-[#2b579a] text-white text-sm font-bold hover:brightness-110"
               >
                 完成
               </button>
@@ -956,7 +956,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
                 setError("");
                 setStep((s) => s + 1);
               }}
-              className="h-10 px-5 rounded-full bg-[#2b579a] text-white text-sm font-black hover:brightness-110"
+              className="h-10 px-5 rounded-full bg-[#2b579a] text-white text-sm font-bold hover:brightness-110"
             >
               下一步
             </button>
@@ -965,7 +965,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
               type="button"
               onClick={submitApply}
               disabled={submitting}
-              className="h-10 px-5 rounded-full bg-[#06C755] text-white text-sm font-black hover:brightness-110 disabled:opacity-60"
+              className="h-10 px-5 rounded-full bg-[#067A38] text-white text-sm font-bold hover:brightness-110 disabled:opacity-60"
             >
               {submitting
                 ? "送出中…"

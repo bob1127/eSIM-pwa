@@ -45,7 +45,7 @@ export default function PartnerBlogPostSettings({
   return (
     <div className="flex flex-col h-full bg-[#1a1b1e] text-white">
       <div className="px-3 py-2.5 border-b border-white/10">
-        <p className="text-[11px] font-black">文章設定</p>
+        <p className="text-[11px] font-bold">文章設定</p>
 
         {Object.keys(errors).length ? (
           <p className="mt-2 text-[11px] text-rose-300 leading-snug">
@@ -212,7 +212,7 @@ export function LivePreviewOverlay({ viewport, onClose, children }) {
     <div className="absolute inset-0 z-[50] bg-[#1f2124] flex flex-col">
       <div className="h-9 shrink-0 flex items-center gap-2 px-3 border-b border-white/10 text-white">
         <MaterialIcon name="visibility" size={16} />
-        <span className="text-[11px] font-black">即時預覽</span>
+        <span className="text-[11px] font-bold">即時預覽</span>
         <span className="text-[10px] text-white/40">含尚未儲存的變更</span>
         <button
           type="button"

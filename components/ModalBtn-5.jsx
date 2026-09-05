@@ -40,7 +40,7 @@ export default function App() {
           ></Image>
 
           <div className="txt flex md:pl-[40px] pl-0 flex-col justify-center items-center ">
-            <p className=" text-stone-900  md:text-[32px] font-normal text-[20px]">
+            <p className=" text-stone-900  md:text-[28px] font-normal text-[20px]">
               Contact Us
             </p>
             {/* <b className="text-[28px] font-normal text-stone-900 mt-[20px]">聯絡我們</b> */}

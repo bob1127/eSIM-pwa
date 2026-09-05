@@ -481,7 +481,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h1
-              className="text-xl sm:text-2xl font-black tracking-tight"
+              className="text-xl sm:text-[24px] font-bold tracking-tight"
               style={{ color: UI.dark }}
             >
               查詢流量
@@ -602,7 +602,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
             style={{ borderBottom: `1px solid ${UI.border}` }}
           >
             <div>
-              <h2 className="text-sm font-black" style={{ color: UI.dark }}>
+              <h2 className="text-sm font-bold" style={{ color: UI.dark }}>
                 eSIM 流量一覽
               </h2>
               <p className="text-xs mt-0.5" style={{ color: UI.soft }}>
@@ -983,7 +983,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
                 size={18}
                 style={{ color: UI.mid }}
               />
-              <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+              <h3 className="text-sm font-bold" style={{ color: UI.dark }}>
                 用量圖表
               </h3>
             </div>
@@ -1105,7 +1105,7 @@ export default function AccountTrafficView({ orders, ordersLoading }) {
             <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 bg-white">
               <h3
                 id="traffic-bind-modal-title"
-                className="text-sm font-black text-slate-900"
+                className="text-sm font-bold text-slate-900"
               >
                 {monitorBound ? "流量監控提醒" : "請綁定 eSIM 開啟監控"}
               </h3>

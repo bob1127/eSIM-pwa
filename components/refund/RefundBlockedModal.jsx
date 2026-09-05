@@ -30,12 +30,12 @@ export default function RefundBlockedModal({
             <p className="text-xs font-bold text-red-600 uppercase tracking-wide">
               退款防呆
             </p>
-            <h3 className="text-lg font-black text-slate-900 mt-0.5">{title}</h3>
+            <h3 className="text-lg font-bold text-slate-900 mt-0.5">{title}</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-2xl leading-none px-1"
+            className="text-slate-400 hover:text-slate-600 text-[24px] leading-none px-1"
             aria-label="關閉"
           >
             ×
@@ -53,7 +53,7 @@ export default function RefundBlockedModal({
               href={oaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-[#06C755] text-white text-sm font-bold hover:bg-[#05b34c] transition"
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-[#067A38] text-white text-sm font-bold hover:bg-[#056B30] transition"
             >
               透過官方 LINE 申請人工審核
             </a>

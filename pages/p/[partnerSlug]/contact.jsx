@@ -30,7 +30,7 @@ export default function PartnerContactPage({ store, navCountries }) {
       >
         <div className="space-y-6">
           <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5 sm:p-6 space-y-4">
-            <h2 className="text-sm font-black text-slate-800">{company}</h2>
+            <h2 className="text-sm font-bold text-slate-800">{company}</h2>
             {address ? (
               <p className="text-[14px] text-slate-600 leading-relaxed">
                 地址：{address}
@@ -67,7 +67,7 @@ export default function PartnerContactPage({ store, navCountries }) {
           </div>
 
           <div className="rounded-xl border border-slate-200 p-5 sm:p-6 space-y-3">
-            <h2 className="text-sm font-black text-slate-800">JEKO 平台客服</h2>
+            <h2 className="text-sm font-bold text-slate-800">JEKO 平台客服</h2>
             <p className="text-[14px] text-slate-600 leading-relaxed">
               訂單、退款、eSIM 啟用等問題，亦可聯絡 JEKO 官方客服（1～3
               個工作天內回覆）。

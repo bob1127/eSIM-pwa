@@ -46,7 +46,7 @@ function KpiCard({ label, value, sub, change, active, onClick, sparkData }) {
       }`}
     >
       <p className="text-xs font-bold text-slate-500">{label}</p>
-      <p className="text-2xl font-black text-[#1E4AD1] mt-1 tabular-nums">{value}</p>
+      <p className="text-[24px] font-bold text-[#1E4AD1] mt-1 tabular-nums">{value}</p>
       {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
       {change != null && (
         <p
@@ -158,7 +158,7 @@ export default function AccountAdminDashboardView({
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] gap-5 xl:gap-6">
           <div className="bg-white border border-slate-200 rounded-sm p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-black text-[#1E4AD1]">
+              <h3 className="text-sm font-bold text-[#1E4AD1]">
                 {chartMetric === "revenue" ? "營收趨勢" : "訂單趨勢"}
               </h3>
               <span className="text-[10px] text-slate-400">近 {days} 日</span>
@@ -179,7 +179,7 @@ export default function AccountAdminDashboardView({
 
           <div className="space-y-4">
             <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-sm">
-              <h3 className="text-sm font-black text-[#1E4AD1] mb-3">即時概況</h3>
+              <h3 className="text-sm font-bold text-[#1E4AD1] mb-3">即時概況</h3>
               <ul className="space-y-2 text-sm">
                 {[
                   { label: "待付款", val: kpis.pendingCount, icon: "pending" },
@@ -198,7 +198,7 @@ export default function AccountAdminDashboardView({
             </div>
 
             <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-sm">
-              <h3 className="text-sm font-black text-[#1E4AD1] mb-3">最新動態</h3>
+              <h3 className="text-sm font-bold text-[#1E4AD1] mb-3">最新動態</h3>
               <ul className="space-y-2 max-h-48 overflow-y-auto">
                 {recentActivity.map((a) => (
                   <li key={a.id} className="text-[11px] text-slate-600 flex gap-2">
@@ -225,11 +225,11 @@ export default function AccountAdminDashboardView({
       {section === "sales" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-white border border-slate-200 rounded-sm p-5 shadow-sm">
-            <h3 className="text-sm font-black text-[#1E4AD1] mb-4">方案銷售排行</h3>
+            <h3 className="text-sm font-bold text-[#1E4AD1] mb-4">方案銷售排行</h3>
             <ProductBarChart productRank={productRank} />
           </div>
           <div className="bg-white border border-slate-200 rounded-sm p-5 shadow-sm">
-            <h3 className="text-sm font-black text-[#1E4AD1] mb-4">方案銷售明細</h3>
+            <h3 className="text-sm font-bold text-[#1E4AD1] mb-4">方案銷售明細</h3>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-[11px] text-slate-400 border-b">
@@ -269,11 +269,11 @@ export default function AccountAdminDashboardView({
       {section === "stores" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-white border border-slate-200 rounded-sm p-5 shadow-sm">
-            <h3 className="text-sm font-black text-[#1E4AD1] mb-4">分店營收占比</h3>
+            <h3 className="text-sm font-bold text-[#1E4AD1] mb-4">分店營收占比</h3>
             <StoreDonutChart storeShare={storeShare} totalRevenue={kpis.revenue} />
           </div>
           <div className="bg-white border border-slate-200 rounded-sm p-5 shadow-sm overflow-x-auto">
-            <h3 className="text-sm font-black text-[#1E4AD1] mb-4">各店營收排行</h3>
+            <h3 className="text-sm font-bold text-[#1E4AD1] mb-4">各店營收排行</h3>
             <table className="w-full text-sm min-w-[400px]">
               <thead>
                 <tr className="text-[11px] text-slate-400 border-b">

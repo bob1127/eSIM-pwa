@@ -98,14 +98,14 @@ export default function PartnerLandingPage({ partner, products }) {
             </p>
           </div>
         </div>
-        <div className="text-xl font-black text-slate-900 tracking-tighter">
+        <div className="text-xl font-bold text-slate-900 tracking-tighter">
           JEKO <span className="text-blue-600">eSIM</span>
         </div>
       </nav>
 
       <header className="py-16 px-8 bg-gradient-to-br from-slate-900 to-blue-900 text-white text-center">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-4xl font-black mb-4 leading-tight">
+          <h2 className="text-[24px] font-bold mb-4 leading-tight">
             跟著 {partner.name} 一起環遊世界 🌍
           </h2>
           <p className="text-blue-100/80 text-lg">
@@ -138,7 +138,7 @@ export default function PartnerLandingPage({ partner, products }) {
                     <span className="text-slate-400 text-xs block mb-1">
                       夥伴特惠價
                     </span>
-                    <span className="text-3xl font-black text-slate-900">
+                    <span className="text-[28px] font-bold text-slate-900">
                       NT$ {product.price}
                     </span>
                   </div>

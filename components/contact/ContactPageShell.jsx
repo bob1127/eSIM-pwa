@@ -26,10 +26,10 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
 
         {/* 標題區 */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-black text-[#1e3a5f] tracking-tight">
+          <h1 className="text-[22px] sm:text-[26px] lg:text-[28px] font-bold text-black tracking-normal leading-[1.35]">
             聯絡我們
           </h1>
-          <p className="text-sm text-slate-500 mt-2 leading-relaxed max-w-xl">
+          <p className="text-[14px] sm:text-[16px] text-[#666666] font-normal mt-2 leading-[28px] max-w-xl">
             eSIM
             購買諮詢、合作夥伴申請、退換款事宜，請選擇下方分類填寫表單，我們將於
             1～3 個工作天內回覆。
@@ -49,7 +49,7 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 Jeko 客服
               </p>
-              <p className="text-sm sm:text-base font-black text-[#1e3a5f] truncate">
+              <p className="text-sm sm:text-base font-bold text-[#1e3a5f] truncate">
                 {CONTACT_INFO.email}
               </p>
             </div>
@@ -69,7 +69,7 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 {CONTACT_INFO.companyName}
               </p>
-              <p className="text-sm sm:text-base font-black text-[#1e3a5f] truncate">
+              <p className="text-sm sm:text-base font-bold text-[#1e3a5f] truncate">
                 {CONTACT_INFO.companyEmail}
               </p>
             </div>
@@ -78,7 +78,7 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
             href={CONTACT_INFO.lineUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#06C755] hover:shadow-sm transition"
+            className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#067A38] hover:shadow-sm transition"
           >
             <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0">
               <img
@@ -91,7 +91,7 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 LINE
               </p>
-              <p className="text-sm sm:text-base font-black text-[#1e3a5f]">
+              <p className="text-sm sm:text-base font-bold text-[#1e3a5f]">
                 {CONTACT_INFO.lineDisplay}
               </p>
             </div>
@@ -117,7 +117,7 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
                   {tab.step}
                 </span>
                 <span
-                  className={`text-sm ${active ? "font-black" : "font-medium"}`}
+                  className={`text-sm ${active ? "font-bold" : "font-medium"}`}
                 >
                   {tab.label}
                 </span>

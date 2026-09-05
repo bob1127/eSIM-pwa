@@ -117,20 +117,20 @@ function TermsBody({ mode, onModeChange }) {
       </div>
 
       <div>
-        <h4 className="text-[14px] font-black text-slate-900 mb-3">
+        <h4 className="text-[14px] font-bold text-slate-900 mb-3">
           {detail.label}特別約定
         </h4>
         <BulletList items={detail.items} />
       </div>
 
       <div className="pt-1 border-t border-slate-100">
-        <h4 className="text-[14px] font-black text-slate-900 mb-3 mt-4">
+        <h4 className="text-[14px] font-bold text-slate-900 mb-3 mt-4">
           共通約定
         </h4>
         <BulletList items={TERMS_COMMON} />
       </div>
       <div className="pt-1 border-t border-slate-100">
-        <h4 className="text-[14px] font-black text-slate-900 mb-3 mt-4">
+        <h4 className="text-[14px] font-bold text-slate-900 mb-3 mt-4">
           {CONTENT_DISCLAIMER.title}
         </h4>
         <BulletList items={CONTENT_DISCLAIMER.bullets} />
@@ -192,7 +192,7 @@ function SupportBody() {
           key={item.title}
           className="rounded-xl border border-slate-100 bg-white px-4 py-3.5 shadow-[0_1px_0_rgba(15,23,42,0.04)]"
         >
-          <h4 className="text-[14px] font-black text-slate-900 mb-1">
+          <h4 className="text-[14px] font-bold text-slate-900 mb-1">
             {item.title}
           </h4>
           <p className="text-[13px] text-slate-600 leading-relaxed">
@@ -265,7 +265,7 @@ export default function CooperationInfoModal({
               <div className="min-w-0">
                 <h3
                   id="coop-info-title"
-                  className="text-[20px] md:text-[22px] font-black text-slate-900 tracking-wide"
+                  className="text-[20px] md:text-[22px] font-bold text-slate-900 tracking-wide"
                 >
                   {meta.title}
                 </h3>

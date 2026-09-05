@@ -168,7 +168,7 @@ const EmblaCarousel = ({ slides, options }) => {
                     />
                   )}
                   <div className="text-area flex flex-col justify-center items-center md:items-start w-full md:w-1/2 text-center md:text-left">
-                    <b className="text-xl md:text-2xl mb-2">{slide.title}</b>
+                    <b className="text-xl md:text-[24px] mb-2">{slide.title}</b>
                     <p className="text-sm md:text-base text-stone-900">
                       {slide.description}
                     </p>

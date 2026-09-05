@@ -40,8 +40,8 @@ export function cnhkmoCompareTableSection() {
         "短天數／長天數",
         "整天連線、免估流量",
         `${compareBullets([
-          "短天數香港 IP；長天數約 10Mbps・新加坡 IP。",
-          "免 VPN 社群（依路由而定）。",
+          "短／長天數皆 T+C・約 10Mbps・新加坡 IP。",
+          "免 VPN 社群；支援 ChatGPT／TikTok／Gemini（依路由而定）。",
         ])}<div style="margin-top:8px;">${link("/product/cnhkmo/cnhkmo-unlimited-esim/", "查看吃到飽")}</div>`,
       ],
       [
@@ -134,18 +134,18 @@ const p = (text, mb = 12) =>
   `<p style="margin:0 0 ${mb}px;">${text}</p>`;
 
 export const CNHKMO_UNLIM_SHORT_DETAILED = buildDetailed({
-  carrierHtml: "中國電信／CSL／澳門電信（短天數）",
-  speedHtml: "4G／5G；不限流量吃到飽（FUP）",
+  carrierHtml: "中國電信／聯通／CSL／澳門電訊（短天數・T+C）",
+  speedHtml: "約 10Mbps 吃到飽（FUP）",
   planTypeLabel: "吃到飽",
-  routeHtml: "漫遊（香港 IP）",
+  routeHtml: "漫遊（新加坡 IP）",
   introParas: [
-    "jeko eSIM 中港澳吃到飽（<strong>短天數</strong>），走中國電信／CSL／澳門電信，出網為<strong>香港 IP</strong>。",
-    "適合 1～10 天行程。免 VPN 社群（依路由而定）。僅數據。",
+    "jeko eSIM 中港澳吃到飽（<strong>短天數・1～10 天</strong>），走中國電信／聯通／CSL／澳門電訊（T+C），出網為<strong>新加坡 IP</strong>。",
+    "約 10Mbps FUP。支援 ChatGPT／TikTok／Gemini。僅數據。",
   ],
   bullets: [
-    "運營商：中國電信／CSL／澳門電信・香港 IP",
-    "流量：吃到飽不限流量（FUP）",
-    "支援熱點；LINE／IG／FB 多數可免 VPN",
+    "運營商：中國電信／聯通／CSL／澳門電訊・新加坡 IP（T+C）",
+    "流量：約 10Mbps 吃到飽（FUP）",
+    "支援熱點；支援 ChatGPT、TikTok、Gemini",
     "僅數據：無門號／傳統通話／簡訊",
     "效期：抵達當地連網並開始使用數據後才開始計算",
   ],
@@ -207,11 +207,12 @@ export const CNHKMO_TOTAL_DETAILED = buildDetailed({
 
 export const CNHKMO_USAGE_SHORT = usageAdvantagesSection({
   title: "使用 jeko 中港澳短天數 eSIM 的優勢",
-  subtitle: "香港 IP・免 VPN 社群",
+  subtitle: "T+C・約 10Mbps・新加坡 IP",
   items: [
     { iconName: "public", title: "一卡三地", descHtml: "中國大陸、香港、澳門同一張 eSIM。" },
-    { iconName: "speed", title: "FUP 吃到飽", descHtml: "不限流量，適合短天數整天連線。" },
-    { iconName: "forum", title: "免 VPN 社群", descHtml: "香港 IP 下 LINE／IG／FB 多數可用（依路由而定）。" },
+    { iconName: "speed", title: "約 10Mbps 吃到飽", descHtml: "T+C 線路 FUP，適合短天數整天連線。" },
+    { iconName: "forum", title: "免 VPN 社群", descHtml: "新加坡 IP 下 LINE／IG／FB／TikTok 多數可用（依路由而定）。" },
+    { iconName: "smart_toy", title: "ChatGPT／Gemini", descHtml: "標示支援 ChatGPT、TikTok、Gemini。" },
     { iconName: "qr_code_2", title: "快速交付", descHtml: "付款後數分鐘內以 Email 寄送 QR Code。" },
     { iconName: "flight_land", title: "抵達再啟用", descHtml: "建議抵達覆蓋範圍後再安裝／開啟行動數據。" },
   ],
@@ -291,7 +292,7 @@ export const CNHKMO_FAQ_SHORT = faqAccordion(
     {
       question: "短天數與長天數差在哪？",
       answerHtml: p(
-        `短天數（約 1～10 天）為香港 IP、中國電信／CSL／澳門電信；長天數（11 天起）為新加坡 IP、約 10Mbps，並含聯通。`,
+        `短天數（1～10 天）與長天數（11 天起）皆為同一 T+C 線路：新加坡 IP、約 10Mbps、電信／聯通／CSL／澳門電訊；差別主要在天數區間。`,
         0,
       ),
     },

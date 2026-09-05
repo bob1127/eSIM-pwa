@@ -87,7 +87,7 @@ function PrintableOrderDetail({ orders, partnerName, generatedAt, hideCost }) {
     <div className="print-doc p-6 sm:p-8 text-[#1a1a1a] bg-white">
       <div className="flex items-start justify-between gap-4 mb-5 pb-4 border-b border-[#e3e3e3]">
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl font-black tracking-tight">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight">
             訂單分潤明細
           </h1>
           <p className="text-xs text-[#6b6b6b] mt-1.5 truncate">
@@ -170,7 +170,7 @@ function PrintableOrderDetail({ orders, partnerName, generatedAt, hideCost }) {
           ))}
         </tbody>
         <tfoot>
-          <tr className="border-t-2 border-[#1a1a1a] font-black">
+          <tr className="border-t-2 border-[#1a1a1a] font-bold">
             <td className="py-3 pr-2" colSpan={5}>
               合計（{orders.length} 筆）
             </td>
@@ -204,7 +204,7 @@ function PrintableSummary({ orders, partnerName, generatedAt, hideCost }) {
     <div className="print-doc p-6 sm:p-8 text-[#1a1a1a] bg-white">
       <div className="flex items-start justify-between gap-4 mb-5 pb-4 border-b border-[#e3e3e3]">
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl font-black tracking-tight">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight">
             分潤總覽摘要
           </h1>
           <p className="text-xs text-[#6b6b6b] mt-1.5 truncate">
@@ -238,14 +238,14 @@ function PrintableSummary({ orders, partnerName, generatedAt, hideCost }) {
             <p className="text-[10px] text-[#6b6b6b] font-bold tracking-wide">
               {label}
             </p>
-            <p className="text-base sm:text-lg font-black mt-1 tabular-nums truncate">
+            <p className="text-base sm:text-lg font-bold mt-1 tabular-nums truncate">
               {value}
             </p>
           </div>
         ))}
       </div>
 
-      <h2 className="text-sm font-black mb-3">依商品分潤</h2>
+      <h2 className="text-sm font-bold mb-3">依商品分潤</h2>
       {breakdown.length === 0 ? (
         <p className="text-xs text-[#8a8a8a] py-6 text-center">尚無商品資料</p>
       ) : (
@@ -294,7 +294,7 @@ function PrintableSummary({ orders, partnerName, generatedAt, hideCost }) {
             })}
           </tbody>
           <tfoot>
-            <tr className="border-t-2 border-[#1a1a1a] font-black">
+            <tr className="border-t-2 border-[#1a1a1a] font-bold">
               <td className="py-3 pr-2">合計</td>
               <td className="py-3 px-1 text-right tabular-nums">
                 {totals.count}

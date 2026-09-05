@@ -506,7 +506,7 @@ function Carousel({
                             <span className=' '>Humming Probe UX200</span>
                             <Link href='../Products/product01'>CN</Link>
                         </motion.div> */}
-                            <motion.h1 className="text-[26px] text-[#333333]  font-black leading-[31px]" variants={fadeInUp}>  Humming Probe UX200<br></br> 
+                            <motion.h1 className="text-[26px] text-[#333333]  font-bold leading-[31px]" variants={fadeInUp}>  Humming Probe UX200<br></br> 
                                 免校正酸鹼檢測儀 <p className="text-[24px] text-orange-500 font-bold ">pH計/酸鹼度測定計/pH儀器
 </p>
                             </motion.h1>

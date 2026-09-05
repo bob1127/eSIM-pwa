@@ -75,7 +75,7 @@ const RICH_TEXT_PROSE =
   "[&_p]:m-0 [&_p]:leading-[1.7] [&_p+p]:mt-1.5 " +
   "[&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0 " +
   "[&_a]:text-[#0A6CD0] " +
-  "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-3 [&_h1]:mb-1.5 [&_h1]:leading-snug [&_h1:first-child]:mt-0 " +
+  "[&_h1]:text-[24px] [&_h1]:font-bold [&_h1]:mt-3 [&_h1]:mb-1.5 [&_h1]:leading-snug [&_h1:first-child]:mt-0 " +
   "[&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:leading-snug [&_h2:first-child]:mt-0 " +
   "[&_h3]:text-lg [&_h3]:font-bold [&_h3]:mt-2.5 [&_h3]:mb-1 [&_h3]:leading-snug [&_h3:first-child]:mt-0 " +
   "[&_h4]:text-base [&_h4]:font-bold [&_h4]:mt-2 [&_h4]:mb-1 [&_h4]:leading-snug [&_h4:first-child]:mt-0 " +
@@ -392,7 +392,7 @@ function ProductCard({ it, editable, card }) {
         </p>
         <div className="mt-auto pt-3">
           {it.price ? (
-            <p className="text-[15px] font-black text-[#1E4AD1]">NT${it.price}</p>
+            <p className="text-[15px] font-bold text-[#1E4AD1]">NT${it.price}</p>
           ) : (
             <p className="text-[12px] text-slate-400">查看方案</p>
           )}
@@ -555,7 +555,7 @@ function ProductsPublic({
         <CanvasEditable
           enabled={editable}
           as="h3"
-          className="text-[17px] font-black text-slate-900 leading-snug tracking-tight mt-0 mb-4 shrink-0"
+          className="text-[17px] font-bold text-slate-900 leading-snug tracking-tight mt-0 mb-4 shrink-0"
           value={title || ""}
           singleLine
           placeholder="區塊標題"
@@ -591,7 +591,7 @@ function SocialPublic({ props: p, editable, onPatch }) {
   const links = [
     { href: p.instagram, label: "Instagram", color: "from-[#f58529] to-[#dd2a7b]" },
     { href: p.facebook, label: "Facebook", color: "from-[#1877F2] to-[#1877F2]" },
-    { href: p.line, label: "LINE", color: "from-[#06C755] to-[#06C755]" },
+    { href: p.line, label: "LINE", color: "from-[#067A38] to-[#067A38]" },
   ].filter((x) => x.href);
   const titleEl = (
     <CanvasEditable
@@ -599,8 +599,8 @@ function SocialPublic({ props: p, editable, onPatch }) {
       as="h3"
       className={
         p.style === "banner"
-          ? "text-lg font-black"
-          : "text-[17px] font-black text-slate-900 leading-snug mt-0 mb-2"
+          ? "text-lg font-bold"
+          : "text-[17px] font-bold text-slate-900 leading-snug mt-0 mb-2"
       }
       value={p.title || ""}
       singleLine
@@ -652,7 +652,7 @@ function SocialPublic({ props: p, editable, onPatch }) {
           <CanvasEditable
             enabled={editable}
             as="h3"
-            className="text-[17px] font-black text-slate-900 leading-snug mt-0 mb-3"
+            className="text-[17px] font-bold text-slate-900 leading-snug mt-0 mb-3"
             value={p.title || ""}
             singleLine
             placeholder="區塊標題"
@@ -1586,7 +1586,7 @@ function PartnerBlogBlockBody({
     case "heading": {
       const Tag = p.tag || "h2";
       const headingCls = {
-        h1: "text-2xl font-bold text-slate-900 leading-snug mt-0 mb-0",
+        h1: "text-[24px] font-bold text-slate-900 leading-snug mt-0 mb-0",
         h2: "text-xl font-bold text-slate-900 leading-snug mt-0 mb-0",
         h3: "text-lg font-bold text-slate-900 leading-snug mt-0 mb-0",
         h4: "text-base font-bold text-slate-900 leading-snug mt-0 mb-0",
@@ -2074,7 +2074,7 @@ function PartnerBlogBlockBody({
           <CanvasEditable
             enabled={editable}
             as="h2"
-            className="text-xl font-black"
+            className="text-xl font-bold"
             value={p.title || ""}
             singleLine
             placeholder="標題"
@@ -2113,7 +2113,7 @@ function PartnerBlogBlockBody({
     case "counter":
       return (
         <div className="text-center py-4">
-          <p className="text-4xl font-black text-[#1E4AD1]">
+          <p className="text-[24px] font-bold text-[#1E4AD1]">
             <CanvasEditable
               enabled={editable}
               as="span"

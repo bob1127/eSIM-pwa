@@ -368,7 +368,7 @@ function ModalShell({ title, eyebrow, onClose, children, maxW = "max-w-md" }) {
                 {eyebrow}
               </p>
             ) : null}
-            <h3 className="font-black" style={{ color: UI.dark }}>
+            <h3 className="font-bold" style={{ color: UI.dark }}>
               {title}
             </h3>
           </div>
@@ -447,7 +447,7 @@ function PendingPaymentModal({ order, onClose }) {
                   </p>
                   <div className="flex items-center gap-2">
                     <code
-                      className="flex-1 text-lg font-black tracking-wider px-3 py-2"
+                      className="flex-1 text-lg font-bold tracking-wider px-3 py-2"
                       style={{
                         backgroundColor: UI.white,
                         border: `1px solid ${UI.border}`,
@@ -647,7 +647,7 @@ function OrderDetailView({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1
-              className="text-xl sm:text-2xl font-black tracking-tight"
+              className="text-xl sm:text-[24px] font-bold tracking-tight"
               style={{ color: UI.dark }}
             >
               #{orderShortId(order.id)}
@@ -700,7 +700,7 @@ function OrderDetailView({
                   size={18}
                   style={{ color: UI.mid }}
                 />
-                <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                <h3 className="text-sm font-bold" style={{ color: UI.dark }}>
                   方案內容
                 </h3>
               </div>
@@ -745,7 +745,7 @@ function OrderDetailView({
                       ) : null}
                     </div>
                     <p
-                      className="font-black text-sm"
+                      className="font-bold text-sm"
                       style={{ color: UI.dark }}
                     >
                       NT${" "}
@@ -795,7 +795,7 @@ function OrderDetailView({
               className="px-4 sm:px-5 py-3.5"
               style={{ borderBottom: `1px solid ${UI.border}` }}
             >
-              <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+              <h3 className="text-sm font-bold" style={{ color: UI.dark }}>
                 付款
               </h3>
             </div>
@@ -834,7 +834,7 @@ function OrderDetailView({
                     總計
                   </dt>
                   <dd
-                    className="text-right tabular-nums font-black text-lg"
+                    className="text-right tabular-nums font-bold text-lg"
                     style={{ color: UI.dark }}
                   >
                     NT$ {formatNTD(order.total_amount)}
@@ -876,7 +876,7 @@ function OrderDetailView({
                 {(payInfo.code_no || payInfo.payment_no) && (
                   <div className="flex items-center gap-3">
                     <code
-                      className="flex-1 text-base font-black tracking-wider px-3 py-2"
+                      className="flex-1 text-base font-bold tracking-wider px-3 py-2"
                       style={{
                         backgroundColor: UI.white,
                         border: `1px solid ${UI.border}`,
@@ -917,7 +917,7 @@ function OrderDetailView({
                 className="px-4 sm:px-5 py-3.5"
                 style={{ borderBottom: `1px solid ${UI.border}` }}
               >
-                <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                <h3 className="text-sm font-bold" style={{ color: UI.dark }}>
                   eSIM QR Code
                 </h3>
               </div>
@@ -988,7 +988,7 @@ function OrderDetailView({
                 className="px-4 sm:px-5 py-3.5"
                 style={{ borderBottom: `1px solid ${UI.border}` }}
               >
-                <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                <h3 className="text-sm font-bold" style={{ color: UI.dark }}>
                   eSIM 識別碼 & 流量通知
                 </h3>
               </div>
@@ -1521,7 +1521,7 @@ export default function AccountOrdersView({
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
         <div>
           <h1
-            className="text-xl font-black tracking-tight"
+            className="text-xl font-bold tracking-tight"
             style={{ color: UI.dark }}
           >
             我的 eSIM 訂單
@@ -1777,7 +1777,7 @@ export default function AccountOrdersView({
                     <AccountBadge tone={meta.tone}>{meta.label}</AccountBadge>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-black" style={{ color: UI.dark }}>
+                    <p className="font-bold" style={{ color: UI.dark }}>
                       NT$ {formatNTD(order.total_amount)}
                     </p>
                     <div className="flex items-center gap-1.5">

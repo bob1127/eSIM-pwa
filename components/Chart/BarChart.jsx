@@ -202,22 +202,22 @@ const BarChart = () => {
 
             <div className='w-[600px] border border-black mx-auto'>
                 <div className="left w-1/2">
-                    <span>平均血糖：<b className='font-extrabold average-mg'>{averageCurrent}</b></span>
+                    <span>平均血糖：<b className='font-bold average-mg'>{averageCurrent}</b></span>
                 </div>
                 <div className="right w-1/2 border">
-                    <span>平均溫度：<b className='font-extrabold'></b></span>
+                    <span>平均溫度：<b className='font-bold'></b></span>
                 </div>
                 <div className="right w-1/2 border">
-                    <span>數據點數量<b className='dots font-extrabold'>{dataPointsCount}</b></span>
-                </div>
-
-                <div className="right w-1/2 border">
-                    <span>CurrentA<b className='CurrentA font-extrabold'>{dataPointsCount}</b></span>
+                    <span>數據點數量<b className='dots font-bold'>{dataPointsCount}</b></span>
                 </div>
 
+                <div className="right w-1/2 border">
+                    <span>CurrentA<b className='CurrentA font-bold'>{dataPointsCount}</b></span>
+                </div>
+
 
                 <div className="right w-1/2 border">
-                    <span>總數：<b className='sum font-extrabold'></b></span>
+                    <span>總數：<b className='sum font-bold'></b></span>
                 </div>
 
                 <button

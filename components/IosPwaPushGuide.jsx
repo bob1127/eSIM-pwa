@@ -129,7 +129,7 @@ export default function IosPwaPushGuide({ className = "" }) {
     <div className={`w-full ${className}`}>
       <div className="rounded-2xl border border-[#0A6CD0]/25 bg-white overflow-hidden shadow-sm">
         <div className="bg-[#0A6CD0] px-4 py-3 text-white text-center">
-          <p className="text-lg font-black">2 步驟安裝 · 即可收推播</p>
+          <p className="text-lg font-bold">2 步驟安裝 · 即可收推播</p>
           <p className="text-xs opacity-90 mt-0.5">
             iPhone · {browserLabel}：需先加入主畫面（約 30 秒）
           </p>
@@ -141,7 +141,7 @@ export default function IosPwaPushGuide({ className = "" }) {
               key={step.n}
               className="flex gap-3 rounded-xl bg-[#F0F7FF] border border-[#0A6CD0]/15 p-3"
             >
-              <span className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-[#0A6CD0] text-white text-sm font-black">
+              <span className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-[#0A6CD0] text-white text-sm font-bold">
                 {step.n}
               </span>
               <div>
@@ -198,7 +198,7 @@ export default function IosPwaPushGuide({ className = "" }) {
           </div>
 
           <div className="flex gap-3 rounded-xl bg-stone-50 border border-stone-100 p-3 opacity-80">
-            <span className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-stone-300 text-white text-sm font-black">
+            <span className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-stone-300 text-white text-sm font-bold">
               3
             </span>
             <div className="flex items-center gap-2">

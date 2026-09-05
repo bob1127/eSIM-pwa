@@ -1,15 +1,50 @@
 import { resolveMemberEmail } from "../push/_memberAuth";
 import { getSupabaseAdminServer } from "../../../lib/supabaseAdminServer";
-import { runMemberLotterySpin } from "../../../lib/memberCoupons";
+import {
+  getMemberLotteryPlayStatus,
+  runMemberLotterySpin,
+} from "../../../lib/memberCoupons";
 
 /**
- * POST /api/promo/lottery-spin
- * 需登入（Supabase Bearer 或 LINE NextAuth cookie）
- * 伺服器抽獎；中獎寫入 member_coupons
+ * GET  /api/promo/lottery-spin — 查詢是否已抽過（終身一次）
+ * POST /api/promo/lottery-spin — 抽獎；需登入
  */
 export default async function handler(req, res) {
+  if (req.method === "GET") {
+    try {
+      const member = await resolveMemberEmail(req, res);
+      if (!member?.email) {
+        return res.status(200).json({
+          success: true,
+          loggedIn: false,
+          played: false,
+          canSpin: false,
+        });
+      }
+      const supabaseAdmin = getSupabaseAdminServer();
+      const status = await getMemberLotteryPlayStatus(
+        supabaseAdmin,
+        member.email,
+      );
+      return res.status(200).json({
+        success: true,
+        loggedIn: true,
+        played: Boolean(status.played),
+        canSpin: !status.played,
+        play: status.play || null,
+        testUnlimited: Boolean(status.testUnlimited),
+      });
+    } catch (err) {
+      console.error("[api/promo/lottery-spin GET]", err);
+      return res.status(500).json({
+        success: false,
+        error: err.message || "查詢失敗",
+      });
+    }
+  }
+
   if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
+    res.setHeader("Allow", ["GET", "POST"]);
     return res.status(405).json({ success: false, error: "Method Not Allowed" });
   }
 

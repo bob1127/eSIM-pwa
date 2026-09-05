@@ -120,7 +120,7 @@ const AnimatedScroll = () => {
                 />
               </div>
               <div className="card-content relative p-10 flex flex-col justify-between ">
-                <h2 className="text-2xl font-light text-white">
+                <h2 className="text-[24px] font-light text-white">
                   Taiwan {index + 1}
                 </h2>
                 <p className="text-lg text-center font-light text-white">

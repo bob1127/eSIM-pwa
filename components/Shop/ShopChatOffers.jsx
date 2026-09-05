@@ -148,7 +148,7 @@ function ShopQuickView({ product, onClose }) {
           <p className="text-[13px] text-slate-600">{product.desc}</p>
 
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
+            <span className="text-[24px] font-bold text-slate-900">
               {formatPrice(product.price)}
             </span>
             {product.original ? (

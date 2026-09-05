@@ -156,7 +156,7 @@ export default function TrafficAlertPassCard({
               <p className="text-[11px] font-bold tracking-wider text-white/70">
                 {isBound ? "綁定日期" : "狀態"}
               </p>
-              <p className="mt-1 text-sm font-black tracking-wide">
+              <p className="mt-1 text-sm font-bold tracking-wide">
                 {isBound ? dateLabel || "已啟用" : "待綁定"}
               </p>
             </div>
@@ -164,7 +164,7 @@ export default function TrafficAlertPassCard({
 
           <div className="mt-7 flex items-end justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[34px] sm:text-[40px] font-black leading-none tracking-tight truncate">
+              <p className="text-[28px] font-bold leading-none tracking-tight truncate">
                 {usageLoading && isBound ? "…" : st.leftMain}
               </p>
               <p className="mt-1.5 text-[12px] font-semibold text-white/70">
@@ -177,7 +177,7 @@ export default function TrafficAlertPassCard({
               <span className="h-px w-8 bg-white/40" />
             </div>
             <div className="min-w-0 text-right">
-              <p className="text-[34px] sm:text-[40px] font-black leading-none tracking-tight">
+              <p className="text-[28px] font-bold leading-none tracking-tight">
                 {usageLoading && isBound ? "…" : st.rightMain}
               </p>
               <p className="mt-1.5 text-[12px] font-semibold text-white/70">
@@ -191,7 +191,7 @@ export default function TrafficAlertPassCard({
               {title}
             </p>
             {st.badge ? (
-              <span className="shrink-0 rounded-md bg-[#D7FF32] px-2 py-1 text-[10px] font-black text-slate-900">
+              <span className="shrink-0 rounded-md bg-[#D7FF32] px-2 py-1 text-[10px] font-bold text-slate-900">
                 {st.badge}
               </span>
             ) : null}
@@ -239,7 +239,7 @@ export default function TrafficAlertPassCard({
                   )}
                 </div>
                 <div className="flex-1 w-full min-w-0 space-y-2 text-[13px]">
-                  <p className="text-[11px] font-black uppercase tracking-wider text-[#1e4ad1]">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#1e4ad1]">
                     目前用量
                   </p>
                   <div className="flex justify-between gap-2">

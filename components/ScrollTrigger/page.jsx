@@ -32,22 +32,22 @@ const TextReveal = () => {
   // 將文字拆分為單個字元並包裝在 span 中
   const text = "CHIRENTOYS";
   const splitText = text.split("").map((char, index) => (
-    <p key={index} className="char h-[70px] text-[80px]  inline-block ">
+    <p key={index} className="char h-[70px] text-[28px]  inline-block ">
       {char}
     </p>
   ));
 
   return (
     <div className="flex justify-center flex-col items-center">
-      <p ref={textRef} className="font-black text-[50px]  text-gray-800">
+      <p ref={textRef} className="font-bold text-[28px]  text-gray-800">
         {splitText}
       </p>
-      {/* <p ref={textRef} className="font-black text-[50px]  text-rose-800">
+      {/* <p ref={textRef} className="font-bold text-[28px]  text-rose-800">
         {splitText}
       </p> */}
       <h2
         data-aos="fade-up"
-        className="text-[60px] uppercase font-normal leading-normal w-1/2"
+        className="text-[28px] uppercase font-normal leading-normal w-1/2"
       >
         適合0-4歲 小孩玩
       </h2>

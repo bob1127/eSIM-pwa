@@ -519,7 +519,7 @@ export default function ThreeHorizontalSlider({
                       animateOnScroll={false}
                     >
                       <p
-                        className={`mt-3 text-[52px] font-extrabold tracking-[0.08em] md:text-[88px] md:tracking-[0.14em] ${headingClass}`}
+                        className={`mt-3 text-[28px] font-bold tracking-[0.08em] md:text-[28px] md:tracking-[0.14em] ${headingClass}`}
                       >
                         {activeContent?.title}
                       </p>
@@ -547,7 +547,7 @@ export default function ThreeHorizontalSlider({
                       全球旅遊必備神器！免換實體卡
                     </p>
                     <p
-                      className={`mt-3 text-[52px] font-extrabold tracking-[0.08em] md:text-[88px] md:tracking-[0.14em] ${headingClass}`}
+                      className={`mt-3 text-[28px] font-bold tracking-[0.08em] md:text-[28px] md:tracking-[0.14em] ${headingClass}`}
                     >
                       eSIM
                     </p>

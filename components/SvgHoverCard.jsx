@@ -358,7 +358,7 @@ export default function SVGCardCarousel() {
 
       <div className="swiper-container-box">
         <div className="main-title max-w-[1500px] flex flex-col  mx-auto  ">
-          <h2 className="text-3xl lg:text-5xl text-white font-bold">NEWS</h2>
+          <h2 className="text-[28px] text-white font-bold">NEWS</h2>
           <p className="text-slate-300 text-lg mt-2">事項及相關文章</p>
 
           <span className="tracking-widest   text-md  mt-3 leading-relaxed text-slate-50 px-4 lg:px-0">

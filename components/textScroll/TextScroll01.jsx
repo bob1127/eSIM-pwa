@@ -61,7 +61,7 @@ export default function Home() {
                     loading='lazy'
                 />
                 <div ref={slider} className={styles.slider}>
-                    {/* <p className='text-rose-400 dark:text-slate-100 text-xl lg:text-2xl hidden md:block' ref={firstText}>Humming Probe UX100
+                    {/* <p className='text-rose-400 dark:text-slate-100 text-xl lg:text-[24px] hidden md:block' ref={firstText}>Humming Probe UX100
 免校正酸鹼檢測儀 -
                     </p> */}
                     <p className='text-gray-300 hidden md:block dark:text-slate-100  hidden lg:block' ref={secondText}>pH計/酸鹼度測定計/pH儀器 /pH計/酸鹼度測定計/pH儀器

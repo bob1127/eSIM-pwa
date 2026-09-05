@@ -194,11 +194,11 @@ export default function PartnerBlogItineraryEditor({
           <p className="min-w-0 max-w-[200px] text-sm font-bold truncate">
             {meta?.title || title}
           </p>
-          <span className="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded bg-[#e2498e] text-white">
+          <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#e2498e] text-white">
             行程規劃
           </span>
           {dirty ? (
-            <span className="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-400 text-slate-900">
+            <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400 text-slate-900">
               未儲存
             </span>
           ) : saveHint ? (
@@ -237,7 +237,7 @@ export default function PartnerBlogItineraryEditor({
             type="button"
             disabled={saving || !dirty}
             onClick={onSave}
-            className="px-3 py-1.5 rounded text-[12px] font-black bg-white/10 hover:bg-white/15 disabled:opacity-40"
+            className="px-3 py-1.5 rounded text-[12px] font-bold bg-white/10 hover:bg-white/15 disabled:opacity-40"
           >
             {saving ? "儲存中…" : "儲存草稿"}
           </button>
@@ -252,7 +252,7 @@ export default function PartnerBlogItineraryEditor({
                   : undefined
             }
             onClick={requestPublish}
-            className={`px-3 py-1.5 rounded text-[12px] font-black disabled:opacity-40 ${
+            className={`px-3 py-1.5 rounded text-[12px] font-bold disabled:opacity-40 ${
               dirty
                 ? "bg-amber-400 text-slate-900 hover:bg-amber-300"
                 : "bg-[#c62828] hover:bg-[#b71c1c] text-white"
@@ -270,7 +270,7 @@ export default function PartnerBlogItineraryEditor({
 
         <div className="flex-1 min-h-0 flex">
           <aside className="w-[240px] shrink-0 border-r border-white/10 overflow-y-auto p-3">
-            <p className="text-[10px] font-black tracking-wider text-white/40 uppercase mb-2">
+            <p className="text-[10px] font-bold tracking-wider text-white/40 uppercase mb-2">
               行程大綱
             </p>
             {days.map((d, di) => (
@@ -279,7 +279,7 @@ export default function PartnerBlogItineraryEditor({
                   <input
                     value={d.title}
                     onChange={(e) => updateDay(d.id, { title: e.target.value })}
-                    className="min-w-0 flex-1 bg-transparent text-[12px] font-black text-white/90 border-b border-transparent focus:border-white/30 outline-none"
+                    className="min-w-0 flex-1 bg-transparent text-[12px] font-bold text-white/90 border-b border-transparent focus:border-white/30 outline-none"
                   />
                   <button
                     type="button"
@@ -327,7 +327,7 @@ export default function PartnerBlogItineraryEditor({
             <button
               type="button"
               onClick={addDay}
-              className="w-full mt-1 py-2 rounded-lg border border-dashed border-white/20 text-[12px] font-black text-white/70 hover:bg-white/5"
+              className="w-full mt-1 py-2 rounded-lg border border-dashed border-white/20 text-[12px] font-bold text-white/70 hover:bg-white/5"
             >
               + 新增一天
             </button>
@@ -347,7 +347,7 @@ export default function PartnerBlogItineraryEditor({
           <main className="flex-1 min-w-0 overflow-y-auto bg-white text-slate-900">
             <div className="max-w-[720px] mx-auto px-5 py-8">
               <div className="mb-8 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-[13px] font-black text-slate-800 mb-3">
+                <p className="text-[13px] font-bold text-slate-800 mb-3">
                   行程地區 *必選至少一個。
                 </p>
                 <ItineraryDestinationPicker
@@ -396,7 +396,7 @@ export default function PartnerBlogItineraryEditor({
                     enabled
                     as="h2"
                     singleLine
-                    className="text-2xl font-black text-slate-900"
+                    className="text-[24px] font-bold text-slate-900"
                     value={stop.name}
                     onChange={(name) =>
                       updateStop(day.id, stop.id, { name })
@@ -463,7 +463,7 @@ export default function PartnerBlogItineraryEditor({
                               alt=""
                               className="w-full h-full object-cover"
                             />
-                            <span className="absolute inset-0 bg-black/40 text-white text-[10px] font-black flex items-center justify-center opacity-0 hover:opacity-100">
+                            <span className="absolute inset-0 bg-black/40 text-white text-[10px] font-bold flex items-center justify-center opacity-0 hover:opacity-100">
                               ×
                             </span>
                           </button>

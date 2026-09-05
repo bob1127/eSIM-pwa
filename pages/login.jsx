@@ -289,10 +289,10 @@ const LoginRegisterPage = () => {
 
   return (
     <Layout>
-      <div className="flex bg-[#1C82E0] flex-col items-center justify-center px-4 min-h-screen pt-2 pb-12 relative overflow-hidden">
+      <div className="flex bg-[#1566B5] flex-col items-center justify-center px-4 min-h-screen pt-2 pb-12 relative overflow-hidden">
         <div className="w-full max-w-md mx-auto text-white relative z-10">
           <div className="mb-6 text-center">
-            <h1 className="text-2xl font-semibold tracking-wide">會員登入</h1>
+            <h1 className="text-[24px] font-semibold tracking-wide">會員登入</h1>
           </div>
 
           {!isLoggedIn ? (
@@ -386,8 +386,8 @@ const LoginRegisterPage = () => {
                         disabled={loggingIn}
                         className={`mt-2 w-full rounded-full py-2.5 text-sm font-semibold tracking-wide shadow-sm transition ${
                           loggingIn
-                            ? "bg-white/40 text-[#1C82E0] cursor-not-allowed"
-                            : "bg-white/95 text-[#1C82E0] hover:bg-white"
+                            ? "bg-white/40 text-[#1566B5] cursor-not-allowed"
+                            : "bg-white/95 text-[#1566B5] hover:bg-white"
                         }`}
                       >
                         {loggingIn ? (
@@ -395,8 +395,8 @@ const LoginRegisterPage = () => {
                             layout="inline"
                             size="xs"
                             label="處理中..."
-                            labelClassName="text-sm font-semibold text-[#1C82E0]"
-                            spinnerClassName="text-[#1C82E0]"
+                            labelClassName="text-sm font-semibold text-[#1566B5]"
+                            spinnerClassName="text-[#1566B5]"
                           />
                         ) : (
                           "登入"
@@ -434,7 +434,7 @@ const LoginRegisterPage = () => {
                       <button
                         type="button"
                         onClick={handleLineLogin}
-                        className="flex items-center justify-center gap-2.5 w-full rounded-full bg-[#06C755] border border-transparent py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:brightness-105 shadow-sm"
+                        className="flex items-center justify-center gap-2.5 w-full rounded-full bg-[#067A38] border border-transparent py-2.5 text-[13px] font-semibold text-white tracking-wide transition hover:brightness-105 shadow-sm"
                       >
                         <LineIconSvg className="w-5 h-5" />
                         LINE

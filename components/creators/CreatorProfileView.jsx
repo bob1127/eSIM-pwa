@@ -165,7 +165,7 @@ export default function CreatorProfileView({
               </div>
             </div>
             <div className="absolute inset-x-0 bottom-[4.25rem] sm:bottom-16 px-4 sm:px-6 lg:px-8 text-white max-w-3xl">
-              <h1 className="text-[22px] sm:text-[28px] lg:text-[36px] font-black leading-tight">
+              <h1 className="text-[22px] sm:text-[28px] font-bold leading-tight">
                 {latest?.title || profile.name}
               </h1>
               <p className="mt-2 text-[12px] sm:text-[13px] text-white/85">
@@ -217,7 +217,7 @@ export default function CreatorProfileView({
                       className="w-14 h-14 rounded-full object-cover border border-slate-100"
                     />
                     <div className="min-w-0">
-                      <p className="text-[20px] font-black text-slate-900 leading-tight">
+                      <p className="text-[20px] font-bold text-slate-900 leading-tight">
                         {profile.name}
                       </p>
                       <p className="text-[12px] text-slate-400 mt-0.5">{profile.bio}</p>
@@ -225,19 +225,19 @@ export default function CreatorProfileView({
                   </div>
                   <div className="mt-5 grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <p className="text-[18px] font-black text-slate-900">
+                      <p className="text-[18px] font-bold text-slate-900">
                         {fmt(profile.likeCount)}
                       </p>
                       <p className="text-[11px] text-slate-400">按讚</p>
                     </div>
                     <div>
-                      <p className="text-[18px] font-black text-slate-900">
+                      <p className="text-[18px] font-bold text-slate-900">
                         {fmt(profile.postCount)}
                       </p>
                       <p className="text-[11px] text-slate-400">篇文章</p>
                     </div>
                     <div>
-                      <p className="text-[18px] font-black text-slate-900">
+                      <p className="text-[18px] font-bold text-slate-900">
                         {profile.memberSince}
                       </p>
                       <p className="text-[11px] text-slate-400">加入年份</p>
@@ -251,15 +251,15 @@ export default function CreatorProfileView({
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-white rounded-2xl px-3 py-3 text-center shadow-sm">
-                      <p className="text-[16px] font-black">{fmt(profile.viewCount)}</p>
+                      <p className="text-[16px] font-bold">{fmt(profile.viewCount)}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">累計人氣</p>
                     </div>
                     <div className="bg-white rounded-2xl px-3 py-3 text-center shadow-sm">
-                      <p className="text-[16px] font-black">{fmt(followerCount)}</p>
+                      <p className="text-[16px] font-bold">{fmt(followerCount)}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">追蹤</p>
                     </div>
                     <div className="bg-white rounded-2xl px-3 py-3 text-center shadow-sm">
-                      <p className="text-[16px] font-black">{fmt(profile.likeCount)}</p>
+                      <p className="text-[16px] font-bold">{fmt(profile.likeCount)}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">按讚</p>
                     </div>
                   </div>

@@ -259,7 +259,7 @@ function MetricCard({ label, value, hint, icon, iconBg, onHintClick }) {
         ) : null}
       </div>
       <p
-        className="text-xl sm:text-2xl font-black mt-2 tabular-nums"
+        className="text-xl sm:text-[24px] font-bold mt-2 tabular-nums"
         style={{ color: UI.dark }}
       >
         {value}
@@ -342,7 +342,7 @@ function FreezeInfoModal({ open, snapshot, onClose }) {
           <div>
             <p
               id="freeze-info-title"
-              className="text-sm font-black"
+              className="text-sm font-bold"
               style={{ color: UI.dark }}
             >
               為什麼會扣除 {days} 天內訂單？
@@ -397,7 +397,7 @@ function FreezeInfoModal({ open, snapshot, onClose }) {
               >
                 <div>
                   <p
-                    className={`text-xs ${r.emphasize ? "font-black" : "font-bold"}`}
+                    className={`text-xs ${r.emphasize ? "font-bold" : "font-bold"}`}
                     style={{ color: UI.dark }}
                   >
                     {r.label}
@@ -408,7 +408,7 @@ function FreezeInfoModal({ open, snapshot, onClose }) {
                 </div>
                 <p
                   className={`text-sm tabular-nums shrink-0 ${
-                    r.emphasize ? "font-black" : "font-bold"
+                    r.emphasize ? "font-bold" : "font-bold"
                   }`}
                   style={{ color: r.emphasize ? "#008060" : UI.dark }}
                 >
@@ -497,7 +497,7 @@ function WithdrawalDetailModal({ open, row, onClose }) {
           style={{ borderBottom: `1px solid ${UI.border}` }}
         >
           <div>
-            <p className="text-sm font-black" style={{ color: UI.dark }}>
+            <p className="text-sm font-bold" style={{ color: UI.dark }}>
               提領詳情
             </p>
             <p className="text-[11px] mt-0.5" style={{ color: UI.soft }}>
@@ -964,7 +964,7 @@ export default function PartnerSettlementPage() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="min-w-0">
             <h1
-              className="text-xl font-black tracking-tight"
+              className="text-xl font-bold tracking-tight"
               style={{ color: UI.dark }}
             >
               結算與提領
@@ -1090,7 +1090,7 @@ export default function PartnerSettlementPage() {
               >
                 <MaterialIcon name="payments" size={16} className="text-white" />
               </div>
-              <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+              <h3 className="text-sm font-bold" style={{ color: UI.dark }}>
                 申請提領
               </h3>
             </div>
@@ -1193,7 +1193,7 @@ export default function PartnerSettlementPage() {
                 />
               </div>
               <div>
-                <h3 className="text-sm font-black" style={{ color: UI.dark }}>
+                <h3 className="text-sm font-bold" style={{ color: UI.dark }}>
                   收款帳戶
                 </h3>
                 <p className="text-[10px]" style={{ color: UI.soft }}>
@@ -1434,7 +1434,7 @@ export default function PartnerSettlementPage() {
                         {r.fee_amount > 0 ? fmt(r.fee_amount) : "免"}
                       </td>
                       <td
-                        className="px-4 py-3 text-right font-black tabular-nums"
+                        className="px-4 py-3 text-right font-bold tabular-nums"
                         style={{ color: UI.dark }}
                       >
                         {fmt(
@@ -1570,7 +1570,7 @@ export default function PartnerSettlementPage() {
               </li>
               <li className="flex justify-between gap-3 border-t border-slate-200 pt-1.5">
                 <span>預估實匯</span>
-                <span className="font-black tabular-nums">
+                <span className="font-bold tabular-nums">
                   {fmt(confirmDialog.net)}
                 </span>
               </li>

@@ -642,7 +642,7 @@ export default function AccountPage() {
             className="space-y-6 w-full"
           >
             <div>
-              <h2 className="text-2xl font-bold text-[#202223]">店鋪管理後台</h2>
+              <h2 className="text-[24px] font-bold text-[#202223]">店鋪管理後台</h2>
               <p className="text-sm text-[#6d7175] mt-1">
                 專屬 {partnerStoreInfo?.store_name || partnerData?.name} 的業績與設定
               </p>

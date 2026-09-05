@@ -98,7 +98,7 @@ function CommissionCell({ rate }) {
     <div className="flex items-center gap-1.5 flex-wrap justify-end">
       {tier === "high" ? (
         <span
-          className="text-[10px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded"
+          className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded"
           style={{ backgroundColor: "#fef3c7", color: "#92400e" }}
         >
           高分潤
@@ -217,7 +217,7 @@ function StatCard({ label, value, sub }) {
         {label}
       </p>
       <p
-        className="text-xl sm:text-2xl font-black mt-1 tabular-nums"
+        className="text-xl sm:text-[24px] font-bold mt-1 tabular-nums"
         style={{ color: SHOPIFY_UI.textPrimary }}
       >
         {value}
@@ -528,7 +528,7 @@ export default function PartnerRatesPage() {
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="min-w-0">
               <h1
-                className="text-xl font-black tracking-tight"
+                className="text-xl font-bold tracking-tight"
                 style={{ color: SHOPIFY_UI.textPrimary }}
               >
                 方案分潤一覽

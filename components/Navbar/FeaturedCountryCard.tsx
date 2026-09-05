@@ -134,7 +134,7 @@ export default function FeaturedCountryCard({
         <p className="text-[10px] text-gray-600 line-clamp-1 leading-snug">
           {subtitle}
         </p>
-        <h3 className="mt-0.5 text-[13px] font-black text-gray-900 leading-tight line-clamp-1">
+        <h3 className="mt-0.5 text-[13px] font-bold text-gray-900 leading-tight line-clamp-1">
           {country.name}
         </h3>
 
@@ -144,7 +144,7 @@ export default function FeaturedCountryCard({
               <span
                 className={[
                   "flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full",
-                  "bg-[#1E4AD1] px-1 text-[8px] font-black leading-none text-white",
+                  "bg-[#1E4AD1] px-1 text-[8px] font-bold leading-none text-white",
                   countryCode.length > 2 ? "tracking-tight" : "",
                 ].join(" ")}
               >
@@ -154,7 +154,7 @@ export default function FeaturedCountryCard({
             {priceText ? (
               <div className="flex items-baseline gap-0.5 min-w-0">
                 <span className="text-[10px] text-gray-600 shrink-0">NT$</span>
-                <span className="text-base font-black text-gray-900 truncate">
+                <span className="text-base font-bold text-gray-900 truncate">
                   {priceText}
                 </span>
                 <span className="text-[10px] text-gray-600 shrink-0">起</span>

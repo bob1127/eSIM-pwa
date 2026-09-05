@@ -25,7 +25,7 @@ const Home: NextPage = () => {
             <section className='mt-[100px]'>
                 <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
                     <div className="mb-10 flex justify-center flex-col  items-center space-y-6">
-                        <h1 className="text-4xl font-bold md:text-5xl w-1/2 leading-none ">超極生技以專利技術開發的免校正拋棄式 pH meter 酸鹼度計</h1>
+                        <h1 className="text-[24px] font-bold md:text-[28px] w-1/2 leading-none ">超極生技以專利技術開發的免校正拋棄式 pH meter 酸鹼度計</h1>
                        
                     </div>
                     <Carousel items={imagesItems} />

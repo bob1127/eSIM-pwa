@@ -150,7 +150,7 @@ export default function TextFormatToolbar({ rootRef, onEdit }) {
             key={h}
             type="button"
             title={h === "P" ? "段落" : h}
-            className="h-7 min-w-[28px] px-1 rounded text-[10px] font-black hover:bg-white/15"
+            className="h-7 min-w-[28px] px-1 rounded text-[10px] font-bold hover:bg-white/15"
             onClick={() =>
               apply(() =>
                 cmd("formatBlock", h === "P" ? "<p>" : `<${h.toLowerCase()}>`),
@@ -164,7 +164,7 @@ export default function TextFormatToolbar({ rootRef, onEdit }) {
         <button
           type="button"
           title="粗體"
-          className="h-7 w-7 rounded font-black hover:bg-white/15"
+          className="h-7 w-7 rounded font-bold hover:bg-white/15"
           onClick={() => apply(() => cmd("bold"))}
         >
           B

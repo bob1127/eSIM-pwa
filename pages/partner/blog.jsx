@@ -535,7 +535,7 @@ export default function PartnerBlogAdminPage() {
                   "linear-gradient(180deg, rgba(250,222,43,0.14) 0%, #fff 48%)",
               }}
             >
-              <p className="text-sm font-black text-[#1E4AD1] mb-2">
+              <p className="text-sm font-bold text-[#1E4AD1] mb-2">
                 尚未開通「自訂文章」加值功能
               </p>
               <p className="text-sm text-slate-600 leading-relaxed mb-3">
@@ -546,7 +546,7 @@ export default function PartnerBlogAdminPage() {
                 href={lineApplyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-black text-[#111] shadow-sm hover:brightness-95 transition"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-bold text-[#111] shadow-sm hover:brightness-95 transition"
                 style={{ backgroundColor: "#FADE2B" }}
               >
                 <LineAppIconSvg className="w-5 h-5" />
@@ -1078,7 +1078,7 @@ export default function PartnerBlogAdminPage() {
                     : "border-slate-200 hover:border-slate-300"
                 }`}
               >
-                <p className="text-[13px] font-black text-slate-800">一般文章</p>
+                <p className="text-[13px] font-bold text-slate-800">一般文章</p>
                 <p className="mt-1 text-[11px] text-slate-500 leading-snug">
                   現有視覺編輯器，自由拖元件排版。
                 </p>
@@ -1092,7 +1092,7 @@ export default function PartnerBlogAdminPage() {
                     : "border-slate-200 hover:border-slate-300"
                 }`}
               >
-                <p className="text-[13px] font-black text-slate-800">行程規劃</p>
+                <p className="text-[13px] font-bold text-slate-800">行程規劃</p>
                 <p className="mt-1 text-[11px] text-slate-500 leading-snug">
                   按天／景點建立，前台有行程目錄。
                 </p>

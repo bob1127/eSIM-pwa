@@ -169,7 +169,7 @@ export default function ItineraryDestinationPicker({
                       onClick={() =>
                         setOpenId(expanded && !query ? "" : country.id)
                       }
-                      className="flex-1 min-w-0 px-2 py-2 text-left text-[13px] font-black text-slate-800"
+                      className="flex-1 min-w-0 px-2 py-2 text-left text-[13px] font-bold text-slate-800"
                     >
                       {country.label}
                       <span className="ml-1.5 text-[11px] font-medium text-slate-400">

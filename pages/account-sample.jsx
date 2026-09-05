@@ -56,7 +56,7 @@ export default function MemberDashboard() {
     <div className="min-h-screen bg-gray-50 text-slate-800 pb-20 md:pb-8">
       {/* 頂部導覽列 (全裝置共用) */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md px-5 py-3 flex justify-between items-center md:px-10 md:py-4 md:shadow-sm">
-        <h1 className="text-xl md:text-2xl font-bold tracking-wider">錢包</h1>
+        <h1 className="text-xl md:text-[24px] font-bold tracking-wider">錢包</h1>
         <div className="flex items-center gap-4">
           <div className="flex items-center bg-green-100 text-[#00C300] px-2 py-0.5 rounded-full text-sm font-bold">
             <span className="w-4 h-4 bg-[#00C300] text-white rounded-full flex items-center justify-center text-[10px] mr-1">

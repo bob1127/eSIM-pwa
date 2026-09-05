@@ -178,7 +178,7 @@ export default function PartnerResetPassword() {
           <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-2">
             Partner Portal
           </p>
-          <h1 className="text-3xl md:text-4xl font-black text-white leading-tight mb-3">
+          <h1 className="text-[28px] md:text-[24px] font-bold text-white leading-tight mb-3">
             設定新密碼
           </h1>
           <p className="text-blue-100 text-sm leading-relaxed mb-8">
@@ -235,7 +235,7 @@ export default function PartnerResetPassword() {
               <button
                 type="submit"
                 disabled={submitting || isSuccess}
-                className="w-full bg-[#4ade80] hover:bg-[#22c55e] disabled:opacity-60 text-slate-900 font-black py-4 rounded-full text-base transition shadow-lg mt-2"
+                className="w-full bg-[#4ade80] hover:bg-[#22c55e] disabled:opacity-60 text-slate-900 font-bold py-4 rounded-full text-base transition shadow-lg mt-2"
               >
                 {submitting ? "更新中..." : "確認新密碼 →"}
               </button>
@@ -255,7 +255,7 @@ export default function PartnerResetPassword() {
           <p className="text-sm font-bold text-white/70 uppercase tracking-widest mb-2">
             JEKO eSIM Partner
           </p>
-          <h2 className="text-3xl font-black leading-snug mb-3">
+          <h2 className="text-[28px] font-bold leading-snug mb-3">
             安全重設密碼
           </h2>
           <p className="text-white/80 text-sm leading-relaxed max-w-sm">

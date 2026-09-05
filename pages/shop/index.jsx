@@ -58,7 +58,7 @@ function PromoCard({ card }) {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
       <div className="absolute bottom-0 left-0 p-6 sm:p-8 flex flex-col items-start gap-2">
-        <h3 className="text-white text-xl sm:text-2xl font-bold leading-tight">
+        <h3 className="text-white text-xl sm:text-[24px] font-bold leading-tight">
           {card.title}
         </h3>
         <p className="text-white/90 text-sm sm:text-[15px]">{card.sub}</p>
@@ -274,7 +274,7 @@ function ProductQuickView({ product, onClose }) {
           <p className="text-[13px] text-slate-600">{product.desc}</p>
 
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
+            <span className="text-[24px] font-bold text-slate-900">
               NT${product.price.toLocaleString()}
             </span>
             {product.original && (
@@ -545,7 +545,7 @@ export default function ShopPage() {
 
         {/* ── Section 2：Must-Have 精選商品（輪播） ── */}
         <section className={`${CONTAINER} pb-10 sm:pb-14`}>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-5">
+          <h2 className="text-[24px] sm:text-[28px] font-bold text-slate-900 mb-5">
             Must-Have Jeko Selections
           </h2>
 
@@ -579,7 +579,7 @@ export default function ShopPage() {
 
         {/* ── Section 2b：Travel Gear 精選輪播 ── */}
         <section className={`${CONTAINER} pb-10 sm:pb-14`}>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-5">
+          <h2 className="text-[24px] sm:text-[28px] font-bold text-slate-900 mb-5">
             Travel Gear Essentials
           </h2>
           <ProductCarousel products={TRAVEL_GEAR} onDetail={setQuickView} />
@@ -587,7 +587,7 @@ export default function ShopPage() {
 
         {/* ── Section 3：Discover More Banner ── */}
         <section className={`${CONTAINER} pb-14 sm:pb-20`}>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">
+          <h2 className="text-[24px] sm:text-[28px] font-bold text-slate-900 mb-6">
             Discover More from Jeko
           </h2>
           <Link
@@ -603,7 +603,7 @@ export default function ShopPage() {
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
             <div className="absolute inset-0 flex flex-col justify-center items-start px-8 sm:px-14 gap-2">
-              <h3 className="text-white text-2xl sm:text-3xl font-bold leading-tight">
+              <h3 className="text-white text-[24px] sm:text-[28px] font-bold leading-tight">
                 {DISCOVER_BANNER.title}
               </h3>
               <p className="text-white/90 text-sm sm:text-base">

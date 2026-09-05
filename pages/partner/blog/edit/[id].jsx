@@ -390,7 +390,7 @@ export default function PartnerBlogEditPage() {
       </Head>
       {restoreOffer ? (
         <div className="fixed top-14 left-1/2 z-[9999] -translate-x-1/2 max-w-md w-[90%] rounded-xl bg-[#1f2124] border border-white/10 text-white p-4 shadow-2xl">
-          <p className="text-sm font-black">發現本機未儲存備份</p>
+          <p className="text-sm font-bold">發現本機未儲存備份</p>
           <p className="text-[12px] mt-1.5 text-white/55 leading-relaxed">
             存在這台瀏覽器裡的草稿，不是伺服器連線。上次可能還沒按儲存就離開，要還原到畫布嗎？
           </p>
@@ -411,7 +411,7 @@ export default function PartnerBlogEditPage() {
             </button>
             <button
               type="button"
-              className="text-[11px] font-black px-3 py-1.5 rounded bg-white text-slate-900 hover:bg-slate-100"
+              className="text-[11px] font-bold px-3 py-1.5 rounded bg-white text-slate-900 hover:bg-slate-100"
               onClick={() => {
                 setBlocks(restoreOffer.blocks || []);
                 setMeta({ ...EMPTY_META, ...restoreOffer.meta });

@@ -109,7 +109,7 @@ function UsageTable() {
   return (
     <section id="usage-table" className="scroll-mt-28 space-y-4">
       <div className="flex items-end justify-between gap-3">
-        <h3 className="text-lg font-black text-slate-900 tracking-tight">
+        <h3 className="text-lg font-bold text-slate-900 tracking-tight">
           流量用量對照表
         </h3>
         <StatusPill tone="slate">參考估算</StatusPill>
@@ -126,7 +126,7 @@ function UsageTable() {
                 <th
                   key={plan.key}
                   className={cn(
-                    "p-4 font-black border-b border-slate-100 text-center",
+                    "p-4 font-bold border-b border-slate-100 text-center",
                     plan.highlight
                       ? "bg-[#1e4ad1] text-white"
                       : "bg-[#F7F8FA] text-slate-900",
@@ -221,7 +221,7 @@ function UsageTable() {
           >
             <div
               className={cn(
-                "px-5 py-3.5 font-black flex items-center justify-between",
+                "px-5 py-3.5 font-bold flex items-center justify-between",
                 plan.highlight
                   ? "bg-[#1e4ad1] text-white"
                   : "bg-[#F7F8FA] text-slate-900",
@@ -340,7 +340,7 @@ function UsageResultSheet({ usageResult }) {
               <MaterialIcon name="sim_card_alert" size={22} />
             </div>
             <div>
-              <h3 className="text-[17px] font-black text-amber-950">
+              <h3 className="text-[17px] font-bold text-amber-950">
                 尚未安裝 eSIM
               </h3>
               <p className="text-[13px] text-amber-900/90 mt-2 leading-relaxed">
@@ -381,7 +381,7 @@ function UsageResultSheet({ usageResult }) {
       <div className="px-5 pb-5 sm:px-6 sm:pb-6">
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="min-w-0">
-            <h3 className="text-[17px] font-black text-slate-900 truncate">
+            <h3 className="text-[17px] font-bold text-slate-900 truncate">
               {usageResult.productName || "eSIM 用量"}
             </h3>
             <p className="text-[12px] text-slate-500 mt-0.5">即時查詢結果</p>
@@ -394,7 +394,7 @@ function UsageResultSheet({ usageResult }) {
         </div>
 
         {hasMb ? (
-          <p className="text-[34px] sm:text-[40px] font-black tracking-tight text-slate-900 leading-none mt-3">
+          <p className="text-[28px] font-bold tracking-tight text-slate-900 leading-none mt-3">
             {remaining}
             <span className="ml-1.5 text-base font-bold text-slate-400">
               MB
@@ -544,7 +544,7 @@ export default function DataQueryPage() {
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-[clamp(2rem,6vw,2.75rem)] font-black tracking-tight leading-none text-slate-900">
+                <h1 className="text-[clamp(2rem,6vw,2.75rem)] font-bold tracking-tight leading-none text-slate-900">
                   你好
                 </h1>
                 <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -634,7 +634,7 @@ export default function DataQueryPage() {
                           <MaterialIcon name="sim_card" size={22} />
                         </div>
                         <div className="min-w-0">
-                          <h2 className="text-xl font-black text-white tracking-tight">
+                          <h2 className="text-xl font-bold text-white tracking-tight">
                             {activeMeta.headline}
                           </h2>
                           <p className="text-sm text-white/85 mt-0.5">
@@ -694,7 +694,7 @@ export default function DataQueryPage() {
 
                   <div className={cn(CARD, "bg-white p-5 sm:p-6")}>
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-black text-slate-900">
+                      <h3 className="text-sm font-bold text-slate-900">
                         查詢前請注意
                       </h3>
                       <StatusPill tone="slate">UTC+8</StatusPill>
@@ -732,7 +732,7 @@ export default function DataQueryPage() {
                 <div className="space-y-4">
                   <div className={cn(CARD, "bg-white p-5 sm:p-6")}>
                     <SheetHandle />
-                    <h2 className="text-xl font-black text-slate-900 tracking-tight mb-1">
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight mb-1">
                       {activeMeta.headline}
                     </h2>
                     <p className="text-sm text-slate-500 mb-5">
@@ -756,14 +756,14 @@ export default function DataQueryPage() {
                           )}
                         >
                           <div className="flex items-center gap-2 mb-3">
-                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-black bg-[#1e4ad1] text-white">
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold bg-[#1e4ad1] text-white">
                               {item.step}
                             </span>
                             {item.comingSoon && (
                               <StatusPill tone="amber">即將上線</StatusPill>
                             )}
                           </div>
-                          <h3 className="text-base font-black mb-1.5 text-slate-900">
+                          <h3 className="text-base font-bold mb-1.5 text-slate-900">
                             {item.title}
                           </h3>
                           <p className="text-sm leading-relaxed text-slate-600">

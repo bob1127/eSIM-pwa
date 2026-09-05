@@ -83,7 +83,7 @@ function PartnerAccessGateModal({ open, onClose, access = null }) {
         <div className="flex items-start justify-between gap-3 mb-4">
           <h2
             id="partner-access-title"
-            className="text-[22px] font-black text-slate-900 tracking-tight"
+            className="text-[22px] font-bold text-slate-900 tracking-tight"
           >
             {title}
           </h2>
@@ -105,7 +105,7 @@ function PartnerAccessGateModal({ open, onClose, access = null }) {
           <p className="text-[12px] font-bold text-[#3B82F6] mb-1">
             {highlightLabel}
           </p>
-          <p className="text-[28px] font-black text-[#3B82F6] tracking-tight leading-none">
+          <p className="text-[28px] font-bold text-[#3B82F6] tracking-tight leading-none">
             {highlightValue}
           </p>
         </div>
@@ -237,7 +237,7 @@ function ForgotPasswordPanel({ initialEmail, onClose }) {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <h2 className="text-xl font-black text-white mb-2">忘記密碼</h2>
+      <h2 className="text-xl font-bold text-white mb-2">忘記密碼</h2>
       <p className="text-sm text-blue-100 leading-relaxed mb-6">
         請輸入您
         <strong className="text-white">申請合作夥伴時填寫的 Email</strong>
@@ -324,7 +324,7 @@ function ForgotPasswordPanel({ initialEmail, onClose }) {
           <button
             type="submit"
             disabled={status === "sending" || cooldown > 0}
-            className="w-full bg-white hover:bg-blue-50 disabled:opacity-60 text-[#1E4AD1] font-black py-3.5 rounded-full text-sm transition shadow-lg"
+            className="w-full bg-white hover:bg-blue-50 disabled:opacity-60 text-[#1E4AD1] font-bold py-3.5 rounded-full text-sm transition shadow-lg"
           >
             {status === "sending"
               ? "驗證並寄送中..."
@@ -368,7 +368,7 @@ function PartnerHeroPanel() {
       {/* 文案（保留原內容）＋手機圖 */}
       <div className="relative z-10 flex flex-col items-center w-full h-full px-10 pt-14 pb-10">
         <div className="text-center max-w-md mx-auto shrink-0">
-          <h2 className="text-[32px] font-black text-slate-900 leading-[1.25] tracking-tight mb-3">
+          <h2 className="text-[28px] font-bold text-slate-900 leading-[1.25] tracking-tight mb-3">
             零成本開店
             <br />
             <span className="relative inline-block">即時分潤</span>
@@ -400,7 +400,7 @@ function PartnerHeroPanel() {
             { num: "∞", label: "分潤上限" },
           ].map((item) => (
             <div key={item.label} className="text-center">
-              <p className="text-3xl font-black text-slate-900 tracking-tight">
+              <p className="text-[28px] font-bold text-slate-900 tracking-tight">
                 {item.num}
               </p>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -734,7 +734,7 @@ export default function PartnerLogin() {
 
           {!showForgot && (
             <>
-              <h1 className="text-3xl md:text-4xl font-black text-white leading-tight mb-3">
+              <h1 className="text-[28px] md:text-[24px] font-bold text-white leading-tight mb-3">
                 合作夥伴
                 <br />
                 管理後台
@@ -784,7 +784,7 @@ export default function PartnerLogin() {
                   type="button"
                   disabled={!!oauthLoading || loading}
                   onClick={handleLineLogin}
-                  className="flex items-center justify-center gap-2 w-full bg-[#06C755] hover:brightness-105 disabled:opacity-60 py-3 rounded-xl text-sm font-bold text-white transition"
+                  className="flex items-center justify-center gap-2 w-full bg-[#067A38] hover:brightness-105 disabled:opacity-60 py-3 rounded-xl text-sm font-bold text-white transition"
                 >
                   <LineIconSvg className="w-5 h-5" />
                   {oauthLoading === "line" ? "LINE 登入中..." : "LINE 快速登入"}
@@ -878,7 +878,7 @@ export default function PartnerLogin() {
                 <button
                   type="submit"
                   disabled={loading || !!oauthLoading}
-                  className="w-full bg-[#4ade80] hover:bg-[#22c55e] disabled:opacity-60 text-slate-900 font-black py-4 rounded-full text-base transition shadow-lg mt-2"
+                  className="w-full bg-[#4ade80] hover:bg-[#22c55e] disabled:opacity-60 text-slate-900 font-bold py-4 rounded-full text-base transition shadow-lg mt-2"
                 >
                   {loading ? "登入中..." : "登入夥伴後台 →"}
                 </button>

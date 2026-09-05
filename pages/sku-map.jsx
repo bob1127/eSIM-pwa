@@ -4,7 +4,7 @@ import PLAN_ID_MAP from "@/lib/esim/planMap";
 export default function SkuMapPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">SKU 對照表</h1>
+      <h1 className="text-[24px] font-bold mb-4">SKU 對照表</h1>
       <table className="w-full border-collapse border">
         <thead>
           <tr className="bg-gray-100">

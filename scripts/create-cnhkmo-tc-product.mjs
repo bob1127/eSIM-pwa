@@ -94,8 +94,7 @@ const SALES_CHANNEL_ID = "sc_01KZJM34JQVWJHHKP9SRQY1EDN";
 const CATEGORY_IDS = ["pcat_01KZJNBW76333EH5XBG62QJEHW"]; // kongkong 中港澳（勿掛 china）
 const THUMB =
   process.env.CNHKMO_PRODUCT_THUMB ||
-  process.env.CHINA_PRODUCT_THUMB ||
-  "https://pub-bafdb375cb164c488d6841a7b565951a.r2.dev/01KYBQ3HHZADQNWFGG6F02YKSP.png";
+  "https://www.jeko-esim.com.tw/images/sim/%E7%94%A2%E5%93%81/esim-%E4%B8%AD%E6%B8%AF%E6%BE%B3.png";
 
 function retailFromCost(costTwd, profitPercent) {
   const margin = 1 + profitPercent / 100;

@@ -118,7 +118,7 @@ export default function RefundInlineForm({ order, getAuthHeaders, onSuccess }) {
           <p className="text-xs font-bold text-[#2b579a]">
             {isDispute ? "售後／爭議申請" : "未開通退款申請"}
           </p>
-          <p className="text-sm font-black text-[#1e3a5f]">
+          <p className="text-sm font-bold text-[#1e3a5f]">
             訂單 #{order.id} · {orderItemSummary(order)}
           </p>
         </div>
@@ -195,7 +195,7 @@ export default function RefundInlineForm({ order, getAuthHeaders, onSuccess }) {
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="w-20 h-20 border-2 border-dashed border-slate-200 rounded-sm text-slate-400 text-2xl hover:border-[#2563eb]"
+                  className="w-20 h-20 border-2 border-dashed border-slate-200 rounded-sm text-slate-400 text-[24px] hover:border-[#2563eb]"
                 >
                   +
                 </button>
