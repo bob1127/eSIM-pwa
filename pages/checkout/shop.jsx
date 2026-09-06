@@ -38,18 +38,31 @@ const PAYMENT_METHODS = [
   },
 ];
 
+function computeShopCheckoutTotals(items, discount = 0) {
+  const physicalItems = (items || []).filter(
+    (i) => !i.type || i.type === "physical",
+  );
+  const subtotal = physicalItems.reduce(
+    (s, i) => s + (Number(i.price) || 0) * (Number(i.quantity) || 1),
+    0,
+  );
+  const shipping = subtotal >= 990 ? 0 : subtotal > 0 ? 60 : 0;
+  const total = Math.max(0, subtotal + shipping - (Number(discount) || 0));
+  return { physicalItems, subtotal, shipping, total };
+}
+
 function Breadcrumb({ current = 1 }) {
   return (
-    <nav className="flex items-center gap-1 text-[12px]">
+    <nav className="flex items-center gap-1 text-[12px] overflow-x-auto max-w-[70vw] sm:max-w-none">
       {STEPS.map((step, i) => (
-        <span key={step} className="flex items-center gap-1">
+        <span key={step} className="flex items-center gap-1 shrink-0">
           {i > 0 && <ChevronRight className="w-3 h-3 text-gray-300" />}
           <span
             className={
               i === current
                 ? "font-semibold text-slate-800"
                 : i < current
-                  ? "text-blue-600 cursor-pointer hover:underline"
+                  ? "text-blue-600"
                   : "text-gray-400"
             }
           >
@@ -77,15 +90,39 @@ function OrderSummary({
   lineOaUrl,
   welcomeHint,
   loginHref,
+  mobileCollapsedDefault = true,
 }) {
-  const physicalItems = items.filter((i) => !i.type || i.type === "physical");
-
-  const subtotal = physicalItems.reduce((s, i) => s + i.price * i.quantity, 0);
-  const shipping = subtotal >= 990 ? 0 : 60;
-  const total = subtotal + shipping - (discount || 0);
+  const [mobileOpen, setMobileOpen] = useState(!mobileCollapsedDefault);
+  const { physicalItems, subtotal, shipping, total } = computeShopCheckoutTotals(
+    items,
+    discount,
+  );
 
   return (
     <div className="lg:sticky lg:top-8">
+      {/* 手機：可收合訂單摘要 */}
+      <button
+        type="button"
+        onClick={() => setMobileOpen((v) => !v)}
+        className="lg:hidden w-full flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm"
+        aria-expanded={mobileOpen}
+      >
+        <span className="flex items-center gap-2 text-[13px] font-semibold text-blue-600">
+          {mobileOpen ? "隱藏訂單摘要" : "顯示訂單摘要"}
+          <ChevronRight
+            className={`w-4 h-4 transition-transform ${mobileOpen ? "rotate-90" : ""}`}
+          />
+        </span>
+        <span className="text-[15px] font-bold text-slate-900 tabular-nums">
+          NT${total.toLocaleString()}
+        </span>
+      </button>
+
+      <div
+        className={`${
+          mobileOpen ? "mt-4 block" : "hidden"
+        } lg:mt-0 lg:block rounded-xl border border-gray-200 bg-white p-4 lg:border-0 lg:bg-transparent lg:p-0`}
+      >
       {/* 商品清單 */}
       <div className="space-y-4 mb-6">
         {physicalItems.length === 0 ? (
@@ -250,7 +287,7 @@ function OrderSummary({
             {shipping === 0 ? (
               <span className="text-green-600 font-medium">免費</span>
             ) : (
-              `NT${shipping}`
+              `NT$${shipping}`
             )}
           </span>
         </div>
@@ -269,11 +306,12 @@ function OrderSummary({
       </div>
 
       {/* 滿額免運提示 */}
-      {subtotal < 990 && (
+      {subtotal > 0 && subtotal < 990 && (
         <p className="mt-3 text-[11px] text-center text-blue-500 bg-blue-50 rounded-lg px-3 py-2">
           再買 NT${(990 - subtotal).toLocaleString()} 即可享免費運送
         </p>
       )}
+      </div>
     </div>
   );
 }
@@ -701,12 +739,24 @@ export default function ShopCheckoutPage() {
     </div>
   );
 
+  const { shipping, total } = computeShopCheckoutTotals(
+    physicalItems,
+    discount,
+  );
+
+  const payLabel =
+    paymentMethod === "linepay" ? "LINE Pay 結帳" : "藍新金流結帳";
+  const payBusyLabel =
+    submittingMethod === "linepay"
+      ? "正在前往 LINE Pay…"
+      : "正在前往藍新金流…";
+
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-[#FAFAFA] pb-28 lg:pb-0">
       {/* ── Header ── */}
-      <header className="border-b border-gray-200 bg-white">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/shop">
+      <header className="border-b border-gray-200 bg-white sticky top-0 z-40">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
+          <Link href="/shop" className="shrink-0">
             <Image
               src="/images/Logo/logo-no-bg.png"
               alt="Jeko"
@@ -715,15 +765,39 @@ export default function ShopCheckoutPage() {
               className="h-7 w-auto object-contain"
             />
           </Link>
-          <Breadcrumb current={1} />
+          <Breadcrumb current={3} />
         </div>
       </header>
 
       {/* ── 主體 ── */}
-      <main className="max-w-5xl mx-auto px-4 py-8 lg:py-12">
-        <div className="lg:grid lg:grid-cols-[1fr_380px] lg:gap-12">
-          {/* ══ 左欄：表單 ══ */}
-          <form onSubmit={handleSubmit} className="space-y-8">
+      <main className="max-w-5xl mx-auto px-4 py-6 lg:py-12">
+        <div className="flex flex-col lg:grid lg:grid-cols-[1fr_380px] lg:gap-12">
+          {/* ══ 手機先顯示訂單摘要；桌機在右欄 ══ */}
+          <aside className="order-1 lg:order-2 mb-6 lg:mb-0 lg:border-l lg:border-gray-200 lg:pl-10">
+            <OrderSummary
+              items={physicalItems}
+              coupon={coupon}
+              setCoupon={setCoupon}
+              onApplyCoupon={handleApplyCoupon}
+              onRemoveCoupon={handleRemoveCoupon}
+              discount={discount}
+              appliedCode={appliedCode}
+              isApplyingCoupon={isApplyingCoupon}
+              couponMessage={couponMessage}
+              needLineFriend={needLineFriend}
+              needLogin={needLogin}
+              lineOaUrl={lineOaUrl}
+              welcomeHint={welcomeHint}
+              loginHref={buildLoginUrl("/checkout/shop")}
+            />
+          </aside>
+
+          {/* ══ 表單 ══ */}
+          <form
+            id="shop-checkout-form"
+            onSubmit={handleSubmit}
+            className="order-2 lg:order-1 space-y-7 lg:space-y-8"
+          >
             {/* 聯絡資料 */}
             <section>
               <div className="flex items-center justify-between mb-4">
@@ -871,11 +945,11 @@ export default function ShopCheckoutPage() {
               </div>
             </section>
 
-            {/* 提交按鈕 */}
+            {/* 提交按鈕：桌機顯示；手機改用底部固定列 */}
             <button
               type="submit"
               disabled={isSubmitting || physicalItems.length === 0}
-              className={`w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm ${
+              className={`hidden lg:flex w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base rounded-xl transition-colors items-center justify-center gap-2 shadow-sm ${
                 paymentMethod === "linepay"
                   ? "bg-[#067A38] hover:bg-[#056B30]"
                   : "bg-[#3B9EFF] hover:bg-[#2B8EEF]"
@@ -884,19 +958,15 @@ export default function ShopCheckoutPage() {
               {isSubmitting ? (
                 <>
                   <QuarterRing size="sm" className="text-white" />
-                  {submittingMethod === "linepay"
-                    ? "正在前往 LINE Pay…"
-                    : "正在前往藍新金流…"}
+                  {payBusyLabel}
                 </>
-              ) : paymentMethod === "linepay" ? (
-                "LINE Pay 結帳"
               ) : (
-                "藍新金流結帳"
+                payLabel
               )}
             </button>
 
             {/* 服務保障 */}
-            <div className="grid grid-cols-3 gap-3 pt-2 pb-6">
+            <div className="grid grid-cols-3 gap-3 pt-2 pb-4 lg:pb-6">
               {[
                 { icon: Shield, text: "安全加密付款" },
                 { icon: Truck, text: "3～7 日送達" },
@@ -913,30 +983,46 @@ export default function ShopCheckoutPage() {
             </div>
           </form>
 
-          {/* ══ 右欄：訂單摘要 ══ */}
-          <aside className="mt-8 lg:mt-0 lg:border-l lg:border-gray-200 lg:pl-10">
-            <OrderSummary
-              items={physicalItems}
-              coupon={coupon}
-              setCoupon={setCoupon}
-              onApplyCoupon={handleApplyCoupon}
-              onRemoveCoupon={handleRemoveCoupon}
-              discount={discount}
-              appliedCode={appliedCode}
-              isApplyingCoupon={isApplyingCoupon}
-              couponMessage={couponMessage}
-              needLineFriend={needLineFriend}
-              needLogin={needLogin}
-              lineOaUrl={lineOaUrl}
-              welcomeHint={welcomeHint}
-              loginHref={buildLoginUrl("/checkout/shop")}
-            />
-          </aside>
         </div>
       </main>
 
+      {/* ── 手機底部固定結帳列 ── */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-sm">
+        <div className="px-4 py-3 flex items-center gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] text-slate-500">應付總額</p>
+            <p className="text-[18px] font-bold text-slate-900 tabular-nums leading-tight">
+              NT${total.toLocaleString()}
+            </p>
+            <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+              {shipping === 0 ? "含免運" : `含運費 NT$${shipping}`}
+              {discount > 0 ? ` · 已折 NT$${discount}` : ""}
+            </p>
+          </div>
+          <button
+            type="submit"
+            form="shop-checkout-form"
+            disabled={isSubmitting || physicalItems.length === 0}
+            className={`shrink-0 min-w-[148px] px-5 py-3.5 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-[14px] rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm ${
+              paymentMethod === "linepay"
+                ? "bg-[#067A38] hover:bg-[#056B30]"
+                : "bg-[#3B9EFF] hover:bg-[#2B8EEF]"
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <QuarterRing size="sm" className="text-white" />
+                處理中…
+              </>
+            ) : (
+              payLabel
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* ── Footer ── */}
-      <footer className="border-t border-gray-100 mt-12 py-6">
+      <footer className="border-t border-gray-100 mt-8 lg:mt-12 py-6 hidden lg:block">
         <div className="max-w-5xl mx-auto px-4 flex flex-wrap gap-4 justify-center text-[11px] text-gray-400">
           {["退款政策", "運送說明", "隱私政策", "服務條款", "取消規定"].map(
             (t) => (

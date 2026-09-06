@@ -133,12 +133,13 @@ export default function PromoLotteryMachine({ className = "" }) {
     let playedAlready = false;
 
     try {
-      const res = await fetch("/api/promo/lottery-spin", {
-        method: "POST",
-        headers: authHeaders(),
-        credentials: "include",
-        body: JSON.stringify({}),
-      });
+        const res = await fetch("/api/promo/lottery-spin", {
+          method: "POST",
+          headers: authHeaders(),
+          credentials: "include",
+          // 蜜罐欄位留空；伺服器會拒絕客戶端偽造的 prize／amount
+          body: JSON.stringify({ company_website: "" }),
+        });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
         apiError = data.error || "抽獎失敗";

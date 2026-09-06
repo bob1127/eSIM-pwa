@@ -16,7 +16,7 @@ function CartItem({ item, onRemove, onIncrease, onDecrease }) {
   const displayPrice = `NT$ ${(item.price * item.quantity).toLocaleString()}`;
 
   return (
-    <div className="flex gap-3 py-4 border-b border-gray-100 last:border-0 group relative">
+    <div className="flex gap-3 py-4 border-b border-gray-100 last:border-0">
       <div className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-gray-50 border border-gray-100">
         <Image
           src={item.image || "/images/default-image.jpg"}
@@ -31,17 +31,29 @@ function CartItem({ item, onRemove, onIncrease, onDecrease }) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-[12px] font-semibold text-slate-800 leading-tight line-clamp-2">
-          {item.name}
-        </p>
+        <div className="flex items-start gap-2">
+          <p className="flex-1 text-[12px] font-semibold text-slate-800 leading-tight line-clamp-2">
+            {item.name}
+          </p>
+          <button
+            type="button"
+            onClick={() => onRemove(item.id)}
+            className="shrink-0 inline-flex items-center justify-center p-1 text-slate-400 transition-colors hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200 rounded"
+            title="移除商品"
+            aria-label={`移除 ${item.name}`}
+          >
+            <TrashIcon className="w-4 h-4" strokeWidth={1.75} />
+          </button>
+        </div>
         {item.specLabel && item.specLabel !== "未指定規格" && (
-          <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+          <p className="text-[11px] text-slate-400 mt-0.5 truncate pr-9">
             {item.specLabel}
           </p>
         )}
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-1 border border-gray-200 rounded-full overflow-hidden">
             <button
+              type="button"
               onClick={() => onDecrease(item.id, item.quantity - 1)}
               disabled={item.quantity <= 1}
               className="w-6 h-6 flex items-center justify-center text-slate-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
@@ -52,6 +64,7 @@ function CartItem({ item, onRemove, onIncrease, onDecrease }) {
               {item.quantity}
             </span>
             <button
+              type="button"
               onClick={() => onIncrease(item.id, item.quantity + 1)}
               className="w-6 h-6 flex items-center justify-center text-slate-500 hover:bg-gray-100 transition-colors"
             >
@@ -61,14 +74,6 @@ function CartItem({ item, onRemove, onIncrease, onDecrease }) {
           <p className="text-[13px] font-bold text-slate-800">{displayPrice}</p>
         </div>
       </div>
-
-      <button
-        onClick={() => onRemove(item.id)}
-        className="absolute top-4 right-0 p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
-        title="移除商品"
-      >
-        <TrashIcon className="w-3.5 h-3.5" />
-      </button>
     </div>
   );
 }
@@ -100,7 +105,7 @@ export default function ShopCartSidebar() {
       className={`fixed inset-0 z-[9000] ${isCartOpen ? "pointer-events-auto" : "pointer-events-none"}`}
       aria-modal="true"
       role="dialog"
-      aria-label="實體商品購物車"
+      aria-label="購物車"
     >
       <div
         className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${
@@ -117,7 +122,7 @@ export default function ShopCartSidebar() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
             <ShoppingBagIcon className="w-5 h-5 text-[#3B9EFF]" />
-            實體商品購物車
+            購物車
             {totalCount > 0 && (
               <span className="ml-1 text-[11px] font-bold bg-[#3B9EFF] text-white rounded-full w-5 h-5 flex items-center justify-center">
                 {totalCount}

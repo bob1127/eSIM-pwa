@@ -29,7 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const CONTAINER = "max-w-[1280px] mx-auto px-6 lg:px-10";
+const CONTAINER = "max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-10";
 
 function useShopMemberAuth() {
   const { data: session, status } = useSession();
@@ -979,6 +979,8 @@ export default function ShopNavbar({
             </Link>
           </div>
         </div>
+        {/* ════ ②b 灰列捷徑（可傳 utilityNav=[] 隱藏） ════ */}
+        {(utilLinks.length > 0 || utilEnd?.href || isPartnerNav) && (
         <div className="bg-[#F1F2F4] text-slate-600 border-b border-slate-200/80">
           <div
             className={`${CONTAINER} h-9 flex items-center gap-4 justify-between`}
@@ -1056,13 +1058,14 @@ export default function ShopNavbar({
             ) : null}
           </div>
         </div>
+        )}
 
         {/* ════ ③ 主 Navbar（白底）— compact：單列整合 ════ */}
         <div className="bg-white border-b border-slate-200">
           {compact ? (
-            /* 單列：Logo + 分類 + 次要連結 + Icons */
+            /* 單列：左 Logo＋分類｜右次要連結＋Icons（與頁面 CONTAINER 同寬對齊） */
             <div
-              className={`${CONTAINER} h-14 flex items-center gap-4 lg:gap-6`}
+              className={`${CONTAINER} h-14 flex items-center gap-3 lg:gap-4`}
             >
               <Link href={homeHref} className="flex items-center gap-2.5 shrink-0">
                 <Image
@@ -1077,7 +1080,9 @@ export default function ShopNavbar({
                 </span>
               </Link>
 
-              <nav className={`${forceMobileNav ? "hidden" : "hidden lg:flex"} items-center h-full flex-1 min-w-0`}>
+              <nav
+                className={`${forceMobileNav ? "hidden" : "hidden lg:flex"} items-center h-full min-w-0`}
+              >
                 {isPartnerNav ? (
                   <div
                     className="relative h-full flex items-center"
@@ -1131,21 +1136,23 @@ export default function ShopNavbar({
                 )}
               </nav>
 
-              {!isPartnerNav ? (
-              <nav className={`${forceMobileNav ? "hidden" : "hidden xl:flex"} items-center h-full gap-0.5 shrink-0`}>
-                {secondaryItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="h-full flex items-center px-2 text-[12px] text-slate-600 hover:text-slate-900 transition-colors whitespace-nowrap"
+              <div className="flex items-center gap-0.5 shrink-0 ml-auto">
+                {!isPartnerNav ? (
+                  <nav
+                    className={`${forceMobileNav ? "hidden" : "hidden xl:flex"} items-center h-14 gap-0.5 shrink-0 mr-1`}
                   >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-              ) : null}
+                    {secondaryItems.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="h-full flex items-center px-2 text-[12px] text-slate-600 hover:text-slate-900 transition-colors whitespace-nowrap"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </nav>
+                ) : null}
 
-              <div className="flex items-center gap-0.5 shrink-0 ml-auto lg:ml-0">
                 <NavbarSiteSearch
                   variant="icon"
                   scope={searchScope}

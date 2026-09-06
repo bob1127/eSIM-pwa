@@ -15,8 +15,10 @@ import {
   PRODUCT_TABS,
   SHOP_TRAVEL_GEAR as TRAVEL_GEAR,
 } from "../../data/shop/catalog";
+import { fetchShopMustHaveSelections } from "../../lib/shopSelections";
 
 const CONTAINER = "max-w-[1680px] mx-auto px-6 lg:px-10";
+const PLACEHOLDER_IMG = "/images/shop/01/p1.avif";
 
 // ── Section 1：雙欄促銷卡 ─────────────────────────────────────────
 const PROMO_CARDS = [
@@ -70,21 +72,27 @@ function PromoCard({ card }) {
   );
 }
 
-function ProductCard({ product, onDetail }) {
+function ProductCard({ product }) {
   const router = useRouter();
   const { addToCart } = useCart();
+  const imgSrc = product.img || PLACEHOLDER_IMG;
+  const pdpHref = product.href || PRODUCT_PDP;
 
-  const handleBuyNow = () => {
+  const handleBuyNow = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     addToCart(
       {
-        id: product.href || product.title,
-        variant_id: product.href || product.title,
+        id: product.variant_id || product.id || product.href || product.title,
+        variant_id:
+          product.variant_id || product.id || product.href || product.title,
         name: product.title,
         title: product.title,
         price: product.price,
         quantity: 1,
-        image: product.img,
+        image: imgSrc,
         type: "physical",
+        href: pdpHref,
       },
       { open: false },
     );
@@ -93,31 +101,29 @@ function ProductCard({ product, onDetail }) {
 
   return (
     <div className="bg-white flex flex-col h-full">
-      <button
-        type="button"
-        onClick={() => onDetail?.(product)}
-        className="relative aspect-square bg-white overflow-hidden block w-full text-left"
+      <Link
+        href={pdpHref}
+        className="relative aspect-square bg-[#F3F4F6] overflow-hidden block w-full text-left"
       >
-        <Image
-          src={product.img}
-          alt={product.title}
-          fill
-          className="object-contain p-8"
-          sizes="(max-width: 768px) 50vw, 25vw"
-        />
-      </button>
-      <div className="px-4 pb-4 flex flex-col flex-1">
-        <button
-          type="button"
-          onClick={() => onDetail?.(product)}
-          className="text-left"
-        >
+        <span className="absolute inset-5 sm:inset-6">
+          <Image
+            src={imgSrc}
+            alt={product.title}
+            fill
+            className="object-contain"
+            sizes="(max-width: 768px) 50vw, 25vw"
+            unoptimized={/^https?:\/\//i.test(imgSrc)}
+          />
+        </span>
+      </Link>
+      <div className="px-4 pt-3 pb-5 sm:pb-6 flex flex-col flex-1">
+        <Link href={pdpHref} className="text-left">
           <h3 className="text-[14px] font-bold text-slate-900 leading-snug line-clamp-2 min-h-[40px]">
             {product.title}
           </h3>
-        </button>
-        <p className="text-[12px] text-slate-500 mt-1 line-clamp-1">
-          {product.desc}
+        </Link>
+        <p className="text-[12px] text-slate-500 mt-1 line-clamp-1 min-h-[18px]">
+          {product.desc || "\u00A0"}
         </p>
         <div className="flex items-baseline gap-2 mt-2 mb-4">
           <span className="text-[15px] font-bold text-slate-900">
@@ -129,7 +135,7 @@ function ProductCard({ product, onDetail }) {
             </del>
           )}
         </div>
-        <div className="mt-auto grid grid-cols-2 gap-2">
+        <div className="mt-auto grid grid-cols-2 gap-2 pb-0.5">
           <button
             type="button"
             onClick={handleBuyNow}
@@ -137,13 +143,12 @@ function ProductCard({ product, onDetail }) {
           >
             立即購買
           </button>
-          <button
-            type="button"
-            onClick={() => onDetail?.(product)}
+          <Link
+            href={pdpHref}
             className="text-center text-[12px] font-semibold bg-[#E5E7EB] text-slate-800 py-2.5 hover:bg-[#D1D5DB] transition-colors"
           >
             商品詳情
-          </button>
+          </Link>
         </div>
       </div>
     </div>
@@ -216,7 +221,7 @@ function ProductQuickView({ product, onClose }) {
         </button>
 
         {/* 商品圖輪播 */}
-        <div className="relative aspect-square bg-[#F5F5F5]">
+        <div className="relative aspect-square bg-slate-100">
           {gallery.map((src, i) => (
             <div
               key={`${src}-${i}`}
@@ -228,9 +233,10 @@ function ProductQuickView({ product, onClose }) {
                 src={src}
                 alt={`${product.title} ${i + 1}`}
                 fill
-                className="object-contain p-10"
+                className="object-cover"
                 sizes="520px"
                 priority={i === 0}
+                unoptimized={/^https?:\/\//i.test(src)}
               />
             </div>
           ))}
@@ -365,33 +371,37 @@ function ProductQuickView({ product, onClose }) {
 }
 
 /** 往左自動無限輪播（transform 無縫，不會倒轉） */
-function ProductCarousel({ products, onDetail }) {
+function ProductCarousel({ products }) {
   const viewportRef = useRef(null);
   const [index, setIndex] = useState(0);
   const [animating, setAnimating] = useState(true);
   const [paused, setPaused] = useState(false);
   const [cardW, setCardW] = useState(0);
+  const [cols, setCols] = useState(2);
   const gap = 16;
   const n = products.length;
+  // 商品數 ≤ 可見欄數時不要複製 slides，否則會看起來「同一商品出現兩次」
+  const loop = n > cols;
 
   const slides = useMemo(() => {
     if (!n) return [];
-    // 兩份：滑到第二份起點時瞬間重置，視覺無縫
-    return [...products, ...products].map((p, i) => ({
+    const list = loop ? [...products, ...products] : products;
+    return list.map((p, i) => ({
       ...p,
-      _key: `${p.title}-${i}`,
+      _key: `${p.id || p.href || p.title}-${i}`,
     }));
-  }, [products, n]);
+  }, [products, n, loop]);
 
   const measure = useCallback(() => {
     const vp = viewportRef.current;
     if (!vp) return;
     const w = vp.clientWidth;
-    // 對齊原本響應式：2 / 3 / 4 欄
-    let cols = 2;
-    if (w >= 1024) cols = 4;
-    else if (w >= 640) cols = 3;
-    setCardW((w - gap * (cols - 1)) / cols);
+    let nextCols = 2;
+    if (w >= 1024) nextCols = 4;
+    else if (w >= 640) nextCols = 3;
+    setCols(nextCols);
+    // 維持原本 2／3／4 欄卡片寬，不因商品少而拉滿
+    setCardW((w - gap * (nextCols - 1)) / nextCols);
   }, []);
 
   useEffect(() => {
@@ -409,15 +419,20 @@ function ProductCarousel({ products, onDetail }) {
   const go = useCallback(
     (dir) => {
       if (!n) return;
+      if (!loop) {
+        setAnimating(true);
+        setIndex((i) => Math.min(Math.max(i + dir, 0), Math.max(n - 1, 0)));
+        return;
+      }
       setAnimating(true);
       setIndex((i) => i + dir);
     },
-    [n],
+    [n, loop],
   );
 
-  // 滑完一輪後無動畫重置
+  // 滑完一輪後無動畫重置（僅無限輪播）
   useEffect(() => {
-    if (index < n) return;
+    if (!loop || index < n) return;
     const t = window.setTimeout(() => {
       setAnimating(false);
       setIndex(0);
@@ -426,18 +441,26 @@ function ProductCarousel({ products, onDetail }) {
       });
     }, 480);
     return () => clearTimeout(t);
-  }, [index, n]);
+  }, [index, n, loop]);
 
-  // 往左自動
+  // 往左自動（商品夠多才自動播）
   useEffect(() => {
-    if (paused || n <= 1 || !cardW) return;
+    if (paused || !loop || !cardW) return;
     const t = setInterval(() => go(1), 3200);
     return () => clearInterval(t);
-  }, [paused, n, cardW, go]);
+  }, [paused, loop, cardW, go]);
 
   const step = cardW + gap;
   const btnClass =
     "absolute top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-slate-300 text-slate-800 flex items-center justify-center hover:bg-[#3B9EFF] hover:text-white hover:border-[#3B9EFF] transition-colors shadow-sm";
+
+  if (!n) {
+    return (
+      <p className="text-sm text-slate-500 py-8 text-center">
+        尚無實體商品，請於 Medusa 建立並設為「實體」類型／分類後重新整理。
+      </p>
+    );
+  }
 
   return (
     <div
@@ -445,36 +468,40 @@ function ProductCarousel({ products, onDetail }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <button
-        type="button"
-        onClick={() => {
-          if (index === 0) {
-            setAnimating(false);
-            setIndex(n);
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                setAnimating(true);
-                setIndex(n - 1);
-              });
-            });
-          } else {
-            go(-1);
-          }
-        }}
-        aria-label="上一頁"
-        className={`${btnClass} left-0 -translate-x-3`}
-      >
-        <ChevronLeft className="w-5 h-5" strokeWidth={2} />
-      </button>
+      {loop ? (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              if (index === 0) {
+                setAnimating(false);
+                setIndex(n);
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
+                    setAnimating(true);
+                    setIndex(n - 1);
+                  });
+                });
+              } else {
+                go(-1);
+              }
+            }}
+            aria-label="上一頁"
+            className={`${btnClass} left-0 -translate-x-3`}
+          >
+            <ChevronLeft className="w-5 h-5" strokeWidth={2} />
+          </button>
 
-      <button
-        type="button"
-        onClick={() => go(1)}
-        aria-label="下一頁"
-        className={`${btnClass} right-0 translate-x-3`}
-      >
-        <ChevronRight className="w-5 h-5" strokeWidth={2} />
-      </button>
+          <button
+            type="button"
+            onClick={() => go(1)}
+            aria-label="下一頁"
+            className={`${btnClass} right-0 translate-x-3`}
+          >
+            <ChevronRight className="w-5 h-5" strokeWidth={2} />
+          </button>
+        </>
+      ) : null}
 
       <div ref={viewportRef} className="overflow-hidden">
         <div
@@ -493,7 +520,7 @@ function ProductCarousel({ products, onDetail }) {
               className="shrink-0"
               style={{ width: cardW || "calc(50% - 8px)" }}
             >
-              <ProductCard product={p} onDetail={onDetail} />
+              <ProductCard product={p} />
             </div>
           ))}
         </div>
@@ -502,10 +529,47 @@ function ProductCarousel({ products, onDetail }) {
   );
 }
 
-export default function ShopPage() {
+export default function ShopPage({
+  mustHaveNew = null,
+  mustHaveBestsellers = null,
+}) {
   const [tab, setTab] = useState("new");
-  const [quickView, setQuickView] = useState(null);
-  const products = PRODUCT_TABS[tab];
+  const [liveTabs, setLiveTabs] = useState(() => ({
+    new:
+      Array.isArray(mustHaveNew) && mustHaveNew.length
+        ? mustHaveNew
+        : PRODUCT_TABS.new,
+    bestsellers:
+      Array.isArray(mustHaveBestsellers) && mustHaveBestsellers.length
+        ? mustHaveBestsellers
+        : PRODUCT_TABS.bestsellers,
+  }));
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/shop/selections?limit=24");
+        const data = await res.json().catch(() => ({}));
+        if (cancelled || !res.ok || !data.success) return;
+        setLiveTabs((prev) => ({
+          new:
+            Array.isArray(data.new) && data.new.length ? data.new : prev.new,
+          bestsellers:
+            Array.isArray(data.bestsellers) && data.bestsellers.length
+              ? data.bestsellers
+              : prev.bestsellers,
+        }));
+      } catch {
+        /* 保留 SSR／假資料 */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const products = liveTabs[tab] || PRODUCT_TABS[tab] || [];
 
   return (
     <>
@@ -517,7 +581,7 @@ export default function ShopPage() {
         />
       </Head>
 
-      <ShopNavbar />
+      <ShopNavbar utilityNav={[]} utilityEnd={null} />
 
       <main className="bg-[#DFE0E5]">
         {/* ── Hero：單圖滿屏，點擊進入商品內頁 ── */}
@@ -574,7 +638,7 @@ export default function ShopPage() {
             </button>
           </div>
 
-          <ProductCarousel products={products} onDetail={setQuickView} />
+          <ProductCarousel products={products} />
         </section>
 
         {/* ── Section 2b：Travel Gear 精選輪播 ── */}
@@ -582,7 +646,7 @@ export default function ShopPage() {
           <h2 className="text-[24px] sm:text-[28px] font-bold text-slate-900 mb-5">
             Travel Gear Essentials
           </h2>
-          <ProductCarousel products={TRAVEL_GEAR} onDetail={setQuickView} />
+          <ProductCarousel products={TRAVEL_GEAR} />
         </section>
 
         {/* ── Section 3：Discover More Banner ── */}
@@ -619,14 +683,28 @@ export default function ShopPage() {
 
       <Footer forceShow />
 
-      {quickView && (
-        <ProductQuickView
-          product={quickView}
-          onClose={() => setQuickView(null)}
-        />
-      )}
-
       <ShopCartSidebar />
     </>
   );
 }
+
+export async function getServerSideProps() {
+  try {
+    const selections = await fetchShopMustHaveSelections({ limit: 24 });
+    return {
+      props: {
+        mustHaveNew: selections.new || [],
+        mustHaveBestsellers: selections.bestsellers || [],
+      },
+    };
+  } catch (err) {
+    console.error("[shop] Must-Have Medusa fetch:", err?.message || err);
+    return {
+      props: {
+        mustHaveNew: [],
+        mustHaveBestsellers: [],
+      },
+    };
+  }
+}
+

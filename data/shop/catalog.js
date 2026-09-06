@@ -1,5 +1,7 @@
 /**
- * Jeko 商城目錄（目前為 /shop 假資料；之後換成真實 API 時只改此檔即可）
+ * Jeko 商城目錄
+ * - Must-Have：改由 Medusa 實體商品（見 lib/shopSelections.js）
+ * - Travel Gear／假資料：過渡用，之後可同樣接 API
  */
 
 export const PRODUCT_PDP = "/shop/product/usb-c-cable-240w";

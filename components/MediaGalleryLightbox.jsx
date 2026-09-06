@@ -66,7 +66,7 @@ function LightboxMainMedia({ item, maxHeight, priority = false }) {
     );
   }
 
-  const src = cfImgSrc(item.src, 1280) || item.src;
+  const src = cfImgSrc(item.src, 2048) || item.src;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -327,12 +327,22 @@ export default function MediaGalleryLightbox({
                       }`}
                     >
                       {item.type === "video" ? (
-                        <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                          <MaterialIcon
-                            name="play_circle"
-                            size={36}
-                            className="text-white"
+                        <div className="absolute inset-0 bg-slate-900 overflow-hidden">
+                          <video
+                            src={item.src}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            className="absolute inset-0 w-full h-full object-cover"
+                            aria-hidden
                           />
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+                            <MaterialIcon
+                              name="play_circle"
+                              size={36}
+                              className="text-white"
+                            />
+                          </span>
                         </div>
                       ) : (
                         <MediaSlide
@@ -394,12 +404,22 @@ export default function MediaGalleryLightbox({
                     aria-current={lbIndex === idx ? "true" : undefined}
                   >
                     {item.type === "video" ? (
-                      <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                        <MaterialIcon
-                          name="play_circle"
-                          size={22}
-                          className="text-white"
+                      <div className="absolute inset-0 bg-slate-900 overflow-hidden">
+                        <video
+                          src={item.src}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="absolute inset-0 w-full h-full object-cover"
+                          aria-hidden
                         />
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <MaterialIcon
+                            name="play_circle"
+                            size={22}
+                            className="text-white"
+                          />
+                        </span>
                       </div>
                     ) : (
                       <MediaSlide
