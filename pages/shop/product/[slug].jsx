@@ -330,6 +330,8 @@ function Gallery({
   const [vw, setVw] = useState(0);
   const [tx, setTx] = useState(0);
   const [animate, setAnimate] = useState(false);
+  /** lg 以上才左右 peek；手機主圖滿版 */
+  const [isDesktop, setIsDesktop] = useState(false);
   const viewportRef = useRef(null);
   const lockedRef = useRef(false);
   const pendingDirRef = useRef(0);
@@ -344,12 +346,12 @@ function Gallery({
   });
   const len = images.length;
 
-  const PEEK_RATIO = 0.11;
-  const MAIN_RATIO = 0.78;
+  const PEEK_RATIO = isDesktop ? 0.11 : 0;
+  const MAIN_RATIO = isDesktop ? 0.78 : 1;
   const peek = vw * PEEK_RATIO;
   const main = vw * MAIN_RATIO;
-  // 靜止時：三張各為 main 寬，translate 讓中間張對齊中間框
-  const restTx = peek - main;
+  // 靜止時：桌機 peek 對齊中央；手機滿版需先偏左一個主圖寬，才顯示中間張
+  const restTx = isDesktop ? peek - main : -main;
 
   const commitIndex = (next) => {
     const safe = ((next % len) + len) % len;
@@ -370,6 +372,14 @@ function Gallery({
     lockedRef.current = false;
     pendingDirRef.current = 0;
   }, [activeIndex, len]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     const el = viewportRef.current;
@@ -485,10 +495,12 @@ function Gallery({
   const slideIndexes = [(idx - 1 + len) % len, idx, (idx + 1) % len];
 
   return (
-    <div className="w-full min-w-0 lg:sticky lg:top-[136px] self-start">
+    <div className="w-full min-w-0 max-lg:-mx-4 max-lg:w-[calc(100%+2rem)] sm:max-lg:-mx-6 sm:max-lg:w-[calc(100%+3rem)] lg:mx-0 lg:w-full lg:sticky lg:top-[136px] self-start">
+      {/* 手機：主圖＋縮圖剛好塞進剩餘視窗 */}
+      <div className="max-lg:flex max-lg:flex-col max-lg:h-[calc(100dvh-10rem)]">
       <div
         ref={viewportRef}
-        className="group relative w-full overflow-hidden h-[70vh] lg:h-[calc(100dvh-10.5rem)] lg:min-h-[520px] lg:max-h-[920px] bg-[#111] touch-pan-y cursor-grab active:cursor-grabbing select-none"
+        className="group relative w-full overflow-hidden max-lg:flex-1 max-lg:min-h-[240px] h-[70vh] lg:h-[calc(100dvh-10.5rem)] lg:min-h-[520px] lg:max-h-[920px] bg-[#111] touch-pan-y cursor-grab active:cursor-grabbing select-none"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
@@ -498,7 +510,7 @@ function Gallery({
         {badge ? (
           <div
             className="absolute top-0 z-30 pointer-events-none"
-            style={{ left: `${PEEK_RATIO * 100}%` }}
+            style={{ left: isDesktop ? `${PEEK_RATIO * 100}%` : 0 }}
           >
             <div className="bg-[#3B9EFF] text-white text-[11px] font-bold px-3 py-1.5 relative">
               {badge}
@@ -507,7 +519,7 @@ function Gallery({
           </div>
         ) : null}
 
-        {/* 滑動軌道：左右 peek + 中央滿版 */}
+        {/* 滑動軌道：桌機左右 peek；手機滿版 */}
         <div
           className="absolute inset-y-0 left-0 flex h-full will-change-transform"
           style={{
@@ -540,7 +552,7 @@ function Gallery({
                 className={`relative h-full shrink-0 overflow-hidden focus:outline-none ${
                   isCenter ? "cursor-zoom-in" : "cursor-pointer"
                 }`}
-                style={{ width: main || "78%" }}
+                style={{ width: main || (isDesktop ? "78%" : "100%") }}
                 aria-label={
                   isCenter
                     ? isGalleryVideo(images[imageIndex])
@@ -555,10 +567,10 @@ function Gallery({
                   item={images[imageIndex]}
                   fillClassName="absolute inset-0 w-full h-full object-cover object-center"
                   priority={isCenter}
-                  sizes="(max-width: 1024px) 80vw, 50vw"
+                  sizes={isDesktop ? "(max-width: 1024px) 80vw, 50vw" : "100vw"}
                   hoverPlay={isCenter}
                 />
-                {!isCenter && (
+                {!isCenter && isDesktop && (
                   <span className="absolute inset-0 bg-black/70 pointer-events-none" />
                 )}
               </button>
@@ -566,7 +578,7 @@ function Gallery({
           })}
         </div>
 
-        {/* 左右箭頭（固定在 peek 區） */}
+        {/* 左右箭頭 */}
         {len > 1 && (
           <>
             <button
@@ -574,8 +586,12 @@ function Gallery({
               data-gallery-chrome
               onClick={() => go(-1)}
               aria-label="上一張"
-              className="absolute left-0 top-0 bottom-0 z-20 flex items-center justify-center"
-              style={{ width: `${PEEK_RATIO * 100}%` }}
+              className={
+                isDesktop
+                  ? "absolute left-0 top-0 bottom-0 z-20 flex items-center justify-center"
+                  : "absolute left-2 top-1/2 -translate-y-1/2 z-20"
+              }
+              style={isDesktop ? { width: `${PEEK_RATIO * 100}%` } : undefined}
             >
               <span className="w-9 h-9 bg-white/95 border border-slate-200 flex items-center justify-center shadow-sm pointer-events-none">
                 <ChevronLeft className="w-5 h-5 text-slate-900" />
@@ -586,8 +602,12 @@ function Gallery({
               data-gallery-chrome
               onClick={() => go(1)}
               aria-label="下一張"
-              className="absolute right-0 top-0 bottom-0 z-20 flex items-center justify-center"
-              style={{ width: `${PEEK_RATIO * 100}%` }}
+              className={
+                isDesktop
+                  ? "absolute right-0 top-0 bottom-0 z-20 flex items-center justify-center"
+                  : "absolute right-2 top-1/2 -translate-y-1/2 z-20"
+              }
+              style={isDesktop ? { width: `${PEEK_RATIO * 100}%` } : undefined}
             >
               <span className="w-9 h-9 bg-white/95 border border-slate-200 flex items-center justify-center shadow-sm pointer-events-none">
                 <ChevronRight className="w-5 h-5 text-slate-900" />
@@ -602,7 +622,11 @@ function Gallery({
           data-gallery-chrome
           onClick={() => openLightbox(idx)}
           className="absolute top-3 z-30 w-9 h-9 rounded-full bg-white/90 border border-gray-100 shadow-sm flex items-center justify-center text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100"
-          style={{ right: `calc(${PEEK_RATIO * 100}% + 0.75rem)` }}
+          style={
+            isDesktop
+              ? { right: `calc(${PEEK_RATIO * 100}% + 0.75rem)` }
+              : { right: "0.75rem" }
+          }
           aria-label="放大檢視"
         >
           <MaterialIcon name="fullscreen" size={16} />
@@ -611,21 +635,25 @@ function Gallery({
         {/* 計數 */}
         <span
           className="absolute bottom-3 z-30 text-[12px] text-white bg-black/45 px-2 py-0.5 rounded pointer-events-none"
-          style={{ right: `calc(${PEEK_RATIO * 100}% + 1rem)` }}
+          style={
+            isDesktop
+              ? { right: `calc(${PEEK_RATIO * 100}% + 1rem)` }
+              : { right: "1rem" }
+          }
         >
           {idx + 1}/{len}
         </span>
       </div>
 
-      {/* 縮圖列 — min-w-0 讓橫向捲動不撐開父層 grid */}
-      <div className="flex gap-2.5 mt-3 min-w-0 max-w-full overflow-x-auto pb-1">
+      {/* 縮圖列 — 手機與主圖同屏可見 */}
+      <div className="flex gap-2.5 mt-2.5 max-lg:mt-2 max-lg:px-4 sm:max-lg:px-6 lg:px-0 min-w-0 max-w-full overflow-x-auto pb-1 max-lg:shrink-0">
         {images.map((img, i) => (
           <button
             key={i}
             type="button"
             onClick={() => goTo(i)}
             onDoubleClick={() => openLightbox(i)}
-            className={`relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 bg-[#f5f5f5] overflow-hidden border-2 transition-colors ${
+            className={`relative shrink-0 w-[4.5rem] h-[4.5rem] sm:w-24 sm:h-24 bg-[#f5f5f5] overflow-hidden border-2 transition-colors ${
               i === idx
                 ? "border-slate-800"
                 : "border-transparent hover:border-slate-300"
@@ -645,9 +673,10 @@ function Gallery({
           </button>
         ))}
       </div>
+      </div>
 
       {/* Overview / Video */}
-      <div className="flex items-center gap-2 mt-3">
+      <div className="flex items-center gap-2 mt-3 max-lg:px-4 sm:max-lg:px-6 lg:px-0">
         <button
           type="button"
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold bg-slate-800 text-white"
