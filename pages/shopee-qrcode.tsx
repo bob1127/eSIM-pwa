@@ -40,7 +40,7 @@ export default function ShopeeQRCodePage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-[#1566B5] flex items-center justify-center px-4 py-16">
+      <div className="min-h-screen bg-[#1C82E0] flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-4xl mx-auto flex flex-col lg:flex-row gap-8 text-white">
           {/* 左側：表單區 */}
           <div className="flex-1  bg-white/5 hover:bg-white/15 duration-300 border border-white/20 shadow-xl px-6 py-8 md:px-10 md:py-10 backdrop-blur-sm">
@@ -86,7 +86,7 @@ export default function ShopeeQRCodePage() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`mt-4 w-full rounded-full bg-white/95 py-2.5 text-sm font-semibold text-[#1566B5] tracking-wide shadow-sm transition hover:bg-white ${
+                className={`mt-4 w-full rounded-full bg-white/95 py-2.5 text-sm font-semibold text-[#1C82E0] tracking-wide shadow-sm transition hover:bg-white ${
                   loading ? "opacity-60 cursor-not-allowed" : ""
                 }`}
               >
@@ -95,8 +95,8 @@ export default function ShopeeQRCodePage() {
                     layout="inline"
                     size="xs"
                     label="處理中…"
-                    labelClassName="text-sm font-semibold text-[#1566B5]"
-                    spinnerClassName="text-[#1566B5]"
+                    labelClassName="text-sm font-semibold text-[#1C82E0]"
+                    spinnerClassName="text-[#1C82E0]"
                   />
                 ) : (
                   "產生 QRCode 並寄送"

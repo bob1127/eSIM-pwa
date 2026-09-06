@@ -123,12 +123,6 @@ export default function CheckoutPaymentPage() {
               </Link>
             </>
           )}
-
-          <p className="text-xs text-gray-400 mt-8 leading-relaxed">
-            瀏覽紀錄：購物車 → 本頁 → 藍新付款。
-            <br />
-            在藍新頁按「上一頁」會回到此頁，再按一次可回到購物車修改資料。
-          </p>
         </div>
       </div>
     </Layout>

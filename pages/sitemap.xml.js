@@ -78,6 +78,23 @@ export async function getServerSideProps({ res }) {
     // sitemap 仍輸出靜態路徑
   }
 
+  // 商城實體商品（/shop 已在 PAGE_SEO；補 /shop/product/{handle}）
+  try {
+    const { listShopProductHandles } = await import("../lib/shopSelections");
+    const handles = await listShopProductHandles({ limit: 100 });
+    for (const handle of handles) {
+      if (!handle) continue;
+      urls.push(
+        urlEntry(`${SITE_URL}/shop/product/${handle}`, {
+          changefreq: "weekly",
+          priority: "0.75",
+        }),
+      );
+    }
+  } catch {
+    // 略過
+  }
+
   // WordPress 部落格文章
   try {
     const wpRes = await fetch(

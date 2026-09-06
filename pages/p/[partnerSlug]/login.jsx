@@ -253,7 +253,7 @@ const RegisterForm = ({ onSuccess, storeDomain }) => {
                 callbackUrl: `${window.location.origin}/p/${storeDomain}/account`,
               })
             }
-            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#067A38] py-3 text-[14px] font-bold text-white transition hover:brightness-105 shadow-sm"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] py-3 text-[14px] font-bold text-white transition hover:brightness-105 shadow-sm"
           >
             <LineIconSvg className="w-5 h-5" />
             LINE
@@ -580,7 +580,7 @@ export default function PartnerLoginRegisterPage({ store }) {
                               callbackUrl: `${window.location.origin}/p/${store.domain}/account`,
                             })
                           }
-                          className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#067A38] py-3 text-[14px] font-bold text-white transition hover:brightness-105 shadow-sm"
+                          className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] py-3 text-[14px] font-bold text-white transition hover:brightness-105 shadow-sm"
                         >
                           <LineIconSvg className="w-5 h-5" />
                           LINE

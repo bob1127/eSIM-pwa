@@ -481,7 +481,7 @@ const CardItem = ({ step, title, illustration, children }) => {
       className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
     >
       <div className="px-6 pt-6 pb-2 flex items-start gap-3">
-        <span className="bg-[#067A38] text-white text-sm font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5">
+        <span className="bg-[#06C755] text-white text-sm font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5">
           {step}
         </span>
         <h3 className="font-bold text-lg text-gray-900 leading-tight">

@@ -474,7 +474,7 @@ export default function Navbar({ className }: NavbarProps) {
               <Link
                 href="/Cart"
                 aria-label="進入購物車"
-                className="bg-[#C6283A] hover:bg-[#B02333] text-white text-xs font-bold px-3 py-2 lg:px-6 lg:py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+                className="bg-[#F4596A] hover:bg-[#e04556] text-white text-xs font-bold px-3 py-2 lg:px-6 lg:py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
               >
                 <ShoppingCartIcon className="w-4 h-4" />
                 <span className="hidden lg:inline">進入購物車</span>

@@ -1,7 +1,4 @@
-"use client";
-
 import { useState, useEffect, useRef } from "react";
-import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -22,12 +19,20 @@ import ShopNavbar from "../../../components/Shop/ShopNavbar";
 import ShopCartSidebar from "../../../components/Shop/ShopCartSidebar";
 import { useCart } from "../../../components/context/CartContext";
 import Footer from "../../../components/ui/footer.jsx";
+import SeoHead from "../../../components/SeoHead";
 import MediaGalleryLightbox from "../../../components/MediaGalleryLightbox";
 import MaterialIcon from "../../../components/MaterialIcon";
 import { buildLoginUrl } from "../../../lib/authRedirect";
-import { fetchShopProductByHandle } from "../../../lib/shopSelections";
+import {
+  fetchShopProductByHandle,
+  listShopProductHandles,
+} from "../../../lib/shopSelections";
+import { buildShopProductSeo } from "../../../lib/seo.config";
+import { resolveMedusaImageUrl } from "../../../lib/resolveMedusaImageUrl";
 
 const CONTAINER = "max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-10";
+/** ISR：約 5 分鐘刷新商品頁 */
+const SHOP_PRODUCT_REVALIDATE_SEC = 300;
 
 /** Demo 商品圖（handle=usb-c-cable-240w 時使用） */
 const DEMO_GALLERY = [
@@ -678,6 +683,12 @@ function Gallery({
   );
 }
 
+function resolveGalleryItem(item) {
+  if (!item?.src) return item;
+  const src = resolveMedusaImageUrl(item.src) || item.src;
+  return src === item.src ? item : { ...item, src };
+}
+
 export default function ShopProductPage({
   product: productProp = null,
   gallery: galleryProp = null,
@@ -685,10 +696,14 @@ export default function ShopProductPage({
   const router = useRouter();
   const { addToCart } = useCart();
   const PRODUCT = productProp || DEMO_PRODUCT;
-  const ALL_GALLERY =
+  const ALL_GALLERY = (
     Array.isArray(galleryProp) && galleryProp.length
       ? galleryProp
-      : DEMO_GALLERY;
+      : DEMO_GALLERY
+  ).map(resolveGalleryItem);
+  const seo = buildShopProductSeo(PRODUCT, ALL_GALLERY, {
+    handle: PRODUCT.slug,
+  });
   const [activeTab, setActiveTab] = useState("purchase");
   // null = 未選規格，左圖顯示全部商品圖
   const [styleId, setStyleId] = useState(null);
@@ -823,10 +838,7 @@ export default function ShopProductPage({
 
   return (
     <>
-      <Head>
-        <title>{PRODUCT.title} | Jeko 商城</title>
-        <meta name="description" content={PRODUCT.title} />
-      </Head>
+      <SeoHead {...seo} />
 
       <ShopNavbar compact utilityNav={[]} utilityEnd={null} />
 
@@ -1379,26 +1391,50 @@ export default function ShopProductPage({
   );
 }
 
-export async function getServerSideProps(ctx) {
-  const slug = String(ctx.params?.slug || "").trim();
-  if (!slug) return { notFound: true };
+export async function getStaticPaths() {
+  try {
+    const handles = await listShopProductHandles({ limit: 80 });
+    const paths = [
+      { params: { slug: "usb-c-cable-240w" } },
+      ...handles
+        .filter((h) => h && h !== "usb-c-cable-240w")
+        .map((slug) => ({ params: { slug } })),
+    ];
+    return { paths, fallback: "blocking" };
+  } catch (err) {
+    console.error("[shop/product] getStaticPaths:", err?.message || err);
+    return {
+      paths: [{ params: { slug: "usb-c-cable-240w" } }],
+      fallback: "blocking",
+    };
+  }
+}
+
+export async function getStaticProps({ params }) {
+  const slug = String(params?.slug || "").trim();
+  if (!slug) return { notFound: true, revalidate: 60 };
 
   // 既有 demo 頁
   if (slug === "usb-c-cable-240w") {
-    return { props: { product: null, gallery: null } };
+    return {
+      props: { product: null, gallery: null },
+      revalidate: SHOP_PRODUCT_REVALIDATE_SEC,
+    };
   }
 
   try {
     const data = await fetchShopProductByHandle(slug);
-    if (!data) return { notFound: true };
+    if (!data) return { notFound: true, revalidate: 60 };
     return {
       props: {
         product: data.product,
         gallery: data.gallery,
       },
+      revalidate: SHOP_PRODUCT_REVALIDATE_SEC,
     };
   } catch (err) {
     console.error("[shop/product]", err?.message || err);
-    return { notFound: true };
+    // 暫時失敗勿永久 404
+    return { notFound: true, revalidate: 60 };
   }
 }

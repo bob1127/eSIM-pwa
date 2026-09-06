@@ -107,7 +107,7 @@ export default function FadeCarousel() {
                     aria-current={i === index ? "true" : undefined}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${
                       i === index
-                        ? "bg-[#07819F] scale-110"
+                        ? "bg-[#00befa] scale-110"
                         : "bg-gray-300 hover:bg-gray-600"
                     }`}
                   />

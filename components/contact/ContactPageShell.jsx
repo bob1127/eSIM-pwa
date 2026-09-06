@@ -78,7 +78,7 @@ export default function ContactPageShell({ activeTab, onTabChange, children }) {
             href={CONTACT_INFO.lineUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#067A38] hover:shadow-sm transition"
+            className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-[#06C755] hover:shadow-sm transition"
           >
             <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0">
               <img

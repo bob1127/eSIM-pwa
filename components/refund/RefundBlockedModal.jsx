@@ -53,7 +53,7 @@ export default function RefundBlockedModal({
               href={oaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-[#067A38] text-white text-sm font-bold hover:bg-[#056B30] transition"
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-[#06C755] text-white text-sm font-bold hover:bg-[#05b34c] transition"
             >
               透過官方 LINE 申請人工審核
             </a>

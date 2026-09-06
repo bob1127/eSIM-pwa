@@ -124,12 +124,18 @@ html.material-icons-ready .material-symbols-outlined {
   --jeko-lh-body: 28px;
   --jeko-lh-tight: 1.35;
 
-  /* WCAG AA 實心色（白字／彩字於淺底 ≥ 4.5:1） */
-  --jeko-line-aa: #067A38;
-  --jeko-danger-aa: #C6283A;
-  --jeko-blue-aa: #1566B5;
-  --jeko-cyan-aa: #07819F;
-  --jeko-mint-aa: #17806A;
+  /* 品牌實心色（還原 AA 加深前原色） */
+  --jeko-line: #06C755;
+  --jeko-danger: #F4596A;
+  --jeko-blue: #1C82E0;
+  --jeko-cyan: #00befa;
+  --jeko-mint: #06C755;
+  /* 舊變數別名（相容） */
+  --jeko-line-aa: var(--jeko-line);
+  --jeko-danger-aa: var(--jeko-danger);
+  --jeko-blue-aa: var(--jeko-blue);
+  --jeko-cyan-aa: var(--jeko-cyan);
+  --jeko-mint-aa: var(--jeko-mint);
 }
 
 .wp-block-image{

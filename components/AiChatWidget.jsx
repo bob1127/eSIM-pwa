@@ -1909,7 +1909,7 @@ export default function AiChatWidget() {
                   <button
                     type="button"
                     onClick={openHandoffLine}
-                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#067A38] text-[#067A38] text-[12px] font-semibold py-2.5 hover:bg-[#067A38]/5 transition-colors"
+                    className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#06C755] text-[#06C755] text-[12px] font-semibold py-2.5 hover:bg-[#06C755]/5 transition-colors"
                   >
                     <LineIconSvg className="w-3.5 h-3.5" />
                     預覽：開啟官方 LINE（同使用者路徑）
@@ -1989,7 +1989,7 @@ export default function AiChatWidget() {
                             href={buildLineOaMessageUrl(VIDEO_LINE_PREFILL)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#067A38] px-3 py-2.5 text-[12px] font-semibold text-white hover:bg-[#056B30] transition-colors"
+                            className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#06C755] px-3 py-2.5 text-[12px] font-semibold text-white hover:bg-[#05b34c] transition-colors"
                           >
                             <LineIconSvg className="w-3.5 h-3.5" />
                             開啟官方 LINE 傳影片

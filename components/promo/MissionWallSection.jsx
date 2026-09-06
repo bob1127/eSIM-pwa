@@ -32,7 +32,7 @@ const STEPS = [
 ];
 
 const TAG_TONE = {
-  line: "bg-[#E8F8EE] text-[#067A38]",
+  line: "bg-[#E8F8EE] text-[#06C755]",
   mutual: "bg-[#EEF3FB] text-[#2b579a]",
   paid: "bg-[#FFF4E5] text-[#B45309]",
   esim: "bg-[#FDECEC] text-[#C24141]",
@@ -124,7 +124,7 @@ export default function MissionWallSection({ headingAs = "h2" }) {
               />
             </a>
             <div className="p-6 md:p-8">
-              <span className="inline-flex items-center rounded-full bg-[#067A38] text-white text-[11px] font-bold px-3 py-1 mb-4">
+              <span className="inline-flex items-center rounded-full bg-[#06C755] text-white text-[11px] font-bold px-3 py-1 mb-4">
                 LINE
               </span>
               <h3 className="text-lg font-bold text-[#1e3a5f] mb-2">
@@ -312,7 +312,7 @@ function MissionCard({ mission, onApply }) {
           <button
             type="button"
             onClick={() => onApply(mission)}
-            className="inline-flex items-center justify-center gap-1.5 w-full h-10 rounded-full bg-[#067A38] text-white text-sm font-bold hover:brightness-110 active:scale-[0.98] transition"
+            className="inline-flex items-center justify-center gap-1.5 w-full h-10 rounded-full bg-[#06C755] text-white text-sm font-bold hover:brightness-110 active:scale-[0.98] transition"
           >
             接任務吧
             <MaterialIcon name="arrow_forward" size={16} />
@@ -694,7 +694,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
 
         <div className="px-5 sm:px-7 py-4 border-b border-slate-200 bg-white shrink-0">
           {submitted ? (
-            <p className="text-center text-sm font-bold text-[#067A38]">
+            <p className="text-center text-sm font-bold text-[#06C755]">
               申請已送出
             </p>
           ) : (
@@ -730,7 +730,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
         <div className="px-5 sm:px-7 py-6 overflow-y-auto">
           {submitted ? (
             <div className="space-y-4 text-center py-4">
-              <div className="mx-auto w-12 h-12 rounded-full bg-[#E8F8EE] text-[#067A38] flex items-center justify-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-[#E8F8EE] text-[#06C755] flex items-center justify-center">
                 <MaterialIcon name="check" size={26} />
               </div>
               <p className="text-lg font-bold text-[#1e3a5f]">申請已送出</p>
@@ -738,7 +738,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
                 {successMsg}
               </p>
               {copied ? (
-                <p className="text-sm text-[#067A38] bg-[#E8F8EE] border border-[#86efac] rounded-lg p-3">
+                <p className="text-sm text-[#06C755] bg-[#E8F8EE] border border-[#86efac] rounded-lg p-3">
                   申請資訊已複製，需要時可貼到官方 LINE。
                 </p>
               ) : null}
@@ -881,7 +881,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
                 <p>推廣資源：{form.resourceNote || "-"}</p>
               </div>
               {copied ? (
-                <p className="text-sm text-[#067A38] bg-[#E8F8EE] border border-[#86efac] rounded-lg p-3">
+                <p className="text-sm text-[#06C755] bg-[#E8F8EE] border border-[#86efac] rounded-lg p-3">
                   申請資訊已複製，可直接貼到官方 LINE。
                 </p>
               ) : null}
@@ -889,7 +889,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
           ) : null}
 
           {lineNotice && !submitted ? (
-            <p className="mt-4 text-sm text-[#067A38] bg-[#E8F8EE] border border-[#86efac] rounded-lg p-3">
+            <p className="mt-4 text-sm text-[#06C755] bg-[#E8F8EE] border border-[#86efac] rounded-lg p-3">
               {lineNotice}{" "}
               <a
                 href={CONTACT_INFO.lineUrl}
@@ -965,7 +965,7 @@ function MissionApplyModal({ mission, onClose, onSubmitted }) {
               type="button"
               onClick={submitApply}
               disabled={submitting}
-              className="h-10 px-5 rounded-full bg-[#067A38] text-white text-sm font-bold hover:brightness-110 disabled:opacity-60"
+              className="h-10 px-5 rounded-full bg-[#06C755] text-white text-sm font-bold hover:brightness-110 disabled:opacity-60"
             >
               {submitting
                 ? "送出中…"

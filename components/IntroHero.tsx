@@ -215,7 +215,7 @@ export default function IntroHero() {
         <div className="container mx-auto px-4 md:px-8">
           {/* Section Header */}
           <div className="flex items-start gap-4 mb-12">
-            <div className="w-12 h-12 rounded-full bg-[#067A38] flex items-center justify-center shrink-0 text-white font-bold text-[24px] shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-[#06C755] flex items-center justify-center shrink-0 text-white font-bold text-[24px] shadow-sm">
               1
             </div>
             <div>
@@ -265,7 +265,7 @@ export default function IntroHero() {
                       ，港澳部分機型支援。
                     </p>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[#067A38] font-bold hover:underline text-xs mt-2 transition-colors">
+                  <span className="inline-flex items-center gap-1 text-[#06C755] font-bold hover:underline text-xs mt-2 transition-colors">
                     查看 Apple 支援頁面清單 <ExternalLink className="w-3 h-3" />
                   </span>
                 </div>
@@ -289,7 +289,7 @@ export default function IntroHero() {
                       />
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-200">
-                          <Lock className="w-8 h-8 text-[#067A38]" />
+                          <Lock className="w-8 h-8 text-[#06C755]" />
                           <div className="text-[10px] text-center font-bold text-gray-500 mt-1">
                             UNLOCKED
                           </div>
@@ -435,7 +435,7 @@ const CardItem = ({
     >
       {/* 標題區 */}
       <div className="px-6 pt-6 pb-2 flex items-start gap-3">
-        <span className="bg-[#067A38] text-white text-sm font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5">
+        <span className="bg-[#06C755] text-white text-sm font-bold w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5">
           {step}
         </span>
         <h3 className="font-bold text-lg text-gray-900 leading-tight">

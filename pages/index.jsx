@@ -1088,7 +1088,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="cta-btn bg-[#1566B5] max-w-[1450px]    w-[93%]  mx-auto rounded-[20px] lg:rounded-[33px] p-6 lg:p-10 mt-10">
+        <section className="cta-btn bg-[#1C82E0] max-w-[1450px]    w-[93%]  mx-auto rounded-[20px] lg:rounded-[33px] p-6 lg:p-10 mt-10">
           <div className="w-full lg:w-[90%] flex mx-auto flex-col">
             <div className="title flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 lg:gap-0">
               <h3 className="text-white font-bold tracking-normal text-[20px] lg:text-[24px] leading-[1.35]">

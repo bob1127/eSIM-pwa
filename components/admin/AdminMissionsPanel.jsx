@@ -233,7 +233,7 @@ export default function AdminMissionsPanel() {
                       type="button"
                       disabled={busyId === `app-${row.id}`}
                       onClick={() => review(row, "approve")}
-                      className="h-9 px-4 rounded-lg bg-[#067A38] text-white text-xs font-black"
+                      className="h-9 px-4 rounded-lg bg-[#06C755] text-white text-xs font-black"
                     >
                       通過並通知
                     </button>

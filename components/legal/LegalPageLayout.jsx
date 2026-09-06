@@ -93,7 +93,7 @@ export default function LegalPageLayout({
                     href={SOCIAL_LINKS.line}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#067A38] hover:underline"
+                    className="text-[#06C755] hover:underline"
                   >
                     LINE 官方帳號
                   </a>

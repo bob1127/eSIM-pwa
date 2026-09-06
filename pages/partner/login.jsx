@@ -784,7 +784,7 @@ export default function PartnerLogin() {
                   type="button"
                   disabled={!!oauthLoading || loading}
                   onClick={handleLineLogin}
-                  className="flex items-center justify-center gap-2 w-full bg-[#067A38] hover:brightness-105 disabled:opacity-60 py-3 rounded-xl text-sm font-bold text-white transition"
+                  className="flex items-center justify-center gap-2 w-full bg-[#06C755] hover:brightness-105 disabled:opacity-60 py-3 rounded-xl text-sm font-bold text-white transition"
                 >
                   <LineIconSvg className="w-5 h-5" />
                   {oauthLoading === "line" ? "LINE 登入中..." : "LINE 快速登入"}

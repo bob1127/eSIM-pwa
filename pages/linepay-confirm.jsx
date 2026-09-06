@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { clientError } from "@/lib/clientLogger";
+import { requestPaymentCareMail } from "@/lib/requestPaymentCareMail";
 
 export default function LinePayConfirmPage() {
   const router = useRouter();
@@ -57,6 +58,16 @@ export default function LinePayConfirmPage() {
                       return;
                     }
 
+                    requestPaymentCareMail({
+                      orderNo: String(ono),
+                      method: "linepay",
+                      reason: "linepay_confirm_fail",
+                      message:
+                        result.message ||
+                        result.detail?.returnMessage ||
+                        "confirm_fail",
+                    });
+
                     const detail =
                       typeof result.detail === "string"
                         ? result.detail
@@ -73,6 +84,12 @@ export default function LinePayConfirmPage() {
                     );
                   } catch (error) {
                     clientError("LINE Pay confirm 錯誤:", error);
+                    requestPaymentCareMail({
+                      orderNo: String(ono),
+                      method: "linepay",
+                      reason: "linepay_confirm_error",
+                      message: error?.message || "confirm_error",
+                    });
                     setStatus(
                       "❌ 付款確認失敗：" +
                         (error?.message || String(error)),

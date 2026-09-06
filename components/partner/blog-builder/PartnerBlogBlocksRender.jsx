@@ -591,7 +591,7 @@ function SocialPublic({ props: p, editable, onPatch }) {
   const links = [
     { href: p.instagram, label: "Instagram", color: "from-[#f58529] to-[#dd2a7b]" },
     { href: p.facebook, label: "Facebook", color: "from-[#1877F2] to-[#1877F2]" },
-    { href: p.line, label: "LINE", color: "from-[#067A38] to-[#067A38]" },
+    { href: p.line, label: "LINE", color: "from-[#06C755] to-[#06C755]" },
   ].filter((x) => x.href);
   const titleEl = (
     <CanvasEditable

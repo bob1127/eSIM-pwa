@@ -277,7 +277,7 @@ function ShareBar({ url, title }) {
       key: "line",
       label: "LINE 傳送",
       onClick: shareLine,
-      className: "text-[#067A38]",
+      className: "text-[#06C755]",
       icon: <LineAppIconSvg className="w-4 h-4" />,
     },
   ];

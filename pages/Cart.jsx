@@ -33,6 +33,7 @@ import {
   clearPendingPayment,
   isPendingPaymentActive,
 } from "@/lib/checkoutPendingPayment";
+import { requestPaymentCareMail } from "@/lib/requestPaymentCareMail";
 
 const CART_STEP_KEY = "jeko_cart_active_step";
 
@@ -321,6 +322,22 @@ const CartPage = () => {
   useEffect(() => {
     if (router.query.linepay !== "cancel") return;
     // 未付款取消／上一頁：保留本機商品，僅清暫存並確保 Medusa cart 可用
+    try {
+      const pending = readPendingPayment();
+      const orderRef =
+        pending?.orderNo ||
+        String(pending?.medusaOrderId || "").replace(/^order_/, "");
+      if (orderRef) {
+        requestPaymentCareMail({
+          orderNo: orderRef,
+          method: pending?.method || "linepay",
+          reason: "linepay_cancel",
+          message: "cancel",
+        });
+      }
+    } catch {
+      /* ignore */
+    }
     clearPendingPayment();
     setPendingPayment(null);
     setLinePayCancelNotice(false);
@@ -341,6 +358,17 @@ const CartPage = () => {
       try {
         const pending = readPendingPayment();
         if (!pending) return;
+        const orderRef =
+          pending.orderNo ||
+          String(pending.medusaOrderId || "").replace(/^order_/, "");
+        if (orderRef) {
+          requestPaymentCareMail({
+            orderNo: orderRef,
+            method: pending.method || "",
+            reason: "checkout_abandon",
+            message: "abandon",
+          });
+        }
         // LINE Pay 未建單：商品本來就在；藍新已 complete cart：必須重建
         if (
           pending.method === "newebpay" ||
@@ -1456,7 +1484,7 @@ const CartPage = () => {
                               </div>
 
                               {needLineVerify && !isLoggedIn && isWelcomeCouponCode(coupon) && (
-                                <div className="rounded-xl border border-[#067A38]/40 bg-emerald-50/80 px-3.5 py-3">
+                                <div className="rounded-xl border border-[#06C755]/40 bg-emerald-50/80 px-3.5 py-3">
                                   <p className="text-[13px] font-bold text-slate-800 leading-snug">
                                     新會員 50 元：請用 LINE 驗證
                                   </p>
@@ -1469,7 +1497,7 @@ const CartPage = () => {
                                       type="button"
                                       onClick={() => handleApplyCoupon()}
                                       disabled={isApplyingCoupon}
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#067A38] hover:bg-[#056B30] text-white text-[12px] font-bold px-4 py-2 disabled:opacity-60"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white text-[12px] font-bold px-4 py-2 disabled:opacity-60"
                                     >
                                       <LineIconSvg className="w-3.5 h-3.5" />
                                       {isApplyingCoupon
@@ -1480,7 +1508,7 @@ const CartPage = () => {
                                       href={lineOaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#067A38] bg-white text-[#067A38] text-[12px] font-bold px-4 py-2"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#06C755] bg-white text-[#06C755] text-[12px] font-bold px-4 py-2"
                                     >
                                       尚未加好友？加入官方 LINE
                                     </a>
@@ -1508,7 +1536,7 @@ const CartPage = () => {
                                       href={lineOaUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#067A38] bg-white text-[#067A38] text-[12px] font-bold px-4 py-2"
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#06C755] bg-white text-[#06C755] text-[12px] font-bold px-4 py-2"
                                     >
                                       <LineIconSvg className="w-3.5 h-3.5" />
                                       尚未加好友？點此加入官方 LINE

@@ -59,7 +59,7 @@ export default function PartnerSocialIcons({
       label: "LINE",
       short: "LINE",
       href: store?.social_line?.trim() || "",
-      className: "bg-[#067A38] text-white",
+      className: "bg-[#06C755] text-white",
       icon: <LineIconSvg className={iconClass} />,
     },
   ].filter((item) => item.href);

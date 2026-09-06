@@ -245,8 +245,8 @@ export default function PartnerShareButtons({
     line: {
       label: "LINE 傳送",
       onClick: shareLine,
-      brand: "bg-[#067A38] text-white hover:brightness-110",
-      outline: "bg-white text-[#067A38] border border-slate-200 hover:border-[#067A38]/50",
+      brand: "bg-[#06C755] text-white hover:brightness-110",
+      outline: "bg-white text-[#06C755] border border-slate-200 hover:border-[#06C755]/50",
       icon: <LineIconSvg className={ic} />,
     },
     instagram: {

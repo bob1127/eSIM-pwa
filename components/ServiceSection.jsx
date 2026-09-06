@@ -106,7 +106,7 @@ function JobCard({
           ))}
         </div>
 
-        <h3 className="text-[22px] leading-[1.5] font-bold text-[#2C5164] mb-3 transition-colors duration-300 group-hover:text-[#07819F]">
+        <h3 className="text-[22px] leading-[1.5] font-bold text-[#2C5164] mb-3 transition-colors duration-300 group-hover:text-[#00befa]">
           {title}
         </h3>
         <p className="text-[14px] leading-relaxed text-[#5B7382] mb-6 flex-grow">
@@ -166,7 +166,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "Native", color: "#2E4457" },
-            { text: "日本本地IP", color: "#17806A" },
+            { text: "日本本地IP", color: "#06C755" },
           ],
           title: "日本原生卡",
           desc: "採用 Docomo／KDDI／IIJ 等當地電信線路，日本本地 IP、低延遲，適合訂餐廳、電子支付與多數日本限定服務。",
@@ -177,7 +177,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "Native", color: "#2E4457" },
-            { text: "韓國本地IP", color: "#17806A" },
+            { text: "韓國本地IP", color: "#06C755" },
           ],
           title: "韓國原生卡",
           desc: "走 SKT／KT／LGU+ 當地網路，韓國本地 IP，追星搶票、直播視訊與本地 App 體驗更接近在地用戶。",
@@ -188,7 +188,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "Native", color: "#2E4457" },
-            { text: "泰國本地IP", color: "#17806A" },
+            { text: "泰國本地IP", color: "#06C755" },
           ],
           title: "泰國原生卡",
           desc: "對應 Truemove H 當地號碼／True 電信本地線路，泰國本地 IP，曼谷、清邁、普吉等熱門旅遊地訊號覆蓋更穩定。",
@@ -199,7 +199,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "Native", color: "#2E4457" },
-            { text: "越南本地IP", color: "#17806A" },
+            { text: "越南本地IP", color: "#06C755" },
           ],
           title: "越南原生卡",
           desc: "採用 Viettel／Vinaphone／Mobifone 當地網路，越南本地 IP，下龍灣、富國島等觀光區連線更穩。",
@@ -212,7 +212,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "真．不限速", color: "#FF5252" },
-            { text: "AU(KDDI)", color: "#17806A" },
+            { text: "AU(KDDI)", color: "#06C755" },
           ],
           title: "日本 AU(KDDI)",
           desc: "走日本三大電信 AU（KDDI）當地網路與日本本地 IP，高速數據吃到飽、真．不限速，適合整天導航、視訊與熱點分享。",
@@ -223,7 +223,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "真．不限速", color: "#FF5252" },
-            { text: "含當地門號", color: "#17806A" },
+            { text: "含當地門號", color: "#06C755" },
           ],
           title: "韓國 SK電信（含門號）",
           desc: "SKT 原生韓國 IP、真．不限速吃到飽。完成線上實名後可接聽來電與收簡訊，適合外送 App、預約餐廳與認證碼。",
@@ -234,7 +234,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "真．不限速", color: "#FF5252" },
-            { text: "8／15天", color: "#17806A" },
+            { text: "8／15天", color: "#06C755" },
           ],
           title: "泰國 Truemove 8／15天",
           desc: "Truemove H 當地號碼，僅 8 天與 15 天兩檔，真．不限速高速上網，並可免費接聽來電與收簡訊。",
@@ -246,7 +246,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "熱門主推", color: "#FF5252" },
-            { text: "原生 AU(KDDI)", color: "#17806A" },
+            { text: "原生 AU(KDDI)", color: "#06C755" },
           ],
           title: "日本 AU(KDDI) 原生卡",
           desc: "走日本三大電信之一 AU（KDDI）當地網路與日本本地 IP，東京、大阪、京都與各大旅遊城市覆蓋穩定，適合導航、電子支付與熱點分享。",
@@ -256,7 +256,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "Value", color: "#2E4457" },
-            { text: "總量型", color: "#17806A" },
+            { text: "總量型", color: "#06C755" },
           ],
           title: "小資輕旅 5GB/10GB 方案",
           desc: "適合短期旅遊或預算有限的旅客。流量用完後降速不斷網，地圖導航、傳訊依舊順暢。",
@@ -265,8 +265,8 @@ export default function PickUpJobsSection() {
         },
         {
           pills: [
-            { text: "New", color: "#07819F" },
-            { text: "長天期", color: "#17806A" },
+            { text: "New", color: "#00befa" },
+            { text: "長天期", color: "#06C755" },
           ],
           title: "30天留學/出差長效卡",
           desc: "專為長期滯留設計。免簽合約、免開漫遊，一次購買使用30天，隨時可加購流量。",
@@ -279,7 +279,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "真．不限速", color: "#FF5252" },
-            { text: "SK電信・韓國IP", color: "#17806A" },
+            { text: "SK電信・韓國IP", color: "#06C755" },
           ],
           title: "韓國 SK電信 原生吃到飽",
           desc: "SKT 原生韓國 IP、真．不限速高速吃到飽。適合導航、直播、搶票與整天大量使用；2 天以上方案完成線上實名後可收來電／簡訊。",
@@ -289,7 +289,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "高CP值", color: "#2E4457" },
-            { text: "LG U+ / SK", color: "#17806A" },
+            { text: "LG U+ / SK", color: "#06C755" },
           ],
           title: "LG U+ / SK 流量吃到飽",
           desc: "新加坡 IP 漫遊：每日 1GB 高速，用完後維持約 10Mbps 吃到飽；LG U+／SK 雙電信覆蓋，適合一般旅遊上網。",
@@ -298,8 +298,8 @@ export default function PickUpJobsSection() {
         },
         {
           pills: [
-            { text: "每日／總量", color: "#07819F" },
-            { text: "5G 雙切換", color: "#17806A" },
+            { text: "每日／總量", color: "#00befa" },
+            { text: "5G 雙切換", color: "#06C755" },
           ],
           title: "韓國每日型・總量型",
           desc: "可選每日高速額度或總量 GB 方案，LG U+／SK 5G 雙切換找訊號。短天數輕旅或長天期控流量都適合。",
@@ -312,7 +312,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "MY", color: "#2E4457" },
-            { text: "馬來西亞", color: "#17806A" },
+            { text: "馬來西亞", color: "#06C755" },
           ],
           title: "馬來西亞 eSIM",
           desc: "吉隆坡、檳城、蘭卡威與各大旅遊城市覆蓋，適合自駕、逛街與熱點分享。",
@@ -322,7 +322,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "SG", color: "#2E4457" },
-            { text: "新加坡", color: "#17806A" },
+            { text: "新加坡", color: "#06C755" },
           ],
           title: "新加坡 eSIM",
           desc: "市區 4G／5G 覆蓋穩定，適合樟宜過境、市區觀光與跨國轉機停留。",
@@ -333,7 +333,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "TH", color: "#2E4457" },
-            { text: "泰國", color: "#17806A" },
+            { text: "泰國", color: "#06C755" },
           ],
           title: "泰國 eSIM",
           desc: "曼谷、清邁、普吉、蘇梅等熱門城市可選 Truemove／TRUE 當地線路。",
@@ -343,7 +343,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "PH", color: "#2E4457" },
-            { text: "菲律賓", color: "#17806A" },
+            { text: "菲律賓", color: "#06C755" },
           ],
           title: "菲律賓 eSIM",
           desc: "馬尼拉、宿霧、長灘島等熱門旅遊地上網，導航與外送 App 更順手。",
@@ -353,7 +353,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "ID", color: "#2E4457" },
-            { text: "印尼", color: "#17806A" },
+            { text: "印尼", color: "#06C755" },
           ],
           title: "印尼 eSIM",
           desc: "雅加達、峇里島、日惹等熱門行程適用，海島與市區移動都有網。",
@@ -364,7 +364,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "VN", color: "#2E4457" },
-            { text: "越南", color: "#17806A" },
+            { text: "越南", color: "#06C755" },
           ],
           title: "越南 eSIM",
           desc: "Viettel／Vinaphone／Mobifone 當地網路，下龍灣、富國島等觀光區連線更穩。",
@@ -377,7 +377,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "吃到飽", color: "#FF5252" },
-            { text: "中國移動", color: "#17806A" },
+            { text: "中國移動", color: "#06C755" },
           ],
           title: "中國吃到飽 eSIM",
           desc: "中國移動 50–70Mbps 吃到飽，北京、上海、深圳與熱門旅遊城市覆蓋穩定，適合導航與社群。",
@@ -386,8 +386,8 @@ export default function PickUpJobsSection() {
         },
         {
           pills: [
-            { text: "社群", color: "#07819F" },
-            { text: "ChatGPT", color: "#17806A" },
+            { text: "社群", color: "#00befa" },
+            { text: "ChatGPT", color: "#06C755" },
           ],
           title: "中國聯通 GPT + TikTok",
           desc: "中國聯通線路，支援 ChatGPT 與 TikTok，出國玩大陸社群與 AI 工具更方便。",
@@ -397,7 +397,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "Value", color: "#2E4457" },
-            { text: "總量型", color: "#17806A" },
+            { text: "總量型", color: "#06C755" },
           ],
           title: "中國總量型 eSIM",
           desc: "固定總流量、天數彈性，適合行程明確、用量可預估的短期旅客。",
@@ -409,7 +409,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "雙國", color: "#2E4457" },
-            { text: "美加", color: "#17806A" },
+            { text: "美加", color: "#06C755" },
           ],
           title: "美加（美國＋加拿大）",
           desc: "一張 eSIM 暢遊美國與加拿大，不含墨西哥。適合美加自駕、滑雪與商務來回。",
@@ -420,7 +420,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "三國", color: "#2E4457" },
-            { text: "美加墨", color: "#17806A" },
+            { text: "美加墨", color: "#06C755" },
           ],
           title: "北美美加墨",
           desc: "美國、加拿大、墨西哥一卡通行。AT&T 美國號碼方案可含通話與當地門號。",
@@ -430,7 +430,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "三地", color: "#2E4457" },
-            { text: "免VPN", color: "#17806A" },
+            { text: "免VPN", color: "#06C755" },
           ],
           title: "中港澳",
           desc: "中國、香港、澳門一張卡。出網香港／新加坡 IP，一般可免 VPN 使用 LINE、IG、FB。",
@@ -443,7 +443,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "US", color: "#2E4457" },
-            { text: "美國", color: "#17806A" },
+            { text: "美國", color: "#06C755" },
           ],
           title: "美國 eSIM",
           desc: "美國本土吃到飽與總量／每日型，出差、自駕與城市觀光免換實體卡。",
@@ -453,7 +453,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "CA", color: "#2E4457" },
-            { text: "加拿大", color: "#17806A" },
+            { text: "加拿大", color: "#06C755" },
           ],
           title: "加拿大 eSIM",
           desc: "TELUS／Bell 總量、每日與吃到飽，溫哥華、多倫多與洛磯山行程適用。",
@@ -463,7 +463,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "GB", color: "#2E4457" },
-            { text: "英國", color: "#17806A" },
+            { text: "英國", color: "#06C755" },
           ],
           title: "英國 eSIM",
           desc: "EE／Three 吃到飽、總量與每日型，倫敦、愛丁堡與歐陸轉機適用。",
@@ -474,7 +474,7 @@ export default function PickUpJobsSection() {
           hotSale: true,
           pills: [
             { text: "FR", color: "#2E4457" },
-            { text: "法國", color: "#17806A" },
+            { text: "法國", color: "#06C755" },
           ],
           title: "法國 eSIM",
           desc: "Orange／Bouygues 吃到飽、總量與每日型，巴黎、南法與歐陸行程適用。",
@@ -484,7 +484,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "IT", color: "#2E4457" },
-            { text: "義大利", color: "#17806A" },
+            { text: "義大利", color: "#06C755" },
           ],
           title: "義大利 eSIM",
           desc: "Iliad／TIM／WindTre 方案，羅馬、米蘭、佛羅倫斯與威尼斯覆蓋穩定。",
@@ -494,7 +494,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "ES", color: "#2E4457" },
-            { text: "西班牙", color: "#17806A" },
+            { text: "西班牙", color: "#06C755" },
           ],
           title: "西班牙 eSIM",
           desc: "Movistar／Orange 吃到飽與總量型，馬德里、巴塞隆納與安達魯西亞適用。",
@@ -504,7 +504,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "CH", color: "#2E4457" },
-            { text: "瑞士", color: "#17806A" },
+            { text: "瑞士", color: "#06C755" },
           ],
           title: "瑞士 eSIM",
           desc: "Swisscom／Sunrise／Salt 吃到飽、總量與每日型，蘇黎世、日內瓦與阿爾卑斯行程適用。",
@@ -514,7 +514,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "AT", color: "#2E4457" },
-            { text: "奧地利", color: "#17806A" },
+            { text: "奧地利", color: "#06C755" },
           ],
           title: "奧地利 eSIM",
           desc: "A1／Drei／Three 吃到飽與總量型，維也納、薩爾斯堡與滑雪行程適用。",
@@ -524,7 +524,7 @@ export default function PickUpJobsSection() {
         {
           pills: [
             { text: "TR", color: "#2E4457" },
-            { text: "土耳其", color: "#17806A" },
+            { text: "土耳其", color: "#06C755" },
           ],
           title: "土耳其 eSIM",
           desc: "Avea／Vodafone 吃到飽、總量與每日型，伊斯坦堡、卡帕多奇亞與安塔利亞適用。",
@@ -612,14 +612,14 @@ export default function PickUpJobsSection() {
                     }}
                     className={`group flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
                       activeTab
-                        ? "bg-white text-[#0D7AAF] shadow-sm"
+                        ? "bg-white text-[#00befa] shadow-sm"
                         : "hover:bg-white/50 text-[#4A6270]"
                     }`}
                   >
                     <span
                       aria-hidden="true"
                       className={`h-2.5 w-2.5 rounded-full inline-block transition-colors ${
-                        activeTab ? "bg-[#0D7AAF]" : "bg-[#4E849C]"
+                        activeTab ? "bg-[#00befa]" : "bg-[#4E849C]"
                       }`}
                     />
                     <span>{t.label}</span>
@@ -697,9 +697,9 @@ export default function PickUpJobsSection() {
                 href="/product"
                 className="group relative inline-flex items-center justify-center"
               >
-                <div className="absolute inset-0 h-full w-full rounded-full bg-[#056E88] opacity-0 transition-all duration-300 group-hover:translate-x-1.5 group-hover:translate-y-1.5 group-hover:opacity-100" />
+                <div className="absolute inset-0 h-full w-full rounded-full bg-[#00a8d9] opacity-0 transition-all duration-300 group-hover:translate-x-1.5 group-hover:translate-y-1.5 group-hover:opacity-100" />
 
-                <div className="relative z-10 inline-flex items-center justify-center overflow-hidden rounded-full bg-[#07819F] px-8 py-3.5 font-bold text-white shadow-lg shadow-[#07819F]/30 transition-all duration-300 group-hover:-translate-x-1 group-hover:-translate-y-1 group-hover:shadow-[#056E88]/40">
+                <div className="relative z-10 inline-flex items-center justify-center overflow-hidden rounded-full bg-[#00befa] px-8 py-3.5 font-bold text-white shadow-lg shadow-[#00befa]/30 transition-all duration-300 group-hover:-translate-x-1 group-hover:-translate-y-1 group-hover:shadow-[#00a8d9]/40">
                   <span className="relative inline-flex overflow-hidden">
                     <div className="flex items-center gap-3 transition-transform duration-500 group-hover:translate-x-[150%] group-hover:skew-x-12">
                       查看所有方案

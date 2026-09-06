@@ -18,6 +18,7 @@ import CheckoutTicketReceipt, {
   shortOrderNo,
 } from "@/components/checkout/CheckoutTicketReceipt";
 import { clientError } from "@/lib/clientLogger";
+import { requestPaymentCareMail } from "@/lib/requestPaymentCareMail";
 
 interface ApnInfo {
   apn?: string;
@@ -363,6 +364,22 @@ export default function ThankYouPage() {
     setPrintDone(false);
   }, [orderNo]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams(window.location.search);
+    const st = String(p.get("status") || "").toLowerCase();
+    if (!orderNo) return;
+    if (!/fail|error|cancel|unpaid|reject/.test(st)) return;
+    requestPaymentCareMail({
+      orderNo,
+      method: String(p.get("method") || "").toLowerCase().includes("line")
+        ? "linepay"
+        : "newebpay",
+      reason: "thankyou_url_fail",
+      message: st,
+    });
+  }, [orderNo]);
+
   const pendingHref = useMemo(
     () =>
       orderNo ? `/pending?orderNo=${encodeURIComponent(orderNo)}` : "/account",
@@ -424,6 +441,16 @@ export default function ThankYouPage() {
       const statusLower = String(orderInfo?.status || "").toLowerCase();
       const payFailed =
         /fail|error|cancel|unpaid|reject/.test(statusLower) && !paid;
+      if (payFailed && orderNo) {
+        requestPaymentCareMail({
+          orderNo,
+          method: String(orderInfo?.PaymentType || "").toUpperCase().includes("LINE")
+            ? "linepay"
+            : "newebpay",
+          reason: "thankyou_fail",
+          message: String(orderInfo?.status || "fail"),
+        });
+      }
       const offsiteOk = Boolean(offsiteInfo) && Boolean(orderInfo) && !payFailed;
       if (!clearedOnceRef.current && (paid || offsiteOk)) {
         clearedOnceRef.current = true;

@@ -615,7 +615,7 @@ export default function AccountSupportView({
                 rel="noopener noreferrer"
                 className="w-full inline-flex items-center justify-center gap-1.5 h-8 px-3.5 text-[13px] font-semibold text-white transition"
                 style={{
-                  backgroundColor: "#067A38",
+                  backgroundColor: "#06C755",
                   borderRadius: "0.5rem",
                 }}
               >

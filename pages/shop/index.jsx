@@ -1,24 +1,25 @@
-"use client";
-
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, X, Minus, Plus } from "lucide-react";
 import ShopNavbar from "../../components/Shop/ShopNavbar";
 import ShopCartSidebar from "../../components/Shop/ShopCartSidebar";
 import Footer from "../../components/ui/footer.jsx";
+import SeoHead from "../../components/SeoHead";
 import { useCart } from "../../components/context/CartContext";
 import { useRouter } from "next/router";
 import {
   PRODUCT_PDP,
-  PRODUCT_TABS,
   SHOP_TRAVEL_GEAR as TRAVEL_GEAR,
 } from "../../data/shop/catalog";
 import { fetchShopMustHaveSelections } from "../../lib/shopSelections";
+import { buildShopIndexSeo } from "../../lib/seo.config";
+import { resolveMedusaImageUrl } from "../../lib/resolveMedusaImageUrl";
 
 const CONTAINER = "max-w-[1680px] mx-auto px-6 lg:px-10";
 const PLACEHOLDER_IMG = "/images/shop/01/p1.avif";
+/** ISR：約 2 分鐘刷新商城列表 */
+const SHOP_REVALIDATE_SEC = 120;
 
 // ── Section 1：雙欄促銷卡 ─────────────────────────────────────────
 const PROMO_CARDS = [
@@ -75,8 +76,16 @@ function PromoCard({ card }) {
 function ProductCard({ product }) {
   const router = useRouter();
   const { addToCart } = useCart();
-  const imgSrc = product.img || PLACEHOLDER_IMG;
+  const rawImg = product.img || PLACEHOLDER_IMG;
+  const [imgSrc, setImgSrc] = useState(
+    () => resolveMedusaImageUrl(rawImg) || rawImg || PLACEHOLDER_IMG,
+  );
   const pdpHref = product.href || PRODUCT_PDP;
+
+  useEffect(() => {
+    const next = resolveMedusaImageUrl(product.img) || product.img || PLACEHOLDER_IMG;
+    setImgSrc(next);
+  }, [product.img]);
 
   const handleBuyNow = (e) => {
     e.preventDefault();
@@ -112,7 +121,8 @@ function ProductCard({ product }) {
             fill
             className="object-contain"
             sizes="(max-width: 768px) 50vw, 25vw"
-            unoptimized={/^https?:\/\//i.test(imgSrc)}
+            unoptimized
+            onError={() => setImgSrc(PLACEHOLDER_IMG)}
           />
         </span>
       </Link>
@@ -535,16 +545,13 @@ export default function ShopPage({
 }) {
   const [tab, setTab] = useState("new");
   const [liveTabs, setLiveTabs] = useState(() => ({
-    new:
-      Array.isArray(mustHaveNew) && mustHaveNew.length
-        ? mustHaveNew
-        : PRODUCT_TABS.new,
-    bestsellers:
-      Array.isArray(mustHaveBestsellers) && mustHaveBestsellers.length
-        ? mustHaveBestsellers
-        : PRODUCT_TABS.bestsellers,
+    new: Array.isArray(mustHaveNew) ? mustHaveNew : [],
+    bestsellers: Array.isArray(mustHaveBestsellers)
+      ? mustHaveBestsellers
+      : [],
   }));
 
+  // ISR 已帶入資料；背景輕量更新，不覆蓋成空陣列
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -561,7 +568,7 @@ export default function ShopPage({
               : prev.bestsellers,
         }));
       } catch {
-        /* 保留 SSR／假資料 */
+        /* 保留 ISR 資料 */
       }
     })();
     return () => {
@@ -569,17 +576,14 @@ export default function ShopPage({
     };
   }, []);
 
-  const products = liveTabs[tab] || PRODUCT_TABS[tab] || [];
+  const products = liveTabs[tab] || [];
+  const seoProducts =
+    (liveTabs.new?.length ? liveTabs.new : liveTabs.bestsellers) || [];
+  const seo = buildShopIndexSeo(seoProducts);
 
   return (
     <>
-      <Head>
-        <title>Jeko 商城 | Jeko eSIM</title>
-        <meta
-          name="description"
-          content="Jeko Jeko 商城 — eSIM、充電配件、旅行配件、3C周邊，出國必備一站購齊。"
-        />
-      </Head>
+      <SeoHead {...seo} />
 
       <ShopNavbar utilityNav={[]} utilityEnd={null} />
 
@@ -589,7 +593,7 @@ export default function ShopPage({
           <Link href={PRODUCT_PDP} className="absolute inset-0 block">
             <Image
               src="/images/shop/shop-hero-banner.png"
-              alt="Jeko Jeko 商城"
+              alt="Jeko 商城 — 旅行配件與出國必備"
               fill
               priority
               className="object-cover"
@@ -609,13 +613,15 @@ export default function ShopPage({
 
         {/* ── Section 2：Must-Have 精選商品（輪播） ── */}
         <section className={`${CONTAINER} pb-10 sm:pb-14`}>
-          <h2 className="text-[24px] sm:text-[28px] font-bold text-slate-900 mb-5">
+          <h1 className="text-[24px] sm:text-[28px] font-bold text-slate-900 mb-5">
             Must-Have Jeko Selections
-          </h2>
+          </h1>
 
-          <div className="flex items-center gap-2 mb-6">
+          <div className="flex items-center gap-2 mb-6" role="tablist" aria-label="精選商品分類">
             <button
               type="button"
+              role="tab"
+              aria-selected={tab === "new"}
               onClick={() => setTab("new")}
               className={`px-4 py-1.5 text-[13px] font-medium rounded-md transition-colors ${
                 tab === "new"
@@ -627,6 +633,8 @@ export default function ShopPage({
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={tab === "bestsellers"}
               onClick={() => setTab("bestsellers")}
               className={`px-4 py-1.5 text-[13px] font-medium rounded-md transition-colors ${
                 tab === "bestsellers"
@@ -688,7 +696,7 @@ export default function ShopPage({
   );
 }
 
-export async function getServerSideProps() {
+export async function getStaticProps() {
   try {
     const selections = await fetchShopMustHaveSelections({ limit: 24 });
     return {
@@ -696,6 +704,7 @@ export async function getServerSideProps() {
         mustHaveNew: selections.new || [],
         mustHaveBestsellers: selections.bestsellers || [],
       },
+      revalidate: SHOP_REVALIDATE_SEC,
     };
   } catch (err) {
     console.error("[shop] Must-Have Medusa fetch:", err?.message || err);
@@ -704,6 +713,7 @@ export async function getServerSideProps() {
         mustHaveNew: [],
         mustHaveBestsellers: [],
       },
+      revalidate: 60,
     };
   }
 }

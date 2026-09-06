@@ -62,8 +62,8 @@ export default function ForgotPasswordForm({ onClose }) {
           disabled={submitting}
           className={`mt-1 w-full rounded-full py-2.5 text-sm font-semibold tracking-wide shadow-sm transition ${
             submitting
-              ? "bg-white/40 text-[#1566B5] cursor-not-allowed"
-              : "bg-white/95 text-[#1566B5] hover:bg-white"
+              ? "bg-white/40 text-[#1C82E0] cursor-not-allowed"
+              : "bg-white/95 text-[#1C82E0] hover:bg-white"
           }`}
         >
           {submitting ? "寄送中…" : "寄送重設密碼連結"}

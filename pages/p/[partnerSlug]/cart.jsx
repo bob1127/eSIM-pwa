@@ -19,6 +19,7 @@ import {
   readPendingPayment,
   clearPendingPayment,
 } from "@/lib/checkoutPendingPayment";
+import { requestPaymentCareMail } from "@/lib/requestPaymentCareMail";
 
 const TruckIcon = () => (
   <svg
@@ -63,13 +64,23 @@ export default function PartnerCart({ store }) {
   const [activeStep, setActiveStep] = useState(0);
   const [removingIndex, setRemovingIndex] = useState(null);
 
-  // 藍新／LINE Pay 未完成付款返回：保留本機商品並重建 Medusa cart
   useEffect(() => {
     let cancelled = false;
     const recover = async () => {
       try {
         const pending = readPendingPayment();
         if (!pending) return;
+        const orderRef =
+          pending.orderNo ||
+          String(pending.medusaOrderId || "").replace(/^order_/, "");
+        if (orderRef) {
+          requestPaymentCareMail({
+            orderNo: orderRef,
+            method: pending.method || "",
+            reason: "checkout_abandon",
+            message: "abandon",
+          });
+        }
         if (
           pending.method === "newebpay" ||
           pending.preserveLocalCart ||

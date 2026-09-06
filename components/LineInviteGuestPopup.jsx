@@ -121,7 +121,7 @@ export default function LineInviteGuestPopup() {
             href={LINE_OA}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full bg-[#067A38] hover:bg-[#056B30] transition-colors px-5 py-4 text-center"
+            className="block w-full bg-[#06C755] hover:bg-[#05b34c] transition-colors px-5 py-4 text-center"
             onClick={close}
           >
             <span className="text-[15px] font-bold text-white tracking-wide">
